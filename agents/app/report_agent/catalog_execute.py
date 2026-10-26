@@ -71,11 +71,32 @@ def _paginate(rows: list[dict[str, Any]], page: int, page_size: int) -> tuple[li
 
 
 def _keys(spec: ReportSpec) -> set[str]:
-    return {c.key.lower() for c in spec.columns}
+    out: set[str] = set()
+    for col in spec.columns:
+        raw = (col.key or "").strip()
+        if not raw:
+            continue
+        out.add(raw.lower())
+        out.add(_listing_compact(raw))
+    return out
 
 
 _ROW_ID_KEYS = frozenset(
-    {"instanceid", "itemid", "id", "requestno", "stage", "startedby", "actedby", "startedbyid", "actedbyid"}
+    {
+        "instanceid",
+        "itemid",
+        "id",
+        "requestno",
+        "stage",
+        "startedby",
+        "actedby",
+        "startedbyid",
+        "actedbyid",
+        "filename",
+        "createdby",
+        "createdbyid",
+        "createdat",
+    }
 )
 _INSTANCE_DEFAULT_KEYS = frozenset(
     {
@@ -119,6 +140,10 @@ _LISTING_COMPACT = frozenset(
         "id",
         "createdby",
         "createdbyid",
+        "filename",
+        "file_name",
+        "repositoryname",
+        "repository",
     }
 )
 _LISTING_OUTPUT_KEYS = frozenset(
@@ -137,12 +162,36 @@ _REPO_DEFAULT_KEYS = frozenset(
     {
         "itemid",
         "filename",
+        "file_name",
         "repository_name",
+        "repositoryname",
+        "repository",
         "createdby",
         "createdbyid",
         "createdat",
         "status",
     }
+)
+_REPO_OUTPUT_KEYS = frozenset(
+    {
+        "filename",
+        "file_name",
+        "repository_name",
+        "repositoryname",
+        "repository",
+        "createdby",
+        "createdbyid",
+        "createdat",
+    }
+)
+_KEY_ALIAS_GROUPS = (
+    frozenset({"repository", "repositoryname", "repository_name"}),
+    frozenset({"filename", "file_name", "originalfilename"}),
+    frozenset({"requestno", "reqno", "referencenumber"}),
+    frozenset({"stage", "currentstage", "stepname"}),
+    frozenset({"createdat", "createdatutc", "created_at"}),
+    frozenset({"createdby", "created_by"}),
+    frozenset({"createdbyid", "created_by_id"}),
 )
 _USER_NAME_KEYS = (
     "displayName",
@@ -429,6 +478,95 @@ def _listing_compact(key: str) -> str:
     return "".join(ch for ch in (key or "").lower() if ch.isalnum())
 
 
+def _alias_wants(compact: str) -> set[str]:
+    wants = {compact}
+    for group in _KEY_ALIAS_GROUPS:
+        if compact in group:
+            wants |= set(group)
+    return wants
+
+
+def _value_from_row(source: dict[str, Any], key: str) -> Any:
+    if not isinstance(source, dict) or not key:
+        return ""
+    lower = {str(item).lower(): value for item, value in source.items()}
+    direct = lower.get(key.lower())
+    if direct not in (None, ""):
+        return direct
+    wants = _alias_wants(_listing_compact(key))
+    for item, value in source.items():
+        if value in (None, ""):
+            continue
+        if _listing_compact(str(item)) in wants:
+            return value
+    return "" if direct is None else direct
+
+
+def _named_label(item: dict[str, Any]) -> str:
+    return str(
+        _pick(
+            item or {},
+            "name",
+            "Name",
+            "repositoryName",
+            "RepositoryName",
+            "title",
+            "Title",
+        )
+        or ""
+    ).strip()
+
+
+def _pick_file_name(row: dict[str, Any], *, depth: int = 0) -> str:
+    if not isinstance(row, dict) or depth > 3:
+        return ""
+    preferred = _pick(
+        row,
+        "fileName",
+        "FileName",
+        "file_name",
+        "originalFileName",
+        "OriginalFileName",
+        "original_file_name",
+        "ifileName",
+        "IFileName",
+        "documentName",
+        "DocumentName",
+        "document_name",
+    )
+    text = str(preferred or "").strip()
+    if text and not _looks_like_user_id(text):
+        return text
+    for nest in (
+        "file",
+        "File",
+        "currentVersion",
+        "CurrentVersion",
+        "latestVersion",
+        "LatestVersion",
+        "document",
+        "Document",
+        "metadata",
+        "Metadata",
+        "item",
+        "Item",
+    ):
+        nested = row.get(nest)
+        if isinstance(nested, dict):
+            found = _pick_file_name(nested, depth=depth + 1)
+            if found:
+                return found
+    titled = str(_pick(row, "title", "Title", "name", "Name") or "").strip()
+    if titled and not _looks_like_user_id(titled) and "." in titled:
+        return titled
+    nested_id = row.get("id") or row.get("Id")
+    if isinstance(nested_id, dict):
+        found = _pick_file_name(nested_id, depth=depth + 1)
+        if found:
+            return found
+    return ""
+
+
 def _is_listing_key(key: str) -> bool:
     return _listing_compact(key) in _LISTING_COMPACT
 
@@ -451,6 +589,10 @@ def has_form_columns(spec: ReportSpec) -> bool:
 
 def needs_listing_fields(spec: ReportSpec) -> bool:
     return bool(_keys(spec) & _LISTING_OUTPUT_KEYS)
+
+
+def needs_repository_fields(spec: ReportSpec) -> bool:
+    return bool(_keys(spec) & _REPO_OUTPUT_KEYS)
 
 
 def wants_instance_execute(spec: ReportSpec, report_type: Optional[str] = None) -> bool:
@@ -477,7 +619,7 @@ def _match_named(items: list[dict[str, Any]], want: str) -> list[dict[str, Any]]
     exact = [
         item
         for item in items or []
-        if str((item or {}).get("name") or "").strip().lower() == needle
+        if _named_label(item).lower() == needle
         or str((item or {}).get("id") or "").strip().lower() == needle
     ]
     if exact:
@@ -485,8 +627,7 @@ def _match_named(items: list[dict[str, Any]], want: str) -> list[dict[str, Any]]
     return [
         item
         for item in items or []
-        if needle in str((item or {}).get("name") or "").strip().lower()
-        or str((item or {}).get("name") or "").strip().lower() in needle
+        if needle in _named_label(item).lower() or _named_label(item).lower() in needle
     ]
 
 
@@ -550,7 +691,7 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
         lower = {str(key).lower(): value for key, value in source.items()}
         item: dict[str, Any] = {}
         for key in keys:
-            value = lower.get(key.lower(), "")
+            value = _value_from_row(source, key)
             if value in (None, "") and key.lower() in {"id", "requestno"}:
                 value = lower.get("requestno") or lower.get("id") or ""
             compact = _listing_compact(key)
@@ -582,6 +723,11 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
                 elif compact == "stage":
                     item["Stage"] = item[key]
                     item["stage"] = item[key]
+                elif compact in {"repositoryname", "repository"}:
+                    item["Repository_Name"] = item[key]
+                    item["Repository"] = item[key]
+                elif compact in {"filename"}:
+                    item["FileName"] = item[key]
         _split_user_fields_on_row(item)
         shaped.append(item)
     return shaped
@@ -595,10 +741,8 @@ def _keep_valued_columns(
         return spec, rows, _col_outs(spec)
 
     def _filled(col: Any) -> bool:
-        low = (col.key or "").lower()
         for row in rows:
-            lower = {str(key).lower(): value for key, value in (row or {}).items()}
-            if str(lower.get(low) or "").strip():
+            if str(_value_from_row(row or {}, col.key) or "").strip():
                 return True
         return False
 
@@ -610,10 +754,9 @@ def _keep_valued_columns(
     for row in rows:
         source = dict(row) if isinstance(row, dict) else {}
         _split_user_fields_on_row(source)
-        lower = {str(key).lower(): value for key, value in source.items()}
         item: dict[str, Any] = {}
         for key in keep_keys:
-            item[key] = source.get(key, lower.get(key.lower(), ""))
+            item[key] = _value_from_row(source, key)
             compact = _listing_compact(key)
             if compact == "requestno":
                 item["RequestNo"] = item[key]
@@ -621,6 +764,11 @@ def _keep_valued_columns(
             elif compact == "stage":
                 item["Stage"] = item[key]
                 item["stage"] = item[key]
+            elif compact in {"repositoryname", "repository"}:
+                item["Repository_Name"] = item[key]
+                item["Repository"] = item[key]
+            elif compact in {"filename"}:
+                item["FileName"] = item[key]
         _split_user_fields_on_row(item)
         new_rows.append(item)
     new_spec = spec.model_copy(update={"columns": keep})
@@ -1320,6 +1468,43 @@ def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: Report
         elif _listing_compact(key) == "stage":
             row["Stage"] = row[key]
             row["stage"] = row[key]
+        elif _listing_compact(key) in {"repositoryname", "repository"}:
+            row["Repository_Name"] = row[key]
+            row["Repository"] = row[key]
+        elif _listing_compact(key) in {"filename"}:
+            row["FileName"] = row[key]
+
+
+def _copy_repository_fields(row: dict[str, Any], repo_row: dict[str, Any], spec: ReportSpec) -> None:
+    payload = {
+        "Repository_Name": repo_row.get("Repository_Name"),
+        "Repository": repo_row.get("Repository_Name"),
+        "FileName": repo_row.get("FileName"),
+        "FileVersion": repo_row.get("FileVersion"),
+        "CreatedBy": repo_row.get("CreatedBy"),
+        "CreatedById": repo_row.get("CreatedById"),
+        "CreatedAt": repo_row.get("CreatedAt"),
+        "Status": repo_row.get("Status"),
+        "itemId": repo_row.get("itemId"),
+    }
+    for key, value in payload.items():
+        _assign_listing_value(row, key, value)
+    for col in spec.columns or []:
+        key = col.key
+        compact = _listing_compact(key)
+        if compact in {"repositoryname", "repository"}:
+            value = repo_row.get("Repository_Name")
+        elif compact in {"filename"}:
+            value = repo_row.get("FileName")
+        else:
+            value = _value_from_row(repo_row, key)
+        if not _assign_listing_value(row, key, value):
+            continue
+        if compact in {"repositoryname", "repository"}:
+            row["Repository_Name"] = row[key]
+            row["Repository"] = row[key]
+        elif compact in {"filename"}:
+            row["FileName"] = row[key]
 
 
 async def attach_listing_fields_to_form_rows(
@@ -1373,7 +1558,59 @@ async def attach_listing_fields_to_form_rows(
     return _shape_rows(spec, out)
 
 
-async def _repository_rows(
+async def _sql_item_file_names(
+    db: Any, *, repository_id: str, item_ids: list[str]
+) -> dict[str, str]:
+    names: dict[str, str] = {}
+    compact_ids = [_compact_id(item) for item in item_ids if _compact_id(item)]
+    compact = _compact_id(repository_id)
+    if db is None or not compact_ids:
+        return names
+    table_names: list[str] = []
+    if len(compact) >= 8:
+        table_names.extend((f"items_{compact[:8]}", f"Items_{compact[:8]}"))
+    if compact:
+        table_names.append(f"items_{compact}")
+    located = None
+    if table_names:
+        located = await find_table(db, tuple(table_names), prefer_schemas=("repository", "dbo", "public"))
+    if located is None:
+        return names
+    schema, table = located
+    by_lower, _ = await fetch_columns(db, schema, table)
+    id_col = pick_id_column(by_lower) or _sql_col(by_lower, "id", "itemid", "item_id")
+    file_col = _sql_col(
+        by_lower,
+        "file_name",
+        "filename",
+        "original_file_name",
+        "originalfilename",
+        "ifilename",
+        "document_name",
+        "name",
+        "title",
+    )
+    if not id_col or not file_col:
+        return names
+    sql = (
+        f"SELECT CAST({quote_ident(id_col)} AS text) AS item_id, "
+        f"CAST({quote_ident(file_col)} AS text) AS file_name "
+        f"FROM {qualified(schema, table)} "
+        f"WHERE lower(replace(CAST({quote_ident(id_col)} AS text), '-', '')) = ANY($1::text[])"
+    )
+    try:
+        rows = await db.fetch(sql, compact_ids)
+    except Exception:
+        return names
+    for row in rows or []:
+        item = _compact_id(row_get(row, "item_id"))
+        fname = str(row_get(row, "file_name") or "").strip()
+        if item and fname and not _looks_like_user_id(fname):
+            names[item] = fname
+    return names
+
+
+async def _repository_item_records(
     ezofis: Any,
     spec: ReportSpec,
     tenant_id: str,
@@ -1382,33 +1619,51 @@ async def _repository_rows(
     db: Any = None,
 ) -> list[dict[str, Any]]:
     listed = _match_named(await ezofis.list_repositories(tenant_id), repository_name or "")
+    fallback_name = (repository_name or "").strip()
 
     async def _one(item: dict[str, Any]) -> list[dict[str, Any]]:
-        repo_id = str((item or {}).get("id") or "").strip()
-        repo_name = str((item or {}).get("name") or "").strip()
+        repo_id = str((item or {}).get("id") or (item or {}).get("Id") or "").strip()
+        repo_name = _named_label(item) or fallback_name
         if not repo_id:
             return []
         docs = await ezofis.list_repository_items(tenant_id=tenant_id, repository_id=repo_id)
         out: list[dict[str, Any]] = []
+        missing: list[dict[str, Any]] = []
         for row in docs or []:
-            created_id, created_name = _split_user_ref(_pick(row, "createdBy", "CreatedBy"))
+            created_id, created_name = _split_user_ref(
+                _pick(row, "createdBy", "CreatedBy", "created_by")
+            )
             created_name = str(_pick(row, "createdByName", "CreatedByName") or created_name).strip()
             if _looks_like_user_id(created_name):
                 created_name = ""
-            out.append(
-                {
-                    "itemId": _pick(row, "itemId", "item_id", "id"),
-                    "Repository_Name": repo_name,
-                    "FileName": _pick(row, "fileName", "FileName"),
-                    "FileVersion": _pick(row, "fileVersion", "FileVersion"),
-                    "CreatedBy": created_name,
-                    "CreatedById": created_id,
-                    "CreatedAt": _parse_date(
-                        _pick(row, "createdAt", "CreatedAt", "documentDate", "createdAtUtc")
-                    ),
-                    "Status": _pick(row, "status", "Status"),
-                }
+            record = {
+                "itemId": _pick(row, "itemId", "item_id", "id", "Id"),
+                "Repository_Name": repo_name,
+                "Repository": repo_name,
+                "FileName": _pick_file_name(row),
+                "FileVersion": _pick(row, "fileVersion", "FileVersion", "version"),
+                "CreatedBy": created_name,
+                "CreatedById": created_id,
+                "CreatedAt": _parse_date(
+                    _pick(row, "createdAt", "CreatedAt", "documentDate", "createdAtUtc", "created_at")
+                ),
+                "Status": _pick(row, "status", "Status"),
+            }
+            if not str(record.get("itemId") or "").strip() or isinstance(record.get("itemId"), dict):
+                record["itemId"] = str(_pick(row, "itemId", "item_id") or "").strip()
+            out.append(record)
+            if not str(record.get("FileName") or "").strip():
+                missing.append(record)
+        if missing and db is not None:
+            names = await _sql_item_file_names(
+                db,
+                repository_id=repo_id,
+                item_ids=[str(row.get("itemId") or "") for row in missing],
             )
+            for record in missing:
+                fname = names.get(_compact_id(record.get("itemId")))
+                if fname:
+                    record["FileName"] = fname
         return out
 
     batches = await asyncio.gather(*[_one(item) for item in listed or []], return_exceptions=True)
@@ -1417,8 +1672,70 @@ async def _repository_rows(
         if isinstance(batch, Exception):
             continue
         records.extend(batch)
-    records = await resolve_user_names(ezofis, records, tenant_id=tenant_id, db=db)
+    if fallback_name:
+        for row in records:
+            if not str(row.get("Repository_Name") or "").strip():
+                row["Repository_Name"] = fallback_name
+                row["Repository"] = fallback_name
+    return await resolve_user_names(ezofis, records, tenant_id=tenant_id, db=db)
+
+
+async def _repository_rows(
+    ezofis: Any,
+    spec: ReportSpec,
+    tenant_id: str,
+    *,
+    repository_name: Optional[str] = None,
+    db: Any = None,
+) -> list[dict[str, Any]]:
+    records = await _repository_item_records(
+        ezofis, spec, tenant_id, repository_name=repository_name, db=db
+    )
     return _shape_rows(spec, _aggregate_repository(spec, records))
+
+
+async def attach_repository_fields_to_form_rows(
+    ezofis: Any,
+    spec: ReportSpec,
+    rows: list[dict[str, Any]],
+    *,
+    tenant_id: str,
+    repository_name: Optional[str] = None,
+    workflow_name: Optional[str] = None,
+    db: Any = None,
+) -> list[dict[str, Any]]:
+    """Copy Repository / File Name onto form or items-table rows."""
+    if not rows or not needs_repository_fields(spec):
+        return rows
+    want = (repository_name or "").strip() or (workflow_name or "").strip()
+    try:
+        records = await _repository_item_records(
+            ezofis, spec, tenant_id, repository_name=want or None, db=db
+        )
+    except Exception:
+        records = []
+    by_item: dict[str, dict[str, Any]] = {}
+    for record in records:
+        item_id = _compact_id(record.get("itemId"))
+        if item_id and item_id not in by_item:
+            by_item[item_id] = record
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        _split_user_fields_on_row(item)
+        repo_row = None
+        for cid in _form_row_ids(item):
+            repo_row = by_item.get(cid)
+            if repo_row is not None:
+                break
+        if repo_row is not None:
+            _copy_repository_fields(item, repo_row, spec)
+        elif want and not str(_value_from_row(item, "Repository_Name") or "").strip():
+            item["Repository_Name"] = want
+            item["Repository"] = want
+        out.append(item)
+    out = await resolve_user_names(ezofis, out, tenant_id=tenant_id, db=db)
+    return _shape_rows(spec, out)
 
 
 def _workflow_detail_rows(spec: ReportSpec, records: list[dict[str, Any]]) -> list[dict[str, Any]]:

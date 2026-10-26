@@ -146,7 +146,17 @@ class EzofisClient:
         for row in rows:
             if not isinstance(row, dict):
                 continue
-            name = str(row.get("name") or row.get("Name") or row.get("title") or row.get("Title") or "").strip()
+            name = str(
+                row.get("name")
+                or row.get("Name")
+                or row.get("title")
+                or row.get("Title")
+                or row.get("repositoryName")
+                or row.get("RepositoryName")
+                or row.get("workflowName")
+                or row.get("WorkflowName")
+                or ""
+            ).strip()
             rid = str(
                 row.get("id")
                 or row.get("Id")
