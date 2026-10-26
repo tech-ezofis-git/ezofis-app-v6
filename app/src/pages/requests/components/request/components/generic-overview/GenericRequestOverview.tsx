@@ -126,6 +126,8 @@ interface Props {
   // this view's file-field display and Attachments panel all agree on the
   // same list instead of each fetching it separately).
   attachments: AttachmentItem[]
+  /** True while the attachment list is still being fetched. */
+  attachmentsLoading?: boolean
   formModel: Record<string, any>
   rawWorkflowData: any
   rightView: 'overview' | 'history' | 'attachments' | 'comments'
@@ -222,6 +224,7 @@ const DocumentApprovalSplitLayout = ({
     selectedItem?.requestId,
     selectedItem?.transactionId,
     selectedItem?.processId,
+    selectedItem?.workflowInstanceId,
   ])
   const {
     isLoading: previewLoading,
@@ -355,6 +358,7 @@ const DocumentApprovalSplitLayout = ({
 const DocumentFormSplitLayout = ({
   attachments,
   attachmentsCount,
+  attachmentsLoading = false,
   attachmentsNode,
   commentsCount,
   commentsNode,
@@ -374,6 +378,7 @@ const DocumentFormSplitLayout = ({
 }: {
   attachments: AttachmentItem[]
   attachmentsCount?: number
+  attachmentsLoading?: boolean
   attachmentsNode?: ReactNode
   commentsCount?: number
   commentsNode?: ReactNode
@@ -439,6 +444,7 @@ const DocumentFormSplitLayout = ({
     selectedItem?.requestId,
     selectedItem?.transactionId,
     selectedItem?.processId,
+    selectedItem?.workflowInstanceId,
     selectedItem?.apAgentJobId ? `job-${selectedItem.apAgentJobId}` : undefined,
   ])
   // True once the user opened another file or a new upload was added, so the
@@ -718,7 +724,24 @@ const DocumentFormSplitLayout = ({
   const targetItemId =
     viewerAttachment?.itemId || viewerAttachment?.id || selectedItem?.itemId
 
-  const previewAttachment = viewerAttachment
+  // Until the attachment list arrives, the request's own item is not
+  // necessarily the original file (for an email it can be one of its images).
+  // Starting from it would download that file, throw it away and download the
+  // real one a moment later, so wait for the list first.
+  const [waitExpired, setWaitExpired] = useState(false)
+  useEffect(() => {
+    // Never wait forever if the list cannot be fetched.
+    const timer = window.setTimeout(() => setWaitExpired(true), 8000)
+    return () => window.clearTimeout(timer)
+  }, [])
+  const waitingForAttachments =
+    attachmentsLoading &&
+    attachments.length === 0 &&
+    !waitExpired &&
+    !selectedItem?._localFileUrl
+  const previewAttachment = waitingForAttachments
+    ? null
+    : viewerAttachment
     ? {
       ...viewerAttachment,
       itemId: targetItemId,
@@ -776,12 +799,12 @@ const DocumentFormSplitLayout = ({
         />
         <div className='min-h-0 flex-1 p-4'>
           <div className='relative h-full min-h-0 overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xs'>
-            {previewAttachment ? (
+            {previewAttachment || waitingForAttachments ? (
               <DocumentPreviewViewer
                 fileName={viewerFileName}
                 fileUrl={previewUrl || null}
                 isImage={viewerKind === 'image' || viewerKind === 'tiff'}
-                isLoading={previewLoading}
+                isLoading={previewLoading || waitingForAttachments}
                 isPdf={viewerKind === 'pdf'}
               />
             ) : (
@@ -908,6 +931,7 @@ const DocumentFormSplitLayout = ({
 // the New Request compose layout.
 const GenericRequestOverview = ({
   attachments,
+  attachmentsLoading = false,
   checklistChecked = {},
   checklistItems = [],
   comments = [],
@@ -1500,6 +1524,7 @@ const GenericRequestOverview = ({
           <DocumentFormSplitLayout
             attachments={attachments}
             attachmentsCount={attachments.length}
+            attachmentsLoading={attachmentsLoading}
             commentsCount={comments.length}
             formModel={formModel}
             hiddenFieldIds={hiddenFieldIds}

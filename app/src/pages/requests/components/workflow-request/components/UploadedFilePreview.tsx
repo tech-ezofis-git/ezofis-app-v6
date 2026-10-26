@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import { getSharedObjectUrl } from '@/pages/requests/utils/sharedObjectUrl'
 import {
   getFileIcon,
   getFileIconClasses,
@@ -55,9 +56,7 @@ const UploadedFilePreview = ({
       setPreviewUrl(null)
       return
     }
-    const url = URL.createObjectURL(activeFile.rawFile)
-    setPreviewUrl(url)
-    return () => URL.revokeObjectURL(url)
+    setPreviewUrl(getSharedObjectUrl(activeFile.rawFile))
   }, [activeFile?.rawFile])
 
   return (

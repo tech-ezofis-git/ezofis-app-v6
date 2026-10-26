@@ -50,6 +50,7 @@ import {
   syntheticFieldId,
   withoutRequestNumberMandatory,
 } from './utils/fieldRendering'
+import { getSharedObjectUrl } from '@/pages/requests/utils/sharedObjectUrl'
 import WorkflowRequestSidebar from './WorkflowRequestSidebar'
 
 interface Props {
@@ -285,7 +286,9 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     setIsStartingAgentWorkflow(true)
 
     // Instantly open the request page with a stub to match AP behavior
-    const localUrl = URL.createObjectURL(file)
+    // Same URL the New Request screen's preview uses, so the request page
+    // that opens next shows the already-parsed email.
+    const localUrl = getSharedObjectUrl(file)
     const startTime = new Date().toISOString()
     const resolvedProcessId = `job-temp-${Date.now()}`
 
