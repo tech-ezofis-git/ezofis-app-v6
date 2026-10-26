@@ -105,7 +105,8 @@ def extract_form_fields(form_json: Any) -> list[dict[str, str]]:
     """Return header-level form controls as {key, label, type}.
 
     Nested TABLE/DYNAMIC_TABLE children are skipped so line-item grids do not
-    flood the report column list. Calculation AST nodes are ignored.
+    flood the report column list; the parent grid is kept as one json column.
+    Calculation AST nodes are ignored.
     """
     root = _parse_json(form_json)
     fields: list[dict[str, str]] = []
@@ -150,6 +151,13 @@ def extract_form_fields(form_json: Any) -> list[dict[str, str]]:
             return
         typ = str(node.get("type") or node.get("Type") or "").upper()
         if typ in _CONTAINER_TYPES:
+            label = _label_of(node)
+            if label and label.lower() not in _SKIP_LABELS:
+                key = _nested_column_name(node) or column_key_from_label(label)
+                low = key.lower()
+                if low not in seen:
+                    seen.add(low)
+                    fields.append({"key": key, "label": label, "type": "json"})
             return
         if typ in _FIELD_TYPES:
             _add(node)
@@ -171,8 +179,6 @@ def extract_repository_fields(fields: Any) -> list[dict[str, str]]:
         if not isinstance(field, dict):
             continue
         typ = str(field.get("type") or field.get("dataType") or "").upper()
-        if typ in _CONTAINER_TYPES:
-            continue
         label = str(field.get("name") or field.get("label") or "").strip()
         if not label or label.lower() in _SKIP_LABELS:
             continue
@@ -183,7 +189,9 @@ def extract_repository_fields(fields: Any) -> list[dict[str, str]]:
         if low in seen:
             continue
         seen.add(low)
-        if typ in {"NUMBER", "INTEGER", "DECIMAL", "CURRENCY", "CURRENCY_AMOUNT", "PERCENTAGE"}:
+        if typ in _CONTAINER_TYPES:
+            data_type = "json"
+        elif typ in {"NUMBER", "INTEGER", "DECIMAL", "CURRENCY", "CURRENCY_AMOUNT", "PERCENTAGE"}:
             data_type = "numeric"
         elif typ in {"DATE", "DATETIME", "TIME"}:
             data_type = "date"

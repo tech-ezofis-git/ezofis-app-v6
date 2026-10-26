@@ -923,6 +923,7 @@ class ReportAgentService:
             return None
         columns, rows, total, warnings = result
         from app.report_agent.catalog_execute import finish_user_columns
+        from app.report_agent.json_cells import finish_structured_cells
 
         try:
             rows = await finish_user_columns(
@@ -930,6 +931,7 @@ class ReportAgentService:
             )
         except Exception:
             pass
+        rows = finish_structured_cells(rows)
         duration_ms = round((time.perf_counter() - t0) * 1000, 2)
         return RunReportResponse(
             title=spec.title or "Report",
@@ -1387,6 +1389,9 @@ class ReportAgentService:
         except Exception:
             pass
         rows = fill_filename_aliases(rows)
+        from app.report_agent.json_cells import finish_structured_cells
+
+        rows = finish_structured_cells(rows)
 
         if not (request.sort and request.sort.field):
             rows = _newest_first(rows)

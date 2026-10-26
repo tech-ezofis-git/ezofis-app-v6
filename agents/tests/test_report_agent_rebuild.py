@@ -1459,7 +1459,8 @@ def test_extract_form_fields_skips_table_children_and_calc_ast():
     )
     keys = [f["key"] for f in fields]
     labels = [f["label"] for f in fields]
-    assert keys == ["Company_Name", "Order_Number", "Date", "Total"]
+    assert keys == ["Company_Name", "Order_Number", "Date", "Total", "Line_Item"]
+    assert fields[-1]["type"] == "json"
     assert "Qty" not in labels
     assert "Invoice_No" not in keys
 
@@ -1544,7 +1545,8 @@ def test_extract_repository_fields_uses_sql_column_and_skips_tables():
     assert "FileName" in keys
     assert "Employee_Name" in keys
     assert "Date_Issued" in keys
-    assert "Line_Items" not in keys
+    assert "Line_Items" in keys
+    assert next(f["type"] for f in fields if f["key"] == "Line_Items") == "json"
     assert "Invoice_No" not in keys
 
 

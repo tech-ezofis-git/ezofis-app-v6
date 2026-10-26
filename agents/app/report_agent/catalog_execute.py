@@ -287,16 +287,16 @@ def _pick(row: dict[str, Any], *names: str) -> Any:
     return ""
 
 
-def _cell(value: Any) -> Any:
+def _cell(value: Any, key: str = "") -> Any:
     if value in (None, ""):
         return ""
     if isinstance(value, datetime):
         return value.isoformat()
     if isinstance(value, date):
         return value.isoformat()
-    if isinstance(value, (int, float, bool, str)):
-        return value
-    return str(value)
+    from app.report_agent.json_cells import structured_cell
+
+    return structured_cell(value, key=key)
 
 
 def _has_row_ids(spec: ReportSpec) -> bool:
@@ -768,7 +768,7 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
                 else:
                     item["CreatedById"] = uid
             else:
-                item[key] = _cell(value)
+                item[key] = _cell(value, key)
                 if compact == "requestno":
                     item["RequestNo"] = item[key]
                     item["requestNo"] = item[key]
@@ -1472,20 +1472,20 @@ def _assign_listing_value(row: dict[str, Any], key: str, value: Any) -> bool:
         if _looks_like_user_id(value):
             id_key = _id_key_for_name(compact)
             if id_key and row.get(id_key) in (None, ""):
-                row[id_key] = _cell(value)
+                row[id_key] = _cell(value, id_key)
             return False
         if existing not in (None, "") and not _looks_like_user_id(existing):
             return False
-        row[key] = _cell(value)
+        row[key] = _cell(value, key)
         return True
     if compact in _USER_ID_COMPACT:
         if existing not in (None, "") and _looks_like_user_id(existing):
             return False
-        row[key] = _cell(value)
+        row[key] = _cell(value, key)
         return True
     if existing not in (None, ""):
         return False
-    row[key] = _cell(value)
+    row[key] = _cell(value, key)
     return True
 
 
