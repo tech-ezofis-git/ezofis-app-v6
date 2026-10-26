@@ -5,7 +5,6 @@ import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
 import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
-import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
@@ -123,7 +122,6 @@ export default function PortalShell({
                 onClick={onSignOut}
               />
               <Button
-                className='max-sm:hidden'
                 className='max-sm:hidden'
                 color='gray'
                 icon='lucide:log-out'

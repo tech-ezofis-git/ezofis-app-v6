@@ -3022,7 +3022,6 @@ const Request = ({
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
           budget={headerBudget}
-          budget={headerBudget}
           currency={currency}
           enableAIInsights={hasAgentData}
           hideActions={hideActions}
