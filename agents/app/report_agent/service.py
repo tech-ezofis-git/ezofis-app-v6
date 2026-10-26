@@ -919,6 +919,14 @@ class ReportAgentService:
         if result is None:
             return None
         columns, rows, total, warnings = result
+        from app.report_agent.catalog_execute import finish_user_columns
+
+        try:
+            rows = await finish_user_columns(
+                self._ezofis, rows, tenant_id=request.tenant_id or "", db=db
+            )
+        except Exception:
+            pass
         duration_ms = round((time.perf_counter() - t0) * 1000, 2)
         return RunReportResponse(
             title=spec.title or "Report",
@@ -1326,9 +1334,9 @@ class ReportAgentService:
         if spec is not None:
             from app.report_agent.catalog_execute import (
                 attach_listing_fields_to_form_rows,
+                finish_user_columns,
                 has_form_columns,
                 needs_listing_fields,
-                resolve_user_names,
                 _keep_valued_columns,
             )
 
@@ -1347,7 +1355,7 @@ class ReportAgentService:
                 spec, rows, listing_cols = _keep_valued_columns(spec, rows)
                 columns_out = listing_cols
             try:
-                rows = await resolve_user_names(
+                rows = await finish_user_columns(
                     self._ezofis, rows, tenant_id=request.tenant_id or "", db=db
                 )
             except Exception:

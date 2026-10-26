@@ -97,6 +97,27 @@ async def test_unit_only_description_pairs_on_the_product_name():
     assert result.data["missing_qty_by_item"] == []
 
 
+async def test_kit_components_on_separate_invoice_lines_are_not_a_backorder():
+    po = {
+        "lines": [
+            {
+                "description": "Laptop Hardware Kit (Mouse, Charger, Keyboard, Docking Station)",
+                "qty": 2,
+                "amount": 600,
+            }
+        ]
+    }
+    invoice_lines = [
+        {"description": "LAP-MOU-01 Wireless Optical Mouse", "qty": 2, "amount": 80},
+        {"description": "LAP-CHG-65 USB-C Laptop Charger 65W", "qty": 2, "amount": 130},
+        {"description": "LAP-KBD-01 USB Keyboard", "qty": 2, "amount": 90},
+        {"description": "LAP-DCK-01 Laptop Docking Station", "qty": 2, "amount": 300},
+    ]
+    result = await backorder_run(_ctx(invoice_lines=invoice_lines, po=po))
+    assert result.data["detected"] is False
+    assert result.data["missing_qty_by_item"] == []
+
+
 async def test_po_line_with_no_matching_invoice_line_is_flagged_distinctly():
     invoice_lines = [{"description": "Widget A", "qty": 10}]  # Widget B never invoiced at all
     result = await backorder_run(_ctx(invoice_lines=invoice_lines))

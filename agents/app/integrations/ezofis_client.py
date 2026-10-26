@@ -404,10 +404,22 @@ class EzofisClient:
                         continue
                     data = response.json() if response.content else {}
                     if isinstance(data, dict):
-                        nested = data.get("data") or data.get("value") or data.get("item")
-                        if "id" not in data and "displayName" not in data and isinstance(nested, dict):
+                        nested = data.get("data") or data.get("value") or data.get("item") or data.get("Item")
+                        if isinstance(nested, list) and nested and isinstance(nested[0], dict):
+                            nested = nested[0]
+                        named = (
+                            "id",
+                            "Id",
+                            "displayName",
+                            "DisplayName",
+                            "name",
+                            "Name",
+                            "userName",
+                            "UserName",
+                        )
+                        if not any(data.get(k) for k in named) and isinstance(nested, dict):
                             data = nested
-                        if data.get("id") or data.get("displayName") or data.get("name"):
+                        if any(data.get(k) for k in named):
                             return data
             return {}
         except Exception as exc:

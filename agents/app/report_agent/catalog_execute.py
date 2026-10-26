@@ -1062,6 +1062,32 @@ async def _sql_user_names(db: Any, user_ids: list[str]) -> dict[str, str]:
     return names
 
 
+async def finish_user_columns(
+    ezofis: Any,
+    rows: list[dict[str, Any]],
+    *,
+    tenant_id: str,
+    db: Any = None,
+) -> list[dict[str, Any]]:
+    """Last-mile: never return a user GUID in *By name columns."""
+    prepared: list[dict[str, Any]] = []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            prepared.append(row)
+            continue
+        item = dict(row)
+        _split_user_fields_on_row(item)
+        prepared.append(item)
+    try:
+        prepared = await resolve_user_names(ezofis, prepared, tenant_id=tenant_id or "", db=db)
+    except Exception:
+        pass
+    for row in prepared:
+        if isinstance(row, dict):
+            _split_user_fields_on_row(row)
+    return prepared
+
+
 async def resolve_user_names(
     ezofis: Any,
     rows: list[dict[str, Any]],

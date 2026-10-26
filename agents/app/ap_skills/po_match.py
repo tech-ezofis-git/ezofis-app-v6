@@ -13,6 +13,7 @@ from app.ap_skills.types import (
     field_text,
     invoice_from,
     line_description,
+    line_name_candidates,
     name_similarity,
 )
 
@@ -194,7 +195,7 @@ async def run(ctx: ApContext) -> ApSkillResult:
     partial = int(ctx.thresholds.get("partial") or ctx.settings.ap_partial_threshold)
     tolerance = float(ctx.thresholds.get("amount_tolerance") or ctx.settings.ap_amount_tolerance)
 
-    score = 40.0
+    score = 30.0
     reasons: list[str] = [f"PO {po_number} found."]
     inv_vendor = field_text(invoice, "vendor", "supplier")
     po_vendor = field_text(po, "vendor", "supplier", "Vendor Name", "Vendor")
@@ -220,6 +221,15 @@ async def run(ctx: ApContext) -> ApSkillResult:
     elif inv_total is None or po_total is None:
         reasons.append("Missing total on invoice or PO.")
 
+    from app.ap_skills.agent_validation_response import _field_matching, _line_matching
+
+    po_dict = po if isinstance(po, dict) else {}
+    line_matching = _line_matching(invoice, po_dict, text_score=name_score)
+    if line_matching:
+        average = sum(float(row.get("Line Score") or 0) for row in line_matching) / len(line_matching)
+        score += round(10.0 * average / 100.0, 2)
+        reasons.append(f"Line items score {average:.0f}%.")
+
     score = min(100.0, round(score, 2))
     decision = decision_from_score(score, approved=approved, partial=partial)
     # Full MATCHED requires real master evidence: PO amount + strong vendor match.
@@ -242,11 +252,8 @@ async def run(ctx: ApContext) -> ApSkillResult:
     po_row = build_po_row(invoice, po if isinstance(po, dict) else {})
     if po_row:
         data["po_row"] = po_row
-    from app.ap_skills.agent_validation_response import _field_matching, _line_matching
-
-    po_dict = po if isinstance(po, dict) else {}
     data["field_matching"] = _field_matching(invoice, po_dict, text_score=name_score)
-    data["line_matching"] = _line_matching(invoice, po_dict, text_score=name_score)
+    data["line_matching"] = line_matching
     _stamp_invoice_line_scores(invoice, po_dict, matched=data["line_matching"])
     return ApSkillResult(
         skill_id=SKILL_ID,
@@ -260,7 +267,7 @@ async def _name_score_fn(ctx: ApContext, invoice: dict[str, Any], po: dict[str, 
 
     texts = [inv_vendor, po_vendor]
     for line in _invoice_lines(invoice) + _po_lines(po):
-        texts.append(field_text(line, "description", "Description", "item", "name"))
+        texts.extend(line_name_candidates(line))
     embedder = embedder_from(ctx)
     if embedder is not None:
         await embedder.warm(texts)

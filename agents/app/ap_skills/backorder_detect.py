@@ -6,8 +6,10 @@ from app.ap_skills.types import (
     ApContext,
     ApSkillError,
     ApSkillResult,
+    component_in_description,
     field_number,
     invoice_from,
+    kit_components,
     line_description,
     match_lines_by_description,
 )
@@ -22,6 +24,28 @@ def _qty(line: dict) -> float:
 
 def _description(line: dict) -> str:
     return line_description(line)
+
+
+def _kit_invoice_indexes(po_line: dict, inv_lines: list[dict], used: set[int]) -> list[int] | None:
+    """Invoice lines that are the pieces of one kit PO line, or None if incomplete."""
+    components = kit_components(_description(po_line))
+    if len(components) < 2:
+        return None
+    chosen: list[int] = []
+    taken = set(used)
+    for component in components:
+        found = None
+        for index, line in enumerate(inv_lines):
+            if index in taken:
+                continue
+            if component_in_description(component, _description(line)):
+                found = index
+                break
+        if found is None:
+            return None
+        taken.add(found)
+        chosen.append(found)
+    return chosen
 
 
 async def run(ctx: ApContext) -> ApSkillResult:
@@ -60,10 +84,15 @@ async def run(ctx: ApContext) -> ApSkillResult:
         score_fn=embedder.score if embedder is not None else None,
     )
 
+    used_invoice_indexes = {index for index in matched_indexes if index is not None}
     missing = []
     for position, (po_line, inv_index) in enumerate(zip(po_lines, matched_indexes)):
         po_qty = _qty(po_line)
         if inv_index is None:
+            kit_indexes = _kit_invoice_indexes(po_line, inv_lines, used_invoice_indexes)
+            if kit_indexes is not None and all(_qty(inv_lines[index]) + 1e-9 >= po_qty for index in kit_indexes):
+                used_invoice_indexes.update(kit_indexes)
+                continue
             # Code-review finding #17: a PO line with no matching invoice
             # line at all is a distinct case from a line that's present
             # but short — flagged `missing_line` rather than silently

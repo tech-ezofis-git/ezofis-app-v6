@@ -1,5 +1,5 @@
 """Tests for apagentv6-shaped AIAGENTResponse builder."""
-from app.ap_skills.agent_validation_response import build_aiagent_response
+from app.ap_skills.agent_validation_response import _line_matching, build_aiagent_response
 
 
 def test_aiagent_response_matches_apagent_shape():
@@ -227,3 +227,51 @@ def test_aiagent_response_vendor_mismatch_debug():
     assert out["source_type"] == "HANA Cloud"
     assert out["supplier_validation"]["mismatch"]
     assert out["debug"]["Side-by-side Field Matching"]
+
+
+def test_part_code_does_not_lower_a_matching_product_name():
+    invoice = {
+        "line_items": [
+            {"description": "NET-RTR-220", "name": "Network Edge Router", "qty": 2, "price": 250, "amount": 500},
+            {
+                "description": "BR-1001 Stainless Steel End Brush",
+                "qty": 8,
+                "price": 26.24,
+                "amount": 209.92,
+            },
+        ]
+    }
+    po = {
+        "lines": [
+            {"description": "Network Edge Router", "qty": 2, "price": 250, "amount": 500},
+            {"description": "Stainless Steel End Brush", "qty": 8, "price": 26.24, "amount": 209.92},
+        ]
+    }
+    lines = _line_matching(invoice, po)
+    assert lines[0]["Description"]["Score"] == 100
+    assert lines[0]["Line Score"] == 100
+    assert lines[1]["Description"]["Score"] == 100
+    assert lines[1]["Line Score"] == 100
+
+
+def test_kit_components_score_as_the_kit_line():
+    invoice = {
+        "line_items": [
+            {"description": "Wireless Optical Mouse", "qty": 2, "price": 40, "amount": 80},
+            {"description": "USB-C Laptop Charger 65W", "qty": 2, "price": 65, "amount": 130},
+            {"description": "USB Keyboard", "qty": 2, "price": 45, "amount": 90},
+            {"description": "Laptop Docking Station", "qty": 2, "price": 150, "amount": 300},
+        ]
+    }
+    po = {
+        "lines": [
+            {
+                "description": "Laptop Hardware Kit (Mouse, Charger, Keyboard, Docking Station)",
+                "qty": 2,
+                "price": 300,
+                "amount": 600,
+            }
+        ]
+    }
+    lines = _line_matching(invoice, po)
+    assert [line["Line Score"] for line in lines] == [100, 100, 100, 100]
