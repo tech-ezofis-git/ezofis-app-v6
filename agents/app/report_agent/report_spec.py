@@ -82,8 +82,8 @@ _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("instanceid", "instance_id", "workflowinstanceid"), "instanceId", "Instance Id"),
 )
 _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
-    (("repository_name", "repositoryname"), "Repository_Name", "Repository"),
-    (("filename", "file_name"), "FileName", "File Name"),
+    (("repository_name", "repositoryname", "repository"), "Repository_Name", "Repository"),
+    (("filename", "file_name", "originalfilename", "original_file_name"), "FileName", "File Name"),
     (("status",), "Status", "Status"),
     (("createdby", "created_by"), "CreatedBy", "Created By"),
     (("createdbyid", "created_by_id"), "CreatedById", "Created By Id"),
@@ -300,7 +300,6 @@ def attach_column_palettes(
             type_by_key[name.lower()] = (col.type or "").lower()
             if name.lower() not in {c.lower() for c in live}:
                 live.append(name)
-    lower_map = {c.lower(): c for c in live}
     selected_map = {c.key.lower(): c for c in spec.columns}
 
     report_type = (spec.report_type or "").lower()
@@ -311,11 +310,13 @@ def attach_column_palettes(
     defaults: list[ReportSpecColumn] = []
     default_keys: set[str] = set()
     for aliases, canonical, label in default_defs:
-        live_key = _lookup_alias(lower_map, aliases) or (
-            lower_map.get(canonical.lower()) if canonical.lower() in lower_map else None
-        )
-        key = live_key or canonical
+        key = canonical
         existing = selected_map.get(key.lower())
+        if existing is None:
+            for alias in aliases:
+                existing = selected_map.get(alias.lower())
+                if existing is not None:
+                    break
         listing_default = (
             not is_repo
             and not has_metric

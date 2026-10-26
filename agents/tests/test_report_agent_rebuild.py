@@ -2516,6 +2516,115 @@ async def test_run_report_returns_repository_item_id_values():
     assert resp.rows[0].get("itemId") == "65BA76B0-11B8-4CA2-BE18-40BA6FDC871C"
 
 
+@pytest.mark.asyncio
+async def test_run_report_fills_repository_name_and_filename_from_item_aliases():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.report_spec import report_spec_to_prompt
+
+    class _RepoEzofis:
+        async def list_repositories(self, tenant_id):
+            return [{"id": "repo-exp", "repositoryName": "Expense Reimbursement"}]
+
+        async def list_repository_items(self, *, tenant_id, repository_id, limit=200):
+            return [
+                {
+                    "id": {"itemId": "aa111111-1111-4111-8111-111111111111", "repositoryId": "repo-exp"},
+                    "originalFileName": "taxi-receipt.pdf",
+                    "currentVersion": {"fileName": "taxi-receipt.pdf"},
+                    "status": "Completed",
+                    "createdAt": "2026-10-22T09:42:00Z",
+                    "createdBy": "e1eb37d9-0a3b-400d-8000-000000000001",
+                }
+            ]
+
+        async def get_user(self, *, tenant_id, user_id):
+            return {"id": user_id, "displayName": "Arasu"}
+
+        async def list_users(self, tenant_id, limit=200):
+            return [{"id": "e1eb37d9-0a3b-400d-8000-000000000001", "displayName": "Arasu"}]
+
+    spec = ReportSpec(
+        title="Expense Reimbursement Folder Summary",
+        objective="Folder files",
+        report_type="specific_repository",
+        columns=[
+            ReportSpecColumn(key="Repository", label="Repository", kind="default", selected=True),
+            ReportSpecColumn(key="file_name", label="File Name", kind="default", selected=True),
+            ReportSpecColumn(key="Status", label="Status", kind="default", selected=True),
+            ReportSpecColumn(key="CreatedBy", label="Created By", kind="default", selected=True),
+            ReportSpecColumn(key="CreatedAt", label="Created At", kind="default", selected=True),
+        ],
+        source_schema="repository",
+        source_table="items_exp",
+    )
+    service = ReportAgentService(
+        llm_adapter=_FakeLLMSimple("should-not-be-called"),
+        db_pool=_EzofisTenantDb(),
+        ezofis_client=_RepoEzofis(),
+    )
+    resp = await service.run_report(
+        RunReportRequest(
+            report_prompt=report_spec_to_prompt(spec),
+            report_spec=spec,
+            report_type="specific_repository",
+            repository_name="Expense Reimbursement",
+            tenant_id="tenant-1",
+        )
+    )
+    assert resp.rows
+    row = resp.rows[0]
+    assert row.get("Repository") == "Expense Reimbursement"
+    assert row.get("Repository_Name") == "Expense Reimbursement"
+    assert row.get("file_name") == "taxi-receipt.pdf"
+    assert row.get("FileName") == "taxi-receipt.pdf"
+
+
+@pytest.mark.asyncio
+async def test_attach_repository_fields_fills_empty_sql_filename():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.catalog_execute import attach_repository_fields_to_form_rows
+
+    class _RepoEzofis:
+        async def list_repositories(self, tenant_id):
+            return [{"id": "repo-1", "name": "Expense Reimbursement"}]
+
+        async def list_repository_items(self, *, tenant_id, repository_id, limit=200):
+            return [
+                {
+                    "itemId": "65BA76B0-11B8-4CA2-BE18-40BA6FDC871C",
+                    "fileName": "hotel-bill.pdf",
+                    "status": "Active",
+                    "createdBy": "049b5a38-fb6c-4030-8000-000000000002",
+                }
+            ]
+
+        async def get_user(self, *, tenant_id, user_id):
+            return {"Id": user_id, "DisplayName": "Priya"}
+
+        async def list_users(self, tenant_id, limit=200):
+            return []
+
+    spec = ReportSpec(
+        title="Folder",
+        columns=[
+            ReportSpecColumn(key="Repository_Name", label="Repository", kind="default", selected=True),
+            ReportSpecColumn(key="FileName", label="File Name", kind="default", selected=True),
+            ReportSpecColumn(key="CreatedBy", label="Created By", kind="default", selected=True),
+            ReportSpecColumn(key="status", label="Status", kind="userdefined", selected=True),
+        ],
+    )
+    rows = await attach_repository_fields_to_form_rows(
+        _RepoEzofis(),
+        spec,
+        [{"item_id": "65BA76B0-11B8-4CA2-BE18-40BA6FDC871C", "status": "Completed", "FileName": ""}],
+        tenant_id="tenant-1",
+        repository_name="Expense Reimbursement",
+    )
+    assert rows
+    assert rows[0].get("Repository_Name") == "Expense Reimbursement"
+    assert rows[0].get("FileName") == "hotel-bill.pdf"
+
+
 def test_bind_highlights_uses_row_values_not_canned_status():
     from app.models.report_agent import ReportColumnOut, ReportSpecHighlight, ReportSpecHighlightRule
     from app.report_agent.highlight import bind_highlights_to_rows

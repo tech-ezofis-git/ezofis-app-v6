@@ -1334,9 +1334,11 @@ class ReportAgentService:
         if spec is not None:
             from app.report_agent.catalog_execute import (
                 attach_listing_fields_to_form_rows,
+                attach_repository_fields_to_form_rows,
                 finish_user_columns,
                 has_form_columns,
                 needs_listing_fields,
+                needs_repository_fields,
                 _keep_valued_columns,
             )
 
@@ -1354,6 +1356,19 @@ class ReportAgentService:
                     warnings.append(f"Could not attach workflow Request No / Stage: {exc}")
                 spec, rows, listing_cols = _keep_valued_columns(spec, rows)
                 columns_out = listing_cols
+            if needs_repository_fields(spec):
+                try:
+                    rows = await attach_repository_fields_to_form_rows(
+                        self._ezofis,
+                        spec,
+                        rows,
+                        tenant_id=request.tenant_id or "",
+                        repository_name=request.repository_name,
+                        workflow_name=request.workflow_name,
+                        db=db,
+                    )
+                except Exception as exc:
+                    warnings.append(f"Could not attach repository name / file name: {exc}")
             try:
                 rows = await finish_user_columns(
                     self._ezofis, rows, tenant_id=request.tenant_id or "", db=db
