@@ -84,7 +84,7 @@ _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
 _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("repository_name", "repositoryname", "repository"), "Repository_Name", "Repository"),
     (
-        ("ifilename", "filename", "file_name", "originalfilename", "original_file_name"),
+        ("file_name", "filename", "originalfilename", "original_file_name", "ifilename"),
         "FileName",
         "File Name",
     ),
@@ -110,6 +110,7 @@ _LISTING_DEFAULTS = frozenset(
 _REPO_LISTING_DEFAULTS = frozenset(
     {
         "filename",
+        "file_name",
         "ifilename",
         "status",
         "createdby",

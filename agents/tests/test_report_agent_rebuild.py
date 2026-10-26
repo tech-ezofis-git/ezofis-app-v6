@@ -405,7 +405,7 @@ def test_specific_repository_prompt_requires_filename_not_repository_name():
             ReportSpecColumn(key="FileName", label="File Name"),
             ReportSpecColumn(key="HST", label="HST"),
         ],
-        available_columns=["IFileName", "Status", "created_by", "created_at"],
+        available_columns=["file_name", "Status", "created_by", "created_at"],
         source_schema="repository",
         source_table="items_7ea175eb",
     )
@@ -414,7 +414,7 @@ def test_specific_repository_prompt_requires_filename_not_repository_name():
             schema_name="repository",
             table="items_7ea175eb",
             columns=[
-                SchemaColumnSlice(name="IFileName", type="text"),
+                SchemaColumnSlice(name="file_name", type="text"),
                 SchemaColumnSlice(name="Status", type="text"),
                 SchemaColumnSlice(name="created_by", type="uuid"),
                 SchemaColumnSlice(name="created_at", type="date"),
@@ -434,13 +434,13 @@ def test_specific_repository_prompt_requires_filename_not_repository_name():
     assert not any(c.key == "Repository_Name" and c.selected for c in spec.default_columns)
 
 
-def test_lock_maps_filename_to_ifilename_and_skips_generate_warnings():
+def test_lock_maps_filename_to_file_name_and_skips_generate_warnings():
     schema = DatabaseSchema()
     schema.tables = [("repository", "items_7ea175eb")]
     schema.columns_by_table = {
         ("repository", "items_7ea175eb"): [
             ColumnMeta("repository", "items_7ea175eb", "id", "uuid"),
-            ColumnMeta("repository", "items_7ea175eb", "IFileName", "text"),
+            ColumnMeta("repository", "items_7ea175eb", "file_name", "text"),
             ColumnMeta("repository", "items_7ea175eb", "created_by", "uuid"),
             ColumnMeta("repository", "items_7ea175eb", "created_at", "timestamp"),
             ColumnMeta("repository", "items_7ea175eb", "Status", "text"),
@@ -474,7 +474,7 @@ def test_lock_maps_filename_to_ifilename_and_skips_generate_warnings():
     locked = lock_report_definition(raw, schema, report_type="specific_repository")
     sources = {c["key"]: c["source"] for c in locked["columns"]}
     assert "Repository_Name" not in sources
-    assert sources["FileName"].endswith("IFileName")
+    assert sources["FileName"].endswith("file_name")
     assert sources["CreatedBy"].endswith("created_by")
     assert sources["CreatedById"].endswith("created_by")
     assert sources["CreatedAt"].endswith("created_at")

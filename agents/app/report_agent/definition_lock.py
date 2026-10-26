@@ -83,11 +83,11 @@ _EXPR_HINT = re.compile(
 )
 _COLUMN_ALIAS_GROUPS: tuple[tuple[str, ...], ...] = (
     (
-        "ifilename",
-        "filename",
         "file_name",
+        "filename",
         "originalfilename",
         "original_file_name",
+        "ifilename",
         "ifile_name",
         "document_name",
     ),

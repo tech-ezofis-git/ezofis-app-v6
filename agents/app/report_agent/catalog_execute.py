@@ -73,7 +73,7 @@ def fill_filename_aliases(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             row["FileName"] = current
             row["File Name"] = current
             continue
-        for key in ("IFileName", "ifilename", "ifileName", "file_name", "fileName"):
+        for key in ("file_name", "fileName", "FileName", "IFileName", "ifilename", "ifileName"):
             val = str(row.get(key) or "").strip()
             if val:
                 row["FileName"] = val
@@ -571,15 +571,15 @@ def _pick_file_name(row: dict[str, Any], *, depth: int = 0) -> str:
         return ""
     preferred = _pick(
         row,
-        "IFileName",
-        "ifilename",
-        "ifileName",
+        "file_name",
         "fileName",
         "FileName",
-        "file_name",
         "originalFileName",
         "OriginalFileName",
         "original_file_name",
+        "IFileName",
+        "ifilename",
+        "ifileName",
         "documentName",
         "DocumentName",
         "document_name",
@@ -1645,11 +1645,11 @@ async def _sql_repository_records(
         return []
     file_col = _sql_col(
         by_lower,
-        "ifilename",
-        "filename",
         "file_name",
+        "filename",
         "original_file_name",
         "originalfilename",
+        "ifilename",
         "document_name",
         "name",
         "title",
@@ -1684,6 +1684,7 @@ async def _sql_repository_records(
         created_id, created_name = _split_user_ref(row_get(row, "created_by"))
         fname = str(
             row_get(row, "file_name")
+            or row_get(row, "filename")
             or row_get(row, "ifilename")
             or row_get(row, "IFileName")
             or ""
@@ -1728,11 +1729,11 @@ async def _sql_item_file_names(
     id_col = pick_id_column(by_lower) or _sql_col(by_lower, "id", "itemid", "item_id")
     file_col = _sql_col(
         by_lower,
-        "ifilename",
-        "filename",
         "file_name",
+        "filename",
         "original_file_name",
         "originalfilename",
+        "ifilename",
         "document_name",
         "name",
         "title",
