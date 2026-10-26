@@ -480,3 +480,19 @@ export const flattenInboxGroups = (groups: any[] = []) => {
   groups.forEach(walk)
   return out
 }
+
+/** True when the row's due date (extractDueDate) is before today. */
+export const isInboxRowOverdue = (row: any) => {
+  const dueDateStr = extractDueDate(row)
+  if (!dueDateStr || dueDateStr === '-') return false
+  try {
+    const dueDate = new Date(dueDateStr)
+    if (Number.isNaN(dueDate.getTime())) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    dueDate.setHours(0, 0, 0, 0)
+    return dueDate < today
+  } catch {
+    return false
+  }
+}

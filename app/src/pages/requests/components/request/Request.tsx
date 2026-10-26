@@ -2025,6 +2025,14 @@ const Request = ({
     [isGenericWorkflow, overviewWorkflowData],
   )
   const headerBudget = useHeaderBudget(genericFormPanels, genericFormModel)
+  // No Budget once the request sits on an END block (workflow finished).
+  const isAtEndBlock = useMemo(() => {
+    if (!currentActivityId) return false
+    const block = (workflowGraph.blocks || []).find(
+      (b: any) => String(b?.id) === String(currentActivityId),
+    )
+    return String(block?.type || '').toUpperCase() === 'END'
+  }, [currentActivityId, workflowGraph])
 
   const resolvedRequestNo = useMemo(() => {
     let raw = ''
@@ -3021,7 +3029,7 @@ const Request = ({
           agentData={currentAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
-          budget={headerBudget}
+          budget={isAtEndBlock ? null : headerBudget}
           currency={currency}
           enableAIInsights={hasAgentData}
           hideActions={hideActions}

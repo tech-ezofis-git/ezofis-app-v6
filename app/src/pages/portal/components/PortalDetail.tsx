@@ -14,6 +14,7 @@ import { useHistory } from '@/pages/requests/hooks/useHistory'
 import { useHeaderBudget } from '@/pages/requests/hooks/useMasterFormValue'
 import {
   computeWorkflowStages,
+  extractWorkflowGraph,
   getStageTrail,
 } from '@/pages/requests/utils/workflow.utils'
 import type { PortalSubmission } from '../helpers/portalSubmissions'
@@ -337,12 +338,20 @@ export default function PortalDetail({
     [source?.workflow, workflowStages],
   )
   const headerBudget = useHeaderBudget(panels, formModel)
+  // No Budget once the request sits on an END block (workflow finished).
+  const isAtEndBlock = useMemo(() => {
+    if (!activityId) return false
+    const block = extractWorkflowGraph(source?.workflow).blocks.find(
+      (b: { id?: unknown }) => String(b?.id) === String(activityId),
+    )
+    return String(block?.type || '').toUpperCase() === 'END'
+  }, [activityId, source?.workflow])
   useEffect(() => {
     onHeaderInfoChange?.({
-      budget: headerBudget,
+      budget: isAtEndBlock ? null : headerBudget,
       stageTrail: headerStageTrail,
     })
-  }, [headerBudget, headerStageTrail, onHeaderInfoChange])
+  }, [headerBudget, headerStageTrail, isAtEndBlock, onHeaderInfoChange])
   useEffect(
     () => () => {
       onHeaderInfoChange?.(null)

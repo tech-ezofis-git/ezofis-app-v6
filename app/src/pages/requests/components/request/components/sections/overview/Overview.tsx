@@ -20,13 +20,13 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import fileApi from '@/api/file/file'
-import BarLoader from '@/components/base/BarLoader'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
 import { isKanbanMissingMatch } from '@/pages/requests/helpers/kanbanBoard'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
@@ -4116,10 +4116,63 @@ const Overview = (props: any) => {
     localUrl?: string
     repoId: string
   } | null>(null)
+  // The blob address this view created for the server copy. It is released
+  // when it is replaced, when the request changes and when the view unmounts,
+  // not on every data refresh.
+  const ownedBlobUrlRef = useRef<string | null>(null)
+  // Set once the user opens a different attachment from the list.
+  const userPickedFileRef = useRef(false)
+
+  useEffect(
+    () => () => {
+      if (ownedBlobUrlRef.current) URL.revokeObjectURL(ownedBlobUrlRef.current)
+    },
+    [],
+  )
+
+  // True once the document is actually drawn in the viewer: no loading
+  // skeleton (aria-busy) is left inside it and it has stayed that way briefly,
+  // so the scanner does not start while the preview is still loading.
+  const [isViewerReady, setIsViewerReady] = useState(false)
+  useEffect(() => {
+    setIsViewerReady(false)
+    const wrapper = pdfViewerWrapperRef.current
+    if (!previewUrl || isViewerLoading || !wrapper) return
+    let timer: number | undefined
+    const isStillLoading = () =>
+      Boolean(wrapper.querySelector('[aria-busy="true"]'))
+    const evaluate = () => {
+      if (isStillLoading()) {
+        window.clearTimeout(timer)
+        timer = undefined
+        setIsViewerReady(false)
+        return
+      }
+      // One short wait, not restarted by the page's own redraws, so a viewer
+      // that keeps changing while it draws cannot hold the scanner back.
+      if (timer !== undefined) return
+      timer = window.setTimeout(() => {
+        timer = undefined
+        if (!isStillLoading()) setIsViewerReady(true)
+      }, 150)
+    }
+    evaluate()
+    const observer = new MutationObserver(evaluate)
+    observer.observe(wrapper, {
+      attributeFilter: ['aria-busy'],
+      attributes: true,
+      childList: true,
+      subtree: true,
+    })
+    return () => {
+      observer.disconnect()
+      window.clearTimeout(timer)
+    }
+  }, [previewUrl, isViewerLoading])
 
   // Measure the actual PDF page element bounds so scanner line is confined to it
   useEffect(() => {
-    if (!pdfViewerWrapperRef.current || !isScanning) return
+    if (!pdfViewerWrapperRef.current || !isScanning || !isViewerReady) return
     const wrapper = pdfViewerWrapperRef.current
     const measure = () => {
       const page =
@@ -4147,7 +4200,7 @@ const Overview = (props: any) => {
       observer.disconnect()
       mutationObserver.disconnect()
     }
-  }, [isScanning, previewUrl])
+  }, [isScanning, isViewerReady, previewUrl])
 
   const toolbarPluginInstance = useMemo(
     () => ({
@@ -4171,10 +4224,13 @@ const Overview = (props: any) => {
 
   // Stays the same while the same request is open, so the preview is not
   // cleared and re-downloaded when the agent finishes and new data arrives.
+  // A new AP upload starts as "job-<id>"; the real request carries the same
+  // job id, so both count as the same request.
   const requestFileKey = useStableRequestKey([
     selectedItem?.processId,
     selectedItem?.id,
     selectedItem?.transactionId,
+    selectedItem?.apAgentJobId ? `job-${selectedItem.apAgentJobId}` : undefined,
   ])
 
   const zoomTo = (nextScale: number) => {
@@ -4195,6 +4251,11 @@ const Overview = (props: any) => {
     setIsViewerLoading(false)
     setActiveHighlightTerm(null)
     lastFetchedRef.current = null
+    userPickedFileRef.current = false
+    if (ownedBlobUrlRef.current) {
+      URL.revokeObjectURL(ownedBlobUrlRef.current)
+      ownedBlobUrlRef.current = null
+    }
   }, [requestFileKey])
 
   useEffect(() => {
@@ -4226,7 +4287,6 @@ const Overview = (props: any) => {
   }
 
   useEffect(() => {
-    let activeUrl: string | null = null
     const fetchFile = async () => {
       const localUrl =
         selectedFile?._localFileUrl ||
@@ -4270,6 +4330,18 @@ const Overview = (props: any) => {
       ) {
         return
       }
+
+      // The uploaded file is already on screen and the server copy of the
+      // same request has just arrived: keep showing what is there instead of
+      // downloading it again and rebuilding the viewer.
+      if (lastFetchedRef.current?.localUrl && !userPickedFileRef.current) {
+        lastFetchedRef.current = {
+          itemId,
+          localUrl: lastFetchedRef.current.localUrl,
+          repoId,
+        }
+        return
+      }
       lastFetchedRef.current = { itemId, repoId }
 
       setIsViewerLoading(true)
@@ -4282,11 +4354,14 @@ const Overview = (props: any) => {
           selectedFile?.id,
         )
         if (res) {
-          if (res.isBlob) {
-            activeUrl = res.url
-          }
+          const previousBlobUrl = ownedBlobUrlRef.current
+          ownedBlobUrlRef.current = res.isBlob ? res.url : null
           setPreviewUrl(res.url)
           setFileType(res.mimeType)
+          // Release the old address after the viewer has switched away.
+          if (previousBlobUrl && previousBlobUrl !== res.url) {
+            window.setTimeout(() => URL.revokeObjectURL(previousBlobUrl), 1000)
+          }
         }
       } catch (error) {
         console.error('Error fetching file:', error)
@@ -4296,11 +4371,6 @@ const Overview = (props: any) => {
       }
     }
     fetchFile()
-    return () => {
-      if (activeUrl) {
-        URL.revokeObjectURL(activeUrl)
-      }
-    }
   }, [selectedFile, repositoryId, selectedItem, tenantId, userId])
 
   const handleFieldChange = (key: string, value: string) => {
@@ -4349,6 +4419,29 @@ const Overview = (props: any) => {
     selectedItem?.name ||
     'document.pdf'
 
+  // One duplicate decision for the card, the detail view and the header: any
+  // of the duplicate flags or the duplicate check result counts.
+  const isDuplicateText = (value: unknown) =>
+    ['DETECTED', 'DUPLICATE', 'DUPLICATED'].includes(
+      String(value ?? '')
+        .trim()
+        .toUpperCase(),
+    )
+  const duplicateCheck =
+    resolvedAgentData?.duplicate_check ?? agentData?.duplicate_check
+  const isDuplicateInvoice =
+    Boolean(selectedItem?.isDuplicateInvoice) ||
+    Boolean(selectedItem?.is_duplicate_invoice) ||
+    Boolean(resolvedAgentData?.is_duplicate_invoice) ||
+    Boolean(resolvedAgentData?.isDuplicateInvoice) ||
+    Boolean(agentData?.is_duplicate_invoice) ||
+    Boolean(agentData?.isDuplicateInvoice) ||
+    isDuplicateText(duplicateCheck?.status) ||
+    isDuplicateText(resolvedAgentData?.invoice_errors?.severity)
+  const duplicateStatusLabel = isDuplicateInvoice
+    ? 'Duplicate'
+    : duplicateCheck?.status || 'No Duplicate'
+
   let previewContent = null
   if (previewUrl) {
     const isPdfPreview =
@@ -4377,7 +4470,7 @@ const Overview = (props: any) => {
           isPdf={isPdfPreview}
           key={`${requestFileKey}-${previewUrl}`}
         />
-        {isScanning && (
+        {isScanning && isViewerReady && (
           <div className='pointer-events-none absolute inset-0 z-10 overflow-hidden'>
             <div
               className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-y-0'
@@ -4398,7 +4491,11 @@ const Overview = (props: any) => {
         )}
       </div>
     )
-  } else if (!isViewerLoading) {
+  } else if (isViewerLoading) {
+    // The one loading indicator while the file is being fetched; the viewer
+    // shows the same skeleton while it draws the document.
+    previewContent = <SkeletonDocumentPreview flush />
+  } else {
     previewContent = (
       <div className='flex h-full flex-col items-center justify-center p-6 text-center'>
         <Icon
@@ -4420,15 +4517,6 @@ const Overview = (props: any) => {
           className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)]'
           ref={viewerContainerRef}
         >
-          {isViewerLoading && (
-            <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)]'>
-              <BarLoader />
-              <p className='text-xs font-bold tracking-widest text-[var(--gray-10)] uppercase'>
-                Loading Preview...
-              </p>
-            </div>
-          )}
-
           {previewContent}
 
           {menuPosition && selectedText && (
@@ -4587,24 +4675,14 @@ const Overview = (props: any) => {
                           title={t`Duplicate Detection`}
                           status={localizeRequestStatus(
                             i18n,
-                            resolvedAgentData?.duplicate_check?.status ||
-                              agentData?.duplicate_check?.status ||
-                              (resolvedAgentData?.invoice_errors?.severity ===
-                              'NONE'
-                                ? 'No Duplicate'
-                                : 'No Duplicate'),
+                            duplicateStatusLabel,
                           )}
-                          statusType={
-                            resolvedAgentData?.duplicate_check?.status ===
-                              'Duplicate' ||
-                            agentData?.duplicate_check?.status === 'Duplicate'
-                              ? 'warning'
-                              : 'success'
-                          }
+                          statusType={isDuplicateInvoice ? 'danger' : 'success'}
                           value={
-                            resolvedAgentData?.duplicate_check?.message ||
-                            agentData?.duplicate_check?.message ||
-                            t`No duplicates detected`
+                            duplicateCheck?.message ||
+                            (isDuplicateInvoice
+                              ? t`Duplicate invoice detected`
+                              : t`No duplicates detected`)
                           }
                           onClick={() => setActiveDetailView('duplicate_check')}
                         />
@@ -5508,18 +5586,9 @@ const Overview = (props: any) => {
                           title={t`Duplicate Payment Check`}
                           status={localizeRequestStatus(
                             i18n,
-                            resolvedAgentData?.duplicate_check?.status ||
-                              (resolvedAgentData?.invoice_errors?.severity ===
-                              'NONE'
-                                ? 'No Duplicate'
-                                : 'No Duplicate'),
+                            duplicateStatusLabel,
                           )}
-                          statusType={
-                            resolvedAgentData?.duplicate_check?.status ===
-                            'Duplicate'
-                              ? 'danger'
-                              : 'success'
-                          }
+                          statusType={isDuplicateInvoice ? 'danger' : 'success'}
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
@@ -5535,14 +5604,18 @@ const Overview = (props: any) => {
                                   <span
                                     className={cn(
                                       'font-semibold',
-                                      resolvedAgentData?.duplicate_check
-                                        ?.status === 'Duplicate'
+                                      isDuplicateInvoice
                                         ? 'text-[var(--red-9)]'
                                         : 'text-[var(--green-9)]',
                                     )}
                                   >
-                                    {resolvedAgentData?.duplicate_check
-                                      ?.status || 'Passed (No Duplicates)'}
+                                    {isDuplicateInvoice
+                                      ? duplicateCheck?.status &&
+                                        isDuplicateText(duplicateCheck.status)
+                                        ? duplicateCheck.status
+                                        : 'Duplicate Detected'
+                                      : duplicateCheck?.status ||
+                                        'Passed (No Duplicates)'}
                                   </span>
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
@@ -5591,11 +5664,11 @@ const Overview = (props: any) => {
                                     </span>
                                   </div>
                                   <span className='leading-normal font-medium text-[var(--gray-13)]'>
-                                    {resolvedAgentData?.duplicate_check
-                                      ?.message ||
-                                      resolvedAgentData?.duplicate_check
-                                        ?.ai_insight ||
-                                      'No duplicate records found in historical ERP database.'}
+                                    {duplicateCheck?.message ||
+                                      duplicateCheck?.ai_insight ||
+                                      (isDuplicateInvoice
+                                        ? 'A matching invoice already exists in the historical ERP records.'
+                                        : 'No duplicate records found in historical ERP database.')}
                                   </span>
                                 </div>
                               </div>
@@ -6801,7 +6874,10 @@ const Overview = (props: any) => {
                                       () => setIsViewerLoading(false),
                                       500,
                                     ))
-                                  : setSelectedFile(file)
+                                  : (() => {
+                                      userPickedFileRef.current = true
+                                      setSelectedFile(file)
+                                    })()
                               }
                             />
                           )}
