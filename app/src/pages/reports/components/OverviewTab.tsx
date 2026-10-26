@@ -556,7 +556,9 @@ const OverviewTab = ({ report }: Props) => {
     <>
       {requestOverview.isOpen && (
         <AnimateFadeIn className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface'>
+          {/* Read-only here: reviewing happens on the Requests page. */}
           <Request
+            hideActions
             item={requestOverview.item}
             key={requestOverview.item?.processId || requestOverview.item?.id}
             workflowId={requestOverview.workflowId ?? undefined}

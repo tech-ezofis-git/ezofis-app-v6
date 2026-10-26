@@ -3013,7 +3013,7 @@ const Request = ({
 
   return (
     <div
-      className={`flex min-h-0 w-full flex-col overflow-hidden p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-full'}`}
+      className='flex h-full min-h-0 w-full flex-col overflow-hidden p-0'
     >
       <div className='sticky top-0 z-50 bg-surface'>
         <Header
@@ -3193,7 +3193,7 @@ const Request = ({
                 selectedItem={request || selectedItem}
                 signatureConfirmed={signatureConfirmed}
                 userSignatureRequired={!!currentBlockSettings.userSignature}
-                viewOnly={!canActOnRequest}
+                viewOnly={hideActions || !canActOnRequest}
                 checklistItems={
                   Array.isArray(currentBlockSettings.checklistItems)
                     ? currentBlockSettings.checklistItems
@@ -3226,7 +3226,7 @@ const Request = ({
                 selectedWorkflow={selectedWorkflow}
                 transactionId={selectedItem?.transactionId as any}
                 workflowId={resolvedWorkflowId}
-                actions={headerActions.map((a: any) => {
+                actions={(hideActions ? [] : headerActions).map((a: any) => {
                   if (
                     String(a.value).toLowerCase() === 'forward' ||
                     String(a.label).toLowerCase() === 'forward'
