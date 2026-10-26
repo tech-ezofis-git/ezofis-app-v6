@@ -10,6 +10,7 @@ import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
 import { triggerResetFolderView } from '@/pages/folders/utils/folderExplorerSession'
 import { clearOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import cn from '@/utils/cn'
+import isMenuRouteActive from '../../isMenuRouteActive'
 import useGuardedMenuClick from '../../useGuardedMenuClick'
 
 interface Props extends Menu {
@@ -26,7 +27,8 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
   const isAskAIMaximized = useAskAIStore((s) => s.isMaximized)
   const exitFullView = useAskAIStore((s) => s.exitFullView)
   // While AI is full-view, don't highlight any sidebar menu.
-  const isActive = !isDemoFormOpen && !isAskAIMaximized && pathname === route
+  const isActive =
+    !isDemoFormOpen && !isAskAIMaximized && isMenuRouteActive(pathname, route)
   const isNavigationLocked = useSetupStore(
     (state) =>
       state.restrictNavigationUntilApSetup && !state.isApSetUpCompleted,

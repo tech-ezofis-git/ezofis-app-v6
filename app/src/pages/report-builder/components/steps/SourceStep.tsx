@@ -30,6 +30,7 @@ import {
   buildAgentConfigFromDraft,
   draftPatchFromPromptResult,
   isAllScopeSource,
+  readableObjective,
 } from '../../utils/agentReport'
 import { isHiddenReportColumn } from '../../utils/hiddenColumns'
 import FieldsPreviewTable from './FieldsPreviewTable'
@@ -592,9 +593,9 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                         {suggestion.name || t`Suggested Report`}
                       </p>
                     </div>
-                    {suggestion.summary && (
+                    {readableObjective(suggestion.summary) && (
                       <p className='text-13 text-gray-11'>
-                        {suggestion.summary}
+                        {readableObjective(suggestion.summary)}
                       </p>
                     )}
 

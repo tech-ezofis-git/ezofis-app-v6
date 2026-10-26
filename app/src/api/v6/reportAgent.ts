@@ -169,6 +169,10 @@ export const createReportAgentSessionId = () =>
 const LOCKED_RUN_WARNING =
   /dropped unknown source table|redirected report source/i
 
+/** Shown for any failed run instead of the raw backend / agent message. */
+export const REPORT_RUN_ERROR_MESSAGE =
+  "We couldn't run this report right now. Please try again in a moment, or edit the report's columns and filters and run it again."
+
 const errorFrom = (error: unknown, fallback: string) => {
   const err = error as { response?: { data?: unknown; status?: number } }
   console.error(error)
@@ -182,6 +186,17 @@ const errorFrom = (error: unknown, fallback: string) => {
     return 'The report agent timed out. Try again later.'
   }
   return getV6ApiErrorMessage(err?.response?.data, fallback)
+}
+
+// Run failures map to friendly copy only; the backend's own message (SQL
+// errors, stack traces, agent internals) is logged, never shown.
+const runErrorFrom = (error: unknown) => {
+  const status = (error as { response?: { status?: number } })?.response?.status
+  if (status === 404 || status === 502 || status === 504) {
+    return errorFrom(error, REPORT_RUN_ERROR_MESSAGE)
+  }
+  console.error(error)
+  return REPORT_RUN_ERROR_MESSAGE
 }
 
 export const generateReportAiPrompt = async (body: ReportAiPromptRequest) => {
@@ -222,12 +237,17 @@ export const runReportAiReport = async (
       url: `${BASE}/${encodeURIComponent(id)}/run`,
     })
     const result = data as ReportAgentRunResult | null
-    if (!result) return { data: null, error: 'The report returned no data.' }
+    if (!result) return { data: null, error: REPORT_RUN_ERROR_MESSAGE }
     const locked = (result.warnings ?? []).find((w) =>
       LOCKED_RUN_WARNING.test(w),
     )
     if (locked) {
-      return { data: null, error: `This report can't be run yet: ${locked}` }
+      console.warn('Report run blocked:', locked)
+      return {
+        data: null,
+        error:
+          "This report can't be run yet because its data source isn't available. Try generating the report again.",
+      }
     }
     return {
       data: {
@@ -240,7 +260,7 @@ export const runReportAiReport = async (
   } catch (error: unknown) {
     return {
       data: null as ReportAgentRunResult | null,
-      error: errorFrom(error, 'Failed to run the report'),
+      error: runErrorFrom(error),
     }
   }
 }
@@ -286,6 +306,27 @@ export const updateReportAiReport = async (
       data: null as ReportAiRecord | null,
       error: errorFrom(error, 'Failed to save the AI report'),
     }
+  }
+}
+
+/** Soft-deletes a saved AI report (owner or admin only). */
+export const deleteReportAiReport = async (id: string) => {
+  try {
+    await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'DELETE',
+      skipCancellation: true,
+      url: `${BASE}/${encodeURIComponent(id)}`,
+    })
+    return { error: '' }
+  } catch (error: unknown) {
+    const status = (error as { response?: { status?: number } })?.response
+      ?.status
+    if (status === 403) {
+      console.error(error)
+      return { error: 'Only the report owner or an admin can delete it.' }
+    }
+    return { error: errorFrom(error, 'Failed to delete the AI report') }
   }
 }
 
