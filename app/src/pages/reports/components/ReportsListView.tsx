@@ -12,6 +12,7 @@ import ReportSourceBadge from '@/components/common/ReportSourceBadge'
 import ReportStatusBadge from '@/components/common/ReportStatusBadge'
 import { REPORT_DOMAINS } from '@/pages/report-builder/constants'
 import {
+  useAiReportSourceNames,
   useDeleteReportBuilderReportMutation,
   useReportBuilderListQuery,
 } from '@/pages/report-builder/hooks/useReportBuilderApi'
@@ -98,6 +99,9 @@ const ReportsListView = ({
     return filteredReports.slice(start, start + pageSize)
   }, [filteredReports, page, pageSize])
 
+  // AI list rows only say "Workflow"/"Folder"; show the actual source name.
+  const sourceNames = useAiReportSourceNames(paginatedReports)
+
   const rows = useMemo(
     () => [
       {
@@ -105,10 +109,14 @@ const ReportsListView = ({
         groupId: 'all',
         groupKey: '',
         groupValue: '',
-        items: paginatedReports,
+        items: paginatedReports.map((report) =>
+          sourceNames[report.id]
+            ? { ...report, domain: sourceNames[report.id] }
+            : report,
+        ),
       },
     ],
-    [paginatedReports],
+    [paginatedReports, sourceNames],
   )
 
   const columns: Column[] = useMemo(() => {

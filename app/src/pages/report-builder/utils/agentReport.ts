@@ -391,6 +391,22 @@ const AGENT_TYPE_DOMAIN: Record<ReportAgentType, string> = {
   specific_workflow: 'Workflow',
 }
 
+const isAllScopeType = (reportType: ReportAgentType) =>
+  reportType === 'all_workflows' || reportType === 'all_repositories'
+
+/** The workflow/folder name for a specific-scope report, else its scope label. */
+const aiReportDomain = (item: ReportAiListItem) =>
+  (!isAllScopeType(item.reportType) &&
+    (item.workflowName || item.repositoryName)) ||
+  AGENT_TYPE_DOMAIN[item.reportType] ||
+  'AI report'
+
+/** True when an AI report's domain is only its generic scope label. */
+export const hasGenericAiDomain = (report: Report) =>
+  Boolean(report.isAiReport) &&
+  (Object.values(AGENT_TYPE_DOMAIN).includes(report.domain) ||
+    report.domain === 'AI report')
+
 const toReportStatus = (status: string | null | undefined): ReportStatus =>
   status === 'Published' ? 'Published' : 'Draft'
 
@@ -399,7 +415,7 @@ export const aiListItemToReport = (item: ReportAiListItem): Report => ({
   createdAt: item.createdAtUtc,
   customFields: [],
   description: item.description || '',
-  domain: AGENT_TYPE_DOMAIN[item.reportType] ?? 'AI report',
+  domain: aiReportDomain(item),
   fields: [],
   fieldSettings: {},
   filters: [],
@@ -440,18 +456,14 @@ export const aiRecordToReport = (record: ReportAiRecord): Report => {
     },
     scope,
   )
-  const isAllScope =
-    record.reportType === 'all_workflows' ||
-    record.reportType === 'all_repositories'
+  const isAllScope = isAllScopeType(record.reportType)
   const specificName = record.workflowName || record.repositoryName || ''
 
   return {
     ...aiListItemToReport(record),
     agentConfig: patch.agent,
     aiPrompt: findUserPrompt(record, record.reportSpec, record.reportPrompt),
-    domain: isAllScope
-      ? AGENT_TYPE_DOMAIN[record.reportType]
-      : specificName || AGENT_TYPE_DOMAIN[record.reportType],
+    domain: aiReportDomain(record),
     fields: patch.fields,
     fieldSettings: patch.fieldSettings,
     filters: patch.filters,
