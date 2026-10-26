@@ -12,6 +12,7 @@ import {
   getMissingIndexingFields,
   type RepositoryFieldSchema,
 } from '@/pages/requests/utils/repoFolderMetadata'
+import cn from '@/utils/cn'
 import type { DetailCard } from './DocumentFieldCards'
 import DocumentFieldCards from './DocumentFieldCards'
 import IndexingFieldsForm from './IndexingFieldsForm'
@@ -81,6 +82,9 @@ const AttachmentSplitView = ({
   const [cards, setCards] = useState<DetailCard[]>([])
   const [isLoadingFields, setIsLoadingFields] = useState(false)
   const [attemptedSubmit, setAttemptedSubmit] = useState(false)
+  // Phones (768px and below) show one pane at a time; both stay mounted so
+  // switching tabs never reloads the preview or refetches the fields.
+  const [mobileTab, setMobileTab] = useState<'details' | 'preview'>('preview')
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     seedIndexingValues(folderFields, metadata, file?.name),
   )
@@ -89,6 +93,11 @@ const AttachmentSplitView = ({
     setFieldValues(seedIndexingValues(folderFields, metadata, file?.name))
     setAttemptedSubmit(false)
   }, [file?.name, folderFields, metadata])
+
+  // A newly opened attachment starts on its preview.
+  useEffect(() => {
+    setMobileTab('preview')
+  }, [attachment?.id, attachment?.itemId, file])
 
   useEffect(() => {
     if (!file) {
@@ -144,9 +153,20 @@ const AttachmentSplitView = ({
 
   const handleUpload = () => {
     setAttemptedSubmit(true)
-    if (missingFields.length > 0) return
+    if (missingFields.length > 0) {
+      // Required fields live on the details tab on phones.
+      setMobileTab('details')
+      return
+    }
     onConfirm?.(fieldValues)
   }
+
+  const mobileTabs: { id: 'details' | 'preview'; label: string }[] = [
+    { id: 'preview', label: t`File Preview` },
+    { id: 'details', label: t`Document Details` },
+  ]
+  const showMissingDot =
+    isPendingUpload && attemptedSubmit && missingFields.length > 0
 
   let infoPane = <DocumentFieldCards cards={cards} />
   if (isLoadingFields) {
@@ -179,9 +199,9 @@ const AttachmentSplitView = ({
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-gray-1'>
-      <div className='flex shrink-0 items-center gap-2 border-b border-gray-3 bg-surface px-4 py-2.5'>
+      <div className='flex min-w-0 shrink-0 items-center gap-2 border-b border-gray-3 bg-surface px-3 py-2.5 sm:px-4'>
         <button
-          className='group flex cursor-pointer items-center gap-1 text-xs font-semibold text-gray-11 transition-all hover:text-gray-13 active:scale-95'
+          className='group flex shrink-0 cursor-pointer items-center gap-1 text-xs font-semibold text-gray-11 transition-all hover:text-gray-13 active:scale-95'
           type='button'
           onClick={onClose}
         >
@@ -191,7 +211,7 @@ const AttachmentSplitView = ({
           />
           <span>{t`Back`}</span>
         </button>
-        <div className='mx-1 h-4 w-px bg-gray-3' />
+        <div className='mx-1 h-4 w-px shrink-0 bg-gray-3' />
         <span
           className='min-w-0 flex-1 truncate text-13 font-semibold text-gray-13'
           title={displayName}
@@ -200,8 +220,41 @@ const AttachmentSplitView = ({
         </span>
       </div>
 
-      <div className='flex min-h-0 flex-1 gap-5 overflow-hidden p-4'>
-        <div className='min-w-0 flex-1 overflow-hidden rounded-xl border border-gray-3 bg-surface'>
+      {/* Phones: switch between the file and its fields. */}
+      <div
+        aria-label={t`Attachment view`}
+        className='flex shrink-0 gap-5 border-b border-gray-3 bg-surface px-3 min-[769px]:hidden'
+        role='tablist'
+      >
+        {mobileTabs.map((tab) => (
+          <button
+            aria-selected={mobileTab === tab.id}
+            key={tab.id}
+            role='tab'
+            type='button'
+            className={cn(
+              'relative -mb-px flex items-center gap-1.5 border-b-2 py-2.5 text-13 font-medium whitespace-nowrap transition-colors active:scale-95',
+              mobileTab === tab.id
+                ? 'border-accent-primary text-gray-13'
+                : 'border-transparent text-gray-10 hover:text-gray-12',
+            )}
+            onClick={() => setMobileTab(tab.id)}
+          >
+            {tab.label}
+            {tab.id === 'details' && showMissingDot ? (
+              <span className='size-1.5 rounded-full bg-red-9' />
+            ) : null}
+          </button>
+        ))}
+      </div>
+
+      <div className='flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden p-3 min-[769px]:gap-4 min-[769px]:p-4 lg:gap-5'>
+        <div
+          className={cn(
+            'min-w-0 flex-1 overflow-hidden rounded-xl border border-gray-3 bg-surface',
+            mobileTab === 'details' && 'max-[768px]:hidden',
+          )}
+        >
           <DocumentPreviewViewer
             fileName={displayName}
             fileUrl={previewUrl}
@@ -211,13 +264,19 @@ const AttachmentSplitView = ({
           />
         </div>
 
-        <aside className='flex w-[400px] shrink-0 flex-col overflow-hidden'>
+        {/* Phones: full width. Tablets: scales with the screen. Desktop: 400px. */}
+        <aside
+          className={cn(
+            'flex w-full min-w-0 flex-col overflow-hidden min-[769px]:w-[clamp(280px,40%,400px)] min-[769px]:shrink-0 lg:w-[400px]',
+            mobileTab === 'preview' && 'max-[768px]:hidden',
+          )}
+        >
           <div className='min-h-0 flex-1 overflow-y-auto pr-0.5'>
             {infoPane}
           </div>
 
           {isPendingUpload && (
-            <div className='mt-3 flex shrink-0 items-center justify-end gap-2 border-t border-gray-3 pt-3'>
+            <div className='mt-3 flex shrink-0 items-center justify-end gap-2 border-t border-gray-3 pt-3 max-[768px]:hidden'>
               <Button
                 disabled={isSubmitting}
                 label={t`Cancel`}
@@ -235,6 +294,25 @@ const AttachmentSplitView = ({
           )}
         </aside>
       </div>
+
+      {/* Phones: Cancel / Upload stay reachable from either tab. */}
+      {isPendingUpload && (
+        <div className='flex shrink-0 items-center justify-end gap-2 border-t border-gray-3 bg-surface px-3 py-2.5 min-[769px]:hidden'>
+          <Button
+            disabled={isSubmitting}
+            label={t`Cancel`}
+            variant='outline'
+            onClick={onClose}
+          />
+          <Button
+            disabled={isSubmitting}
+            label={t`Upload`}
+            loading={isSubmitting}
+            variant='solid'
+            onClick={handleUpload}
+          />
+        </div>
+      )}
     </div>
   )
 }

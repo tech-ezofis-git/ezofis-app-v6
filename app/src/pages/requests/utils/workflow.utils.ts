@@ -706,6 +706,30 @@ export type StageTrailItem = {
   /** 1-based position of the step in the whole flow. */
   number: number
   step: WorkflowStageStep
+  /**
+   * Done / current steps: button color of the connection the request took
+   * into this step from the previous one (green / red / orange / primary /
+   * secondary), when set.
+   */
+  color?: string
+}
+
+/** Button color of the rule from `fromId` to `toId` (only when unambiguous). */
+const ruleButtonColor = (rules: any[], fromId: string, toId: string) => {
+  const colors = Array.from(
+    new Set(
+      rules
+        .filter(
+          (rule: any) =>
+            String(rule.fromBlockId || rule.from || rule.source || '') ===
+              fromId &&
+            String(rule.toBlockId || rule.to || rule.target || '') === toId,
+        )
+        .map((rule: any) => String(rule.buttonColor || '').trim())
+        .filter(Boolean),
+    ),
+  )
+  return colors.length === 1 ? colors[0] : undefined
 }
 
 /**
@@ -719,10 +743,15 @@ export const getStageTrail = (
   workflow?: any,
 ): StageTrailItem[] => {
   if (!stages.length) return []
-  const items: StageTrailItem[] = stages.map((step, index) => ({
-    number: index + 1,
-    step,
-  }))
+  const trailRules = workflow ? extractWorkflowGraph(workflow).rules : []
+  const items: StageTrailItem[] = stages.map((step, index) => {
+    const previous = stages[index - 1]
+    const color =
+      step.status !== 'future' && previous
+        ? ruleButtonColor(trailRules, previous.id, step.id)
+        : undefined
+    return { number: index + 1, step, ...(color ? { color } : {}) }
+  })
   const currentIndex = stages.findIndex((step) => step.status === 'current')
 
   if (currentIndex === -1) return items.slice(-3)

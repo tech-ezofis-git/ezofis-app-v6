@@ -26,7 +26,7 @@ import {
   type PortalSubmission,
 } from '../helpers/portalSubmissions'
 
-const formatRunningTime = (date: unknown): string => {
+export const formatRunningTime = (date: unknown): string => {
   if (!date) return ''
   const parsed = parseUtcDate(date)
   if (!parsed) return ''
@@ -53,7 +53,9 @@ const asRecord = (value: unknown) =>
     ? (value as Record<string, unknown>)
     : null
 
-const toListRow = (submission: PortalSubmission): Record<string, any> => {
+export const toListRow = (
+  submission: PortalSubmission,
+): Record<string, any> => {
   const { activityId } = submissionInstanceIds(submission)
   const raw = submission.raw
   return {
@@ -63,6 +65,48 @@ const toListRow = (submission: PortalSubmission): Record<string, any> => {
     requestNo: submission.requestNo,
     stage: raw.stage || raw.stageName || submission.status,
   }
+}
+
+/** Who raised the request, when, and when it was last acted on. */
+export const getSubmissionMeta = (
+  submission: PortalSubmission,
+  row: ReturnType<typeof toListRow>,
+) => {
+  const raisedBy = String(
+    row.createdByName ||
+      row.createdByEmail ||
+      row.transactionCreatedByEmail ||
+      row.raisedBy ||
+      row.createdBy ||
+      row.userName ||
+      '',
+  ).trim()
+  const startedAt =
+    row.startedAtUtc ||
+    row.createdAtUtc ||
+    row.createdAt ||
+    row.raisedAt ||
+    row.createdOn ||
+    submission.submittedAt
+  const lastAction = asRecord(row.lastAction)
+  const lastActionBy = String(
+    row.transactionCreatedByEmail ||
+      row.lastActionBy ||
+      row.lastActionUser ||
+      row.updatedBy ||
+      raisedBy ||
+      '',
+  )
+  const lastActionAt =
+    row.transactionCreatedAt ||
+    row.lastActionDate ||
+    lastAction?.date ||
+    lastAction?.createdAt ||
+    row.lastActionAt ||
+    row.updatedAt ||
+    row.actionDate ||
+    startedAt
+  return { lastActionAt, lastActionBy, raisedBy, startedAt }
 }
 
 export default function PortalSubmissionRow({
@@ -101,40 +145,10 @@ export default function PortalSubmissionRow({
   }, [dynamicFields])
 
   const requestNo = extractGenericRequestNumber(row)
-  const raisedBy = String(
-    row.createdByName ||
-      row.createdByEmail ||
-      row.transactionCreatedByEmail ||
-      row.raisedBy ||
-      row.createdBy ||
-      row.userName ||
-      '',
-  ).trim()
-  const startedAt =
-    row.startedAtUtc ||
-    row.createdAtUtc ||
-    row.createdAt ||
-    row.raisedAt ||
-    row.createdOn ||
-    submission.submittedAt
-  const lastAction = asRecord(row.lastAction)
-  const lastActionBy = String(
-    row.transactionCreatedByEmail ||
-      row.lastActionBy ||
-      row.lastActionUser ||
-      row.updatedBy ||
-      raisedBy ||
-      '',
+  const { lastActionAt, lastActionBy, raisedBy, startedAt } = getSubmissionMeta(
+    submission,
+    row,
   )
-  const lastActionAt =
-    row.transactionCreatedAt ||
-    row.lastActionDate ||
-    lastAction?.date ||
-    lastAction?.createdAt ||
-    row.lastActionAt ||
-    row.updatedAt ||
-    row.actionDate ||
-    startedAt
 
   const lastActionLabel = getLastActionLabel(submission.raw)
 
@@ -150,7 +164,7 @@ export default function PortalSubmissionRow({
 
   return (
     <button
-      className='group max-md:animate-in max-md:fade-in max-md:slide-in-from-bottom-1 w-full cursor-pointer bg-surface text-left transition hover:bg-gray-2 active:bg-gray-3 max-md:rounded-2xl max-md:p-4 max-md:shadow-2xs max-md:active:scale-[0.98] md:border-t md:border-gray-3'
+      className='group w-full cursor-pointer bg-surface text-left transition outline-none hover:bg-gray-2 focus-visible:ring-2 focus-visible:ring-primary-7 active:bg-gray-3 motion-reduce:transition-none max-md:mb-2.5 max-md:rounded-2xl max-md:border max-md:border-gray-4 max-md:p-4 max-md:shadow-2xs max-md:hover:border-gray-5 max-md:hover:bg-surface max-md:active:scale-[0.98] md:border-t md:border-gray-3'
       type='button'
       onClick={() => onOpen(submission)}
     >
@@ -236,13 +250,16 @@ export default function PortalSubmissionRow({
           </div>
 
           {raisedBy ? (
-            <span className='flex min-w-0 items-center gap-1.5 text-12 text-gray-9'>
+            <div className='flex min-w-0 items-start gap-1.5 font-medium text-gray-11'>
               <Icon
-                className='size-3.5 shrink-0 text-gray-8'
+                className='mt-0.5 size-3.5 shrink-0 text-gray-8'
                 name='tabler:user'
               />
-              <span className='truncate'>{raisedBy}</span>
-            </span>
+              {/* Long emails wrap instead of being cut off */}
+              <span className='min-w-0 [overflow-wrap:anywhere]'>
+                {raisedBy}
+              </span>
+            </div>
           ) : null}
         </div>
 

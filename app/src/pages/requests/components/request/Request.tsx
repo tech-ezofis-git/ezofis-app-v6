@@ -21,7 +21,7 @@ import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
 import { useAttachments } from '../../hooks/useAttachments'
 import { useComments } from '../../hooks/useComments'
-import { useMasterFormValue } from '../../hooks/useMasterFormValue'
+import { useHeaderBudget } from '../../hooks/useMasterFormValue'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
 import {
@@ -2024,29 +2024,7 @@ const Request = ({
     () => (isGenericWorkflow ? getFormPanels(overviewWorkflowData) : []),
     [isGenericWorkflow, overviewWorkflowData],
   )
-  const masterBudget = useMasterFormValue(
-    genericFormPanels,
-    genericFormModel,
-    'Budget',
-    '0',
-  )
-  const availableBudgetFieldId = useMemo(() => {
-    const field = genericFormPanels
-      .flatMap((panel: any) => panel?.fields || [])
-      .find(
-        (item: any) =>
-          String(item?.label || '')
-            .toLowerCase()
-            .replace(/[\s_]+/g, '') === 'availablebudget',
-      )
-    return field?.id ? String(field.id) : ''
-  }, [genericFormPanels])
-  const availableBudget = availableBudgetFieldId
-    ? String(genericFormModel?.[availableBudgetFieldId] ?? '').trim()
-    : ''
-  const headerBudget = availableBudgetFieldId
-    ? availableBudget || '0'
-    : masterBudget
+  const headerBudget = useHeaderBudget(genericFormPanels, genericFormModel)
 
   const resolvedRequestNo = useMemo(() => {
     let raw = ''
@@ -3043,6 +3021,7 @@ const Request = ({
           agentData={currentAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
+          budget={headerBudget}
           budget={headerBudget}
           currency={currency}
           enableAIInsights={hasAgentData}

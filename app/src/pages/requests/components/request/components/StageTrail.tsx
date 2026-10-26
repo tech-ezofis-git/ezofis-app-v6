@@ -6,6 +6,15 @@ import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 import { formatUtcToLocalDateTime, parseUtcDate } from '@/utils/utcDate'
 
+/** Done-step circle color from the connection's button color. */
+const DONE_COLOR_CLASS: Record<string, string> = {
+  green: 'bg-green-9 text-white',
+  orange: 'bg-orange-9 text-white',
+  primary: 'bg-primary-9 text-white',
+  red: 'bg-red-9 text-white',
+  secondary: 'bg-secondary-9 text-white',
+}
+
 /** Compact age: 45m, 6h, 3d. */
 const formatShortAge = (since?: string) => {
   const date = since ? parseUtcDate(since) : null
@@ -41,7 +50,7 @@ export default function StageTrail({
       aria-label={t`Workflow stages`}
       className='animate-in fade-in flex min-w-0 shrink items-center gap-0.5 rounded-full border border-gray-3 bg-gray-1 p-1 duration-300'
     >
-      {items.map(({ number, step }, index) => {
+      {items.map(({ color, number, step }, index) => {
         const isDone = step.status === 'done'
         const isCurrent = step.status === 'current'
         const stepLabel = step.label
@@ -83,9 +92,11 @@ export default function StageTrail({
                   className={cn(
                     'flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
                     isDone && !step.isCondition
-                      ? 'bg-green-9 text-white'
+                      ? DONE_COLOR_CLASS[String(color || '')] ||
+                          'bg-green-9 text-white'
                       : isCurrent
-                        ? 'bg-primary-9 text-white'
+                        ? DONE_COLOR_CLASS[String(color || '')] ||
+                          'bg-primary-9 text-white'
                         : 'border border-gray-5 bg-surface text-gray-10',
                   )}
                 >

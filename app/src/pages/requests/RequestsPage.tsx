@@ -1077,6 +1077,19 @@ const RequestsPage = () => {
     // No longer need to manually clear local state
   }, [isClosed])
 
+  // New filter criteria start from page 1; the same criteria (e.g. the
+  // filter schema reloading) keep the current page.
+  const handleFilterClausesChange = useCallback(
+    (clauses: V6SearchFilterClause[]) => {
+      setFilterClauses((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(clauses)) return prev
+        setPage(1)
+        return clauses
+      })
+    },
+    [],
+  )
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
     setRequestListTab(tab) // Sync to store
@@ -2050,7 +2063,7 @@ const RequestsPage = () => {
                 setPage={setPage}
                 setPageSize={setPageSize}
                 setViewMode={setViewMode}
-                onFilterClausesChange={setFilterClauses}
+                onFilterClausesChange={handleFilterClausesChange}
                 onGroupByChange={setGroupBy}
                 onRefresh={() => {
                   refetch()

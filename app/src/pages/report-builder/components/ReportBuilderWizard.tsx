@@ -172,6 +172,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
           agent: buildAgentConfigFromDraft(draft.agent, draft),
           description: draft.description,
           name: draft.name || t`Untitled Report`,
+          status,
         })
       } else {
         const saved = await saveReportMutation.mutateAsync(
@@ -262,7 +263,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       isNextHidden={isNextHidden}
       isSaving={isSaving}
       moduleTitle={t`Reports`}
-      saveLabel={t`Save as Draft`}
+      saveLabel={t`Save & Publish`}
       skipLabel={t`Skip for now`}
       steps={steps}
       setupTitle={t`Report Builder`}
@@ -270,7 +271,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       onBackToSettings={handleCancel}
       onCancel={handleCancel}
       onNext={() => goToStep(Math.min(steps.length - 1, activeIndex + 1))}
-      onSave={() => void persistAndExit('Draft')}
+      onSave={() => void persistAndExit('Published')}
       onSkip={
         STEP_IDS[activeIndex] === 'filters' && draft.filters.length === 0
           ? () => goToStep(activeIndex + 1)
@@ -279,18 +280,6 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       onStepChange={goToStep}
     >
       {renderStep()}
-      {/* /report-ai-builder has no publish endpoint, so AI reports save as drafts. */}
-      {activeIndex === steps.length - 1 && !draft.agent && (
-        <div className='flex justify-end border-t border-gray-3 pt-4'>
-          <button
-            className='text-13 font-medium text-primary-10 underline-offset-2 hover:underline'
-            type='button'
-            onClick={() => void persistAndExit('Published')}
-          >
-            {t`Save & Publish instead`}
-          </button>
-        </div>
-      )}
     </SettingsWizardLayout>
   )
 }

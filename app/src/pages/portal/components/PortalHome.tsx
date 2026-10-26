@@ -1,11 +1,11 @@
 import { useLingui } from '@lingui/react/macro'
-import { motion } from 'motion/react'
+import { useMediaQuery } from '@mantine/hooks'
+import { motion, useReducedMotion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import { AnimateSlideUp, AnimateStagger } from '@/components/common/animations'
 import cn from '@/utils/cn'
@@ -26,6 +26,7 @@ import {
   PortalSubmissionsTableSkeleton,
   PortalWorkflowCardsSkeleton,
 } from './PortalLayoutSkeleton'
+import PortalMobileHome from './PortalMobileHome'
 import PortalSubmissionRow from './PortalSubmissionRow'
 
 const flattenSearchableText = (value: unknown): string => {
@@ -42,10 +43,18 @@ const flattenSearchableText = (value: unknown): string => {
 type PortalHomeProps = {
   canCreateSubmission?: boolean
   displayName: string
+  /** Signed-in user (phone profile sheet). */
+  email?: string
   loadingSubmissions?: boolean
   loadingWorkflows?: boolean
   showWorkflowCards?: boolean
   submissions: PortalSubmission[]
+  /** The last list load failed (shown with Retry instead of "no results"). */
+  submissionsError?: string | null
+  /** Portal tenant, for the filter APIs. */
+  tenantId?: string
+  /** Workflow whose requests are listed (filter APIs). */
+  workflowId?: string
   workflowName?: string
   workflows: PortalWorkflowSummary[]
   onBackToWorkflows?: () => void
@@ -53,15 +62,20 @@ type PortalHomeProps = {
   onOpenSubmission: (submission: PortalSubmission) => void
   onOpenWorkflow: (workflowId: string) => void
   onRefreshSubmissions?: () => void | Promise<void>
+  onSignOut?: () => void
 }
 
 export default function PortalHome({
   canCreateSubmission = true,
   displayName,
+  email = '',
   loadingSubmissions,
   loadingWorkflows,
   showWorkflowCards,
   submissions,
+  submissionsError,
+  tenantId,
+  workflowId,
   workflowName,
   workflows,
   onBackToWorkflows,
@@ -69,8 +83,12 @@ export default function PortalHome({
   onOpenSubmission,
   onOpenWorkflow,
   onRefreshSubmissions,
+  onSignOut,
 }: PortalHomeProps) {
   const { t } = useLingui()
+  // Phones get the app-style request list (see PortalMobileHome).
+  const isPhone = useMediaQuery('(max-width: 767px)')
+  const reduceMotion = useReducedMotion()
   const [query, setQuery] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -224,6 +242,31 @@ export default function PortalHome({
     })
   }, [query, statusFilter, submissions])
 
+  // Phones: app-style list (no greeting / KPI cards / status select); the
+  // workflow picker keeps the shared layout below.
+  if (isPhone && !showingWorkflows) {
+    return (
+      <PortalMobileHome
+        canCreateSubmission={canCreateSubmission}
+        email={email}
+        loading={loadingSubmissions}
+        submissions={submissions}
+        submissionsError={submissionsError}
+        tenantId={tenantId}
+        workflowId={workflowId}
+        workflowName={workflowName}
+        workflows={workflows}
+        onBackToWorkflows={onBackToWorkflows}
+        onNewSubmission={onNewSubmission}
+        onOpenSubmission={onOpenSubmission}
+        onRefresh={
+          onRefreshSubmissions ? () => void handleRefresh() : undefined
+        }
+        onSignOut={onSignOut || (() => undefined)}
+      />
+    )
+  }
+
   return (
     <div className='flex flex-col gap-[22px] max-md:gap-4 max-md:pb-24'>
       <AnimateSlideUp className='flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between'>
@@ -240,7 +283,7 @@ export default function PortalHome({
         </div>
         {canCreateSubmission ? (
           <Button
-            className='max-md:hidden sm:w-auto'
+            className='w-full transition-transform active:scale-[0.98] motion-reduce:transition-none sm:w-auto'
             color='primary'
             icon='lucide:plus'
             label={t`New Submission`}
@@ -327,18 +370,21 @@ export default function PortalHome({
             const isActive = String(statusFilter.id) === stat.filterId
             return (
               <button
+                aria-pressed={isActive}
                 key={stat.label}
                 type='button'
                 className={cn(
-                  'flex h-full w-full min-w-0 items-center gap-2.5 rounded-xl border bg-surface px-3 py-3 text-left transition sm:gap-3.5 sm:px-[18px] sm:py-4',
-                  'hover:border-primary-6 active:scale-[0.99]',
-                  isActive ? 'border-primary-7' : 'border-gray-4',
+                  'flex h-full min-h-[76px] w-full min-w-0 items-center gap-2.5 rounded-2xl border bg-surface px-3 py-3 text-left shadow-2xs transition outline-none focus-visible:ring-2 focus-visible:ring-primary-7 motion-reduce:transition-none sm:gap-3.5 sm:px-[18px] sm:py-4',
+                  'hover:border-primary-6 active:scale-[0.98]',
+                  isActive
+                    ? 'border-primary-7 ring-1 ring-primary-5'
+                    : 'border-gray-4',
                 )}
                 onClick={() => applyStatusFilter(stat.filterId)}
               >
                 <span
                   className={cn(
-                    'flex size-8 shrink-0 items-center justify-center rounded-[10px] sm:size-[38px]',
+                    'flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-[38px]',
                     stat.iconWrap,
                   )}
                 >
@@ -348,7 +394,8 @@ export default function PortalHome({
                   <div className='text-[19px] leading-none font-bold text-gray-13 sm:text-[22px]'>
                     {stat.value}
                   </div>
-                  <div className='mt-[3px] truncate text-[11.5px] text-gray-10 sm:text-[12.5px]'>
+                  {/* Wraps to two lines on narrow cards rather than "Total Subm..." */}
+                  <div className='mt-1 text-[12px] leading-tight break-words text-gray-10 sm:text-[12.5px]'>
                     {stat.label}
                   </div>
                 </div>
@@ -374,16 +421,19 @@ export default function PortalHome({
             </div>
             <div className='w-full max-md:hidden sm:max-w-64'>
               <InputText
+                leftSectionWidth={28}
                 placeholder={t`Search workflows…`}
                 value={query}
-                leftSection={
-                  <Icon className='size-4 text-primary-11' name='lucide:search' />
-                }
-                leftSectionWidth={28}
                 classNames={{
                   input: '!pl-8',
                   section: 'bg-primary-4 text-primary-11',
                 }}
+                leftSection={
+                  <Icon
+                    className='size-4 text-primary-11'
+                    name='lucide:search'
+                  />
+                }
                 onChange={setQuery}
               />
             </div>
@@ -465,8 +515,9 @@ export default function PortalHome({
           )}
         </>
       ) : (
+        // Phones: the list sits on the page (cards are the containers).
         <AnimateSlideUp
-          className='md:rounded-xl md:border md:border-gray-4 md:bg-surface md:p-5'
+          className='rounded-xl border border-gray-4 bg-surface p-3.5 max-md:border-0 max-md:bg-transparent max-md:p-0 sm:p-5'
           delay={0.1}
         >
           <div className='mb-4 flex flex-col gap-3 max-md:mb-3 lg:flex-row lg:items-center lg:justify-between'>
@@ -512,31 +563,26 @@ export default function PortalHome({
                 />
               ) : null}
             </div>
-            <div className='flex w-full flex-col gap-2 max-md:hidden sm:flex-row lg:max-w-md'>
+            {/* Phones: search + refresh on one row, status below. */}
+            <div className='flex w-full flex-wrap gap-2 sm:flex-nowrap lg:max-w-md'>
               <div className='min-w-0 flex-1'>
                 <InputText
+                  leftSectionWidth={28}
                   placeholder={t`Search submissions…`}
                   value={query}
-                  leftSection={
-                    <Icon className='size-4 text-primary-11' name='lucide:search' />
-                  }
-                  leftSectionWidth={28}
+                  clearable
                   classNames={{
-                    input: '!pl-8',
+                    // 16px on phones stops iOS zooming into the field.
+                    input: '!pl-8 max-sm:!text-[16px]',
                     section: 'bg-primary-4 text-primary-11',
                   }}
-                  onChange={setQuery}
-                />
-              </div>
-              <div className='w-full sm:w-48'>
-                <InputSelect
-                  options={statusOptions}
-                  placeholder={t`All Status`}
-                  value={statusFilter}
-                  searchable
-                  onChange={(selected) =>
-                    setStatusFilter(selected || statusOptions[0])
+                  leftSection={
+                    <Icon
+                      className='size-4 text-primary-11'
+                      name='lucide:search'
+                    />
                   }
+                  onChange={setQuery}
                 />
               </div>
               {onRefreshSubmissions ? (
@@ -561,20 +607,56 @@ export default function PortalHome({
 
           {loadingSubmissions ? (
             <PortalSubmissionsTableSkeleton />
+          ) : submissionsError && submissions.length === 0 ? (
+            <div className='flex flex-col items-center gap-2 rounded-2xl border border-red-4 bg-red-1 px-4 py-8 text-center'>
+              <Icon className='size-6 text-red-9' name='lucide:wifi-off' />
+              <p className='text-13 font-medium text-red-11'>
+                {t`We couldn't load your submissions.`}
+              </p>
+              {onRefreshSubmissions ? (
+                <Button
+                  color='red'
+                  icon='tabler:refresh'
+                  label={t`Retry`}
+                  size='sm'
+                  variant='outline'
+                  onClick={() => void handleRefresh()}
+                />
+              ) : null}
+            </div>
           ) : filteredSubmissions.length === 0 ? (
-            <div className='py-12 text-center text-13 text-gray-9'>
-              {submissions.length
-                ? t`No submissions match your search.`
-                : canCreateSubmission
-                  ? t`No submissions yet. Start a new submission to see it here.`
-                  : t`No submissions yet.`}
+            <div className='flex flex-col items-center gap-2 py-12 text-center'>
+              <span className='flex size-12 items-center justify-center rounded-2xl bg-primary-2 text-primary-11'>
+                <Icon className='size-6' name='lucide:inbox' />
+              </span>
+              <p className='text-13 text-gray-9'>
+                {submissions.length
+                  ? t`No submissions match your search.`
+                  : canCreateSubmission
+                    ? t`No submissions yet. Start a new submission to see it here.`
+                    : t`No submissions yet.`}
+              </p>
+              {submissions.length > 0 &&
+              (query || String(statusFilter.id) !== 'all') ? (
+                <Button
+                  color='gray'
+                  icon='lucide:x'
+                  label={t`Clear filters`}
+                  size='sm'
+                  variant='outline'
+                  onClick={() => {
+                    setQuery('')
+                    setStatusFilter(statusOptions[0])
+                  }}
+                />
+              ) : null}
             </div>
           ) : (
             <div className='mt-2 max-md:mt-0 max-md:flex max-md:flex-col max-md:gap-2.5'>
               {filteredSubmissions.map((row, index) => (
                 <motion.div
                   animate={{ opacity: 1, y: 0 }}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={reduceMotion ? false : { opacity: 0, y: 8 }}
                   key={`${row.workflowId}-${row.id}`}
                   transition={{
                     delay: Math.min(index, 12) * 0.03,

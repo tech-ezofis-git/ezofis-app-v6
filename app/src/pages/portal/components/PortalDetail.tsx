@@ -11,8 +11,13 @@ import { WorkflowNameContext } from '@/pages/requests/components/workflow-reques
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import { useHistory } from '@/pages/requests/hooks/useHistory'
-import { computeWorkflowStages } from '@/pages/requests/utils/workflow.utils'
+import { useHeaderBudget } from '@/pages/requests/hooks/useMasterFormValue'
+import {
+  computeWorkflowStages,
+  getStageTrail,
+} from '@/pages/requests/utils/workflow.utils'
 import type { PortalSubmission } from '../helpers/portalSubmissions'
+import type { PortalHeaderInfo } from './PortalShell'
 import {
   buildDetailFormModel,
   formPanelSectionId,
@@ -47,6 +52,8 @@ type PortalDetailProps = {
   userId?: string
   onChromeChange?: (chrome: PortalDetailChrome | null) => void
   onCountsChange?: (counts: { attachments: number; comments: number }) => void
+  /** Stage trail and budget shown in the portal header. */
+  onHeaderInfoChange?: (info: PortalHeaderInfo | null) => void
   onMoved?: () => void
 }
 
@@ -55,6 +62,7 @@ export default function PortalDetail({
   userId,
   onChromeChange,
   onCountsChange,
+  onHeaderInfoChange,
   onMoved,
 }: PortalDetailProps) {
   const { t } = useLingui()
@@ -323,6 +331,25 @@ export default function PortalDetail({
     [onChromeChange],
   )
 
+  // Header: compact stage trail and the request's budget.
+  const headerStageTrail = useMemo(
+    () => getStageTrail(workflowStages, source?.workflow),
+    [source?.workflow, workflowStages],
+  )
+  const headerBudget = useHeaderBudget(panels, formModel)
+  useEffect(() => {
+    onHeaderInfoChange?.({
+      budget: headerBudget,
+      stageTrail: headerStageTrail,
+    })
+  }, [headerBudget, headerStageTrail, onHeaderInfoChange])
+  useEffect(
+    () => () => {
+      onHeaderInfoChange?.(null)
+    },
+    [onHeaderInfoChange],
+  )
+
   if (loading) {
     return <PortalDetailSkeleton />
   }
@@ -383,9 +410,11 @@ export default function PortalDetail({
             </WorkflowNameContext.Provider>
           ) : (
             <PortalSubmissionDetails
+              attachments={attachmentList}
               formModel={formModel}
               openIds={openIds}
               panels={panels}
+              onOpenAttachment={(att) => setOpenedAttachment(att)}
               onToggle={toggleSection}
             />
           )

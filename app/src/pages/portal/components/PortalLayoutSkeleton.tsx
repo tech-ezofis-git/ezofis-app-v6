@@ -1,13 +1,14 @@
 import Skeleton from '@/components/base/Skeleton'
 
 export const PortalStatCardsSkeleton = () => (
-  <div className='grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 [&>div]:w-full [&>div]:min-w-0'>
+  // Same 2 x 2 (phones) / 4-across grid and card size as the real KPI cards.
+  <div className='grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-4 [&>div]:w-full [&>div]:min-w-0'>
     {[0, 1, 2, 3].map((index) => (
       <div
-        className='flex h-full w-full min-w-0 items-center gap-3.5 rounded-xl border border-gray-4 bg-surface px-[18px] py-4'
+        className='flex h-full min-h-[76px] w-full min-w-0 items-center gap-2.5 rounded-2xl border border-gray-4 bg-surface px-3 py-3 sm:gap-3.5 sm:px-[18px] sm:py-4'
         key={index}
       >
-        <Skeleton className='size-[38px] shrink-0 rounded-[10px]' />
+        <Skeleton className='size-9 shrink-0 rounded-xl sm:size-[38px]' />
         <div className='min-w-0 flex-1 space-y-1.5'>
           <Skeleton className='h-[22px] w-10' />
           <Skeleton className='h-3 w-24' />
@@ -81,10 +82,27 @@ export const PortalWorkflowCardsSkeleton = () => (
 )
 
 export const PortalSubmissionsTableSkeleton = () => (
-  <div className='mt-2 flex flex-col'>
+  <div className='mt-2 flex flex-col max-md:mt-3 max-md:gap-2.5'>
+    {/* Phones: card placeholders shaped like the submission cards */}
+    {[0, 1, 2, 3].map((index) => (
+      <div
+        className='flex flex-col gap-3 rounded-2xl border border-gray-4 bg-surface p-4 md:hidden'
+        key={`card-${index}`}
+      >
+        <div className='flex items-center gap-2'>
+          <Skeleton className='h-4 w-24' />
+          <Skeleton className='h-5 w-20 rounded-md' />
+        </div>
+        <Skeleton className='h-3 w-2/3' />
+        <div className='flex items-center justify-between border-t border-gray-3 pt-3'>
+          <Skeleton className='h-3 w-32' />
+          <Skeleton className='h-5 w-16 rounded-full' />
+        </div>
+      </div>
+    ))}
     {[0, 1, 2, 3, 4].map((index) => (
       <div
-        className='flex items-center gap-3 border-t border-gray-3 py-3.5'
+        className='flex items-center gap-3 border-t border-gray-3 py-3.5 max-md:hidden'
         key={index}
       >
         <Skeleton className='h-4 w-16' />
