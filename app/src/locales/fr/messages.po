@@ -841,7 +841,7 @@ msgstr "Action requise"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2184
 #: src/pages/forms/FormEntriesPage.tsx:2199
 #: src/pages/forms/FormsPage.tsx:293
-#: src/pages/reports/components/ReportsListView.tsx:241
+#: src/pages/reports/components/ReportsListView.tsx:249
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2292
 #: src/pages/requests/components/request/components/generic-overview/AgentFlatTable.tsx:401
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1003
@@ -1078,6 +1078,7 @@ msgstr "Ajoutez des champs pour voir un aperçu en direct du tableau de rapport.
 #: src/pages/portal/components/PortalMobileHome.tsx:333
 #: src/pages/portal/components/PortalMobileHome.tsx:655
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:85
+#: src/pages/reports/components/OverviewTab.tsx:542
 #: src/pages/reports/components/OverviewTab.tsx:506
 msgid "Add filter"
 msgstr "Ajouter un filtre"
@@ -1109,7 +1110,7 @@ msgstr "Ajouter un élément de ligne"
 
 #: src/components/common/SharePopover.tsx:670
 #: src/pages/folders/components/FolderSharePopover.tsx:1052
-#: src/pages/requests/components/request/components/Header.tsx:1991
+#: src/pages/requests/components/request/components/Header.tsx:1997
 msgid "Add message (optional)"
 msgstr "Ajouter un message (facultatif)"
 
@@ -1119,13 +1120,13 @@ msgstr "Ajouter d'autres fichiers"
 
 #: src/components/common/SharePopover.tsx:356
 #: src/pages/folders/components/FolderSharePopover.tsx:629
-#: src/pages/requests/components/request/components/Header.tsx:1636
+#: src/pages/requests/components/request/components/Header.tsx:1642
 msgid "Add more people..."
 msgstr "Ajoutez plus de personnes..."
 
 #: src/components/common/SharePopover.tsx:357
 #: src/pages/folders/components/FolderSharePopover.tsx:630
-#: src/pages/requests/components/request/components/Header.tsx:1637
+#: src/pages/requests/components/request/components/Header.tsx:1643
 msgid "Add names or emails"
 msgstr "Ajouter des noms ou des adresses e-mail"
 
@@ -1884,7 +1885,7 @@ msgid "Archived"
 msgstr "Archivé"
 
 #: src/pages/forms/FormsPage.tsx:553
-#: src/pages/reports/components/ReportsListView.tsx:303
+#: src/pages/reports/components/ReportsListView.tsx:311
 msgid "Are you sure you want to delete"
 msgstr "Etes-vous sûr de vouloir supprimer"
 
@@ -1999,7 +2000,7 @@ msgstr "Attribuer des groupes d'accès aux utilisateurs"
 msgid "Assign users to roles once users are available in the platform."
 msgstr "Attribuez des rôles aux utilisateurs une fois que les utilisateurs sont disponibles sur la plateforme."
 
-#: src/pages/requests/components/request/components/Header.tsx:811
+#: src/pages/requests/components/request/components/Header.tsx:816
 msgid "Assigned User"
 msgstr ""
 
@@ -2080,11 +2081,12 @@ msgid "Attachment view"
 msgstr ""
 
 #: src/pages/portal/components/PortalDetail.tsx:432
+#: src/pages/portal/components/PortalShell.tsx:319
 #: src/pages/portal/components/PortalShell.tsx:318
 #: src/pages/portal/components/PortalWizard.tsx:1442
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:610
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:642
-#: src/pages/requests/components/request/components/Header.tsx:932
+#: src/pages/requests/components/request/components/Header.tsx:937
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:55
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:707
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4857
@@ -2267,6 +2269,8 @@ msgstr "En attente de vérification"
 #: src/pages/folders/components/Upload/Upload.tsx:4551
 #: src/pages/forms/components/AiFormBuilder.tsx:132
 #: src/pages/portal/components/PortalBackButton.tsx:16
+#: src/pages/portal/components/PortalShell.tsx:163
+#: src/pages/portal/components/PortalShell.tsx:206
 #: src/pages/portal/components/PortalShell.tsx:162
 #: src/pages/portal/components/PortalShell.tsx:205
 #: src/pages/portal/components/PortalWizard.tsx:1309
@@ -2390,20 +2394,20 @@ msgstr ""
 msgid "Back to workflows"
 msgstr "Retour aux flux de travail"
 
-#: src/pages/requests/components/request/components/Header.tsx:1401
+#: src/pages/requests/components/request/components/Header.tsx:1407
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:469
 msgid "Backorder"
 msgstr "Commande en souffrance"
 
-#: src/pages/requests/components/request/components/Header.tsx:902
+#: src/pages/requests/components/request/components/Header.tsx:907
 msgid "Backorder Check"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:906
+#: src/pages/requests/components/request/components/Header.tsx:911
 msgid "Backorder Detected"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1395
+#: src/pages/requests/components/request/components/Header.tsx:1401
 msgid "Backorder detected on purchase order fulfillment"
 msgstr ""
 
@@ -2507,6 +2511,8 @@ msgstr "Parcourir"
 msgid "browse files"
 msgstr "parcourir les fichiers"
 
+#: src/pages/portal/components/PortalShell.tsx:287
+#: src/pages/requests/components/request/components/Header.tsx:1027
 #: src/pages/portal/components/PortalShell.tsx:286
 #: src/pages/requests/components/request/components/Header.tsx:1022
 msgid "Budget"
@@ -2689,6 +2695,7 @@ msgstr "Peut voir"
 #: src/pages/forms/FormsPage.tsx:573
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1353
+#: src/pages/reports/components/ReportsListView.tsx:326
 #: src/pages/reports/components/ReportsListView.tsx:318
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:282
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:303
@@ -3318,7 +3325,7 @@ msgstr "Numéro de client"
 #: src/pages/portal/components/PortalBottomSheet.tsx:62
 #: src/pages/portal/components/PortalBottomSheet.tsx:103
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1661
-#: src/pages/requests/components/request/components/Header.tsx:781
+#: src/pages/requests/components/request/components/Header.tsx:786
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:722
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:190
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:826
@@ -3327,8 +3334,8 @@ msgstr "Numéro de client"
 msgid "Close"
 msgstr "Fermer"
 
-#: src/pages/requests/components/request/components/Header.tsx:1117
-#: src/pages/requests/components/request/components/Header.tsx:1543
+#: src/pages/requests/components/request/components/Header.tsx:1122
+#: src/pages/requests/components/request/components/Header.tsx:1549
 msgid "Close AI Insights"
 msgstr "Fermer les insights IA"
 
@@ -3444,10 +3451,11 @@ msgstr "Colonnes ingérées :"
 #~ msgstr "À venir"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2050
+#: src/pages/portal/components/PortalShell.tsx:325
 #: src/pages/portal/components/PortalShell.tsx:324
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:616
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:648
-#: src/pages/requests/components/request/components/Header.tsx:938
+#: src/pages/requests/components/request/components/Header.tsx:943
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:61
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4862
@@ -4273,7 +4281,7 @@ msgstr "Rôle actuel"
 #: src/pages/folders/components/DocumentsListView.tsx:537
 #: src/pages/folders/components/FolderTable.tsx:1366
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1721
-#: src/pages/requests/components/request/components/Header.tsx:798
+#: src/pages/requests/components/request/components/Header.tsx:803
 msgid "Current Stage"
 msgstr "Stade actuel"
 
@@ -4484,8 +4492,8 @@ msgstr ""
 msgid "Decide what happens when a file with the same name is uploaded again: replace the existing file, keep each version with a timestamp, or number versions automatically."
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1113
-#: src/pages/requests/components/request/components/Header.tsx:1539
+#: src/pages/requests/components/request/components/Header.tsx:1118
+#: src/pages/requests/components/request/components/Header.tsx:1545
 msgid "Decision Details"
 msgstr ""
 
@@ -4685,7 +4693,7 @@ msgstr "Supprimer définitivement"
 msgid "Delete Portal"
 msgstr "Supprimer le portail"
 
-#: src/pages/reports/components/ReportsListView.tsx:301
+#: src/pages/reports/components/ReportsListView.tsx:309
 msgid "Delete Report"
 msgstr "Supprimer le rapport"
 
@@ -5499,7 +5507,7 @@ msgstr "Échéance aujourd'hui"
 #~ msgid "Dummy results"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1385
+#: src/pages/requests/components/request/components/Header.tsx:1391
 #: src/pages/requests/utils/localizeRequestUi.ts:45
 msgid "Duplicate"
 msgstr "Doublon"
@@ -5509,11 +5517,12 @@ msgstr "Doublon"
 msgid "Duplicate as draft"
 msgstr ""
 
+#: src/pages/requests/components/request/components/Header.tsx:895
 #: src/pages/requests/components/request/components/Header.tsx:890
 msgid "Duplicate Check"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:894
+#: src/pages/requests/components/request/components/Header.tsx:899
 msgid "Duplicate Detected"
 msgstr ""
 
@@ -6515,7 +6524,7 @@ msgstr "Échec de la suppression du dossier"
 msgid "Failed to delete form"
 msgstr "Échoué to delete form"
 
-#: src/pages/reports/components/ReportsListView.tsx:333
+#: src/pages/reports/components/ReportsListView.tsx:341
 msgid "Failed to delete report"
 msgstr "Échec de la suppression du rapport"
 
@@ -6605,7 +6614,7 @@ msgstr "Échec du chargement du menu"
 msgid "Failed to load report"
 msgstr "Échec du chargement du rapport"
 
-#: src/pages/reports/components/ReportsListView.tsx:286
+#: src/pages/reports/components/ReportsListView.tsx:294
 msgid "Failed to load reports."
 msgstr "Échec du chargement des rapports."
 
@@ -7872,11 +7881,12 @@ msgstr ""
 #~ msgid "Historical Match Results"
 #~ msgstr "Résultats des matchs historiques"
 
+#: src/pages/portal/components/PortalShell.tsx:333
 #: src/pages/portal/components/PortalShell.tsx:332
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:618
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:650
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1658
-#: src/pages/requests/components/request/components/Header.tsx:940
+#: src/pages/requests/components/request/components/Header.tsx:945
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4867
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:474
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:510
@@ -8298,7 +8308,7 @@ msgstr "Inviter des personnes"
 #~ msgstr "Invitation envoyée"
 
 #: src/components/common/SharePopover.tsx:567
-#: src/pages/requests/components/request/components/Header.tsx:1888
+#: src/pages/requests/components/request/components/Header.tsx:1894
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:402
 msgid "Invited"
 msgstr "Invité"
@@ -8419,7 +8429,7 @@ msgstr ""
 msgid "Invoice Total"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1476
+#: src/pages/requests/components/request/components/Header.tsx:1482
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5358
 msgid "Invoice Value"
 msgstr "Valeur de la facture"
@@ -8693,7 +8703,7 @@ msgstr "Dernière action à"
 msgid "Last Action By"
 msgstr "Dernière action par"
 
-#: src/pages/requests/components/request/components/Header.tsx:868
+#: src/pages/requests/components/request/components/Header.tsx:873
 msgid "Last Activity"
 msgstr ""
 
@@ -9785,20 +9795,20 @@ msgstr "OTP mobile"
 msgid "Mobile Preview"
 msgstr "Aperçu mobile"
 
-#: src/pages/reports/components/ReportsListView.tsx:231
+#: src/pages/reports/components/ReportsListView.tsx:239
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:203
 msgid "Modified"
 msgstr "Modifié"
 
 #: src/pages/forms/FormsPage.tsx:279
-#: src/pages/reports/components/ReportsListView.tsx:154
+#: src/pages/reports/components/ReportsListView.tsx:162
 #: src/pages/workflows/components/Table.tsx:104
 msgid "Modified At"
 msgstr "Modifié à"
 
 #: src/pages/forms/FormsPage.tsx:272
 #: src/pages/forms/FormsPage.tsx:656
-#: src/pages/reports/components/ReportsListView.tsx:160
+#: src/pages/reports/components/ReportsListView.tsx:168
 #: src/pages/workflows/components/Table.tsx:97
 #: src/pages/workflows/components/Table.tsx:504
 msgid "Modified By"
@@ -9990,8 +10000,8 @@ msgstr "N/A (Aucune valeur requise)"
 #: src/pages/forms/FormEntriesPage.tsx:3148
 #: src/pages/forms/FormsPage.tsx:181
 #: src/pages/forms/FormsPage.tsx:634
-#: src/pages/reports/components/ReportsListView.tsx:119
-#: src/pages/reports/components/ReportsListView.tsx:170
+#: src/pages/reports/components/ReportsListView.tsx:127
+#: src/pages/reports/components/ReportsListView.tsx:178
 #: src/pages/requests/components/Table.tsx:27
 #: src/pages/settings/components/GroupManagement.tsx:624
 #: src/pages/settings/components/ManageUser.tsx:1127
@@ -10126,6 +10136,7 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:700
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
+#: src/pages/requests/components/request/components/Header.tsx:2027
 #: src/pages/requests/components/request/components/Header.tsx:2021
 #: src/pages/requests/RequestsPage.tsx:1909
 msgid "New"
@@ -10173,8 +10184,8 @@ msgstr "Nouvelle configuration du menu"
 msgid "New Password"
 msgstr "Nouveau mot de passe"
 
-#: src/pages/reports/components/ReportsListView.tsx:366
-#: src/pages/reports/components/ReportsListView.tsx:367
+#: src/pages/reports/components/ReportsListView.tsx:374
+#: src/pages/reports/components/ReportsListView.tsx:375
 msgid "New Report"
 msgstr "Nouveau rapport"
 
@@ -10247,8 +10258,8 @@ msgstr ""
 msgid "Next page"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:981
-#: src/pages/requests/components/request/components/Header.tsx:1250
+#: src/pages/requests/components/request/components/Header.tsx:986
+#: src/pages/requests/components/request/components/Header.tsx:1255
 msgid "Next Request"
 msgstr "Demande suivante"
 
@@ -10268,7 +10279,7 @@ msgstr ""
 #~ msgid "Next-gen AI workspace, dynamic forms & automation."
 #~ msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:220
+#: src/pages/reports/components/ReportsListView.tsx:228
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5977
 msgid "No"
 msgstr "Non"
@@ -10406,8 +10417,8 @@ msgid "No data to preview"
 msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/QualifyAgentResultView.tsx:759
-#: src/pages/requests/components/request/components/Header.tsx:1127
-#: src/pages/requests/components/request/components/Header.tsx:1553
+#: src/pages/requests/components/request/components/Header.tsx:1132
+#: src/pages/requests/components/request/components/Header.tsx:1559
 msgid "No decision details available for this request."
 msgstr "Aucun détail de décision disponible pour cette demande."
 
@@ -10778,6 +10789,7 @@ msgstr "Aucun rôle pour l'instant"
 msgid "No rows added"
 msgstr ""
 
+#: src/pages/reports/components/OverviewTab.tsx:525
 #: src/pages/reports/components/OverviewTab.tsx:479
 msgid "No rows for this report."
 msgstr ""
@@ -11007,6 +11019,7 @@ msgstr "Non sélectionné"
 msgid "Not set"
 msgstr ""
 
+#: src/pages/requests/components/request/components/Header.tsx:809
 #: src/pages/requests/components/request/components/Header.tsx:804
 msgid "Not specified"
 msgstr ""
@@ -11042,7 +11055,7 @@ msgid "Notify document owner beforehand"
 msgstr "Informer le propriétaire du document au préalable"
 
 #: src/components/common/SharePopover.tsx:697
-#: src/pages/requests/components/request/components/Header.tsx:2018
+#: src/pages/requests/components/request/components/Header.tsx:2024
 msgid "Notify me when accessed"
 msgstr "M'avertir lors de l'accès"
 
@@ -11411,8 +11424,8 @@ msgstr "En retard et le plus tôt possible – processus descendant"
 #: src/components/common/SharePopover.tsx:559
 #: src/pages/folders/components/FolderSharePopover.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:866
-#: src/pages/reports/components/ReportsListView.tsx:225
-#: src/pages/requests/components/request/components/Header.tsx:1880
+#: src/pages/reports/components/ReportsListView.tsx:233
+#: src/pages/requests/components/request/components/Header.tsx:1886
 #: src/pages/settings/components/Folders/retentionMockData.ts:61
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:202
 msgid "Owner"
@@ -12389,7 +12402,7 @@ msgstr "Référence BC"
 msgid "PO Setup"
 msgstr "Configuration PO"
 
-#: src/pages/requests/components/request/components/Header.tsx:1495
+#: src/pages/requests/components/request/components/Header.tsx:1501
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5359
 msgid "PO Value"
@@ -12512,7 +12525,7 @@ msgstr "Portails"
 #~ msgid "Posting..."
 #~ msgstr "Publication..."
 
-#: src/pages/requests/components/request/components/Header.tsx:1379
+#: src/pages/requests/components/request/components/Header.tsx:1385
 msgid "Potential duplicate invoice detected in ERP records"
 msgstr ""
 
@@ -12621,8 +12634,8 @@ msgstr ""
 msgid "Previous page"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:958
-#: src/pages/requests/components/request/components/Header.tsx:1227
+#: src/pages/requests/components/request/components/Header.tsx:963
+#: src/pages/requests/components/request/components/Header.tsx:1232
 msgid "Previous Request"
 msgstr "Demande précédente"
 
@@ -12683,7 +12696,7 @@ msgstr "Priorité"
 msgid "Private"
 msgstr "Privé"
 
-#: src/pages/reports/components/ReportsListView.tsx:274
+#: src/pages/reports/components/ReportsListView.tsx:282
 msgid "Private to me"
 msgstr "Privé pour moi"
 
@@ -12969,6 +12982,7 @@ msgstr ""
 msgid "Quote changed after the PDF was generated"
 msgstr ""
 
+#: src/pages/requests/components/request/Request.tsx:3063
 #: src/pages/requests/components/request/Request.tsx:3062
 msgid "Quote data has changed. Regenerate the PDF before you continue."
 msgstr ""
@@ -13000,7 +13014,7 @@ msgstr ""
 msgid "Quote refreshed with the new agent result."
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1053
+#: src/pages/requests/components/request/components/Header.tsx:1058
 msgid "Quote Total"
 msgstr ""
 
@@ -13014,7 +13028,7 @@ msgstr "Élevé à"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1750
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1917
-#: src/pages/requests/components/request/components/Header.tsx:836
+#: src/pages/requests/components/request/components/Header.tsx:841
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr "Élevé par"
@@ -13023,7 +13037,7 @@ msgstr "Élevé par"
 #~ msgid "Raised Date"
 #~ msgstr "Date de levée"
 
-#: src/pages/requests/components/request/components/Header.tsx:850
+#: src/pages/requests/components/request/components/Header.tsx:855
 msgid "Raised On"
 msgstr ""
 
@@ -13268,6 +13282,8 @@ msgstr "Numéro de document de référence"
 #: src/pages/portal/components/PortalHome.tsx:590
 #: src/pages/portal/components/PortalHome.tsx:595
 #: src/pages/portal/components/PortalMobileHome.tsx:248
+#: src/pages/reports/components/OverviewTab.tsx:547
+#: src/pages/reports/components/OverviewTab.tsx:552
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
 #: src/pages/requests/components/InboxList.tsx:2150
@@ -13479,11 +13495,12 @@ msgstr "Remplacer le fichier"
 #: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:73
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:261
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:269
+#: src/pages/settings/SettingsMain.tsx:328
 #: src/pages/settings/SettingsMain.tsx:346
 msgid "Report Builder"
 msgstr "Générateur de rapports"
 
-#: src/pages/reports/components/ReportsListView.tsx:339
+#: src/pages/reports/components/ReportsListView.tsx:347
 msgid "Report deleted successfully"
 msgstr "Rapport supprimé avec succès"
 
@@ -13592,8 +13609,8 @@ msgstr ""
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr "La demande {resolvedRequestNo} a été soumise avec succès"
 
-#: src/pages/requests/components/request/components/Header.tsx:738
-#: src/pages/requests/components/request/components/Header.tsx:777
+#: src/pages/requests/components/request/components/Header.tsx:743
+#: src/pages/requests/components/request/components/Header.tsx:782
 msgid "Request & Stage Details"
 msgstr ""
 
@@ -13625,11 +13642,11 @@ msgstr "Demande déplacée"
 msgid "Request No"
 msgstr "Numéro de demande"
 
-#: src/pages/requests/components/request/components/Header.tsx:826
+#: src/pages/requests/components/request/components/Header.tsx:831
 msgid "Request Number"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1812
+#: src/pages/requests/components/request/components/Header.tsx:1818
 msgid "Request Owner"
 msgstr "Propriétaire de la demande"
 
@@ -13637,6 +13654,7 @@ msgstr "Propriétaire de la demande"
 msgid "Request saved successfully"
 msgstr "Demande enregistrée avec succès"
 
+#: src/pages/requests/components/request/components/Header.tsx:670
 #: src/pages/requests/components/request/components/Header.tsx:665
 #: src/pages/requests/components/request/Request.tsx:3005
 msgid "Request shared successfully"
@@ -14158,6 +14176,7 @@ msgstr ""
 msgid "rows"
 msgstr "lignes"
 
+#: src/pages/reports/components/OverviewTab.tsx:595
 #: src/pages/reports/components/OverviewTab.tsx:544
 msgid "Rows"
 msgstr "Lignes"
@@ -14190,6 +14209,7 @@ msgstr "Règles"
 #: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:512
 #: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:532
 #: src/pages/report-builder/components/steps/SourceStep.tsx:624
+#: src/pages/reports/components/OverviewTab.tsx:512
 #: src/pages/reports/components/OverviewTab.tsx:466
 msgid "Run again"
 msgstr ""
@@ -14240,7 +14260,7 @@ msgstr "Mappage des champs de table SAP"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2706
 #: src/pages/folders/components/DocumentDetailsView.tsx:2728
 #: src/pages/my-account/components/profile/Profile.tsx:21
-#: src/pages/requests/components/request/components/Header.tsx:2070
+#: src/pages/requests/components/request/components/Header.tsx:2076
 #: src/pages/settings/components/Folders/PiiUnredactedAccessSection.tsx:306
 #: src/pages/settings/components/SettingsWizardLayout.tsx:91
 msgid "Save"
@@ -14456,7 +14476,7 @@ msgstr "Planifier le paiement"
 msgid "Schedule report delivery"
 msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:211
+#: src/pages/reports/components/ReportsListView.tsx:219
 msgid "Scheduled"
 msgstr "Planifié"
 
@@ -14501,6 +14521,7 @@ msgid "Search"
 msgstr "Rechercher"
 
 #. placeholder {0}: col.label
+#: src/pages/reports/components/OverviewTab.tsx:369
 #: src/pages/reports/components/OverviewTab.tsx:323
 msgid "Search {0}..."
 msgstr ""
@@ -14702,7 +14723,7 @@ msgstr "Rechercher ou saisir un nom personnalisé"
 msgid "Search PO range..."
 msgstr "Rechercher une plage de bons de commande..."
 
-#: src/pages/reports/components/ReportsListView.tsx:356
+#: src/pages/reports/components/ReportsListView.tsx:364
 msgid "Search reports..."
 msgstr "Rechercher des rapports..."
 
@@ -15398,7 +15419,7 @@ msgstr "Envoyer pour signature"
 
 #: src/components/common/SharePopover.tsx:664
 #: src/pages/folders/components/FolderSharePopover.tsx:1046
-#: src/pages/requests/components/request/components/Header.tsx:1985
+#: src/pages/requests/components/request/components/Header.tsx:1991
 msgid "Send notification"
 msgstr "Envoyer une notification"
 
@@ -15604,8 +15625,8 @@ msgstr "Gravité"
 #: src/pages/folders/components/FolderTable.tsx:1529
 #: src/pages/folders/components/ShareView.tsx:261
 #: src/pages/reports/components/ReportShareButton.tsx:27
-#: src/pages/requests/components/request/components/Header.tsx:1580
-#: src/pages/requests/components/request/components/Header.tsx:2008
+#: src/pages/requests/components/request/components/Header.tsx:1586
+#: src/pages/requests/components/request/components/Header.tsx:2014
 msgid "Share"
 msgstr "Partager"
 
@@ -15621,7 +15642,7 @@ msgstr ""
 msgid "Share Report"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1605
+#: src/pages/requests/components/request/components/Header.tsx:1611
 msgid "Share Request"
 msgstr "Demande de partage"
 
@@ -15645,18 +15666,18 @@ msgstr "Compatibilité des lecteurs partagés"
 msgid "Shared successfully"
 msgstr "Partagé avec succès"
 
-#: src/pages/reports/components/ReportsListView.tsx:275
+#: src/pages/reports/components/ReportsListView.tsx:283
 msgid "Shared with me"
 msgstr "Partagé avec moi"
 
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:110
-#: src/pages/reports/components/ReportsListView.tsx:375
+#: src/pages/reports/components/ReportsListView.tsx:383
 msgid "Sharing"
 msgstr "Partage"
 
 #: src/components/common/SharePopover.tsx:687
 #: src/pages/folders/components/FolderSharePopover.tsx:1070
-#: src/pages/requests/components/request/components/Header.tsx:2008
+#: src/pages/requests/components/request/components/Header.tsx:2014
 msgid "Sharing..."
 msgstr "Partage..."
 
@@ -15908,6 +15929,8 @@ msgstr ""
 
 #: src/pages/portal/components/PortalMobileHome.tsx:707
 #: src/pages/portal/components/PortalShell.tsx:116
+#: src/pages/portal/components/PortalShell.tsx:129
+#: src/pages/portal/components/PortalShell.tsx:142
 #: src/pages/portal/components/PortalShell.tsx:128
 #: src/pages/portal/components/PortalShell.tsx:141
 msgid "Sign out"
@@ -16094,9 +16117,9 @@ msgid "Sort Order *"
 msgstr "Ordre de tri *"
 
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:76
-#: src/pages/reports/components/ReportsListView.tsx:138
-#: src/pages/reports/components/ReportsListView.tsx:189
-#: src/pages/reports/components/ReportsListView.tsx:380
+#: src/pages/reports/components/ReportsListView.tsx:146
+#: src/pages/reports/components/ReportsListView.tsx:197
+#: src/pages/reports/components/ReportsListView.tsx:388
 msgid "Source"
 msgstr "Source"
 
@@ -16124,8 +16147,8 @@ msgstr "Fichier source :"
 msgid "Source System"
 msgstr ""
 
-#: src/pages/reports/components/ReportsListView.tsx:146
-#: src/pages/reports/components/ReportsListView.tsx:197
+#: src/pages/reports/components/ReportsListView.tsx:154
+#: src/pages/reports/components/ReportsListView.tsx:205
 msgid "Source Type"
 msgstr "Type de source"
 
@@ -16239,8 +16262,8 @@ msgstr "Tendance de crédit statique pour {selectedMonth}"
 #: src/pages/folders/components/DocumentDetailsView.tsx:1137
 #: src/pages/forms/FormsPage.tsx:221
 #: src/pages/forms/FormsPage.tsx:641
-#: src/pages/reports/components/ReportsListView.tsx:205
-#: src/pages/requests/components/request/components/Header.tsx:879
+#: src/pages/reports/components/ReportsListView.tsx:213
+#: src/pages/requests/components/request/components/Header.tsx:884
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:208
@@ -16410,6 +16433,7 @@ msgstr "Détails de la soumission"
 msgid "submissions"
 msgstr "soumissions"
 
+#: src/pages/portal/components/PortalShell.tsx:189
 #: src/pages/portal/components/PortalShell.tsx:188
 #: src/pages/portal/components/PortalWizard.tsx:981
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:154
@@ -17002,7 +17026,7 @@ msgstr "Cette action n'a aucun impact destructeur — votre espace de travail co
 
 #: src/pages/forms/FormEntriesPage.tsx:3067
 #: src/pages/forms/FormsPage.tsx:561
-#: src/pages/reports/components/ReportsListView.tsx:307
+#: src/pages/reports/components/ReportsListView.tsx:315
 msgid "This action is permanent and cannot be undone."
 msgstr "Cette action est permanente et ne peut être annulée."
 
@@ -17127,6 +17151,7 @@ msgstr ""
 msgid "This related document cannot be removed."
 msgstr "Ce document associé ne peut pas être supprimé."
 
+#: src/pages/reports/components/OverviewTab.tsx:531
 #: src/pages/reports/components/OverviewTab.tsx:485
 msgid "This report has no fields configured yet."
 msgstr "Ce rapport n'a pas encore de champs configurés."
@@ -17725,7 +17750,7 @@ msgid "Unable to verify OTP"
 msgstr "Impossible de vérifier OTP"
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:127
-#: src/pages/requests/components/request/components/Header.tsx:817
+#: src/pages/requests/components/request/components/Header.tsx:822
 msgid "Unassigned"
 msgstr "Non attribué"
 
@@ -18944,13 +18969,13 @@ msgstr "Annuel"
 msgid "years"
 msgstr "années"
 
-#: src/pages/reports/components/ReportsListView.tsx:217
+#: src/pages/reports/components/ReportsListView.tsx:225
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5976
 msgid "Yes"
 msgstr "Oui"
 
 #: src/pages/forms/FormsPage.tsx:607
-#: src/pages/reports/components/ReportsListView.tsx:347
+#: src/pages/reports/components/ReportsListView.tsx:355
 msgid "Yes, Delete"
 msgstr "Oui, supprimer"
 
