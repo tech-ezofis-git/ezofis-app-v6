@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { SegmentedControl } from '@mantine/core'
-import { useDebouncedCallback } from '@mantine/hooks'
+import { useDebouncedCallback, useMediaQuery } from '@mantine/hooks'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
@@ -1200,8 +1200,10 @@ const TableCellFileInput = ({
             className={cn(
               'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--mantine-radius-default)] border border-dashed border-primary-6 bg-primary-2 px-3 text-13 font-medium text-primary-11 transition-colors hover:bg-primary-3 active:scale-[0.99]',
               busy ? 'cursor-wait opacity-70' : 'cursor-pointer',
+              readOnly &&
+                'cursor-not-allowed border-gray-4 bg-gray-3 text-gray-9 hover:bg-gray-3 active:scale-100',
             )}
-            disabled={busy}
+            disabled={busy || readOnly}
             type='button'
             onClick={() => fileInputRef.current?.click()}
           >
@@ -1235,7 +1237,7 @@ const TableCellFileInput = ({
             </span>
           </Tooltip>
         )}
-        {!multiple && fileName && !busy && (
+        {!multiple && fileName && !busy && !readOnly && (
           <button
             aria-label='Remove file'
             className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
@@ -1504,10 +1506,17 @@ const renderCellInput = (
     )
   }
 
+  // Read-only cells look like a disabled input, matching the form's own
+  // disabled fields, instead of bare text.
   if (readOnly && cellType !== 'FILE_UPLOAD' && cellType !== 'IMAGE_UPLOAD') {
+    const display = formatRuntimeFieldDisplayValue(val, col)
     return (
-      <div className='truncate px-2 py-1 text-xs text-gray-12'>
-        {formatRuntimeFieldDisplayValue(val, col)}
+      <div
+        aria-disabled='true'
+        className='flex h-9 min-h-9 w-full min-w-0 cursor-not-allowed items-center rounded-[var(--mantine-radius-default)] border border-gray-4 bg-gray-3 px-3 text-13 font-normal text-gray-9'
+        title={display ? String(display) : undefined}
+      >
+        <span className='min-w-0 truncate'>{display}</span>
       </div>
     )
   }
@@ -1840,11 +1849,15 @@ const TableFieldRenderer = ({
       (c.type || '').toUpperCase(),
     ),
   )
-  const activeView: 'ADVANCE' | 'NORMAL' =
-    viewOverride ||
-    ((hasUploadColumn && isFlat) || specific.tableViewMode === 'ADVANCE'
-      ? 'ADVANCE'
-      : 'NORMAL')
+  // Phones always get the card (list) view: a wide grid can't be filled in
+  // at that width
+  const isPhone = useMediaQuery('(max-width: 767px)') ?? false
+  const activeView: 'ADVANCE' | 'NORMAL' = isPhone
+    ? 'ADVANCE'
+    : viewOverride ||
+      ((hasUploadColumn && isFlat) || specific.tableViewMode === 'ADVANCE'
+        ? 'ADVANCE'
+        : 'NORMAL')
 
   const isMasterSynced = specific.fillValueType === 'MASTER'
   const masterFormId = specific.masterFormId
@@ -3183,7 +3196,7 @@ const TableFieldRenderer = ({
           )}
         </div>
         <div className='flex shrink-0 items-center gap-1.5'>
-          {(!hasUploadColumn || !isFlat) && (
+          {(!hasUploadColumn || !isFlat) && !isPhone && (
             <IconButton
               color='gray'
               size='xs'
@@ -4004,7 +4017,9 @@ const TableFieldRenderer = ({
                 </div>
 
                 {isExpanded && (
-                  <div className='animate-in space-y-3 border-t border-[var(--gray-3)] px-3 py-3 fade-in slide-in-from-top-1'>
+                  // Phones: a fixed height of about six fields that scrolls
+                  // inside the card, so a wide row doesn't push the form down
+                  <div className='animate-in space-y-3 border-t border-[var(--gray-3)] px-3 py-3 fade-in slide-in-from-top-1 max-md:max-h-[26rem] max-md:overflow-y-auto max-md:overscroll-contain'>
                     {effectiveColumns.map((col) => (
                       <div key={col.id}>
                         <div className='mb-1 flex items-center gap-1.5'>

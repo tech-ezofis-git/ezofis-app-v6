@@ -2,7 +2,9 @@ import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import type { StageTrailItem } from '@/pages/requests/utils/workflow.utils'
 import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
+import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
@@ -122,6 +124,7 @@ export default function PortalShell({
               />
               <Button
                 className='max-sm:hidden'
+                className='max-sm:hidden'
                 color='gray'
                 icon='lucide:log-out'
                 label={t`Sign out`}
@@ -129,6 +132,22 @@ export default function PortalShell({
                 variant='outline'
                 onClick={onSignOut}
               />
+              {/* Phones: avatar + icon-only sign out instead of the
+                  outlined text button */}
+              <div className='flex animate-in items-center gap-1 fade-in sm:hidden'>
+                <Avatar
+                  initials={(email.trim()[0] || '?').toUpperCase()}
+                  size={32}
+                />
+                <IconButton
+                  ariaLabel={t`Sign out`}
+                  className='size-10 rounded-full transition active:scale-90'
+                  color='gray'
+                  icon='lucide:log-out'
+                  variant='ghost'
+                  onClick={onSignOut}
+                />
+              </div>
             </div>
           </div>
         </header>

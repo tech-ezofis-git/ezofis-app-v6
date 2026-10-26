@@ -11,6 +11,7 @@ import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import { ensureNormalizedRuntimeFormJson } from '@/pages/form-builder/helpers/runtimeFieldAdapter'
 import {
   extractGenericRequestNumber,
   getFieldKeyByLabel,
@@ -1032,8 +1033,16 @@ const fillBlankQuoteAdjustments = (
 const storeFormValues = (
   panels: any[] | undefined,
   values: Record<string, unknown>,
+  calc?: { panels: any[]; rules: any[] },
 ) => {
-  const calculated = applyCalculatedFields(panels, values) as Record<string, any>
+  // Calculate like the create screen: normalized panels (V6 formula tokens)
+  // plus the form's rules. Without them a calculated field falls back to its
+  // base formula and shows the wrong total.
+  const calculated = applyCalculatedFields(
+    calc?.panels.length ? calc.panels : panels,
+    values,
+    calc?.rules,
+  ) as Record<string, any>
   const fields = (panels || []).flatMap((panel) => panel?.fields || [])
   const headings = new Set<string>()
   const columnsByFieldId = new Map<string, any[]>()
@@ -1939,22 +1948,37 @@ const Request = ({
     return itemTab === 'inbox' || itemTab === 'invoices'
   }, [requestListTab, selectedItem?._listTab, t])
 
-  const headerActions = useMemo(() => {
-    if (isApAgentStage || isAutoRoutedAgentStage) return []
+  // Whether the signed-in user can act on this request at its current stage.
+  // Drives both the header actions and whether the form is editable, so a
+  // request with no action for this user (completed, someone else's stage,
+  // an agent stage) is fully read-only.
+  const canActOnRequest = useMemo(() => {
+    if (isApAgentStage || isAutoRoutedAgentStage) return false
 
     const completedAt = stageRow?.completedAtUtc || selectedItem?.completedAtUtc
-    if (completedAt) return []
+    if (completedAt) return false
 
     if (hasCustomTabConfig) {
       // Configured tabs replace Inbox / Sent / Completed. A request opened
       // from any of those tabs shows actions when the signed-in email is
       // the activity assignee.
-      if (!isUserEmailMatched && !isAssignedToCurrentUser) return []
-    } else {
-      // No tab configuration: actions only from Inbox.
-      if (!isInboxTab) return []
-      if (!isAssignedToCurrentUser && !isUserEmailMatched) return []
+      return isUserEmailMatched || isAssignedToCurrentUser
     }
+    // No tab configuration: actions only from Inbox.
+    return isInboxTab && (isAssignedToCurrentUser || isUserEmailMatched)
+  }, [
+    isApAgentStage,
+    isAutoRoutedAgentStage,
+    hasCustomTabConfig,
+    isInboxTab,
+    isUserEmailMatched,
+    isAssignedToCurrentUser,
+    stageRow?.completedAtUtc,
+    selectedItem?.completedAtUtc,
+  ])
+
+  const headerActions = useMemo(() => {
+    if (!canActOnRequest) return []
 
     if (ruleActions.length > 0) return ruleActions
     if (actions.length > 0) return actions
@@ -1970,23 +1994,13 @@ const Request = ({
       selectedWorkflow?.flowJson
     return getActionsForActivity(String(currentActivityId || ''), graphSource)
   }, [
-    isApAgentStage,
-    isAutoRoutedAgentStage,
-    hasCustomTabConfig,
-    isInboxTab,
-    isUserEmailMatched,
-    isAssignedToCurrentUser,
+    canActOnRequest,
     ruleActions,
     actions,
     currentActivityId,
     workflowGraph,
     rawWorkflowData,
     selectedWorkflow?.flowJson,
-    stageRow?.completedAtUtc,
-    stageRow?.activityUserEmail,
-    selectedItem?.completedAtUtc,
-    selectedItem?.activityUserEmail,
-    request?.activityUserEmail,
   ])
 
   const [formModel, setFormModel] = useState<any>({})
@@ -1994,8 +2008,18 @@ const Request = ({
     {},
   )
 
-  // "Budget" from the master form behind the workflow's lookup fields,
-  // shown in the header like the quote total (0 when the cell is blank).
+  // Normalized panels + rules for calculated fields, as the create screen
+  // uses them.
+  const genericFormCalc = useMemo(() => {
+    const { panels, rules } = ensureNormalizedRuntimeFormJson(
+      rawWorkflowData?.formJson,
+    )
+    return { panels, rules }
+  }, [rawWorkflowData])
+
+  // Header budget: the request's "Available Budget" field when the form has
+  // one, else "Budget" from the master form behind the workflow's lookup
+  // fields (0 when the cell is blank).
   const genericFormPanels = useMemo(
     () => (isGenericWorkflow ? getFormPanels(overviewWorkflowData) : []),
     [isGenericWorkflow, overviewWorkflowData],
@@ -2117,10 +2141,12 @@ const Request = ({
           activeItem?.activityId,
           rawWorkflowData?.repositoryId || activeItem?.repositoryId,
         ),
+        genericFormCalc,
       )
     })
   }, [
     genericAttachments,
+    genericFormCalc,
     isGenericWorkflow,
     rawWorkflowData,
     request,
@@ -2164,6 +2190,7 @@ const Request = ({
           (request || selectedItem)?.activityId,
           stored.repositoryId,
         ),
+        genericFormCalc,
       ),
     )
 
@@ -2173,6 +2200,7 @@ const Request = ({
     }
   }, [
     genericAttachments,
+    genericFormCalc,
     genericInstanceId,
     isGenericWorkflow,
     rawWorkflowData,
@@ -2182,20 +2210,22 @@ const Request = ({
 
   const handleGenericFieldChange = (fieldId: string, value: any) =>
     setGenericFormModel((prev) =>
-      storeFormValues(getFormPanels(rawWorkflowData), {
-        ...prev,
-        [fieldId]: value,
-      }),
+      storeFormValues(
+        getFormPanels(rawWorkflowData),
+        { ...prev, [fieldId]: value },
+        genericFormCalc,
+      ),
     )
 
   // Quote 2/3 totals are calculated fields. A batch write restores the tab
   // values after formulas run so Quote 1's operands cannot replace them.
   const handleGenericFieldsChange = (patch: Record<string, any>) =>
     setGenericFormModel((prev) => {
-      const next = storeFormValues(getFormPanels(rawWorkflowData), {
-        ...prev,
-        ...patch,
-      })
+      const next = storeFormValues(
+        getFormPanels(rawWorkflowData),
+        { ...prev, ...patch },
+        genericFormCalc,
+      )
       for (const [key, value] of Object.entries(patch)) {
         if (Array.isArray(value) || !CONTROL_ID.test(key)) continue
         next[key] = value
@@ -2992,6 +3022,7 @@ const Request = ({
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
           budget={headerBudget}
+          budget={headerBudget}
           currency={currency}
           enableAIInsights={hasAgentData}
           hideActions={hideActions}
@@ -3163,11 +3194,7 @@ const Request = ({
                 selectedItem={request || selectedItem}
                 signatureConfirmed={signatureConfirmed}
                 userSignatureRequired={!!currentBlockSettings.userSignature}
-                viewOnly={
-                  hasCustomTabConfig
-                    ? !isUserEmailMatched && !isAssignedToCurrentUser
-                    : !isInboxTab
-                }
+                viewOnly={!canActOnRequest}
                 checklistItems={
                   Array.isArray(currentBlockSettings.checklistItems)
                     ? currentBlockSettings.checklistItems

@@ -83,6 +83,9 @@ interface Props {
   error?: string
   fallbackAttachments?: any[]
   formModel?: Record<string, any>
+  // The whole form is view-only (not just this field). Master/parent fill
+  // still writes into read-only fields unless this is set.
+  formViewOnly?: boolean
   isPreparing?: boolean
   panels?: any[]
   preparePhase?: 'extracting' | 'uploading' | null
@@ -939,6 +942,7 @@ const FieldRendererBase = ({
   fallbackAttachments,
   field,
   formModel,
+  formViewOnly,
   isPreparing,
   panels,
   preparePhase,
@@ -957,6 +961,7 @@ const FieldRendererBase = ({
   const { t } = useLingui()
   const [isUploading, setIsUploading] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
+  const [isMasterFilling, setIsMasterFilling] = useState(false)
   const [clearedAttachmentKeys, setClearedAttachmentKeys] = useState<string[]>(
     [],
   )
@@ -1182,7 +1187,10 @@ const FieldRendererBase = ({
   }, [runtimeType, selectOptions, value, readOnly, onChange])
 
   // "Fill Value" from a master table / another field (SHORT_TEXT, NUMBER,
-  // DATE, DATE_TIME). Renders nothing; writes the resolved value via onChange.
+  // DATE, DATE_TIME). Renders nothing; writes the resolved value via onChange
+  // and reports fetching so the input shows its loader. Read-only fields are
+  // still filled; only a view-only form locks them.
+  const isFillLocked = formViewOnly !== undefined ? formViewOnly : readOnly
   const fillSync = ['SHORT_TEXT', 'NUMBER', 'DATE', 'DATE_TIME'].includes(
     runtimeType,
   ) ? (
@@ -1193,6 +1201,7 @@ const FieldRendererBase = ({
       readOnly={syncReadOnly ?? readOnly}
       value={value}
       onChange={onChange}
+      onLoadingChange={setIsMasterFilling}
     />
   ) : null
 
@@ -1284,9 +1293,8 @@ const FieldRendererBase = ({
     case 'SHORT_TEXT':
       return (
         <>
-          {fillSync}
           <ShortTextSmartInput
-            common={common}
+            common={{ ...common, loading: isMasterFilling }}
             field={field}
             isSearching={isSearching}
             readOnly={readOnly}
@@ -1295,6 +1303,7 @@ const FieldRendererBase = ({
             onMultiFieldChange={onMultiFieldChange}
             onTriggerSearch={handleTriggerSearch}
           />
+          {fillSync}
         </>
       )
 
@@ -1335,7 +1344,6 @@ const FieldRendererBase = ({
       }
       return (
         <>
-          {fillSync}
           <FieldAddons
             fieldType={runtimeType}
             isSearching={isSearching}
@@ -1346,11 +1354,13 @@ const FieldRendererBase = ({
           >
             <InputNumber
               {...common}
+              loading={isMasterFilling}
               prefix={currencyPrefix}
               value={numericInputValue}
               onChange={handleNumericChange}
             />
           </FieldAddons>
+          {fillSync}
         </>
       )
     }
@@ -1371,7 +1381,6 @@ const FieldRendererBase = ({
       const { maxDate, minDate } = getDateTimeLimits(field)
       return (
         <>
-          {fillSync}
           <FieldAddons
             fieldType={runtimeType}
             isSearching={isSearching}
@@ -1382,12 +1391,14 @@ const FieldRendererBase = ({
           >
             <InputDate
               {...common}
+              loading={isMasterFilling}
               maxDate={maxDate}
               minDate={minDate}
               value={value ?? null}
               onChange={onChange}
             />
           </FieldAddons>
+          {fillSync}
         </>
       )
     }
@@ -1397,7 +1408,6 @@ const FieldRendererBase = ({
         field.settings?.validation?.timeFormat === '24' ? '24h' : '12h'
       return (
         <>
-          {fillSync}
           <FieldAddons
             fieldType={runtimeType}
             isSearching={isSearching}
@@ -1415,6 +1425,7 @@ const FieldRendererBase = ({
               onChange={onChange}
             />
           </FieldAddons>
+          {fillSync}
         </>
       )
     }

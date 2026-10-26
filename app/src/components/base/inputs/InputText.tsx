@@ -6,6 +6,7 @@ import {
   forwardRef,
   type ReactNode,
 } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
@@ -19,6 +20,7 @@ interface Props extends InputProps {
   leftSection?: ReactNode
   leftSectionPointerEvents?: 'auto' | 'none'
   leftSectionWidth?: number | string
+  loading?: boolean
   rightSection?: ReactNode
   rightSectionPointerEvents?: 'auto' | 'none'
   rightSectionWidth?: number | string
@@ -37,6 +39,7 @@ const InputText = forwardRef<HTMLInputElement, Props>(
       description,
       label,
       leftSectionWidth,
+      loading,
       optional,
       required,
       rightSection,
@@ -53,8 +56,10 @@ const InputText = forwardRef<HTMLInputElement, Props>(
     },
     ref,
   ) => {
-    const _clearable = clearable && value
-    const _rightSection = _clearable ? (
+    const _clearable = !loading && clearable && value
+    const _rightSection = loading ? (
+      <Icon className='animate-spin text-gray-10' name='fa:spinner' />
+    ) : _clearable ? (
       <ClearButton onClick={() => onChange('')} />
     ) : (
       rightSection

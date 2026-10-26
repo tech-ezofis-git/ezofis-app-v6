@@ -11,6 +11,7 @@ import {
   openWorkflowOAuthAuthorize,
   parseOAuthConnectionSuccess,
 } from '@/pages/workflows/utils/oauthAuthorize'
+import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import cn from '@/utils/cn'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
@@ -41,7 +42,8 @@ export default function OneDriveSettingsPanel({
     )
   }
 
-  const [openBasic, setOpenBasic] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [openBasic, setOpenBasic] = useState(defaultOpen)
   const [path, setPath] = useState(nodeData.path || '')
 
   // Connection States

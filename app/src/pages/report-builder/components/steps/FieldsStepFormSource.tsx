@@ -1,5 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Question } from '@/pages/form-builder/store/formStore'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -8,6 +9,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import { createFieldQuestions } from '@/pages/form-builder/helpers/field-utils'
 import cn from '@/utils/cn'
+import type { ReportFieldSetting } from '../../types'
 import type { PreviewColumn } from './FieldsPreviewTable'
 import { useReportBuilderPreviewMutation } from '../../hooks/useReportBuilderApi'
 import useReportSourceFields from '../../hooks/useReportSourceFields'
@@ -61,6 +63,10 @@ const QUESTION_TYPE_ICON: Record<string, string> = {
 
 const iconFor = (type: string) => QUESTION_TYPE_ICON[type] || 'lucide:circle'
 
+// Same layout as the AI fields step (FieldsStepAgent): both lists share one
+// height so they line up side by side within the viewport.
+const LIST_HEIGHT = 'max-h-[min(420px,50vh)] md:h-[min(420px,50vh)]'
+
 /**
  * Form-driven field picker for Report Builder (requirements 6-10): fields
  * come from the selected source form's real schema, plus any calculated
@@ -71,10 +77,7 @@ const FieldsStepFormSource = () => {
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const setDraft = useReportBuilderDraftStore((state) => state.setDraft)
   const [search, setSearch] = useState('')
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [expandedFieldId, setExpandedFieldId] = useState<string | null>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-  const settingsPanelRef = useRef<HTMLDivElement>(null)
 
   const {
     fields: sourceFields,
@@ -90,15 +93,18 @@ const FieldsStepFormSource = () => {
     [sourceFields, draft.customFields],
   )
 
-  const availableFields = useMemo(
-    () =>
-      allFields.filter(
-        (field) =>
-          !draft.fields.includes(field.id) &&
-          (field.label || '').toLowerCase().includes(search.toLowerCase()),
-      ),
-    [allFields, draft.fields, search],
+  const unselectedFields = useMemo(
+    () => allFields.filter((field) => !draft.fields.includes(field.id)),
+    [allFields, draft.fields],
   )
+  // Every search word must appear in the label, in any order.
+  const availableFields = useMemo(() => {
+    const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    return unselectedFields.filter((field) => {
+      const label = (field.label || '').toLowerCase()
+      return words.every((word) => label.includes(word))
+    })
+  }, [unselectedFields, search])
   const selectedFields = useMemo(
     () =>
       draft.fields
@@ -106,10 +112,6 @@ const FieldsStepFormSource = () => {
         .filter((f): f is Question => Boolean(f)),
     [draft.fields, allFields],
   )
-  const expandedField = expandedFieldId
-    ? (allFields.find((f) => f.id === expandedFieldId) ?? null)
-    : null
-
   // Clean up any stale design field IDs from draft.fields once fields are loaded
   useEffect(() => {
     if (isLoading || sourceFields.length === 0) return
@@ -191,15 +193,16 @@ const FieldsStepFormSource = () => {
     setExpandedFieldId(nextField.id)
   }
 
-  useEffect(() => {
-    if (expandedFieldId && settingsPanelRef.current) {
-      settingsPanelRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      })
-      settingsPanelRef.current.focus({ preventScroll: true })
-    }
-  }, [expandedFieldId])
+  const settingFor = (field: Question) =>
+    draft.fieldSettings[field.id] || createDefaultFieldSetting(field.label)
+
+  const updateSetting = (field: Question, patch: Partial<ReportFieldSetting>) =>
+    setDraft({
+      fieldSettings: {
+        ...draft.fieldSettings,
+        [field.id]: { ...settingFor(field), ...patch },
+      },
+    })
 
   const previewColumns: PreviewColumn[] = selectedFields.map((field) => {
     const setting = draft.fieldSettings[field.id]
@@ -215,17 +218,19 @@ const FieldsStepFormSource = () => {
     Record<string, string>[] | null
   >(null)
 
-  useEffect(() => {
+  const runPreview = () => {
     if (!draft.sourceFormId || draft.fields.length === 0) {
       setPreviewRows(null)
       return
     }
-    const timer = setTimeout(() => {
-      previewMutation.mutate(draft, {
-        onError: () => setPreviewRows([]),
-        onSuccess: (result) => setPreviewRows(result.data?.rows ?? []),
-      })
-    }, 400)
+    previewMutation.mutate(draft, {
+      onError: () => setPreviewRows([]),
+      onSuccess: (result) => setPreviewRows(result.data?.rows ?? []),
+    })
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(runPreview, 400)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- draft.fields/fieldSettings/filters cover what preview needs; previewMutation is stable
   }, [
@@ -236,264 +241,318 @@ const FieldsStepFormSource = () => {
     draft.domain,
   ])
 
+  const isLive = Boolean(draft.sourceFormId)
+  const isPreviewPending = previewMutation.isPending
+  const hasPreviewRows = Boolean(previewRows?.length)
+
   return (
     <div className='flex flex-col gap-5'>
-      <div className='grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2'>
-        <div className='flex h-[420px] flex-col gap-2 rounded-xl border border-gray-3 p-3'>
-          <div className='flex min-h-7 items-center justify-between gap-2'>
-            <p className='text-13 font-medium text-gray-12'>{t`Available fields`}</p>
-            <div
-              className={cn(
-                'flex h-7 items-center overflow-hidden rounded-md border transition-all duration-200',
-                isSearchExpanded || search
-                  ? 'w-48 border-primary-6 bg-surface shadow-2xs'
-                  : 'w-7 cursor-pointer justify-center border-gray-4 bg-surface text-gray-10 hover:border-gray-6 hover:bg-gray-1 hover:text-gray-13 active:scale-95',
-              )}
-              onClick={() => {
-                if (!isSearchExpanded) {
-                  setIsSearchExpanded(true)
-                }
-                setTimeout(() => searchInputRef.current?.focus(), 40)
-              }}
-            >
-              <button
-                aria-label={t`Search fields`}
-                className='flex size-7 shrink-0 cursor-pointer items-center justify-center text-gray-10 transition-colors hover:text-gray-13'
-                type='button'
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIsSearchExpanded((prev) => !prev)
-                  if (!isSearchExpanded) {
-                    setTimeout(() => searchInputRef.current?.focus(), 40)
-                  }
-                }}
-              >
-                <Icon
-                  className={cn(
-                    'size-3.5 shrink-0 transition-colors',
-                    isSearchExpanded || search
-                      ? 'text-primary-10'
-                      : 'text-gray-10',
-                  )}
-                  name='lucide:search'
-                />
-              </button>
-
-              {(isSearchExpanded || Boolean(search)) && (
-                <input
-                  className='h-full min-w-0 flex-1 bg-transparent pr-1 text-12 text-gray-13 outline-none placeholder:text-gray-8'
-                  placeholder={t`Search fields...`}
-                  ref={searchInputRef}
-                  type='text'
-                  value={search}
-                  onBlur={() => {
-                    if (!search) {
-                      setIsSearchExpanded(false)
-                    }
-                  }}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      setSearch('')
-                      setIsSearchExpanded(false)
-                    }
-                  }}
-                />
-              )}
-
-              {Boolean(search) && (
-                <button
-                  aria-label={t`Clear search`}
-                  className='mr-1 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-9 transition hover:bg-gray-2 hover:text-gray-12'
-                  type='button'
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSearch('')
-                    searchInputRef.current?.focus()
-                  }}
-                >
-                  <Icon className='size-3' name='lucide:x' />
-                </button>
-              )}
+      <div className='grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]'>
+        {/* Selected columns */}
+        <section className='flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-sm'>
+          <header className='flex items-center gap-2.5 border-b border-gray-3 bg-gray-1/60 px-3.5 py-2.5'>
+            <span className='flex size-7 items-center justify-center rounded-lg bg-primary-3 text-primary-11'>
+              <Icon className='size-4' name='lucide:columns-3' />
+            </span>
+            <div className='min-w-0 flex-1'>
+              <p className='text-13 font-semibold text-gray-13'>{t`Selected columns`}</p>
+              <p className='text-11 text-gray-9'>{t`Shown in this order in the report`}</p>
             </div>
-          </div>
-          <div className='ez-scrollbar flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto rounded-lg border border-gray-3 p-2'>
-            {isLoading ? (
-              <p className='p-3 text-center text-12 text-gray-9'>{t`Loading fields...`}</p>
-            ) : isError ? (
-              <p className='p-3 text-center text-12 text-error-main'>{t`Couldn't load fields for this form. Try again.`}</p>
-            ) : availableFields.length === 0 ? (
-              <p className='p-3 text-center text-12 text-gray-9'>{t`No more fields to add.`}</p>
-            ) : (
-              availableFields.map((field) => (
-                <button
-                  className='flex items-center gap-2.5 rounded-lg border border-transparent px-2.5 py-2 text-left text-13 text-gray-12 transition-colors hover:border-gray-3 hover:bg-gray-1'
-                  key={field.id}
-                  type='button'
-                  onClick={() => addField(field)}
-                >
-                  <Icon
-                    className='size-4 shrink-0 text-gray-9'
-                    name={iconFor(field.type)}
-                  />
-                  <span className='flex-1 truncate'>{field.label}</span>
-                  <Icon
-                    className='size-4 shrink-0 text-primary-9'
-                    name='lucide:plus'
-                  />
-                </button>
-              ))
-            )}
-          </div>
-        </div>
+            <span className='rounded-full bg-primary-3 px-2 py-0.5 text-11 font-semibold text-primary-11'>
+              {selectedFields.length}
+            </span>
+          </header>
 
-        <div className='flex h-[420px] flex-col gap-2 rounded-xl border border-gray-3 p-3'>
-          <div className='flex min-h-7 items-center'>
-            <p className='text-13 font-medium text-gray-12'>
-              {t`Selected fields`} ({selectedFields.length})
-            </p>
-          </div>
-          <div className='ez-scrollbar flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto rounded-lg border border-gray-3 p-2'>
+          <div className={cn('ez-scrollbar overflow-y-auto p-2', LIST_HEIGHT)}>
             {selectedFields.length === 0 ? (
-              <p className='p-3 text-center text-12 text-gray-9'>{t`No fields selected yet.`}</p>
+              <div className='flex h-full min-h-40 flex-col items-center justify-center gap-2 text-center'>
+                <Icon
+                  className='size-6 text-gray-7'
+                  name='lucide:mouse-pointer-click'
+                />
+                <p className='text-13 text-gray-10'>{t`No columns selected yet.`}</p>
+                <p className='text-12 text-gray-9'>{t`Add columns from the list.`}</p>
+              </div>
             ) : (
-              selectedFields.map((field, index) => {
-                const setting =
-                  draft.fieldSettings[field.id] ||
-                  createDefaultFieldSetting(field.label)
-                const isExpanded = expandedFieldId === field.id
-                return (
-                  <div
-                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition-colors ${isExpanded ? 'bg-primary-1' : 'hover:bg-gray-1'}`}
-                    key={field.id}
-                  >
-                    <Icon
-                      className='size-4 shrink-0 text-gray-9'
-                      name={iconFor(field.type)}
-                    />
-                    <span className='flex-1 truncate text-13 text-gray-12'>
-                      {setting.label}
-                    </span>
-                    <div className='flex shrink-0 items-center'>
-                      <IconButton
-                        color='gray'
-                        disabled={index === 0}
-                        icon='lucide:chevron-up'
-                        size='xs'
-                        variant='ghost'
-                        onClick={() => moveField(field.id, -1)}
-                      />
-                      <IconButton
-                        color='gray'
-                        disabled={index === selectedFields.length - 1}
-                        icon='lucide:chevron-down'
-                        size='xs'
-                        variant='ghost'
-                        onClick={() => moveField(field.id, 1)}
-                      />
-                      <IconButton
-                        color={isExpanded ? 'primary' : 'gray'}
-                        icon='lucide:settings-2'
-                        size='xs'
-                        variant='ghost'
-                        onClick={() =>
-                          setExpandedFieldId(isExpanded ? null : field.id)
-                        }
-                      />
-                      <IconButton
-                        color='red'
-                        icon='lucide:x'
-                        size='xs'
-                        variant='ghost'
-                        onClick={() => removeField(field.id)}
-                      />
-                    </div>
-                  </div>
-                )
-              })
+              <ul className='flex flex-col gap-1.5'>
+                <AnimatePresence initial={false}>
+                  {selectedFields.map((field, index) => {
+                    const setting = settingFor(field)
+                    const isExpanded = expandedFieldId === field.id
+                    const hasHighlight =
+                      setting.colType === 'status' &&
+                      Boolean(setting.statusRules?.length)
+
+                    return (
+                      <motion.li
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: -12 }}
+                        initial={{ opacity: 0, y: 6 }}
+                        key={field.id}
+                        transition={{ duration: 0.18 }}
+                        layout
+                        className={cn(
+                          'group rounded-lg border transition-colors',
+                          isExpanded
+                            ? 'border-primary-6 bg-primary-1'
+                            : 'border-gray-3 bg-surface hover:border-gray-5 hover:bg-gray-1/60',
+                        )}
+                      >
+                        <div className='flex items-center gap-2 px-2 py-1.5'>
+                          <span className='flex size-6 shrink-0 items-center justify-center rounded-md bg-gray-2 text-11 font-semibold text-gray-10'>
+                            {index + 1}
+                          </span>
+                          <div className='min-w-0 flex-1'>
+                            <p className='truncate text-13 font-medium text-gray-12'>
+                              {setting.label}
+                            </p>
+                            {setting.label !== field.label && (
+                              <p className='truncate text-11 text-gray-9'>
+                                {field.label}
+                              </p>
+                            )}
+                          </div>
+                          {hasHighlight && (
+                            <span className='hidden shrink-0 rounded-full border border-primary-5 bg-primary-3 px-2 py-0.5 text-11 text-primary-11 sm:inline'>
+                              {t`Highlighted`}
+                            </span>
+                          )}
+                          <span className='hidden size-6 shrink-0 items-center justify-center rounded-md bg-gray-2 sm:flex'>
+                            <Icon
+                              className='size-3.5 text-gray-10'
+                              name={iconFor(field.type)}
+                            />
+                          </span>
+                          <div
+                            className={cn(
+                              'flex shrink-0 items-center transition-opacity',
+                              isExpanded
+                                ? 'opacity-100'
+                                : 'opacity-70 group-hover:opacity-100',
+                            )}
+                          >
+                            <IconButton
+                              ariaLabel={t`Move ${setting.label} up`}
+                              color='gray'
+                              disabled={index === 0}
+                              icon='lucide:chevron-up'
+                              size='sm'
+                              variant='ghost'
+                              onClick={() => moveField(field.id, -1)}
+                            />
+                            <IconButton
+                              ariaLabel={t`Move ${setting.label} down`}
+                              color='gray'
+                              disabled={index === selectedFields.length - 1}
+                              icon='lucide:chevron-down'
+                              size='sm'
+                              variant='ghost'
+                              onClick={() => moveField(field.id, 1)}
+                            />
+                            <IconButton
+                              ariaLabel={t`Configure ${setting.label}`}
+                              color={isExpanded ? 'primary' : 'gray'}
+                              icon='lucide:settings-2'
+                              size='sm'
+                              variant='ghost'
+                              onClick={() =>
+                                setExpandedFieldId(isExpanded ? null : field.id)
+                              }
+                            />
+                            <IconButton
+                              ariaLabel={t`Remove ${setting.label}`}
+                              color='red'
+                              icon='lucide:x'
+                              size='sm'
+                              variant='ghost'
+                              onClick={() => removeField(field.id)}
+                            />
+                          </div>
+                        </div>
+
+                        <AnimatePresence initial={false}>
+                          {isExpanded && (
+                            <motion.div
+                              animate={{ height: 'auto', opacity: 1 }}
+                              className='overflow-hidden'
+                              exit={{ height: 0, opacity: 0 }}
+                              initial={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <div className='mx-2 mb-2 flex flex-col gap-3 rounded-lg border border-gray-3 bg-surface p-3'>
+                                {unselectedFields.length > 0 && (
+                                  <InputSelect
+                                    label={t`Change field`}
+                                    placeholder={t`Change field...`}
+                                    value={null}
+                                    options={unselectedFields.map((f) => ({
+                                      id: f.id,
+                                      name: f.label,
+                                    }))}
+                                    onChange={(option) => {
+                                      const nextField = unselectedFields.find(
+                                        (f) => f.id === option?.id,
+                                      )
+                                      if (nextField)
+                                        changeField(field.id, nextField)
+                                    }}
+                                  />
+                                )}
+                                <FormFieldSettingsPanel
+                                  field={field}
+                                  otherFields={allFields.filter(
+                                    (f) => f.id !== field.id,
+                                  )}
+                                  setting={setting}
+                                  onChange={(patch) =>
+                                    updateSetting(field, patch)
+                                  }
+                                />
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.li>
+                    )
+                  })}
+                </AnimatePresence>
+              </ul>
             )}
           </div>
-        </div>
+        </section>
+
+        {/* Available columns */}
+        <section className='flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-sm'>
+          <header className='flex flex-col gap-2 border-b border-gray-3 bg-gray-1/60 px-3.5 py-2.5'>
+            <div className='flex items-center gap-2.5'>
+              <span className='flex size-7 items-center justify-center rounded-lg bg-blue-3 text-blue-11'>
+                <Icon className='size-4' name='lucide:list-plus' />
+              </span>
+              <div className='min-w-0 flex-1'>
+                <p className='text-13 font-semibold text-gray-13'>{t`Available columns`}</p>
+                <p className='text-11 text-gray-9'>{t`Click a column to add it`}</p>
+              </div>
+              <span className='rounded-full bg-gray-3 px-2 py-0.5 text-11 font-semibold text-gray-11'>
+                {unselectedFields.length}
+              </span>
+            </div>
+            <InputText
+              placeholder={t`Search columns...`}
+              value={search}
+              leftSection={
+                <Icon className='size-3.5 text-gray-9' name='lucide:search' />
+              }
+              onChange={setSearch}
+            />
+          </header>
+
+          <div className={cn('ez-scrollbar overflow-y-auto', LIST_HEIGHT)}>
+            {isLoading ? (
+              <div className='flex h-full min-h-40 flex-col items-center justify-center gap-2 p-4 text-center'>
+                <Icon
+                  className='size-6 animate-spin text-primary-10'
+                  name='lucide:loader-2'
+                />
+                <p className='text-13 text-gray-10'>{t`Loading fields...`}</p>
+              </div>
+            ) : isError ? (
+              <div className='flex h-full min-h-40 flex-col items-center justify-center gap-2 p-4 text-center'>
+                <Icon
+                  className='size-6 text-red-9'
+                  name='lucide:circle-alert'
+                />
+                <p className='text-13 text-red-11'>{t`Couldn't load fields for this form. Try again.`}</p>
+              </div>
+            ) : availableFields.length === 0 ? (
+              <div className='flex h-full min-h-40 flex-col items-center justify-center gap-2 p-4 text-center'>
+                <Icon className='size-6 text-gray-7' name='lucide:search-x' />
+                <p className='text-13 text-gray-10'>
+                  {unselectedFields.length === 0
+                    ? t`No more columns available.`
+                    : t`No columns match "${search.trim()}".`}
+                </p>
+              </div>
+            ) : (
+              <ul className='flex flex-col gap-0.5 p-1.5'>
+                {availableFields.map((field) => (
+                  <li key={field.id}>
+                    <button
+                      className='group/add flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-all hover:bg-primary-1 active:scale-[0.98]'
+                      type='button'
+                      onClick={() => addField(field)}
+                    >
+                      <span className='flex size-7 shrink-0 items-center justify-center rounded-md bg-gray-2'>
+                        <Icon
+                          className='size-4 text-gray-10'
+                          name={iconFor(field.type)}
+                        />
+                      </span>
+                      <span className='block min-w-0 flex-1 truncate text-13 text-gray-12'>
+                        {field.label}
+                      </span>
+                      <span className='flex size-6 shrink-0 items-center justify-center rounded-md border border-gray-4 text-gray-9 transition-colors group-hover/add:border-primary-6 group-hover/add:bg-primary-9 group-hover/add:text-text-on-accent'>
+                        <Icon className='size-3.5' name='lucide:plus' />
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
       </div>
 
-      {expandedField && (
-        <div
-          className='rounded-xl border border-primary-4 bg-primary-1/40 outline-none'
-          ref={settingsPanelRef}
-          tabIndex={-1}
-        >
-          <div className='flex flex-wrap items-center justify-between gap-2 border-b border-primary-4 px-4 py-2.5'>
-            <div className='flex items-center gap-2'>
-              <Icon
-                className='size-4 text-primary-10'
-                name={iconFor(expandedField.type)}
-              />
-              <p className='text-13 font-semibold text-gray-13'>
-                {t`Field settings`} —{' '}
-                {draft.fieldSettings[expandedField.id]?.label ||
-                  expandedField.label}
-              </p>
-            </div>
-            <div className='flex items-center gap-2'>
-              <div className='w-48'>
-                <InputSelect
-                  placeholder={t`Change field...`}
-                  value={null}
-                  options={availableFields.map((f) => ({
-                    id: f.id,
-                    name: f.label,
-                  }))}
-                  onChange={(option) => {
-                    const nextField = availableFields.find(
-                      (f) => f.id === option?.id,
-                    )
-                    if (nextField) changeField(expandedField.id, nextField)
-                  }}
-                />
-              </div>
-              <IconButton
-                color='gray'
-                icon='lucide:x'
-                size='xs'
-                variant='ghost'
-                onClick={() => setExpandedFieldId(null)}
-              />
-            </div>
+      {/* Live preview */}
+      <section className='flex flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-sm'>
+        <header className='flex items-center gap-2.5 border-b border-gray-3 bg-gray-1/60 px-3.5 py-2.5'>
+          <span className='flex size-7 items-center justify-center rounded-lg bg-green-3 text-green-11'>
+            <Icon className='size-4' name='lucide:table-2' />
+          </span>
+          <div className='min-w-0 flex-1'>
+            <p className='text-13 font-semibold text-gray-13'>
+              {isLive ? t`Live preview` : t`Preview`}
+            </p>
+            <p className='text-11 text-gray-9'>
+              {isPreviewPending
+                ? t`Running report...`
+                : t`Updates when you add or remove columns`}
+            </p>
           </div>
-          <div className='p-4'>
-            <FormFieldSettingsPanel
-              field={expandedField}
-              otherFields={allFields.filter((f) => f.id !== expandedField.id)}
-              setting={
-                draft.fieldSettings[expandedField.id] ||
-                createDefaultFieldSetting(expandedField.label)
-              }
-              onChange={(patch) =>
-                setDraft({
-                  fieldSettings: {
-                    ...draft.fieldSettings,
-                    [expandedField.id]: {
-                      ...(draft.fieldSettings[expandedField.id] ||
-                        createDefaultFieldSetting(expandedField.label)),
-                      ...patch,
-                    },
-                  },
-                })
-              }
+          {isPreviewPending && (
+            <Icon
+              className='size-4 animate-spin text-primary-10'
+              name='lucide:loader-2'
+            />
+          )}
+          {isLive && (
+            <Button
+              color='gray'
+              disabled={isPreviewPending || draft.fields.length === 0}
+              icon='lucide:refresh-cw'
+              label={t`Run again`}
+              size='xs'
+              variant='ghost'
+              onClick={runPreview}
+            />
+          )}
+        </header>
+        <div className='p-3'>
+          <div
+            className={cn(
+              'transition-opacity',
+              isPreviewPending && hasPreviewRows && 'opacity-60',
+            )}
+          >
+            <FieldsPreviewTable
+              columns={previewColumns}
+              fieldSettings={draft.fieldSettings}
+              isLive={isLive}
+              isLoading={isPreviewPending && !hasPreviewRows}
+              rows={previewRows ?? undefined}
             />
           </div>
         </div>
-      )}
-
-      <div className='flex flex-col gap-2'>
-        <p className='text-13 font-medium text-gray-12'>{t`Preview Data`}</p>
-        <FieldsPreviewTable
-          columns={previewColumns}
-          isLive={Boolean(draft.sourceFormId)}
-          isLoading={previewMutation.isPending}
-          rows={previewRows ?? undefined}
-        />
-      </div>
+      </section>
     </div>
   )
 }

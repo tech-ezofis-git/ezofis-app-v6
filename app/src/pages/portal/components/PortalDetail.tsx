@@ -410,9 +410,11 @@ export default function PortalDetail({
             </WorkflowNameContext.Provider>
           ) : (
             <PortalSubmissionDetails
+              attachments={attachmentList}
               formModel={formModel}
               openIds={openIds}
               panels={panels}
+              onOpenAttachment={(att) => setOpenedAttachment(att)}
               onToggle={toggleSection}
             />
           )

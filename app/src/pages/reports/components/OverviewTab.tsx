@@ -1,8 +1,14 @@
 import { useLingui } from '@lingui/react/macro'
+import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useMemo, useState } from 'react'
+import type { ReportSpec } from '@/api/v6/reportAgent'
 import type { Row } from '@/components/base/data-table/types'
-import type { FilterDefinition } from '@/components/common/CustomFilter'
+import type {
+  FilterDefinition,
+  FilterGroup,
+} from '@/components/common/CustomFilter'
 import type { Report } from '@/pages/report-builder/types'
+import Button from '@/components/base/button/Button'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
@@ -10,7 +16,11 @@ import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Pagination from '@/components/base/pagination/Pagination'
 import CustomFilter from '@/components/common/CustomFilter'
-import { useReportBuilderDataQuery } from '@/pages/report-builder/hooks/useReportBuilderApi'
+import {
+  useReportAgentDataQuery,
+  useReportBuilderDataQuery,
+} from '@/pages/report-builder/hooks/useReportBuilderApi'
+import { isIdColumn } from '@/pages/report-builder/utils/hiddenColumns'
 import { resolveFieldStatus } from '@/pages/report-builder/utils/resolveFieldStatus'
 import {
   detectFieldType,
@@ -34,61 +44,182 @@ interface Props {
   report: Report
 }
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 200
+
+// Row fields (not table columns) carrying the ids a Req No link opens.
+const WORKFLOW_ID_KEY = '__workflowId'
+const INSTANCE_ID_KEY = '__instanceId'
+
+// Normalized names the run may use for those ids.
+const WORKFLOW_ID_NAMES = ['workflowid', 'wfid']
+const INSTANCE_ID_NAMES = ['instanceid', 'workflowinstanceid', 'processid']
+
+const normalizeName = (value: string | undefined) =>
+  (value ?? '').toLowerCase().replace(/[\s_\-.#]/g, '')
+
+/** The request-number column: key `id` (labelled "Req No") or a Req/Request No label. */
+const isRequestNumberColumn = (col: OverviewColumn) =>
+  normalizeName(col.id) === 'id' ||
+  /^(req|request)(no|num|number)$/.test(normalizeName(col.label))
+
+// DataTable rows need their own `id`/`name`, which would overwrite report
+// columns keyed `id` (Req No) or `name`; those cells read an alias instead.
+const RESERVED_ROW_KEYS = new Set(['id', 'name'])
+const cellKey = (columnId: string) =>
+  RESERVED_ROW_KEYS.has(columnId) ? `__cell_${columnId}` : columnId
+
+const toTableRow = (row: Record<string, string>, index: number) => ({
+  ...row,
+  [cellKey('id')]: row.id ?? '',
+  [cellKey('name')]: row.name ?? '',
+  id: String(index),
+  name: '',
+})
 
 const OverviewTab = ({ report }: Props) => {
   const { t } = useLingui()
+  const navigate = useNavigate()
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
-  const { data: runResult, isLoading } = useReportBuilderDataQuery(report.id)
+  const isAgentReport = Boolean(report.agentConfig)
+  const legacyQuery = useReportBuilderDataQuery(
+    isAgentReport ? null : report.id,
+  )
+  const agentQuery = useReportAgentDataQuery(report)
+  const runResult = isAgentReport ? agentQuery.data?.result : legacyQuery.data
+  const isLoading = isAgentReport ? agentQuery.isLoading : legacyQuery.isLoading
+  const agentError = isAgentReport ? agentQuery.error?.message : undefined
+  const agentWarnings = agentQuery.data?.warnings ?? []
+
+  // Highlights sent on the run response win over the ones saved with the report.
+  const fieldSettings = useMemo(
+    () => ({ ...report.fieldSettings, ...agentQuery.data?.fieldSettings }),
+    [report.fieldSettings, agentQuery.data?.fieldSettings],
+  )
 
   const previewColumns: OverviewColumn[] = useMemo(() => {
     const columns = runResult?.columns ?? []
-    return columns.map((col) => {
-      const fieldId =
-        report.fields.find(
-          (id) => report.fieldSettings[id]?.label === col.label,
-        ) || col.key
-      return { id: fieldId, label: col.label }
-    })
-  }, [runResult, report.fields, report.fieldSettings])
+    return (
+      columns
+        // Internal identifier columns are fetched but never displayed.
+        .filter((col) => !isIdColumn(col.key, col.label))
+        .map((col) => {
+          const fieldId = isAgentReport
+            ? col.key
+            : report.fields.find(
+                (id) => fieldSettings[id]?.label === col.label,
+              ) || col.key
+          return { id: fieldId, label: col.label }
+        })
+    )
+  }, [runResult, isAgentReport, report.fields, fieldSettings])
+
+  // Hidden workflow/instance id columns of the run, used to open a row's
+  // request from its Req No cell.
+  const linkColumns = useMemo(() => {
+    const columns = runResult?.columns ?? []
+    const find = (names: string[]) =>
+      columns.find(
+        (col) =>
+          names.includes(normalizeName(col.key)) ||
+          names.includes(normalizeName(col.label)),
+      )
+    return {
+      instance: find(INSTANCE_ID_NAMES),
+      workflow: find(WORKFLOW_ID_NAMES),
+    }
+  }, [runResult])
 
   const sourceRows: Record<string, string>[] = useMemo(() => {
     const rows = runResult?.rows ?? []
+    // From the run's column when there is one, else from a matching
+    // row-level field the run returned without a column.
+    const read = (
+      row: Record<string, string>,
+      names: string[],
+      col?: { key: string; label: string },
+    ) => {
+      const fromColumn = col ? row[col.key] || row[col.label] : ''
+      if (fromColumn) return fromColumn
+      const key = Object.keys(row).find(
+        (k) => names.includes(normalizeName(k)) && row[k],
+      )
+      return key ? row[key] : ''
+    }
     return rows.map((row) => {
       const mapped: Record<string, string> = {}
       previewColumns.forEach((col) => {
         mapped[col.id] = row[col.label] ?? ''
       })
+      mapped[INSTANCE_ID_KEY] = read(
+        row,
+        INSTANCE_ID_NAMES,
+        linkColumns.instance,
+      )
+      mapped[WORKFLOW_ID_KEY] = read(
+        row,
+        WORKFLOW_ID_NAMES,
+        linkColumns.workflow,
+      )
       return mapped
     })
-  }, [runResult, previewColumns])
+  }, [runResult, previewColumns, linkColumns])
+
+  const openRequest = useCallback(
+    (row: Row) => {
+      const workflowId = String(row[WORKFLOW_ID_KEY] ?? '')
+      const instanceId = String(row[INSTANCE_ID_KEY] ?? '')
+      if (!workflowId || !instanceId) return
+      // Same deep link Global Search uses; RequestsPage opens the overview.
+      void navigate({
+        search: { processId: instanceId, workflowId },
+        to: '/requests',
+      })
+    },
+    [navigate],
+  )
 
   const valueForColumn = useCallback(
     (col: OverviewColumn, row: Record<string, string>) => {
-      const setting = report.fieldSettings[col.id]
+      const setting = fieldSettings[col.id]
       if (setting?.colType === 'status') {
         return resolveFieldStatus(setting, row)?.label ?? row[col.id] ?? ''
       }
       return row[col.id] ?? ''
     },
-    [report.fieldSettings],
+    [fieldSettings],
   )
 
   // Columns formatted for TanStack Table and TableSearch
   const columns = useMemo(
     () =>
       previewColumns.map((col) => {
-        const setting = report.fieldSettings[col.id]
+        const setting = fieldSettings[col.id]
+        const key = cellKey(col.id)
         return {
           id: col.id,
           label: col.label,
           meta: { label: col.label },
           size: 180,
-          accessorFn: (row: Row) => row[col.id],
+          accessorFn: (row: Row) => row[key],
           renderCell: (row: Row) => {
+            if (
+              isRequestNumberColumn(col) &&
+              row[WORKFLOW_ID_KEY] &&
+              row[INSTANCE_ID_KEY]
+            ) {
+              return (
+                <button
+                  className='cursor-pointer font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70'
+                  type='button'
+                  onClick={() => openRequest(row)}
+                >
+                  {(row[key] as string) || '-'}
+                </button>
+              )
+            }
             if (setting?.colType === 'status') {
               const status = resolveFieldStatus(
                 setting,
@@ -97,14 +228,14 @@ const OverviewTab = ({ report }: Props) => {
               return status ? (
                 <StatusPill color={status.color} label={status.label} />
               ) : (
-                (row[col.id] as string) || '-'
+                (row[key] as string) || '-'
               )
             }
-            return (row[col.id] as string) ?? '-'
+            return (row[key] as string) ?? '-'
           },
         }
       }),
-    [previewColumns, report.fieldSettings],
+    [previewColumns, fieldSettings, openRequest],
   )
 
   const { searchState, ...restState } = useDataTableState({
@@ -119,11 +250,7 @@ const OverviewTab = ({ report }: Props) => {
         groupId: 'all',
         groupKey: '',
         groupValue: '',
-        items: sourceRows.map((row, index) => ({
-          ...row,
-          id: String(index),
-          name: '',
-        })),
+        items: sourceRows.map(toTableRow),
       },
     ],
     [sourceRows],
@@ -143,48 +270,99 @@ const OverviewTab = ({ report }: Props) => {
   const search = globalSearchState?.value || ''
   const selectedColumnId = globalSearchState?.id || ''
 
+  // Keys of the agent's default columns; their filters show inline, every
+  // other column's filter sits behind the "+" field picker.
+  const defaultColumnKeys = useMemo(() => {
+    const spec = report.agentConfig?.reportSpec as unknown as
+      | ReportSpec
+      | undefined
+    if (!spec) return null
+    return new Set(
+      [...(spec.defaultColumns ?? []), ...(spec.columns ?? [])]
+        .filter((column) => column.kind === 'default')
+        .map((column) => column.key),
+    )
+  }, [report.agentConfig])
+
   // Column-wise filter definitions
-  const filterDefinitions: FilterDefinition[] = useMemo(() => {
-    return previewColumns
-      .map((col) => {
-        const setting = report.fieldSettings[col.id]
-        const isStatus = setting?.colType === 'status'
-        const detectedType = isStatus
-          ? 'category'
-          : detectFieldType(sourceRows, col.id, (r) => valueForColumn(col, r))
+  const allFilterDefinitions: FilterDefinition[] = useMemo(() => {
+    return previewColumns.map((col) => {
+      const setting = fieldSettings[col.id]
+      const isStatus = setting?.colType === 'status'
+      const detectedType = isStatus
+        ? 'category'
+        : detectFieldType(sourceRows, col.id, (r) => valueForColumn(col, r))
 
-        let options: { count?: number; label: string; value: string }[] = []
+      let options: { count?: number; label: string; value: string }[] = []
 
-        if (isDateColumnType(detectedType)) {
-          options = generateDateRanges(sourceRows, col.id, (r) =>
-            valueForColumn(col, r),
-          )
-        } else if (isNumberColumnType(detectedType)) {
-          options = generateNumericBuckets(sourceRows, col.id, (r) =>
-            valueForColumn(col, r),
-          )
-          if (options.length === 0) {
-            options = generateCategoryOptions(sourceRows, col.id, (r) =>
-              valueForColumn(col, r),
-            )
-          }
-        } else {
+      if (isDateColumnType(detectedType)) {
+        options = generateDateRanges(sourceRows, col.id, (r) =>
+          valueForColumn(col, r),
+        )
+      } else if (isNumberColumnType(detectedType)) {
+        options = generateNumericBuckets(sourceRows, col.id, (r) =>
+          valueForColumn(col, r),
+        )
+        if (options.length === 0) {
           options = generateCategoryOptions(sourceRows, col.id, (r) =>
             valueForColumn(col, r),
           )
         }
+      } else {
+        options = generateCategoryOptions(sourceRows, col.id, (r) =>
+          valueForColumn(col, r),
+        )
+      }
 
-        return {
-          dataType: detectedType,
-          id: col.id,
-          label: col.label,
-          options,
-          searchable: true,
-          searchPlaceholder: t`Search ${col.label}...`,
-        }
-      })
-      .filter((def) => def.options.length > 0)
-  }, [previewColumns, report.fieldSettings, sourceRows, valueForColumn, t])
+      return {
+        dataType: detectedType,
+        id: col.id,
+        label: col.label,
+        options,
+        searchable: true,
+        searchPlaceholder: t`Search ${col.label}...`,
+      }
+    })
+  }, [previewColumns, fieldSettings, sourceRows, valueForColumn, t])
+
+  // Manual reports have no default/other split, so all their filters stay inline.
+  const isInlineFilter = useCallback(
+    (id: string) => !defaultColumnKeys || defaultColumnKeys.has(id),
+    [defaultColumnKeys],
+  )
+
+  const filterDefinitions = useMemo(
+    () =>
+      allFilterDefinitions.filter(
+        (def) => def.options.length > 0 && isInlineFilter(def.id),
+      ),
+    [allFilterDefinitions, isInlineFilter],
+  )
+
+  const moreFilterGroups: FilterGroup[] = useMemo(
+    () =>
+      allFilterDefinitions
+        .filter((def) => !isInlineFilter(def.id))
+        .map(
+          ({
+            dataType,
+            id,
+            label,
+            options,
+            searchable,
+            searchPlaceholder,
+          }) => ({
+            dataType,
+            id,
+            label,
+            // No options → the picker falls back to a free-text filter.
+            options: options.length > 0 ? options : undefined,
+            searchable,
+            searchPlaceholder,
+          }),
+        ),
+    [allFilterDefinitions, isInlineFilter],
+  )
 
   const filteredRows = useMemo(() => {
     return sourceRows.filter((row) => {
@@ -213,7 +391,7 @@ const OverviewTab = ({ report }: Props) => {
         if (!rawFilterValue) continue
 
         const rowVal = valueForColumn(col, row)
-        const setting = report.fieldSettings[col.id]
+        const setting = fieldSettings[col.id]
         const isStatus = setting?.colType === 'status'
         const detectedType = isStatus
           ? 'category'
@@ -249,7 +427,7 @@ const OverviewTab = ({ report }: Props) => {
     activeFilters,
     previewColumns,
     valueForColumn,
-    report.fieldSettings,
+    fieldSettings,
   ])
 
   const paginatedRows = useMemo(() => {
@@ -265,11 +443,7 @@ const OverviewTab = ({ report }: Props) => {
         groupId: 'all',
         groupKey: '',
         groupValue: '',
-        items: paginatedRows.map((row, index) => ({
-          ...row,
-          id: String(index),
-          name: '',
-        })),
+        items: paginatedRows.map(toTableRow),
       },
     ],
     [paginatedRows],
@@ -282,7 +456,30 @@ const OverviewTab = ({ report }: Props) => {
     state: { searchState, ...restState },
   })
 
+  if (agentError) {
+    return (
+      <div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-red-6 bg-red-2 p-6 text-center'>
+        <p className='text-13 text-red-11'>{agentError}</p>
+        <Button
+          color='gray'
+          icon='lucide:refresh-cw'
+          label={t`Run again`}
+          size='sm'
+          variant='outline'
+          onClick={() => void agentQuery.refetch()}
+        />
+      </div>
+    )
+  }
+
   if (!isLoading && previewColumns.length === 0) {
+    if (isAgentReport) {
+      return (
+        <div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-4 text-center'>
+          <p className='text-13 text-gray-10'>{t`No rows for this report.`}</p>
+        </div>
+      )
+    }
     return (
       <div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-4 text-center'>
         <p className='text-13 text-gray-10'>{t`This report has no fields configured yet.`}</p>
@@ -292,10 +489,21 @@ const OverviewTab = ({ report }: Props) => {
 
   return (
     <div className='flex min-h-0 flex-1 flex-col gap-3'>
+      {agentWarnings.length > 0 && (
+        <div className='flex flex-col gap-1 rounded-lg border border-yellow-6 bg-yellow-2 px-3 py-2'>
+          {agentWarnings.map((warning) => (
+            <p className='text-12 text-yellow-11' key={warning}>
+              {warning}
+            </p>
+          ))}
+        </div>
+      )}
       <CustomFilter
         activeFilters={activeFilters}
         customSearchComponent={<TableSearch table={table as any} />}
         filters={filterDefinitions}
+        moreFilters={moreFilterGroups}
+        moreFiltersLabel={t`Add filter`}
         showReset={Boolean(
           search ||
           selectedColumnId ||

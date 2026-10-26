@@ -1,4 +1,5 @@
 import type { ReportFieldSetting } from '../types'
+import { matchesHighlightRule } from './matchHighlightRule'
 
 export interface ResolvedStatus {
   color: string
@@ -20,8 +21,11 @@ export const resolveFieldStatus = (
   const rawValue = baseField ? row[baseField] : undefined
   if (rawValue === undefined) return null
 
-  const rule = (setting.statusRules || []).find((r) => r.match === rawValue)
-  if (rule) return { color: rule.color, label: rule.label }
+  // First matching rule wins, so order rules from most to least specific.
+  const rule = (setting.statusRules || []).find((r) =>
+    matchesHighlightRule(r, rawValue, row),
+  )
+  if (rule) return { color: rule.color, label: rule.label || rawValue }
 
   return { color: setting.statusDefault || 'gray', label: rawValue }
 }

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   extractScalarStrings,
   fetchMasterFormColumnOptions,
@@ -13,6 +13,9 @@ interface Props {
   value: any
   readOnly?: boolean
   onChange: (value: any) => void
+  // Reports while the master value is being fetched, so the input can show
+  // its loader.
+  onLoadingChange?: (loading: boolean) => void
 }
 
 /**
@@ -58,6 +61,7 @@ const MasterFillSync = ({
   readOnly,
   value,
   onChange,
+  onLoadingChange,
 }: Props) => {
   const specific = field?.settings?.specific || {}
   const info = getMasterFormInfo(field)
@@ -146,8 +150,31 @@ const MasterFillSync = ({
 
   const conditionsKey = JSON.stringify(conditions)
 
-  const { data: fillValue } = useQuery({
-    enabled: isActive && Boolean(parentKey),
+  // A submitted request already carries the filled value in its form data.
+  // The first time a parent value and a field value show up together, treat
+  // that pair as stored and only look the master up again once the parent
+  // changes (or while the field is still empty, as on a new request).
+  const storedParentKeyRef = useRef<string | null>(null)
+  const hasValue = value !== undefined && value !== null && value !== ''
+  if (storedParentKeyRef.current === null && parentKey && hasValue) {
+    storedParentKeyRef.current = parentKey
+  } else if (
+    storedParentKeyRef.current &&
+    parentKey &&
+    parentKey !== storedParentKeyRef.current
+  ) {
+    // The parent changed after load: from now on every parent value is
+    // looked up ('' never matches a real parent key).
+    storedParentKeyRef.current = ''
+  }
+  const shouldFetch =
+    isActive &&
+    !readOnly &&
+    Boolean(parentKey) &&
+    parentKey !== storedParentKeyRef.current
+
+  const { data: fillValue, isFetching } = useQuery({
+    enabled: shouldFetch,
     queryKey: [
       'masterFillValue',
       info.masterFormId,
@@ -170,15 +197,21 @@ const MasterFillSync = ({
   })
 
   useEffect(() => {
+    onLoadingChange?.(shouldFetch && isFetching)
+  }, [shouldFetch, isFetching, onLoadingChange])
+
+  useEffect(() => {
     if (!isActive || readOnly) return
     if (!parentKey) {
       if (value) onChange('')
       return
     }
+    // Cached data from another request must not overwrite a stored value.
+    if (!shouldFetch) return
     if (fillValue !== undefined && fillValue !== (value ?? '')) {
       onChange(fillValue)
     }
-  }, [isActive, parentKey, fillValue, readOnly, value, onChange])
+  }, [isActive, parentKey, fillValue, readOnly, shouldFetch, value, onChange])
 
   // "Use values from another field": mirror the chosen field's value.
   const copyParentId = String(specific.parentFieldId || '').trim()

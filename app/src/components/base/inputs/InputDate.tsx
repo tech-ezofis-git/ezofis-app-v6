@@ -27,6 +27,7 @@ interface Props extends Omit<
   | 'rightSectionPointerEvents'
 > {
   value: string | null
+  loading?: boolean
   maxDate?: string
   minDate?: string
   popoverProps?: Record<string, any>
@@ -40,6 +41,7 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
       clearable,
       description,
       label,
+      loading,
       optional,
       placeholder = 'dd-mmm-yyyy',
       popoverProps,
@@ -64,8 +66,10 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
     ) : undefined
 
     const normalizedValue = normalizeDateInputValue(value)
-    const _clearable = clearable && normalizedValue
-    const _rightSection = _clearable ? (
+    const _clearable = !loading && clearable && normalizedValue
+    const _rightSection = loading ? (
+      <Icon className='animate-spin text-gray-10' name='fa:spinner' />
+    ) : _clearable ? (
       <ClearButton onClick={() => onChange(null)} />
     ) : (
       <Icon className='text-gray-9' name='lucide:calendar' />

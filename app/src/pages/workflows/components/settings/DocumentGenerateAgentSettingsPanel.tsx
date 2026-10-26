@@ -5,6 +5,7 @@ import type { Option } from '@/types/option'
 import IconButton from '@/components/base/button/IconButton'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
 
@@ -77,7 +78,8 @@ export default function DocumentGenerateAgentSettingsPanel({
   const [jsonError, setJsonError] = useState('')
   const [jsonCopied, setJsonCopied] = useState(false)
 
-  const [openBasic, setOpenBasic] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [openBasic, setOpenBasic] = useState(defaultOpen)
 
   const updateNodeData = (key: string, value: any) => {
     if (!currentNode) return

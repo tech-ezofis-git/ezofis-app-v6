@@ -29,17 +29,22 @@ const RowActionsMenu = ({ report, onDelete, onEdit, onSchedule }: Props) => {
         label={t`Edit`}
         onClick={() => onEdit(report)}
       />
-      <MenuItem
-        icon='lucide:calendar-clock'
-        label={t`Schedule`}
-        onClick={() => onSchedule(report)}
-      />
-      <MenuItem
-        icon='lucide:trash-2'
-        iconClass='text-red-11'
-        label={t`Delete`}
-        onClick={() => onDelete(report)}
-      />
+      {/* /report-ai-builder has no schedule or delete endpoints yet. */}
+      {!report.isAiReport && (
+        <MenuItem
+          icon='lucide:calendar-clock'
+          label={t`Schedule`}
+          onClick={() => onSchedule(report)}
+        />
+      )}
+      {!report.isAiReport && (
+        <MenuItem
+          icon='lucide:trash-2'
+          iconClass='text-red-11'
+          label={t`Delete`}
+          onClick={() => onDelete(report)}
+        />
+      )}
     </Menu>
   )
 }

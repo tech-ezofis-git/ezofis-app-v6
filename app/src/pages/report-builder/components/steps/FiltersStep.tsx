@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
+import type { ReportSpec } from '@/api/v6/reportAgent'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -8,6 +9,7 @@ import type { ReportFilterOperator } from '../../types'
 import { DOMAIN_FIELDS, FILTER_OPERATORS } from '../../constants'
 import useReportSourceFields from '../../hooks/useReportSourceFields'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
+import { agentColumnCatalog } from '../../utils/agentReport'
 import { isInputControlField } from '../../utils/fieldFilter'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
@@ -16,18 +18,22 @@ const FiltersStep = () => {
   const { t } = useLingui()
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const setDraft = useReportBuilderDraftStore((state) => state.setDraft)
+  const isAgentReport = Boolean(draft.agent)
   const { fields: sourceFields, isLoading } = useReportSourceFields(
-    draft.sourceFormId,
+    isAgentReport ? '' : draft.sourceFormId,
     draft.sourceType,
-    draft.sourceId,
+    isAgentReport ? '' : draft.sourceId,
   )
 
   const hasDynamicSource = Boolean(
     draft.sourceType || draft.sourceId || draft.sourceFormId,
   )
 
-  const fieldOptions =
-    hasDynamicSource || sourceFields.length > 0
+  const fieldOptions = draft.agent
+    ? agentColumnCatalog(draft.agent.reportSpec as unknown as ReportSpec).map(
+        (column) => ({ id: column.key, name: column.label || column.key }),
+      )
+    : hasDynamicSource || sourceFields.length > 0
       ? [...sourceFields, ...draft.customFields]
           .filter(isInputControlField)
           .map((f) => ({

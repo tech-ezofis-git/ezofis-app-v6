@@ -1,7 +1,10 @@
 import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
+import StatusPill from '@/pages/reports/components/StatusPill'
+import type { ReportFieldSetting } from '../../types'
 import type { PreviewColumn } from '../../utils/previewSampleData'
 import { sampleValue } from '../../utils/previewSampleData'
+import { resolveFieldStatus } from '../../utils/resolveFieldStatus'
 
 export type {
   PreviewColumn,
@@ -10,6 +13,10 @@ export type {
 
 interface Props {
   columns: PreviewColumn[]
+  /** When given, highlighted (status) columns render as colored pills. */
+  fieldSettings?: Record<string, ReportFieldSetting>
+  /** Live rows to show (default 5). */
+  maxRows?: number
   /** When set, isLoading/rows come from the live POST /preview call; when
    * unset (e.g. the legacy domain-field path with no real backing table)
    * the table falls back to synthetic sample data. */
@@ -27,12 +34,20 @@ interface Props {
  */
 const FieldsPreviewTable = ({
   columns,
+  fieldSettings,
   isLive = false,
   isLoading = false,
+  maxRows = 5,
   rowCount = 3,
   rows,
 }: Props) => {
   const { t } = useLingui()
+
+  const renderLiveCell = (column: PreviewColumn, row: Record<string, string>) => {
+    const status = resolveFieldStatus(fieldSettings?.[column.id], row)
+    if (status) return <StatusPill color={status.color} label={status.label || '-'} />
+    return row[column.label] ?? row[column.id] ?? '-'
+  }
 
   if (columns.length === 0) {
     return (
@@ -43,7 +58,7 @@ const FieldsPreviewTable = ({
     )
   }
 
-  const liveRows = rows?.slice(0, 5)
+  const liveRows = rows?.slice(0, maxRows)
 
   return (
     <div className='ez-scrollbar overflow-x-auto rounded-lg border border-gray-3'>
@@ -91,7 +106,7 @@ const FieldsPreviewTable = ({
                       className='px-3 py-2 whitespace-nowrap text-gray-12'
                       key={column.id}
                     >
-                      {row[column.label] ?? row[column.id] ?? '-'}
+                      {renderLiveCell(column, row)}
                     </td>
                   ))}
                 </tr>

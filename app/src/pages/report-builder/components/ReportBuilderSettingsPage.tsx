@@ -1,13 +1,13 @@
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { getReportBuilderReportById } from '@/api/v6/reportBuilder'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import ReportsListView from '@/pages/reports/components/ReportsListView'
 import SettingsPageHeader from '@/pages/settings/components/SettingsPageHeader'
 import type { ReportBuilderStep } from '../navigation'
 import type { Report } from '../types'
+import { getAnyReportById } from '../hooks/useReportBuilderApi'
 import { openReportBuilder } from '../navigation'
 import useReportBuilderDraftStore from '../stores/useReportBuilderDraftStore'
 import ReportBuilderWizard from './ReportBuilderWizard'
@@ -34,8 +34,10 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
   )
   const resetDraft = useReportBuilderDraftStore((state) => state.resetDraft)
 
-  const openBuilder = (step?: ReportBuilderStep) => {
-    openReportBuilder(navigate, step)
+  // Mount the wizard only once the URL carries the requested step; it reads
+  // `?step=` on mount, so mounting earlier picks up a stale step.
+  const openBuilder = async (step?: ReportBuilderStep) => {
+    await openReportBuilder(navigate, step)
     setView('builder')
   }
 
@@ -46,7 +48,7 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
     report: Report,
     step?: ReportBuilderStep,
   ) => {
-    const { data, error } = await getReportBuilderReportById(report.id)
+    const { data, error } = await getAnyReportById(report.id)
     if (error || !data) {
       showToast({
         message: error || t`Failed to load report`,
@@ -55,7 +57,7 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
       return
     }
     loadFromReport(data)
-    openBuilder(step)
+    await openBuilder(step)
   }
 
   if (view === 'builder') {
@@ -74,7 +76,7 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
           variant='settings'
           onCreateReport={() => {
             resetDraft()
-            openBuilder()
+            void openBuilder()
           }}
           onEditReport={(report: Report) => void openReportForEdit(report)}
           onOpenReport={(report: Report) => void openReportForEdit(report)}

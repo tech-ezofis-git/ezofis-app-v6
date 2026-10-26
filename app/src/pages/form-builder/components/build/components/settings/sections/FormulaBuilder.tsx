@@ -303,7 +303,8 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
           }}
         />
         <p className='text-[10px] text-gray-7'>
-          Include a number field, currency, or the sum of a table column.
+          Include a number, currency, or numeric short text field, or the sum
+          of a table column.
         </p>
       </div>
 

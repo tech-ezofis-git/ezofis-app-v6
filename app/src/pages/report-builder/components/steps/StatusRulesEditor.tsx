@@ -3,15 +3,12 @@ import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
-import type { ReportStatusRule } from '../../types'
-
-const STATUS_COLOR_OPTIONS = [
-  { id: 'gray', name: 'Gray' },
-  { id: 'green', name: 'Green' },
-  { id: 'blue', name: 'Blue' },
-  { id: 'orange', name: 'Orange' },
-  { id: 'red', name: 'Red' },
-]
+import StatusPill from '@/pages/reports/components/StatusPill'
+import type { ReportHighlightOperator, ReportStatusRule } from '../../types'
+import {
+  HIGHLIGHT_COLOR_OPTIONS as STATUS_COLOR_OPTIONS,
+  normalizeHighlightColor,
+} from '../../highlightColors'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
@@ -31,6 +28,20 @@ interface Props {
  */
 const StatusRulesEditor = ({ statusDefault, statusRules, onChange }: Props) => {
   const { t } = useLingui()
+
+  const operatorOptions: { id: ReportHighlightOperator; name: string }[] = [
+    { id: 'eq', name: t`Equals` },
+    { id: 'neq', name: t`Not equals` },
+    { id: 'contains', name: t`Contains` },
+    { id: 'notContains', name: t`Not contains` },
+    { id: 'gt', name: t`Greater than` },
+    { id: 'gte', name: t`At least` },
+    { id: 'lt', name: t`Less than` },
+    { id: 'lte', name: t`At most` },
+    { id: 'between', name: t`Between` },
+    { id: 'empty', name: t`Is empty` },
+    { id: 'notEmpty', name: t`Is not empty` },
+  ]
 
   const updateRule = (id: string, patch: Partial<ReportStatusRule>) => {
     onChange({
@@ -66,23 +77,63 @@ const StatusRulesEditor = ({ statusDefault, statusRules, onChange }: Props) => {
       ) : (
         <div className='flex flex-col gap-2'>
           {statusRules.map((rule) => (
-            <div className='flex items-center gap-2' key={rule.id}>
-              <InputText
-                placeholder={t`Value equals...`}
-                value={rule.match}
-                onChange={(value) => updateRule(rule.id, { match: value })}
-              />
-              <InputText
-                placeholder={t`Label`}
-                value={rule.label}
-                onChange={(value) => updateRule(rule.id, { label: value })}
-              />
+            <div
+              className='flex flex-wrap items-center gap-2 rounded-lg border border-gray-3 bg-gray-1/40 p-2 transition-colors hover:border-gray-4'
+              key={rule.id}
+            >
+              <div className='w-36 shrink-0'>
+                <InputSelect
+                  options={operatorOptions}
+                  value={
+                    operatorOptions.find(
+                      (o) => o.id === (rule.operator ?? 'eq'),
+                    ) || null
+                  }
+                  onChange={(option) =>
+                    updateRule(rule.id, {
+                      operator: (option?.id ?? 'eq') as ReportHighlightOperator,
+                    })
+                  }
+                />
+              </div>
+              {rule.operator !== 'empty' && rule.operator !== 'notEmpty' && (
+                <div className='min-w-32 flex-1'>
+                  <InputText
+                    placeholder={
+                      rule.compareField
+                        ? t`Column: ${rule.compareField}`
+                        : rule.operator === 'between'
+                          ? t`Min`
+                          : t`Value`
+                    }
+                    value={rule.match}
+                    onChange={(value) => updateRule(rule.id, { match: value })}
+                  />
+                </div>
+              )}
+              {rule.operator === 'between' && (
+                <div className='min-w-24 flex-1'>
+                  <InputText
+                    placeholder={t`Max`}
+                    value={rule.value2 ?? ''}
+                    onChange={(value) => updateRule(rule.id, { value2: value })}
+                  />
+                </div>
+              )}
+              <div className='min-w-32 flex-1'>
+                <InputText
+                  placeholder={t`Label (optional)`}
+                  value={rule.label}
+                  onChange={(value) => updateRule(rule.id, { label: value })}
+                />
+              </div>
               <div className='w-32 shrink-0'>
                 <InputSelect
                   options={STATUS_COLOR_OPTIONS}
                   value={
-                    STATUS_COLOR_OPTIONS.find((c) => c.id === rule.color) ||
-                    null
+                    STATUS_COLOR_OPTIONS.find(
+                      (c) => c.id === normalizeHighlightColor(rule.color),
+                    ) || null
                   }
                   onChange={(option) =>
                     updateRule(rule.id, {
@@ -91,7 +142,12 @@ const StatusRulesEditor = ({ statusDefault, statusRules, onChange }: Props) => {
                   }
                 />
               </div>
+              <StatusPill
+                color={rule.color}
+                label={rule.label || rule.match || t`Preview`}
+              />
               <IconButton
+                ariaLabel={t`Remove rule`}
                 color='red'
                 icon='lucide:trash-2'
                 variant='ghost'
@@ -112,7 +168,7 @@ const StatusRulesEditor = ({ statusDefault, statusRules, onChange }: Props) => {
           options={STATUS_COLOR_OPTIONS}
           value={
             STATUS_COLOR_OPTIONS.find(
-              (c) => c.id === (statusDefault || 'gray'),
+              (c) => c.id === normalizeHighlightColor(statusDefault),
             ) || null
           }
           onChange={(option) =>

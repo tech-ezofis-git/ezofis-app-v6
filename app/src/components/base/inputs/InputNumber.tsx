@@ -1,6 +1,7 @@
 import { NumberInput as Base } from '@mantine/core'
 import { type NumberInputProps } from '@mantine/core'
 import { forwardRef } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
@@ -13,6 +14,7 @@ interface Props
   value: string | number
   allowDecimal?: boolean
   decimalScale?: number
+  loading?: boolean
   prefix?: string
   suffix?: string
   thousandSeparator?: string | boolean
@@ -27,6 +29,7 @@ const InputNumber = forwardRef<HTMLInputElement, Props>(
       clearable,
       description,
       label,
+      loading,
       optional,
       required,
       tooltip,
@@ -38,9 +41,13 @@ const InputNumber = forwardRef<HTMLInputElement, Props>(
     },
     ref,
   ) => {
-    const _clearable = clearable && value
-    const _rightSection = _clearable && (
-      <ClearButton className='mr-2' onClick={() => onChange('')} />
+    const _clearable = !loading && clearable && value
+    const _rightSection = loading ? (
+      <Icon className='animate-spin text-gray-10' name='fa:spinner' />
+    ) : (
+      _clearable && (
+        <ClearButton className='mr-2' onClick={() => onChange('')} />
+      )
     )
 
     const _label = label ? (

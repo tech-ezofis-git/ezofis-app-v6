@@ -30,5 +30,5 @@ export const openReportBuilder = (
     // ignore
   }
   markOpenedFromSettings()
-  void navigate({ search: step ? { step } : {}, to: '/settings' })
+  return navigate({ search: step ? { step } : {}, to: '/settings' })
 }

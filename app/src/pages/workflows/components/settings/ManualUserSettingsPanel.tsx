@@ -15,6 +15,7 @@ import {
   getNodeToolType,
   NODE_TOOL_TYPE,
 } from '@/pages/workflows/utils/nodeToolTypes'
+import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
@@ -176,8 +177,9 @@ export default function ManualUserSettingsPanel({
     initialSelectedGroups,
   )
 
-  const [openBasic, setOpenBasic] = useState(true)
-  const [openGeneratePdf, setOpenGeneratePdf] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [openBasic, setOpenBasic] = useState(defaultOpen)
+  const [openGeneratePdf, setOpenGeneratePdf] = useState(false)
   const [pdfTemplateJson, setPdfTemplateJson] = useState(() =>
     toTemplateJsonString(nodeData.pdfTemplateJson ?? nodeData.pdfTemplate),
   )
@@ -185,7 +187,7 @@ export default function ManualUserSettingsPanel({
   const [jsonCopied, setJsonCopied] = useState(false)
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    assignees: true,
+    assignees: defaultOpen,
   })
   const toggleSection = (key: string) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))

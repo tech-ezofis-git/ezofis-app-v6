@@ -8,6 +8,8 @@ import cn from '@/utils/cn'
 interface FilterMenuProps {
   options: FilterOption[]
   selectedValues: string[]
+  /** Focus the search box on open. Turn off when another field is being typed in. */
+  autoFocusSearch?: boolean
   /** When true, keeps Apply in loading until the parent fetch finishes */
   isLoading?: boolean
   label?: string
@@ -109,6 +111,7 @@ const parseCustomDateRange = (value: string) => {
 }
 
 export function CategoryFilterMenu({
+  autoFocusSearch = true,
   isLoading = false,
   label: _label,
   options,

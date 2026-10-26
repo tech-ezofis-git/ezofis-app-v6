@@ -12,6 +12,8 @@ export const FORMULA_SOURCE_TYPES = [
   'TIME',
   'DATE_TIME',
   'SINGLE_SELECT',
+  // Usable when it holds a numeric string ("150", "1,250.50"); see extractNumericValue.
+  'SHORT_TEXT',
 ] as const
 
 export const TABLE_SUM_SEPARATOR = '::'

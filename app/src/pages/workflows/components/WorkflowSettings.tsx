@@ -31,11 +31,13 @@ import {
   TOKEN_TYPE_OPTIONS,
   YEAR_OPTIONS,
 } from '../utils/prefixFormat'
+import useDefaultSectionOpen from '../utils/useDefaultSectionOpen'
 import {
   normalizeInitiateUsing,
   validateWorkflowSettings,
 } from '../utils/validateWorkflowSettings'
 import { getDefaultShortName } from '../utils/workflowShortName'
+import NumberPartsDnd, { NumberPartRow } from './settings/common/NumberPartsDnd'
 import SettingsSection from './settings/common/SettingsSection'
 import KanbanViewSettingsSection from './settings/KanbanViewSettingsSection'
 import RequestTabsSettingsSection from './settings/RequestTabsSettingsSection'
@@ -51,7 +53,8 @@ type WorkflowSettingsProps = {
 }
 
 const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
-  const [openGeneral, setOpenGeneral] = useState(true)
+  const defaultOpen = useDefaultSectionOpen()
+  const [openGeneral, setOpenGeneral] = useState(defaultOpen)
   const [openConfiguration, setOpenConfiguration] = useState(false)
   const [openRequestNumber, setOpenRequestNumber] = useState(false)
   const [openKanban, setOpenKanban] = useState(false)
@@ -113,6 +116,18 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     currentInitiateType === 'DOCUMENT_FORM'
   const isFormRequired =
     currentInitiateType === 'FORM' || currentInitiateType === 'DOCUMENT_FORM'
+
+  // This panel is mounted before the workflow has loaded, so the sections are
+  // re-applied each time it opens: all minimized when editing an existing
+  // workflow, General open while a new one is being set up.
+  useEffect(() => {
+    if (!isSettingsOpen) return
+    setOpenGeneral(useWorkflowStore.getState().workflowId === null)
+    setOpenConfiguration(false)
+    setOpenRequestNumber(false)
+    setOpenKanban(false)
+    setOpenRequestViews(false)
+  }, [isSettingsOpen])
 
   useEffect(() => {
     if (settingsValidationErrors) {
@@ -297,6 +312,21 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   const updateToken = (id: string, patch: Partial<PrefixSegment>) => {
     setPrefixSegments(
       prefixSegments.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+    )
+  }
+
+  // Drag-and-drop: reorder the parts. The separator / reset-cycle entries are
+  // not shown as parts, so they stay where they are in the list.
+  const reorderTokens = (orderedIds: string[]) => {
+    const byId = new Map(tokenSegments.map((s) => [s.id, s]))
+    const queue = orderedIds
+      .map((id) => byId.get(id))
+      .filter((s): s is PrefixSegment => Boolean(s))
+    let next = 0
+    setPrefixSegments(
+      prefixSegments.map((s) =>
+        s.key === 'seperator' || s.key === 'reset' ? s : (queue[next++] ?? s),
+      ),
     )
   }
 
@@ -587,131 +617,138 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             <span className='text-13 font-medium text-gray-11'>
               Number Parts
             </span>
-            <div className='space-y-2'>
+            <NumberPartsDnd
+              tokenIds={tokenSegments.map((s) => s.id)}
+              onReorder={reorderTokens}
+            >
               {tokenSegments.map((segment) => (
-                <div
-                  className='flex items-start gap-2 rounded-xl border border-gray-2 bg-surface-muted p-2'
-                  key={segment.id}
-                >
-                  <div className='w-[120px] shrink-0'>
-                    <InputSelect
-                      options={TOKEN_TYPE_OPTIONS}
-                      placeholder='Select'
-                      value={
-                        TOKEN_TYPE_OPTIONS.find((o) => o.id === segment.key) ||
-                        null
-                      }
-                      onChange={(val) =>
-                        updateToken(segment.id, {
-                          key: String(val?.id || 'prefix'),
-                          value: '',
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className='flex-1'>
-                    {segment.key === 'prefix' && (
-                      <Input
-                        placeholder='Enter Prefix'
-                        value={String(segment.value)}
-                        onChange={(val) =>
-                          updateToken(segment.id, { value: val })
-                        }
-                      />
-                    )}
-                    {segment.key === 'year' && (
+                <NumberPartRow id={segment.id} key={segment.id}>
+                  <div className='flex min-w-0 flex-1 flex-col gap-2'>
+                    <div>
                       <InputSelect
-                        options={YEAR_OPTIONS}
+                        options={TOKEN_TYPE_OPTIONS}
                         placeholder='Select'
                         value={
-                          YEAR_OPTIONS.find((o) => o.id === segment.value) ||
-                          null
-                        }
-                        onChange={(val) =>
-                          updateToken(segment.id, {
-                            value: String(val?.id || 'yyyy'),
-                          })
-                        }
-                      />
-                    )}
-                    {segment.key === 'month' && (
-                      <InputSelect
-                        options={MONTH_OPTIONS}
-                        placeholder='Select'
-                        value={
-                          MONTH_OPTIONS.find((o) => o.id === segment.value) ||
-                          null
-                        }
-                        onChange={(val) =>
-                          updateToken(segment.id, {
-                            value: String(val?.id || 'mm'),
-                          })
-                        }
-                      />
-                    )}
-                    {segment.key === 'formColumn' && (
-                      <InputSelectMultiple
-                        options={previewFieldOptions}
-                        placeholder='Select fields'
-                        clearable
-                        searchable
-                        value={previewFieldOptions.filter((o) =>
-                          String(segment.value)
-                            .split(',')
-                            .map((v) => v.trim())
-                            .includes(String(o.id)),
-                        )}
-                        onChange={(options) =>
-                          updateToken(segment.id, {
-                            value: options.map((o) => String(o.id)).join(','),
-                          })
-                        }
-                      />
-                    )}
-                    {segment.key === 'autoIncrement' && (
-                      <InputNumber
-                        max={7}
-                        min={1}
-                        placeholder='Enter no. of digits'
-                        value={segment.value}
-                        withControls
-                        onChange={(val) =>
-                          updateToken(segment.id, { value: Number(val) || 1 })
-                        }
-                      />
-                    )}
-                    {segment.key === 'currentDate' && (
-                      <InputSelect
-                        options={CURRENT_DATE_OPTIONS}
-                        placeholder='Select'
-                        value={
-                          CURRENT_DATE_OPTIONS.find(
-                            (o) => o.id === segment.value,
+                          TOKEN_TYPE_OPTIONS.find(
+                            (o) => o.id === segment.key,
                           ) || null
                         }
                         onChange={(val) =>
                           updateToken(segment.id, {
-                            value: String(val?.id || ''),
+                            key: String(val?.id || 'prefix'),
+                            value: '',
                           })
                         }
                       />
-                    )}
+                    </div>
+
+                    <div>
+                      {segment.key === 'prefix' && (
+                        <Input
+                          placeholder='Enter Prefix'
+                          value={String(segment.value)}
+                          onChange={(val) =>
+                            updateToken(segment.id, { value: val })
+                          }
+                        />
+                      )}
+                      {segment.key === 'year' && (
+                        <InputSelect
+                          options={YEAR_OPTIONS}
+                          placeholder='Select'
+                          value={
+                            YEAR_OPTIONS.find((o) => o.id === segment.value) ||
+                            null
+                          }
+                          onChange={(val) =>
+                            updateToken(segment.id, {
+                              value: String(val?.id || 'yyyy'),
+                            })
+                          }
+                        />
+                      )}
+                      {segment.key === 'month' && (
+                        <InputSelect
+                          options={MONTH_OPTIONS}
+                          placeholder='Select'
+                          value={
+                            MONTH_OPTIONS.find((o) => o.id === segment.value) ||
+                            null
+                          }
+                          onChange={(val) =>
+                            updateToken(segment.id, {
+                              value: String(val?.id || 'mm'),
+                            })
+                          }
+                        />
+                      )}
+                      {segment.key === 'formColumn' && (
+                        <InputSelectMultiple
+                          options={previewFieldOptions}
+                          placeholder='Select fields'
+                          width={260}
+                          clearable
+                          searchable
+                          wrapOptions
+                          value={previewFieldOptions.filter((o) =>
+                            String(segment.value)
+                              .split(',')
+                              .map((v) => v.trim())
+                              .includes(String(o.id)),
+                          )}
+                          onChange={(options) =>
+                            updateToken(segment.id, {
+                              value: options.map((o) => String(o.id)).join(','),
+                            })
+                          }
+                        />
+                      )}
+                      {segment.key === 'autoIncrement' && (
+                        <InputNumber
+                          max={7}
+                          min={1}
+                          placeholder='Enter no. of digits'
+                          value={segment.value}
+                          withControls
+                          onChange={(val) =>
+                            updateToken(segment.id, { value: Number(val) || 1 })
+                          }
+                        />
+                      )}
+                      {segment.key === 'currentDate' && (
+                        <InputSelect
+                          options={CURRENT_DATE_OPTIONS}
+                          placeholder='Select'
+                          value={
+                            CURRENT_DATE_OPTIONS.find(
+                              (o) => o.id === segment.value,
+                            ) || null
+                          }
+                          onChange={(val) =>
+                            updateToken(segment.id, {
+                              value: String(val?.id || ''),
+                            })
+                          }
+                        />
+                      )}
+                    </div>
                   </div>
 
                   <button
                     className='text-gray-8 hover:text-red-9 shrink-0 p-1.5 transition-colors'
                     title='Remove part'
+                    type='button'
                     onClick={() => removeToken(segment.id)}
                   >
                     <Icon className='h-4 w-4' name='lucide:x' />
                   </button>
-                </div>
+                </NumberPartRow>
               ))}
-            </div>
+            </NumberPartsDnd>
 
             <button
-              className='border-gray-6 text-gray-9 hover:bg-blue-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2 text-13 font-medium transition-all hover:border-primary-9 hover:text-primary-11 active:scale-[0.99]'
+              className='flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-6 py-2 text-13 font-medium text-gray-9 transition-all hover:border-primary-9 hover:bg-blue-2 hover:text-primary-11 active:scale-[0.99]'
+              type='button'
               onClick={addToken}
             >
               <Icon className='h-4 w-4' name='lucide:plus' />
