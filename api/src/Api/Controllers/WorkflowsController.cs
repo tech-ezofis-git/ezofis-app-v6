@@ -1617,6 +1617,41 @@ public sealed class WorkflowsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Finds this ticket for the current user by checking inbox, then sent, then completed (in
+    /// that order) and returns it in the same row shape as those three lists -- tagged with
+    /// which mailbox it was found in. 404 when the ticket isn't in any of the three.
+    /// </summary>
+    [HttpGet("{workflowId:guid}/instances/{instanceId:guid}/locate")]
+    [ProducesResponseType(typeof(LegacyMailboxRowDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> LocateInstance(
+        Guid workflowId,
+        Guid instanceId,
+        CancellationToken cancellationToken)
+    {
+        if (workflowId == Guid.Empty || instanceId == Guid.Empty)
+            return BadRequest(new { error = "workflowId and instanceId are required." });
+
+        foreach (var kind in new[]
+                 {
+                     LegacyMailboxTableKind.Inbox,
+                     LegacyMailboxTableKind.Sent,
+                     LegacyMailboxTableKind.Completed
+                 })
+        {
+            var result = await _mediator.Send(
+                new GetLegacyMailboxListQuery(kind, workflowId, instanceId, TransactionId: null, PageNumber: 1, PageSize: 1, SkipTotal: true),
+                cancellationToken);
+            var row = result.Items.FirstOrDefault();
+            if (row != null)
+                return Ok(row with { Mailbox = kind.ToString().ToLowerInvariant() });
+        }
+
+        return NotFound(new { error = "Ticket not found in inbox, sent, or completed for the current user." });
+    }
+
     /// <summary>Set SLA policy for a workflow. Admin only.</summary>
     [HttpPost("{id:guid}/sla")]
     [Authorize(Policy = AuthorizationPolicies.Admin)]
