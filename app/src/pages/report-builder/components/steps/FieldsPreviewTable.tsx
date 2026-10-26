@@ -64,8 +64,9 @@ const FieldsPreviewTable = ({
     const status = resolveFieldStatus(fieldSettings?.[column.id], row)
     if (status)
       return <StatusPill color={status.color} label={status.label || '-'} />
-    const value = pickRowValue(row, column.id, column.label)
-    if (value == null || String(value).trim() === '') return '-'
+    const raw = pickRowValue(row, column.id, column.label)
+    const value = raw == null ? '' : String(raw)
+    if (!value.trim()) return '-'
     const json = parseJsonValue(value)
     if (json) {
       return (
