@@ -10,6 +10,7 @@ import { DEFAULT_SCHEDULE } from '@/pages/report-builder/types'
 import authUserStore from '@/stores/authUserStore'
 import { axiosV6 } from '../axios'
 import { getV6ApiErrorMessage } from './auth'
+import { REPORT_RUN_ERROR_MESSAGE } from './reportAgent'
 
 const BASE = '/report-builder'
 
@@ -97,12 +98,47 @@ const asRecord = <T>(value: unknown): Record<string, T> =>
     ? (value as Record<string, T>)
     : {}
 
+/** First non-empty string among `keys` (a name, email or user id). */
+export const pickUserLabel = (
+  record: Record<string, unknown>,
+  keys: string[],
+): string => {
+  for (const key of keys) {
+    const value = record[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+    if (typeof value === 'number') return String(value)
+  }
+  return ''
+}
+
+export const OWNER_KEYS = [
+  'ownerName',
+  'owner',
+  'createdByName',
+  'createdByEmail',
+  'createdBy',
+  'ownerUserId',
+  'userId',
+]
+
+export const MODIFIED_BY_KEYS = [
+  'modifiedByName',
+  'modifiedByEmail',
+  'modifiedBy',
+]
+
 const toReportBuilderPayload = (report: ReportBuilderPayloadSource) => ({
   customFields: report.customFields ?? [],
   description: report.description,
   domain: report.domain,
   fields: report.fields,
-  fieldSettings: report.fieldSettings,
+  // Only the selected columns' settings, so removed columns don't linger in
+  // the saved schema.
+  fieldSettings: Object.fromEntries(
+    report.fields
+      .filter((id) => report.fieldSettings[id])
+      .map((id) => [id, report.fieldSettings[id]]),
+  ),
   filters: report.filters.map((filter) => ({
     field: filter.field,
     fieldId: filter.field,
@@ -146,8 +182,11 @@ export const fromReportBuilderConfig = (data: unknown): Report => {
       (record.modified as string) ||
       (record.modifiedAt as string) ||
       new Date().toISOString(),
+    // Never assume the viewer: the list is shared, so "You" was wrong for
+    // reports someone else created.
+    modifiedBy: pickUserLabel(record, MODIFIED_BY_KEYS),
     name: (record.name as string) || '',
-    owner: (record.owner as string) || (record.ownerUserId as string) || 'You',
+    owner: pickUserLabel(record, OWNER_KEYS),
     runs: (record.runs as number) || 0,
     schedule: { ...DEFAULT_SCHEDULE, ...asRecord(record.schedule) },
     scheduled: Boolean(record.scheduled),
@@ -157,7 +196,11 @@ export const fromReportBuilderConfig = (data: unknown): Report => {
     sourceId:
       (record.sourceId as string) || (record.workflowId as string) || '',
     sourceType: (record.sourceType as Report['sourceType']) || 'Workflow',
-    status: (record.status as ReportStatus) || 'Draft',
+    // Case-insensitive, like the status badge: the API may send 'PUBLISHED'.
+    status:
+      String(record.status || '').toLowerCase() === 'published'
+        ? 'Published'
+        : 'Draft',
     visibility: (record.visibility as ReportVisibility) || 'Private',
   }
 }
@@ -276,14 +319,10 @@ export const previewReportBuilderReport = async (
     })
     return { data: data as ReportRunResult, error: '' }
   } catch (error: unknown) {
-    const err = error as { response?: { data?: unknown } }
     console.error(error)
     return {
       data: null as ReportRunResult | null,
-      error: getV6ApiErrorMessage(
-        err?.response?.data,
-        'Failed to generate preview',
-      ),
+      error: REPORT_RUN_ERROR_MESSAGE,
     }
   }
 }
@@ -420,14 +459,11 @@ export const getReportBuilderReportData = async (id: string) => {
     })
     return { data: data as ReportRunResult, error: '' }
   } catch (error: unknown) {
-    const err = error as { response?: { data?: unknown } }
+    // Friendly copy only; the backend message is logged, never shown.
     console.error(error)
     return {
       data: null as ReportRunResult | null,
-      error: getV6ApiErrorMessage(
-        err?.response?.data,
-        'Failed to load report data',
-      ),
+      error: REPORT_RUN_ERROR_MESSAGE,
     }
   }
 }

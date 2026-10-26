@@ -10,6 +10,11 @@ import type {
 } from '@/api/v6/reportAgent'
 import type { ReportRunResult } from '@/api/v6/reportBuilder'
 import { createReportAgentSessionId } from '@/api/v6/reportAgent'
+import {
+  MODIFIED_BY_KEYS,
+  OWNER_KEYS,
+  pickUserLabel,
+} from '@/api/v6/reportBuilder'
 import type {
   Report,
   ReportAgentConfig,
@@ -190,6 +195,38 @@ const fieldSettingToHighlight = (
   }
 }
 
+const OBJECTIVE_KEYS = ['objective', 'summary', 'description', 'purpose']
+
+/**
+ * The agent sometimes returns `objective` as the whole JSON spec (raw or in
+ * a ```json fence) instead of a sentence; pull the readable objective out of
+ * it, and show nothing rather than raw JSON when there isn't one.
+ */
+export const readableObjective = (value: unknown): string => {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) return ''
+    const record = value as Record<string, unknown>
+    const key = OBJECTIVE_KEYS.find((k) => readableObjective(record[k]))
+    return key ? readableObjective(record[key]) : ''
+  }
+  const text = String(value).trim()
+  const unfenced = text
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
+  if (!/^[[{]/.test(unfenced)) return text
+  try {
+    return readableObjective(JSON.parse(unfenced))
+  } catch {
+    // Truncated/invalid JSON: salvage a quoted objective if there is one.
+    const match = unfenced.match(
+      /"(?:objective|summary|description)"\s*:\s*"((?:[^"\\]|\\.)*)"/i,
+    )
+    return match ? match[1].replace(/\\"/g, '"').trim() : ''
+  }
+}
+
 /** Wizard draft state after a successful generate-prompt call. */
 export const draftPatchFromPromptResult = (
   result: ReportAgentPromptResult,
@@ -218,7 +255,7 @@ export const draftPatchFromPromptResult = (
   )
 
   const draft = {
-    description: spec.objective || '',
+    description: readableObjective(spec.objective),
     fields: selected.map((c) => c.key),
     fieldSettings,
     filters: (spec.filters ?? []).map(specFilterToDraft),
@@ -284,6 +321,11 @@ export const buildAgentConfigFromDraft = (
   const fieldSet = new Set(draft.fields)
   const markSelected = (list?: ReportSpecColumn[]) =>
     list?.map((c) => ({ ...c, selected: fieldSet.has(c.key) }))
+  // Columns the spec had selected that the user has since removed; sort and
+  // grouping on them would bring them back on the next run.
+  const removed = new Set(
+    (spec.columns ?? []).map((c) => c.key).filter((key) => !fieldSet.has(key)),
+  )
 
   const columns: ReportSpecColumn[] = draft.fields.map((key) => {
     const base = catalog.get(key) ?? { key, label: key }
@@ -307,7 +349,9 @@ export const buildAgentConfigFromDraft = (
     filters: draft.filters
       .filter((f) => f.field)
       .map((f) => draftFilterToSpec(f, spec.filters ?? [])),
-    objective: draft.description || spec.objective,
+    groupBy: spec.groupBy?.filter((key) => !removed.has(key)),
+    objective: draft.description || readableObjective(spec.objective),
+    sort: spec.sort && removed.has(spec.sort.field) ? null : spec.sort,
     title: draft.name || spec.title,
     userdefinedColumns: markSelected(spec.userdefinedColumns),
   }
@@ -430,7 +474,7 @@ const toReportVisibility = (
 export const aiListItemToReport = (item: ReportAiListItem): Report => ({
   createdAt: item.createdAtUtc,
   customFields: [],
-  description: item.description || '',
+  description: readableObjective(item.description),
   domain: aiReportDomain(item),
   fields: [],
   fieldSettings: {},
@@ -438,8 +482,14 @@ export const aiListItemToReport = (item: ReportAiListItem): Report => ({
   id: item.id,
   isAiReport: true,
   modified: item.modifiedAtUtc,
+  // The list is shared across users, so read who owns/changed it rather
+  // than assuming the viewer.
+  modifiedBy: pickUserLabel(
+    item as unknown as Record<string, unknown>,
+    MODIFIED_BY_KEYS,
+  ),
   name: item.name,
-  owner: 'You',
+  owner: pickUserLabel(item as unknown as Record<string, unknown>, OWNER_KEYS),
   runs: item.runs ?? 0,
   schedule: DEFAULT_SCHEDULE,
   scheduled: false,

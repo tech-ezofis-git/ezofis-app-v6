@@ -55,6 +55,8 @@ export interface Report {
   aiPrompt?: string
   /** Lives in /report-ai-builder rather than /report-builder. */
   isAiReport?: boolean
+  /** Who last changed the report (name, email or user id); falls back to owner. */
+  modifiedBy?: string
   sourceFormId?: string
   sourceId?: string
 }
