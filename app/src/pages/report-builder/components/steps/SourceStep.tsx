@@ -31,7 +31,7 @@ import {
   draftPatchFromPromptResult,
   isAllScopeSource,
 } from '../../utils/agentReport'
-import { isIdColumn } from '../../utils/hiddenColumns'
+import { isHiddenReportColumn } from '../../utils/hiddenColumns'
 import FieldsPreviewTable from './FieldsPreviewTable'
 
 const PROMPT_EXAMPLES_WORKFLOW = [
@@ -353,7 +353,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
   const visibleFields = useMemo(
     () =>
       draft.fields.filter(
-        (id) => !isIdColumn(id, draft.fieldSettings[id]?.label),
+        (id) => !isHiddenReportColumn(id, draft.fieldSettings[id]?.label),
       ),
     [draft.fields, draft.fieldSettings],
   )

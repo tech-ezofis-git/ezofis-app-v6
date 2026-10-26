@@ -19,7 +19,7 @@ import {
   agentRunToReportRunResult,
   buildAgentConfigFromDraft,
 } from '../../utils/agentReport'
-import { isIdColumn } from '../../utils/hiddenColumns'
+import { isHiddenReportColumn } from '../../utils/hiddenColumns'
 import FieldsPreviewTable from './FieldsPreviewTable'
 import StatusRulesEditor from './StatusRulesEditor'
 
@@ -80,7 +80,10 @@ const FieldsStepAgent = () => {
     const column = catalogByKey.get(key)
     return (
       kindOf(column) !== 'default' &&
-      !isIdColumn(key, draft.fieldSettings[key]?.label || column?.label)
+      !isHiddenReportColumn(
+        key,
+        draft.fieldSettings[key]?.label || column?.label,
+      )
     )
   }
   const selectableFields = draft.fields.filter(isSelectable)
@@ -201,7 +204,7 @@ const FieldsStepAgent = () => {
   const isPreviewPending = isPreviewing || runKey !== debouncedRunKey
 
   const previewColumns = draft.fields
-    .filter((key) => !isIdColumn(key, settingFor(key).label))
+    .filter((key) => !isHiddenReportColumn(key, settingFor(key).label))
     .map((key) => ({
       id: key,
       label: settingFor(key).label,

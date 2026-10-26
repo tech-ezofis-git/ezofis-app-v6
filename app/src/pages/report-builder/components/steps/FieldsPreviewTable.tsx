@@ -1,5 +1,12 @@
 import { useLingui } from '@lingui/react/macro'
+import { AnimatePresence, motion } from 'motion/react'
+import { useState } from 'react'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import JsonValueTable, {
+  JsonCellButton,
+  parseJsonValue,
+} from '@/pages/reports/components/JsonValueTable'
 import StatusPill from '@/pages/reports/components/StatusPill'
 import { formatReportDate, isIsoDateString } from '@/utils/utcDate'
 import type { ReportFieldSetting } from '../../types'
@@ -43,12 +50,30 @@ const FieldsPreviewTable = ({
   rows,
 }: Props) => {
   const { t } = useLingui()
+  // A JSON cell's data, expanded as a table below the preview.
+  const [jsonView, setJsonView] = useState<{
+    label: string
+    value: NonNullable<ReturnType<typeof parseJsonValue>>
+  } | null>(null)
 
-  const renderLiveCell = (column: PreviewColumn, row: Record<string, string>) => {
+  const renderLiveCell = (
+    column: PreviewColumn,
+    row: Record<string, string>,
+  ) => {
     const status = resolveFieldStatus(fieldSettings?.[column.id], row)
-    if (status) return <StatusPill color={status.color} label={status.label || '-'} />
+    if (status)
+      return <StatusPill color={status.color} label={status.label || '-'} />
     const value = row[column.label] ?? row[column.id]
     if (value == null) return '-'
+    const json = parseJsonValue(value)
+    if (json) {
+      return (
+        <JsonCellButton
+          value={json}
+          onClick={() => setJsonView({ label: column.label, value: json })}
+        />
+      )
+    }
     return isIsoDateString(value) ? formatReportDate(value) : value
   }
 
@@ -64,73 +89,109 @@ const FieldsPreviewTable = ({
   const liveRows = rows?.slice(0, maxRows)
 
   return (
-    <div className='ez-scrollbar overflow-x-auto rounded-lg border border-gray-3'>
-      <table className='w-full text-13'>
-        <thead>
-          <tr className='border-b border-gray-3 bg-gray-1'>
-            {columns.map((column) => (
-              <th
-                className='px-3 py-2 text-left font-medium whitespace-nowrap text-gray-11'
-                key={column.id}
-              >
-                {column.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {isLive ? (
-            isLoading ? (
-              <tr>
-                <td
-                  className='px-3 py-6 text-center text-12 text-gray-9'
-                  colSpan={columns.length}
+    <div className='flex flex-col gap-3'>
+      <div className='ez-scrollbar overflow-x-auto rounded-lg border border-gray-3'>
+        <table className='w-full text-13'>
+          <thead>
+            <tr className='border-b border-gray-3 bg-gray-1'>
+              {columns.map((column) => (
+                <th
+                  className='px-3 py-2 text-left font-medium whitespace-nowrap text-gray-11'
+                  key={column.id}
                 >
-                  {t`Loading preview...`}
-                </td>
-              </tr>
-            ) : !liveRows || liveRows.length === 0 ? (
-              <tr>
-                <td
-                  className='px-3 py-6 text-center text-12 text-gray-9'
-                  colSpan={columns.length}
-                >
-                  {t`No matching rows.`}
-                </td>
-              </tr>
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {isLive ? (
+              isLoading ? (
+                <tr>
+                  <td
+                    className='px-3 py-6 text-center text-12 text-gray-9'
+                    colSpan={columns.length}
+                  >
+                    {t`Loading preview...`}
+                  </td>
+                </tr>
+              ) : !liveRows || liveRows.length === 0 ? (
+                <tr>
+                  <td
+                    className='px-3 py-6 text-center text-12 text-gray-9'
+                    colSpan={columns.length}
+                  >
+                    {t`No matching rows.`}
+                  </td>
+                </tr>
+              ) : (
+                liveRows.map((row, index) => (
+                  <tr
+                    className='border-b border-gray-2 last:border-0'
+                    key={index}
+                  >
+                    {columns.map((column) => (
+                      <td
+                        className='px-3 py-2 whitespace-nowrap text-gray-12'
+                        key={column.id}
+                      >
+                        {renderLiveCell(column, row)}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )
             ) : (
-              liveRows.map((row, index) => (
-                <tr
-                  className='border-b border-gray-2 last:border-0'
-                  key={index}
-                >
+              Array.from({ length: rowCount }).map((_, row) => (
+                <tr className='border-b border-gray-2 last:border-0' key={row}>
                   {columns.map((column) => (
                     <td
                       className='px-3 py-2 whitespace-nowrap text-gray-12'
                       key={column.id}
                     >
-                      {renderLiveCell(column, row)}
+                      {sampleValue(column, row)}
                     </td>
                   ))}
                 </tr>
               ))
-            )
-          ) : (
-            Array.from({ length: rowCount }).map((_, row) => (
-              <tr className='border-b border-gray-2 last:border-0' key={row}>
-                {columns.map((column) => (
-                  <td
-                    className='px-3 py-2 whitespace-nowrap text-gray-12'
-                    key={column.id}
-                  >
-                    {sampleValue(column, row)}
-                  </td>
-                ))}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <AnimatePresence initial={false}>
+        {jsonView && (
+          <motion.div
+            animate={{ height: 'auto', opacity: 1 }}
+            className='overflow-hidden'
+            exit={{ height: 0, opacity: 0 }}
+            initial={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className='flex flex-col gap-2 rounded-lg border border-primary-5 bg-primary-1/40 p-3'>
+              <div className='flex items-center gap-2'>
+                <Icon
+                  className='size-4 text-primary-10'
+                  name='lucide:table-2'
+                />
+                <p className='min-w-0 flex-1 truncate text-13 font-semibold text-gray-13'>
+                  {jsonView.label}
+                </p>
+                <IconButton
+                  ariaLabel={t`Close`}
+                  color='gray'
+                  icon='lucide:x'
+                  size='sm'
+                  variant='ghost'
+                  onClick={() => setJsonView(null)}
+                />
+              </div>
+              <div className='ez-scrollbar max-h-80 overflow-auto'>
+                <JsonValueTable value={jsonView.value} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
