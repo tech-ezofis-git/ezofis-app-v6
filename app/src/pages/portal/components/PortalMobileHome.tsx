@@ -49,7 +49,51 @@ type PortalMobileHomeProps = {
  * Icon on each card, from where the request is in its workflow: the last
  * review action when there is one, otherwise finished vs. still in a stage.
  */
-const stageIcon = (lastActionLabel: string, isTerminal: boolean) => {
+/** Stage-trail colors (connection button color into the current stage). */
+const STAGE_COLOR_TONE: Record<
+  string,
+  { className: string; done: string; open: string }
+> = {
+  green: {
+    className: 'bg-green-3 text-green-11',
+    done: 'tabler:circle-check',
+    open: 'tabler:progress',
+  },
+  orange: {
+    className: 'bg-orange-3 text-orange-11',
+    done: 'tabler:arrow-back-up',
+    open: 'tabler:arrow-back-up',
+  },
+  primary: {
+    className: 'bg-primary-3 text-primary-11',
+    done: 'tabler:circle-check',
+    open: 'tabler:progress',
+  },
+  red: {
+    className: 'bg-red-3 text-red-11',
+    done: 'tabler:circle-x',
+    open: 'tabler:circle-x',
+  },
+  secondary: {
+    className: 'bg-secondary-3 text-secondary-11',
+    done: 'tabler:circle-check',
+    open: 'tabler:progress',
+  },
+}
+
+const stageIcon = (
+  lastActionLabel: string,
+  isTerminal: boolean,
+  color?: string,
+) => {
+  // Same color as the stage in the request header / Requests list.
+  const colored = color ? STAGE_COLOR_TONE[color] : undefined
+  if (colored) {
+    return {
+      className: colored.className,
+      icon: isTerminal ? colored.done : colored.open,
+    }
+  }
   const text = lastActionLabel.toLowerCase()
   if (text.includes('reject') || text.includes('denied')) {
     return { className: 'bg-red-3 text-red-11', icon: 'tabler:circle-x' }
@@ -405,12 +449,12 @@ export default function PortalMobileHome({
             const workflow = workflows.find(
               (item) => item.id === submission.workflowId,
             )?.workflow
-            const { currentLabel, isTerminal } = getGenericStageInfo(
+            const { color, currentLabel, isTerminal } = getGenericStageInfo(
               workflow,
               row,
             )
             const lastActionLabel = getLastActionLabel(submission.raw)
-            const tone = stageIcon(lastActionLabel, isTerminal)
+            const tone = stageIcon(lastActionLabel, isTerminal, color)
             const { lastActionAt, raisedBy, startedAt } = getSubmissionMeta(
               submission,
               row,
