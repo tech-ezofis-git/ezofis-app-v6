@@ -211,23 +211,39 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
 
     internal sealed class ProcessNumberFormat
     {
-        public static ProcessNumberFormat Default { get; } = new("REQ", "-", 1);
+        public static ProcessNumberFormat Default { get; } = new("REQ", "-", null, 1);
 
         public string Prefix { get; }
         public string Separator { get; }
+
+        /// <summary>.NET date format string (e.g. <c>yyyy</c>, <c>yy</c>) for the year segment, when configured.</summary>
+        public string? YearFormat { get; }
+
         public int StartAt { get; }
 
-        /// <summary>Everything before the numeric sequence (e.g. <c>REQ-</c>).</summary>
-        public string StaticPrefix => $"{Prefix}{Separator}";
+        /// <summary>
+        /// Everything before the numeric sequence (e.g. <c>EXP-2026-</c>), with the year segment
+        /// (if any) rendered using the current year -- used only to seed the counter from existing
+        /// instance rows when no persisted counter exists yet.
+        /// </summary>
+        public string StaticPrefix => YearFormat == null
+            ? $"{Prefix}{Separator}"
+            : $"{Prefix}{Separator}{FormatYear(YearFormat)}{Separator}";
 
-        private ProcessNumberFormat(string prefix, string separator, int startAt)
+        private ProcessNumberFormat(string prefix, string separator, string? yearFormat, int startAt)
         {
             Prefix = prefix;
             Separator = separator;
+            YearFormat = yearFormat;
             StartAt = startAt < 1 ? 1 : startAt;
         }
 
-        public string Format(int number) => $"{Prefix}{Separator}{number.ToString(CultureInfo.InvariantCulture)}";
+        public string Format(int number) => YearFormat == null
+            ? $"{Prefix}{Separator}{number.ToString(CultureInfo.InvariantCulture)}"
+            : $"{Prefix}{Separator}{FormatYear(YearFormat)}{Separator}{number.ToString(CultureInfo.InvariantCulture)}";
+
+        private static string FormatYear(string format) =>
+            DateTime.UtcNow.ToString(string.IsNullOrWhiteSpace(format) ? "yyyy" : format, CultureInfo.InvariantCulture);
 
         public static ProcessNumberFormat FromProcessNumberPrefix(string? processNumberPrefix)
         {
@@ -238,10 +254,12 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
             if (parts.Count == 0)
                 return Default;
 
-            // Semantic order for ticket: prefix + separator + autoIncrement number
-            // (designer JSON id order may list separator before prefix).
+            // Semantic order for ticket: prefix + separator + year (if configured) + separator +
+            // autoIncrement number -- designer JSON id/array order does not reliably reflect this
+            // (e.g. a "year" segment added later gets a fresh random id, not the next sequence number).
             string? prefix = null;
             string? separator = null;
+            string? yearFormat = null;
             var startAt = 1;
 
             foreach (var part in parts.OrderBy(p => p.SortId).ThenBy(p => p.Key, StringComparer.OrdinalIgnoreCase))
@@ -256,19 +274,23 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
                 {
                     separator = part.Value;
                 }
+                else if (IsYear(key))
+                {
+                    yearFormat = string.IsNullOrWhiteSpace(part.Value) ? "yyyy" : part.Value;
+                }
                 else if (IsPrefix(key))
                 {
                     prefix = part.Value;
                 }
             }
 
-            // Fallback: if no typed prefix, concatenate non-separator/non-auto parts by id
+            // Fallback: if no typed prefix, concatenate non-separator/non-auto/non-year parts by id
             if (string.IsNullOrWhiteSpace(prefix))
             {
                 var sb = new StringBuilder();
                 foreach (var part in parts.OrderBy(p => p.SortId))
                 {
-                    if (IsSeparator(part.Key) || IsAutoIncrement(part.Key))
+                    if (IsSeparator(part.Key) || IsAutoIncrement(part.Key) || IsYear(part.Key))
                         continue;
                     sb.Append(part.Value);
                 }
@@ -277,7 +299,15 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
             }
 
             separator ??= "-";
-            return new ProcessNumberFormat(prefix.Trim(), separator, startAt);
+            prefix = prefix.Trim();
+
+            // The designer's "prefix" field sometimes already has the separator typed into it
+            // (e.g. prefix "EXP-" + separator "-"). Appending the separator again would double it
+            // up (EXP--2026-1), so drop one copy when the prefix already ends with it.
+            if (separator.Length > 0 && prefix.EndsWith(separator, StringComparison.Ordinal))
+                prefix = prefix[..^separator.Length];
+
+            return new ProcessNumberFormat(prefix, separator, yearFormat, startAt);
         }
 
         private static List<ProcessNumberPart> ParseParts(string raw)
@@ -359,6 +389,10 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
             || key.Equals("autoincrement", StringComparison.OrdinalIgnoreCase)
             || key.Contains("auto", StringComparison.OrdinalIgnoreCase)
             && key.Contains("increment", StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsYear(string key) =>
+            key.Equals("year", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("year", StringComparison.OrdinalIgnoreCase);
 
         private sealed record ProcessNumberPart(string Id, string Key, string Value)
         {
