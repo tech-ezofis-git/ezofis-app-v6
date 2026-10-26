@@ -134,6 +134,9 @@ export interface ReportAiListItem {
   reportType: ReportAgentType
   runs: number
   status: string
+  /** Specific-scope source names; the list endpoint may omit them. */
+  repositoryName?: string | null
+  workflowName?: string | null
 }
 
 /** Full saved report from GET /report-ai-builder/{id}. */
