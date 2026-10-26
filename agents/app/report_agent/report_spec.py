@@ -812,7 +812,7 @@ def fallback_report_spec(
     from app.report_agent.report_catalog import match_report_intent, spec_from_intent
 
     avail = available_columns_from_tables(tables)
-    preferred = preferred_fact_table(tables)
+    preferred = preferred_fact_table(tables, report_type=report_type)
     return spec_from_intent(
         intent=match_report_intent(description, report_type=report_type),
         description=description,
@@ -933,7 +933,7 @@ def enrich_spec_with_schema(
             warnings.append(f"Sort field '{sort.field}' not found; cleared.")
             sort = None
 
-    preferred = preferred_fact_table(tables)
+    preferred = preferred_fact_table(tables, report_type=spec.report_type)
     source_table = spec.source_table
     source_schema = spec.source_schema
     if not source_table and preferred:

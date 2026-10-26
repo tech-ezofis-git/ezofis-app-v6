@@ -926,6 +926,96 @@ def test_scope_prefers_fact_tables_over_catalog():
     assert preferred.table == "ezfb_29171de4_items"
 
 
+def test_specific_repository_prefers_items_table_not_ezfb_form():
+    from app.report_agent.report_types import get_report_type
+    from app.report_agent.schema_scope import preferred_fact_table, scope_schema
+
+    schema = DatabaseSchema()
+    schema.tables = [
+        ("dbo", "ezfb_452859c2_items"),
+        ("repository", "items_452859c2"),
+    ]
+    schema.columns_by_table = {
+        ("dbo", "ezfb_452859c2_items"): [
+            ColumnMeta("dbo", "ezfb_452859c2_items", "Supplier", "text"),
+            ColumnMeta("dbo", "ezfb_452859c2_items", "Invoice_No", "text"),
+        ],
+        ("repository", "items_452859c2"): [
+            ColumnMeta("repository", "items_452859c2", "id", "uuid"),
+            ColumnMeta("repository", "items_452859c2", "file_name", "text"),
+            ColumnMeta("repository", "items_452859c2", "created_by", "uuid"),
+            ColumnMeta("repository", "items_452859c2", "created_at", "timestamp"),
+        ],
+    }
+    schema.all_columns = [c for lst in schema.columns_by_table.values() for c in lst]
+    schema.table_to_workflow = {"452859c2": "Accounts Payable", "items_452859c2": "Accounts Payable"}
+    tables = scope_schema(
+        schema,
+        get_report_type("specific_repository"),
+        repository_name="Accounts Payable",
+    )
+    names = [t.table for t in tables]
+    assert "items_452859c2" in names
+    assert names[0] == "items_452859c2"
+    preferred = preferred_fact_table(tables, report_type="specific_repository")
+    assert preferred is not None
+    assert preferred.table == "items_452859c2"
+
+
+def test_lock_relocates_folder_report_off_ezfb_and_aligns_group_by():
+    schema = DatabaseSchema()
+    schema.tables = [
+        ("dbo", "ezfb_452859c2_items"),
+        ("repository", "items_452859c2"),
+    ]
+    schema.columns_by_table = {
+        ("dbo", "ezfb_452859c2_items"): [
+            ColumnMeta("dbo", "ezfb_452859c2_items", "Supplier", "text"),
+            ColumnMeta("dbo", "ezfb_452859c2_items", "Invoice_No", "text"),
+        ],
+        ("repository", "items_452859c2"): [
+            ColumnMeta("repository", "items_452859c2", "id", "uuid"),
+            ColumnMeta("repository", "items_452859c2", "file_name", "text"),
+            ColumnMeta("repository", "items_452859c2", "created_by", "uuid"),
+            ColumnMeta("repository", "items_452859c2", "created_at", "timestamp"),
+        ],
+    }
+    schema.all_columns = [c for lst in schema.columns_by_table.values() for c in lst]
+    raw = {
+        "title": "Accounts Payable folder",
+        "reportType": "specific_repository",
+        "sources": [{"alias": "items", "schemaName": "dbo", "table": "ezfb_452859c2_items"}],
+        "joins": [],
+        "columns": [
+            {"key": "FileName", "label": "File Name", "source": "file_name", "aggregate": "none"},
+            {"key": "CreatedBy", "label": "Created By", "source": "created_by", "aggregate": "none"},
+            {"key": "File_Count", "label": "Count", "source": "1", "aggregate": "count"},
+        ],
+        "filters": [{"field": "repository_id", "op": "eq", "value": "x"}],
+        "groupBy": ["items.file_type", "items.status", "items.folder_id"],
+        "orderBy": [],
+        "availableFilters": [],
+        "summary": {},
+        "warnings": [],
+    }
+    locked = lock_report_definition(
+        raw,
+        schema,
+        report_type="specific_repository",
+        preferred_schema="repository",
+        preferred_table="items_452859c2",
+    )
+    assert locked["sources"][0]["table"] == "items_452859c2"
+    sources = {str(col.get("source") or "") for col in locked["columns"]}
+    assert any(item.endswith("file_name") for item in sources)
+    assert any(item.endswith("created_by") for item in sources)
+    group_by = {str(item) for item in locked["groupBy"]}
+    assert any(item.endswith("created_by") for item in group_by)
+    sql, _count = generate_definition_sql(locked, page=1, page_size=25)
+    assert "GROUP BY" in sql
+    assert "created_by" in sql
+
+
 def _ap_tables(*, with_date: bool = True):
     from app.models.report_agent import SchemaColumnSlice, SchemaTableSlice
 

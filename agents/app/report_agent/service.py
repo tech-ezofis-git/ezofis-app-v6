@@ -74,6 +74,7 @@ from app.report_agent.report_types import (
 )
 from app.report_agent.schema_scope import (
     is_catalog_table,
+    is_repository_items_table,
     preferred_fact_table,
     resolve_scope_options,
     schema_slice_to_prompt_block,
@@ -641,8 +642,8 @@ class ReportAgentService:
                 )
                 for s, t in schema.tables
             ]
-        schema_block = schema_slice_to_prompt_block(tables)
-        preferred = preferred_fact_table(tables)
+        schema_block = schema_slice_to_prompt_block(tables, report_type=rt.key)
+        preferred = preferred_fact_table(tables, report_type=rt.key)
         from app.report_agent.report_spec import available_columns_from_tables as _avail_cols_prompt
 
         live_columns = _avail_cols_prompt(tables, limit=120)
@@ -1079,11 +1080,17 @@ class ReportAgentService:
                 deduped.append(t)
             tables = deduped[:18]
 
-        schema_block = schema_slice_to_prompt_block(tables)
-        preferred = preferred_fact_table(tables)
+        report_type_for_source = (rt.key if rt else request.report_type) or ""
+        schema_block = schema_slice_to_prompt_block(tables, report_type=report_type_for_source)
+        preferred = preferred_fact_table(tables, report_type=report_type_for_source)
         if spec is not None and spec.source_table:
             resolved = schema.resolve_table(spec.source_schema, spec.source_table)
-            if resolved:
+            if resolved and not (
+                "repositor" in report_type_for_source.lower()
+                and str(resolved[1]).lower().startswith("ezfb_")
+                and preferred is not None
+                and is_repository_items_table(preferred.table)
+            ):
                 preferred = SchemaTableSlice(
                     schema_name=resolved[0],
                     table=resolved[1],

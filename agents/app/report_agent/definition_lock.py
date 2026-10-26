@@ -192,14 +192,18 @@ def is_catalog_table(table: Optional[str]) -> bool:
     return (table or "").strip().strip('"').lower() in _CATALOG_TABLES
 
 
+def is_repository_items_table(table: Optional[str]) -> bool:
+    t = (table or "").strip().strip('"').lower()
+    return t.startswith("items_") and not t.startswith("ezfb_")
+
+
 def is_fact_table(table: Optional[str]) -> bool:
     t = (table or "").strip().strip('"').lower()
     if not t or is_catalog_table(t):
         return False
     return (
         (t.startswith("ezfb_") and "_items" in t)
-        or t.startswith("items_")
-        or "items_" in t
+        or is_repository_items_table(t)
         or t.startswith("inbox_")
         or t.startswith("workflow_instances_")
         or t.startswith("workflow_tasks_")
@@ -284,9 +288,19 @@ def lock_report_definition(
     if preferred_table:
         preferred_entry = _resolve_table(preferred_schema, preferred_table, index)
     if preferred_entry is None:
-        for live_schema, live_table in schema.tables:
-            if not is_fact_table(live_table):
-                continue
+        ranked = [
+            (live_schema, live_table)
+            for live_schema, live_table in schema.tables
+            if is_fact_table(live_table)
+        ]
+        if report_type and "repositor" in str(report_type).lower():
+            ranked.sort(
+                key=lambda item: (
+                    0 if is_repository_items_table(item[1]) else 1,
+                    item[1].lower(),
+                )
+            )
+        for live_schema, live_table in ranked:
             preferred_entry = _resolve_table(live_schema, live_table, index)
             if preferred_entry:
                 break
@@ -533,17 +547,18 @@ def lock_report_definition(
         "summary": summary,
         "warnings": warnings,
     }
+    locked = _align_group_by(locked)
 
-    if preferred_entry and _should_relocate(sources_out, preferred_entry):
+    if preferred_entry and _should_relocate(sources_out, preferred_entry, report_type=rt):
         grounded = definition_from_table(
             schema,
             preferred_entry.schema_name,
             preferred_entry.table,
             title=title,
             report_type=rt,
-            column_hints=columns_out or raw.get("columns") or [],
-            filter_hints=filters_out,
-            group_by_hints=group_by_out or raw.get("groupBy") or raw.get("group_by") or [],
+            column_hints=raw.get("columns") or columns_out,
+            filter_hints=raw.get("filters") or filters_out,
+            group_by_hints=raw.get("groupBy") or raw.get("group_by") or group_by_out,
         )
         if grounded:
             extra = list(warnings)
@@ -552,7 +567,7 @@ def lock_report_definition(
                 f"{preferred_entry.schema_name}.{preferred_entry.table}."
             )
             grounded["warnings"] = extra + [w for w in (grounded.get("warnings") or []) if w not in extra]
-            return grounded
+            return _align_group_by(grounded)
 
     return locked
 
@@ -615,7 +630,44 @@ def ensure_identity_columns(locked: dict[str, Any], schema: DatabaseSchema) -> d
     return out
 
 
-def _should_relocate(sources_out: list[dict[str, Any]], preferred: _TableIndex) -> bool:
+def _align_group_by(locked: dict[str, Any]) -> dict[str, Any]:
+    """Postgres requires every non-aggregate SELECT column in GROUP BY."""
+    columns = [col for col in (locked.get("columns") or []) if isinstance(col, dict)]
+    has_agg = any(
+        str(col.get("aggregate") or "none").lower() not in ("none", "", "null")
+        for col in columns
+    )
+    if not has_agg:
+        if locked.get("groupBy"):
+            out = dict(locked)
+            out["groupBy"] = []
+            return out
+        return locked
+    existing = [str(item) for item in (locked.get("groupBy") or []) if str(item).strip()]
+    present = {_compact_ident(item) for item in existing}
+    group_by = list(existing)
+    for col in columns:
+        if str(col.get("aggregate") or "none").lower() not in ("none", "", "null"):
+            continue
+        source = str(col.get("source") or "").strip()
+        if not source or _looks_like_expr(source):
+            continue
+        compact = _compact_ident(source)
+        if compact in present:
+            continue
+        group_by.append(source)
+        present.add(compact)
+    out = dict(locked)
+    out["groupBy"] = group_by
+    return out
+
+
+def _should_relocate(
+    sources_out: list[dict[str, Any]],
+    preferred: _TableIndex,
+    *,
+    report_type: Optional[str] = None,
+) -> bool:
     if not sources_out:
         return True
     if any(
@@ -624,6 +676,14 @@ def _should_relocate(sources_out: list[dict[str, Any]], preferred: _TableIndex) 
         for s in sources_out
     ):
         return False
+    preferred_table = (preferred.table or "").lower()
+    if "repositor" in str(report_type or "").lower() and is_repository_items_table(preferred_table):
+        if all(
+            str(s.get("table") or "").lower().startswith("ezfb_")
+            or is_catalog_table(str(s.get("table") or ""))
+            for s in sources_out
+        ):
+            return True
     if any(is_fact_table(str(s.get("table") or "")) for s in sources_out):
         return False
     return all(is_catalog_table(str(s.get("table") or "")) for s in sources_out)
@@ -672,9 +732,12 @@ def definition_from_table(
         if isinstance(item, dict):
             key = str(item.get("key") or item.get("source") or "").strip()
             source = str(item.get("source") or item.get("formula") or key).strip()
+            agg = str(item.get("aggregate") or "none").lower()
             if key:
                 hints.append(key)
-            if source and _looks_like_expr(source):
+            if agg == "count" and source.lower() in ("", "*", "1"):
+                formulas[key.lower()] = "COUNT(*)"
+            elif source and _looks_like_expr(source):
                 formulas[key.lower() or source.lower()] = source
         elif item:
             hints.append(str(item))
@@ -725,7 +788,7 @@ def definition_from_table(
                 )
                 seen.add(key.lower())
                 continue
-        real = entry.columns.get(leaf)
+        real = _match_live_column(entry, leaf) or entry.columns.get(leaf)
         if not real or real.lower() in seen:
             continue
         columns.append(

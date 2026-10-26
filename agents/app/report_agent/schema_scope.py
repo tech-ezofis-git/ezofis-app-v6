@@ -73,30 +73,54 @@ def is_catalog_table(table: str) -> bool:
     return (table or "").lower() in _CATALOG_TABLES
 
 
+def is_repository_items_table(table: str) -> bool:
+    t = (table or "").lower()
+    return t.startswith("items_") and not t.startswith("ezfb_")
+
+
 def is_fact_table(table: str) -> bool:
     t = (table or "").lower()
     if not t or is_catalog_table(t):
         return False
     return (
         (t.startswith("ezfb_") and "_items" in t)
-        or t.startswith("items_")
-        or "items_" in t
+        or is_repository_items_table(t)
         or t.startswith("inbox_")
         or t.startswith("workflow_instances_")
         or t.startswith("workflow_tasks_")
     )
 
 
-def preferred_fact_table(tables: list[SchemaTableSlice]) -> Optional[SchemaTableSlice]:
-    for table in tables:
-        if is_fact_table(table.table):
-            return table
-    return tables[0] if tables else None
+def preferred_fact_table(
+    tables: list[SchemaTableSlice],
+    *,
+    report_type: Optional[str] = None,
+) -> Optional[SchemaTableSlice]:
+    facts = [table for table in tables if is_fact_table(table.table)]
+    pool = facts or list(tables)
+    if not pool:
+        return None
+    if "repositor" in (report_type or "").lower():
+        items = [table for table in pool if is_repository_items_table(table.table)]
+        if items:
+            return items[0]
+    return pool[0]
 
 
 def _table_matches_focus(schema: str, table: str, focus: tuple[str, ...]) -> bool:
     blob = f"{schema}.{table}".lower()
-    return any(tok.lower() in blob for tok in focus)
+    t = (table or "").lower()
+    for tok in focus:
+        token = (tok or "").lower()
+        if not token:
+            continue
+        if token == "items_":
+            if is_repository_items_table(t) or schema.lower() == "repository":
+                return True
+            continue
+        if token in blob:
+            return True
+    return False
 
 
 def _workflow_match(schema_obj: DatabaseSchema, table: str, workflow_name: str) -> bool:
@@ -125,8 +149,8 @@ def _repo_match(schema_obj: DatabaseSchema, table: str, repository_name: str) ->
             continue
         if _norm(key) and _norm(key) in _norm(table):
             return True
-    # fallback: items_* tables always candidate when specific repo; SQL filters apply later
-    return table.lower().startswith("items_") or "items_" in table.lower()
+    # Folder row source is repository.items_* — not ezfb_*_items (form tables).
+    return is_repository_items_table(table)
 
 
 def scope_schema(
@@ -186,12 +210,23 @@ def scope_schema(
     if facts:
         candidates = facts
 
-    def _rank(item: tuple[str, str, list[ColumnMeta]]) -> tuple[int, int, str]:
+    def _rank(item: tuple[str, str, list[ColumnMeta]]) -> tuple[int, int, int, str]:
         s, t, _ = item
         sl = s.lower()
-        fact = 0 if is_fact_table(t) else (2 if is_catalog_table(t) else 1)
+        tl = t.lower()
+        if is_repository_items_table(t):
+            kind = 0
+        elif is_fact_table(t):
+            kind = 1
+        elif is_catalog_table(t):
+            kind = 3
+        else:
+            kind = 2
+        repo_schema = 0 if sl == "repository" else 1
         schema_order = 0 if sl in ("dbo", "workflow", "repository") else 1
-        return (fact, schema_order, t.lower())
+        if report_type.scope == "repositories":
+            return (kind, repo_schema, schema_order, tl)
+        return (kind, schema_order, 0, tl)
 
     candidates.sort(key=_rank)
     out: list[SchemaTableSlice] = []
@@ -210,13 +245,17 @@ def scope_schema(
     return out
 
 
-def schema_slice_to_prompt_block(tables: list[SchemaTableSlice]) -> str:
+def schema_slice_to_prompt_block(
+    tables: list[SchemaTableSlice],
+    *,
+    report_type: Optional[str] = None,
+) -> str:
     lines: list[str] = [
         "Approved live schema slice (use ONLY these tables/columns):",
         "These are report row sources. Do not query catalog definition tables "
         "(Workflows, Repositories, wForm) for report rows.",
     ]
-    preferred = preferred_fact_table(tables)
+    preferred = preferred_fact_table(tables, report_type=report_type)
     if preferred:
         lines.append(
             "Preferred source table: "
