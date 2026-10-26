@@ -1346,13 +1346,12 @@ class ReportAgentService:
                     warnings.append(f"Could not attach workflow Request No / Stage: {exc}")
                 spec, rows, listing_cols = _keep_valued_columns(spec, rows)
                 columns_out = listing_cols
-            else:
-                try:
-                    rows = await resolve_user_names(
-                        self._ezofis, rows, tenant_id=request.tenant_id or "", db=db
-                    )
-                except Exception:
-                    pass
+            try:
+                rows = await resolve_user_names(
+                    self._ezofis, rows, tenant_id=request.tenant_id or "", db=db
+                )
+            except Exception:
+                pass
 
         columns_out = bind_highlights_to_rows(columns_out, rows)
         logger.info(

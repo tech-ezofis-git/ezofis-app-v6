@@ -242,6 +242,18 @@ def _id_key_for_name(compact: str) -> str:
     }.get(compact, "")
 
 
+def _canonical_user_name_key(compact: str) -> str:
+    return {"startedby": "startedBy", "actedby": "actedBy", "createdby": "CreatedBy"}.get(compact, "")
+
+
+def _set_user_id(row: dict[str, Any], id_key: str, uid: str) -> None:
+    if not id_key or not uid:
+        return
+    current = row.get(id_key)
+    if current in (None, "") or _looks_like_user_id(current) is False:
+        row[id_key] = uid
+
+
 def _split_user_fields_on_row(row: dict[str, Any]) -> None:
     """Move GUIDs out of *By name columns onto *ById so overlay/resolve can fill names."""
     if not isinstance(row, dict):
@@ -260,12 +272,32 @@ def _split_user_fields_on_row(row: dict[str, Any]) -> None:
             row["actedById"] = uid
         if name:
             row["actedBy"] = name
+    for key in list(row.keys()):
+        compact = _listing_compact(str(key))
+        if compact in _USER_NAME_COMPACT:
+            uid, name = _split_user_ref(row.get(key))
+            id_key = _id_key_for_name(compact)
+            canon = _canonical_user_name_key(compact)
+            if uid:
+                _set_user_id(row, id_key, uid)
+                row[key] = name
+                if canon:
+                    row[canon] = name
+            elif canon and not row.get(canon):
+                row[canon] = name
+        elif compact in _USER_ID_COMPACT:
+            uid, _ = _split_user_ref(row.get(key))
+            if uid:
+                row[key] = uid
+                canon_id = _id_key_for_name(compact.replace("id", "")) or key
+                if canon_id != key:
+                    _set_user_id(row, canon_id, uid)
     for name_key, id_key in _USER_NAME_ID_PAIRS:
         uid, name = _split_user_ref(row.get(name_key))
-        if uid and not row.get(id_key):
-            row[id_key] = uid
-        if uid and not name:
-            row[name_key] = ""
+        if uid:
+            _set_user_id(row, id_key, uid)
+            if not name:
+                row[name_key] = ""
         id_uid, _ = _split_user_ref(row.get(id_key))
         if id_uid:
             row[id_key] = id_uid
@@ -506,41 +538,51 @@ def _normalize_instance(row: dict[str, Any], *, wf_id: str, wf_name: str) -> dic
 def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     keys = [c.key for c in spec.columns]
     if not keys:
-        return rows
+        out = [dict(row) if isinstance(row, dict) else row for row in rows]
+        for row in out:
+            if isinstance(row, dict):
+                _split_user_fields_on_row(row)
+        return out
     shaped: list[dict[str, Any]] = []
     for row in rows:
-        lower = {str(key).lower(): value for key, value in (row or {}).items()}
+        source = dict(row) if isinstance(row, dict) else {}
+        _split_user_fields_on_row(source)
+        lower = {str(key).lower(): value for key, value in source.items()}
         item: dict[str, Any] = {}
         for key in keys:
             value = lower.get(key.lower(), "")
             if value in (None, "") and key.lower() in {"id", "requestno"}:
                 value = lower.get("requestno") or lower.get("id") or ""
-            item[key] = _cell(value)
-            compact = key.lower().replace("_", "")
-            if compact == "requestno":
-                item["RequestNo"] = item[key]
-                item["requestNo"] = item[key]
-            elif compact == "stage":
-                item["Stage"] = item[key]
-                item["stage"] = item[key]
-            elif compact in _USER_NAME_COMPACT:
+            compact = _listing_compact(key)
+            if compact in _USER_NAME_COMPACT:
                 uid, name = _split_user_ref(value)
                 id_key = _id_key_for_name(compact)
-                if uid and id_key and not item.get(id_key):
-                    item[id_key] = uid
+                if uid:
+                    _set_user_id(item, id_key, uid)
                 item[key] = _cell(name)
-                if compact == "actedby":
-                    item["actedBy"] = item[key]
-                elif compact == "startedby":
-                    item["startedBy"] = item[key]
+                canon = _canonical_user_name_key(compact)
+                if canon:
+                    item[canon] = item[key]
+            elif compact in _USER_ID_COMPACT:
+                uid, _ = _split_user_ref(value)
+                if not uid:
+                    uid = _split_user_ref(item.get(key))[0]
+                item[key] = uid
+                if compact == "actedbyid":
+                    item["actedById"] = uid
+                elif compact == "startedbyid":
+                    item["startedById"] = uid
                 else:
-                    item["CreatedBy"] = item[key]
-            elif compact == "actedbyid":
-                item["actedById"] = item[key]
-            elif compact == "startedbyid":
-                item["startedById"] = item[key]
-            elif compact == "createdbyid":
-                item["CreatedById"] = item[key]
+                    item["CreatedById"] = uid
+            else:
+                item[key] = _cell(value)
+                if compact == "requestno":
+                    item["RequestNo"] = item[key]
+                    item["requestNo"] = item[key]
+                elif compact == "stage":
+                    item["Stage"] = item[key]
+                    item["stage"] = item[key]
+        _split_user_fields_on_row(item)
         shaped.append(item)
     return shaped
 
@@ -566,16 +608,20 @@ def _keep_valued_columns(
     keep_keys = [col.key for col in keep]
     new_rows: list[dict[str, Any]] = []
     for row in rows:
-        lower = {str(key).lower(): value for key, value in (row or {}).items()}
+        source = dict(row) if isinstance(row, dict) else {}
+        _split_user_fields_on_row(source)
+        lower = {str(key).lower(): value for key, value in source.items()}
         item: dict[str, Any] = {}
         for key in keep_keys:
-            item[key] = row.get(key, lower.get(key.lower(), ""))
-            if key.lower() == "requestno":
+            item[key] = source.get(key, lower.get(key.lower(), ""))
+            compact = _listing_compact(key)
+            if compact == "requestno":
                 item["RequestNo"] = item[key]
                 item["requestNo"] = item[key]
-            elif key.lower() == "stage":
+            elif compact == "stage":
                 item["Stage"] = item[key]
                 item["stage"] = item[key]
+        _split_user_fields_on_row(item)
         new_rows.append(item)
     new_spec = spec.model_copy(update={"columns": keep})
     return new_spec, new_rows, _col_outs(new_spec)
