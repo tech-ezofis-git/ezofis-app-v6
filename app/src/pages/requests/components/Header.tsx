@@ -2,12 +2,12 @@ import { useLingui } from '@lingui/react/macro'
 import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 import type { IRequestMeta } from '../types'
+import WorkflowSwitcher from './WorkflowSwitcher'
 
 export type RequestTabDescriptor = { label: string; value: string }
 
@@ -40,6 +40,8 @@ interface Props {
   setWorkflow: React.Dispatch<React.SetStateAction<Option | null>>
   onCancelConnectWatchEmail?: () => void
   onReconnectWatchEmail?: () => void
+  /** Switches to the All Workflows inbox. */
+  onSelectAllWorkflows?: () => void
 }
 
 const Header = ({
@@ -60,6 +62,7 @@ const Header = ({
   setWorkflow,
   onCancelConnectWatchEmail,
   onReconnectWatchEmail,
+  onSelectAllWorkflows,
 }: Props) => {
   const { t } = useLingui()
   const processedCount =
@@ -93,10 +96,24 @@ const Header = ({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-4',
+        'flex flex-wrap items-center gap-6 border-b border-gray-3 px-4 [&>*:last-child]:ml-auto',
         hideListTabs ? 'py-2.5' : '',
       )}
     >
+      {onSelectAllWorkflows ? (
+        // Back to the inbox across every workflow.
+        <button
+          className='group/back -mr-2 flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-gray-4 bg-surface pr-3.5 pl-2.5 text-13 font-medium text-gray-12 transition-colors hover:border-primary-7 hover:text-primary-11 active:scale-95'
+          type='button'
+          onClick={onSelectAllWorkflows}
+        >
+          <Icon
+            className='size-4 transition-transform duration-200 group-hover/back:-translate-x-0.5'
+            name='tabler:chevron-left'
+          />
+          {t`All Workflows`}
+        </button>
+      ) : null}
       {hideListTabs ? (
         <p className='text-15 font-semibold text-gray-13'>{t`Process Overview`}</p>
       ) : (
@@ -124,16 +141,12 @@ const Header = ({
       )}
 
       <div className='flex items-center gap-2'>
-        <InputSelect
-          className='border-[var(--gray-3)] transition-colors hover:border-[var(--primary-3)]'
-          options={allWorkflows && allWorkflows?.length > 0 ? allWorkflows : []}
+        <WorkflowSwitcher
+          isAllWorkflows={false}
           value={workflow}
-          width={220}
-          searchable
-          leftSection={
-            <Icon className='text-[var(--gray-10)]' name='tabler:replace' />
-          }
-          onChange={setWorkflow}
+          workflows={allWorkflows || []}
+          onSelect={setWorkflow}
+          onSelectAll={() => onSelectAllWorkflows?.()}
         />
         {connectedWatchEmail && (
           <div

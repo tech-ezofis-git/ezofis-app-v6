@@ -3,19 +3,19 @@ import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { V6SearchFilterClause } from '@/api/v6/workflows'
 import type { Option } from '@/types/option'
-import workflowsApiV6, {
-  mapPublishedWorkflowListToOptions,
-  type V6FilterField,
-  type WorkflowOptionItem,
-} from '@/api/v6/workflows'
 import {
   connectWatchFox,
   getMailboxes,
   WATCHFOX_CONFIG,
 } from '@/api/emailIngest'
+import workflowsApiV6, {
+  mapPublishedWorkflowListToOptions,
+  type V6FilterField,
+  type WorkflowOptionItem,
+} from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
-import PageEmptyState from '@/components/common/PageEmptyState'
 import showToast from '@/components/base/toast/showToast'
+import PageEmptyState from '@/components/common/PageEmptyState'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import useAuthUserStore from '@/stores/authUserStore'
 import type {
@@ -24,11 +24,13 @@ import type {
   RequestViewMode,
   WorkflowOption,
 } from './types'
+import AllWorkflowsInbox from './components/AllWorkflowsInbox'
 import Header from './components/Header'
 import InboxList from './components/InboxList'
 import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
 import Request from './components/request/Request'
 import { transformProcess, useInboxData } from './hooks/useInboxData'
+import useInlineRequestOverview from './hooks/useInlineRequestOverview'
 import { useStableRequestKey } from './hooks/useStableRequestKey'
 import requestStore from './stores/useRequestStore'
 import {
@@ -98,7 +100,9 @@ const isValidWatchEmail = (
   if (trimmed.startsWith('cn_') || trimmed.startsWith('wt_')) return true
   // If email, must contain @ and must not be the EZOFIS app login email
   if (!trimmed.includes('@')) return false
-  const uEmail = String(userEmail || '').toLowerCase().trim()
+  const uEmail = String(userEmail || '')
+    .toLowerCase()
+    .trim()
   if (uEmail && trimmed.toLowerCase() === uEmail) return false
   return true
 }
@@ -108,8 +112,12 @@ const getStoredConnectionForUser = (
   userEmail?: string | null,
 ): string | null => {
   if (typeof window === 'undefined') return null
-  const uId = String(userId || '').toLowerCase().trim()
-  const uEmail = String(userEmail || '').toLowerCase().trim()
+  const uId = String(userId || '')
+    .toLowerCase()
+    .trim()
+  const uEmail = String(userEmail || '')
+    .toLowerCase()
+    .trim()
   if (!uId && !uEmail) return null
 
   try {
@@ -144,8 +152,12 @@ const getStoredConnectionForUser = (
     const info = localStorage.getItem('v6_watchfox_connection_info')
     if (info) {
       const parsed = JSON.parse(info)
-      const linkedUserId = String(parsed?.userId || '').toLowerCase().trim()
-      const linkedUserEmail = String(parsed?.userEmail || '').toLowerCase().trim()
+      const linkedUserId = String(parsed?.userId || '')
+        .toLowerCase()
+        .trim()
+      const linkedUserEmail = String(parsed?.userEmail || '')
+        .toLowerCase()
+        .trim()
       const accountEmail = String(parsed?.email || '').trim()
       const connectionId = String(parsed?.connectionId || '').trim()
 
@@ -170,10 +182,14 @@ const getStoredConnectionForUser = (
 const getStoredConnectionInfoForUser = (
   userId?: string | null,
   userEmail?: string | null,
-): { email?: string; connectionId?: string; watchId?: string } | null => {
+): { connectionId?: string; email?: string; watchId?: string } | null => {
   if (typeof window === 'undefined') return null
-  const uId = String(userId || '').toLowerCase().trim()
-  const uEmail = String(userEmail || '').toLowerCase().trim()
+  const uId = String(userId || '')
+    .toLowerCase()
+    .trim()
+  const uEmail = String(userEmail || '')
+    .toLowerCase()
+    .trim()
   if (!uId && !uEmail) return null
 
   try {
@@ -187,8 +203,12 @@ const getStoredConnectionInfoForUser = (
     const info = localStorage.getItem('v6_watchfox_connection_info')
     if (info) {
       const parsed = JSON.parse(info)
-      const linkedUserId = String(parsed?.userId || '').toLowerCase().trim()
-      const linkedUserEmail = String(parsed?.userEmail || '').toLowerCase().trim()
+      const linkedUserId = String(parsed?.userId || '')
+        .toLowerCase()
+        .trim()
+      const linkedUserEmail = String(parsed?.userEmail || '')
+        .toLowerCase()
+        .trim()
       if (
         (uId && linkedUserId && uId === linkedUserId) ||
         (uEmail && linkedUserEmail && uEmail === linkedUserEmail)
@@ -210,10 +230,13 @@ const saveStoredConnectionForUser = (
   watchId?: string,
 ) => {
   if (typeof window === 'undefined') return
-  const uId = String(userId || '').toLowerCase().trim()
-  const uEmail = String(userEmail || '').toLowerCase().trim()
+  const uId = String(userId || '')
+    .toLowerCase()
+    .trim()
+  const uEmail = String(userEmail || '')
+    .toLowerCase()
+    .trim()
   let aEmail = String(accountEmail || '').trim()
-
 
   if (uEmail && aEmail.toLowerCase() === uEmail) {
     aEmail = ''
@@ -227,10 +250,16 @@ const saveStoredConnectionForUser = (
 
   try {
     if (uId) {
-      localStorage.setItem(`v6_watchfox_connected_email_${uId}`, storedIdentifier)
+      localStorage.setItem(
+        `v6_watchfox_connected_email_${uId}`,
+        storedIdentifier,
+      )
     }
     if (uEmail) {
-      localStorage.setItem(`v6_watchfox_connected_email_${uEmail}`, storedIdentifier)
+      localStorage.setItem(
+        `v6_watchfox_connected_email_${uEmail}`,
+        storedIdentifier,
+      )
     }
 
     const mapStr = localStorage.getItem('v6_watchfox_user_connections')
@@ -239,18 +268,15 @@ const saveStoredConnectionForUser = (
       connectedAt: Date.now(),
       connectionId: connectionId || '',
       email: aEmail,
-      userId: uId,
       userEmail: uEmail,
+      userId: uId,
       watchId: watchId || '',
     }
     if (uId) map[uId] = entry
     if (uEmail) map[uEmail] = entry
     localStorage.setItem('v6_watchfox_user_connections', JSON.stringify(map))
 
-    localStorage.setItem(
-      'v6_watchfox_connection_info',
-      JSON.stringify(entry),
-    )
+    localStorage.setItem('v6_watchfox_connection_info', JSON.stringify(entry))
     localStorage.setItem('v6_watchfox_connected_time', String(Date.now()))
     // Remove global unlinked key so it cannot leak to other users
     localStorage.removeItem('v6_watchfox_connected_email')
@@ -269,6 +295,9 @@ function getStoredState() {
     return null
   }
 }
+
+/** Session flag: '0' when the user last chose a single workflow. */
+const ALL_WORKFLOWS_VIEW_KEY = 'ezofis_requests_all_workflows'
 
 const RequestsPage = () => {
   const { t } = useLingui()
@@ -312,6 +341,39 @@ const RequestsPage = () => {
     setRawWorkflowData: setRawWorflow,
     setRequestListTab,
   } = requestStore()
+
+  // Landing view: the inbox across every workflow ("All Workflows"), unless
+  // the user last chose one workflow or a deep link / new request targets one.
+  // True once the user picks All Workflows themselves: an empty inbox then
+  // stays on the empty page instead of jumping to the first workflow.
+  const [allWorkflowsChosen, setAllWorkflowsChosen] = useState(false)
+  const [showAllWorkflows, setShowAllWorkflows] = useState<boolean>(() => {
+    const state = requestStore.getState()
+    if (state.pendingDeepLink || state.pendingOpenNewRequest) return false
+    try {
+      return sessionStorage.getItem(ALL_WORKFLOWS_VIEW_KEY) !== '0'
+    } catch {
+      return true
+    }
+  })
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        ALL_WORKFLOWS_VIEW_KEY,
+        showAllWorkflows ? '1' : '0',
+      )
+    } catch {
+      // ignore
+    }
+  }, [showAllWorkflows])
+  useEffect(() => {
+    if (pendingDeepLink || pendingOpenNewRequest) setShowAllWorkflows(false)
+  }, [pendingDeepLink, pendingOpenNewRequest])
+  // "New" from All Workflows: open the new-request screen once that
+  // workflow has loaded.
+  const [pendingNewWorkflowId, setPendingNewWorkflowId] = useState<
+    string | null
+  >(null)
 
   const isAccountsPayable = useMemo(
     () => isAccountsPayableWorkflow(rawWorkflowData),
@@ -434,7 +496,9 @@ const RequestsPage = () => {
           ? 0
           : activeTab === 'Sent' || activeTab === 'Exceptions'
             ? 1
-            : activeTab === 'Closed' || activeTab === 'Completed' || activeTab === 'Processed'
+            : activeTab === 'Closed' ||
+                activeTab === 'Completed' ||
+                activeTab === 'Processed'
               ? 2
               : -1
       if (index >= 0 && configuredTabs[index]) {
@@ -515,6 +579,36 @@ const RequestsPage = () => {
       })
     },
     [],
+  )
+
+  const selectWorkflowFromSwitcher = useCallback(
+    (opt: Option | null | ((prev: Option | null) => Option | null)) => {
+      setShowAllWorkflows(false)
+      handleWorkflowSelect(opt)
+    },
+    [handleWorkflowSelect],
+  )
+
+  // A request from All Inbox opens straight away (its own workflow is loaded
+  // into the store for it); Back returns to All Inbox and the store's
+  // previous workflow is put back.
+  const inlineOverview = useInlineRequestOverview({
+    onError: () =>
+      showToast({
+        message: t`Couldn't open this request. Try again.`,
+        variant: 'error',
+      }),
+  })
+  const { open: openInlineOverview } = inlineOverview
+  const openFromAllWorkflows = useCallback(
+    (workflowId: string, row: Record<string, any>) => {
+      const instanceId = String(
+        row.workflowInstanceId || row.processId || row.id || '',
+      )
+      if (!workflowId || !instanceId) return
+      void openInlineOverview({ instanceId, workflowId: String(workflowId) })
+    },
+    [openInlineOverview],
   )
 
   const loadWorkflowList = useCallback(async () => {
@@ -602,8 +696,9 @@ const RequestsPage = () => {
     }
   }, [])
 
-
-  const [stageTabCounts, setStageTabCounts] = useState<Record<string, number>>({})
+  const [stageTabCounts, setStageTabCounts] = useState<Record<string, number>>(
+    {},
+  )
   const [totalStageCount, setTotalStageCount] = useState<number | null>(null)
 
   const applyInstanceCount = useCallback((raw?: any) => {
@@ -1077,6 +1172,24 @@ const RequestsPage = () => {
     setPendingOpenNewRequest,
   ])
 
+  useEffect(() => {
+    if (!pendingNewWorkflowId || showAllWorkflows) return
+    if (
+      workflowLoadStatus !== 'ready' ||
+      String(selectedWorkflow?.id) !== pendingNewWorkflowId
+    ) {
+      return
+    }
+    setPendingNewWorkflowId(null)
+    openNewRequest('request')
+  }, [
+    openNewRequest,
+    pendingNewWorkflowId,
+    selectedWorkflow?.id,
+    showAllWorkflows,
+    workflowLoadStatus,
+  ])
+
   // --- 4. NAVIGATION & FLATTENING ---
 
   const flatRows = useMemo(
@@ -1140,17 +1253,10 @@ const RequestsPage = () => {
   }, [session, user?.id])
 
   const currentUserEmail = useMemo(() => {
-    return (
-      session?.email ||
-      user?.email ||
-      (user as any)?.Email ||
-      ''
-    )
+    return (session?.email || user?.email || (user as any)?.Email || '')
       .toLowerCase()
       .trim()
   }, [session?.email, user?.email, (user as any)?.Email])
-
-
 
   const canCreateNewRequest = useMemo(() => {
     if (
@@ -1223,9 +1329,7 @@ const RequestsPage = () => {
     rawWorkflowData,
   ])
 
-  const canShowWatchEmail = Boolean(
-    isEmailWatchWorkflow && canCreateNewRequest,
-  )
+  const canShowWatchEmail = Boolean(isEmailWatchWorkflow && canCreateNewRequest)
 
   const [isConnectingWatchEmail, setIsConnectingWatchEmailState] =
     useState<boolean>(() => {
@@ -1294,7 +1398,8 @@ const RequestsPage = () => {
 
           if (
             userInfo.connectionId &&
-            (m.connectorId === userInfo.connectionId || m.id === userInfo.connectionId)
+            (m.connectorId === userInfo.connectionId ||
+              m.id === userInfo.connectionId)
           ) {
             return true
           }
@@ -1307,7 +1412,9 @@ const RequestsPage = () => {
           return false
         })
 
-        const validEmail = match?.externalAccountEmail ? match.externalAccountEmail : ''
+        const validEmail = match?.externalAccountEmail
+          ? match.externalAccountEmail
+          : ''
         const displayIdentifier = validEmail || userInfo.connectionId || ''
 
         if (displayIdentifier) {
@@ -1408,9 +1515,9 @@ const RequestsPage = () => {
   ])
 
   const [watchFoxSuccessState, setWatchFoxSuccessState] = useState<{
-    isSuccess: boolean
-    email: string
     connectionId: string
+    email: string
+    isSuccess: boolean
     watchId: string
   } | null>(() => {
     if (typeof window === 'undefined') return null
@@ -1425,9 +1532,9 @@ const RequestsPage = () => {
           params.get('user') ||
           ''
         return {
-          isSuccess: true,
-          email: initialEmail,
           connectionId: params.get('connectionId') || '',
+          email: initialEmail,
+          isSuccess: true,
           watchId: params.get('watchId') || '',
         }
       }
@@ -1460,9 +1567,7 @@ const RequestsPage = () => {
       let cancelled = false
       const applyConnectedState = async () => {
         let accountEmail =
-          initialEmail && initialEmail.includes('@')
-            ? initialEmail.trim()
-            : ''
+          initialEmail && initialEmail.includes('@') ? initialEmail.trim() : ''
 
         // If redirect URL did not contain the email, look up the mailbox from the backend
         if (!accountEmail) {
@@ -1504,9 +1609,8 @@ const RequestsPage = () => {
 
         if (cancelled) return
 
-        const validEmail = accountEmail && accountEmail.includes('@')
-          ? accountEmail.trim()
-          : ''
+        const validEmail =
+          accountEmail && accountEmail.includes('@') ? accountEmail.trim() : ''
 
         const displayIdentifier = validEmail || connectionId || ''
 
@@ -1521,9 +1625,9 @@ const RequestsPage = () => {
 
           setConnectedWatchEmail(displayIdentifier)
           setWatchFoxSuccessState({
-            isSuccess: true,
-            email: validEmail,
             connectionId,
+            email: validEmail,
+            isSuccess: true,
             watchId,
           })
         }
@@ -1532,11 +1636,11 @@ const RequestsPage = () => {
         try {
           const bc = new BroadcastChannel('ezofis_watchfox_channel')
           bc.postMessage({
-            type: 'WATCHFOX_CONNECTED',
             accountEmail: displayIdentifier,
             connectionId,
-            userId: currentUserId,
+            type: 'WATCHFOX_CONNECTED',
             userEmail: currentUserEmail,
+            userId: currentUserId,
             watchId,
           })
           setTimeout(() => {
@@ -1555,12 +1659,12 @@ const RequestsPage = () => {
           if (window.opener && !window.opener.closed) {
             window.opener.postMessage(
               {
-                type: 'WATCHFOX_CONNECTED',
                 accountEmail: displayIdentifier,
                 connectionId,
                 status: 'connected',
-                userId: currentUserId,
+                type: 'WATCHFOX_CONNECTED',
                 userEmail: currentUserEmail,
+                userId: currentUserId,
                 watchId,
               },
               '*',
@@ -1596,9 +1700,9 @@ const RequestsPage = () => {
         if (window.opener && !window.opener.closed) {
           window.opener.postMessage(
             {
-              type: 'WATCHFOX_ERROR',
               error: errorMsg,
               status: 'error',
+              type: 'WATCHFOX_ERROR',
             },
             '*',
           )
@@ -1655,10 +1759,19 @@ const RequestsPage = () => {
           event.data?.type === 'WATCHFOX_CONNECTED' &&
           event.data.accountEmail
         ) {
-          const msgUserId = String(event.data.userId || '').toLowerCase().trim()
-          const msgUserEmail = String(event.data.userEmail || '').toLowerCase().trim()
+          const msgUserId = String(event.data.userId || '')
+            .toLowerCase()
+            .trim()
+          const msgUserEmail = String(event.data.userEmail || '')
+            .toLowerCase()
+            .trim()
           if (msgUserId && currentUserId && msgUserId !== currentUserId) return
-          if (msgUserEmail && currentUserEmail && msgUserEmail !== currentUserEmail) return
+          if (
+            msgUserEmail &&
+            currentUserEmail &&
+            msgUserEmail !== currentUserEmail
+          )
+            return
 
           saveStoredConnectionForUser(
             event.data.accountEmail,
@@ -1680,10 +1793,19 @@ const RequestsPage = () => {
         event.data?.type === 'WATCHFOX_CONNECTED' &&
         event.data.accountEmail
       ) {
-        const msgUserId = String(event.data.userId || '').toLowerCase().trim()
-        const msgUserEmail = String(event.data.userEmail || '').toLowerCase().trim()
+        const msgUserId = String(event.data.userId || '')
+          .toLowerCase()
+          .trim()
+        const msgUserEmail = String(event.data.userEmail || '')
+          .toLowerCase()
+          .trim()
         if (msgUserId && currentUserId && msgUserId !== currentUserId) return
-        if (msgUserEmail && currentUserEmail && msgUserEmail !== currentUserEmail) return
+        if (
+          msgUserEmail &&
+          currentUserEmail &&
+          msgUserEmail !== currentUserEmail
+        )
+          return
 
         const accountEmail = String(event.data.accountEmail).trim()
         if (!accountEmail) return
@@ -1823,8 +1945,6 @@ const RequestsPage = () => {
     t,
   ])
 
-
-
   const isWorkflowReady =
     workflowLoadStatus === 'ready' && !!selectedWorkflow?.id
   const showWorkflowEmpty = workflowLoadStatus === 'empty'
@@ -1839,13 +1959,18 @@ const RequestsPage = () => {
         ? new URLSearchParams(window.location.search).get('connectionId') || ''
         : '')
 
-    const displayEmail = watchFoxSuccessState.email ? watchFoxSuccessState.email : ''
+    const displayEmail = watchFoxSuccessState.email
+      ? watchFoxSuccessState.email
+      : ''
 
     return (
       <div className='fixed inset-0 z-[999999] flex h-screen w-screen items-center justify-center bg-[var(--surface-primary,#f8fafc)] p-6'>
         <div className='animate-in fade-in zoom-in-95 flex w-full max-w-md flex-col items-center rounded-2xl border border-green-4 bg-surface p-8 text-center shadow-2xl duration-300'>
           <div className='mb-4 flex size-16 items-center justify-center rounded-full bg-green-2 text-green-9 ring-8 ring-green-1'>
-            <Icon name='tabler:circle-check-filled' className='size-10 text-green-9' />
+            <Icon
+              className='size-10 text-green-9'
+              name='tabler:circle-check-filled'
+            />
           </div>
           <h2 className='text-xl font-bold tracking-tight text-gray-13'>
             {t`Connected Successfully!`}
@@ -1855,14 +1980,19 @@ const RequestsPage = () => {
           </p>
           <div className='mt-4 flex flex-col items-center gap-2'>
             <div className='flex items-center gap-2 rounded-lg border border-green-4 bg-green-2 px-3.5 py-1.5 text-13 font-semibold text-green-12 shadow-2xs'>
-              <Icon name='tabler:circle-check-filled' className='size-4 text-green-9' />
+              <Icon
+                className='size-4 text-green-9'
+                name='tabler:circle-check-filled'
+              />
               <span>{t`Connected`}</span>
             </div>
             {displayConnectorId && (
               <div className='text-12 font-medium text-gray-10'>
                 <span>
                   {t`Connector ID:`}{' '}
-                  <code className='font-mono text-gray-12'>{displayConnectorId}</code>
+                  <code className='font-mono text-gray-12'>
+                    {displayConnectorId}
+                  </code>
                 </span>
               </div>
             )}
@@ -1871,8 +2001,8 @@ const RequestsPage = () => {
             {t`You can close this tab or return to the main window.`}
           </p>
           <button
-            type='button'
             className='mt-4 inline-flex cursor-pointer items-center justify-center rounded-lg bg-[var(--primary-9,#2563eb)] px-6 py-2.5 text-13 font-semibold text-white shadow-sm transition-all hover:bg-[var(--primary-10,#1d4ed8)] active:scale-95'
+            type='button'
             onClick={() => window.close()}
           >
             {t`Close Tab`}
@@ -1886,36 +2016,61 @@ const RequestsPage = () => {
     <>
       <div className='flex h-full min-h-0 w-full overflow-hidden'>
         <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
-          {!selectedItem && (
+          {/* Kept mounted (hidden) while a request is open, so Back returns
+              to the same open sections and scroll position. */}
+          {showAllWorkflows ? (
+            <div
+              className={
+                selectedItem ? 'hidden' : 'flex min-h-0 flex-1 flex-col'
+              }
+            >
+              <AllWorkflowsInbox
+                redirectWhenEmpty={!allWorkflowsChosen}
+                switcherWorkflows={allWorkflow || []}
+                workflows={(allWorkflow || []).filter(
+                  (opt) => String(opt.id).toLowerCase() !== 'procurement',
+                )}
+                onNewRequest={(opt) => {
+                  setPendingNewWorkflowId(String(opt.id))
+                  selectWorkflowFromSwitcher(opt)
+                }}
+                onOpenRequest={openFromAllWorkflows}
+                onOpenWorkflow={(opt) => selectWorkflowFromSwitcher(opt)}
+              />
+            </div>
+          ) : null}
+          {!selectedItem && !showAllWorkflows && (
             <Header
+              actionButtons={headerActionButtons}
               // Pass state and setter to Header
               activeTab={activeTab}
               allWorkflows={allWorkflow}
-              connectedWatchEmail={
-                canShowWatchEmail ? connectedWatchEmail : null
-              }
               exceptionsCount={inboxResult?.exceptionsCount}
               isConnectingWatchEmail={isConnectingWatchEmail}
               isLoading={isLoading}
               metaData={metaData}
-              onCancelConnectWatchEmail={handleCancelConnectWatchEmail}
-              onReconnectWatchEmail={
-                canShowWatchEmail ? handleConnectWatchEmail : undefined
-              }
               stageCounts={stageTabCounts}
               tabs={requestTabs}
               totalStageCount={totalStageCount}
               workflow={workflow}
-              actionButtons={headerActionButtons}
+              connectedWatchEmail={
+                canShowWatchEmail ? connectedWatchEmail : null
+              }
               hideListTabs={
                 viewMode === 'kanban' || workflow?.id === 'procurement'
               }
               setActiveTab={handleTabChange}
-              setWorkflow={handleWorkflowSelect}
+              setWorkflow={selectWorkflowFromSwitcher}
+              onCancelConnectWatchEmail={handleCancelConnectWatchEmail}
+              onReconnectWatchEmail={
+                canShowWatchEmail ? handleConnectWatchEmail : undefined
+              }
+              onSelectAllWorkflows={() => {
+                setAllWorkflowsChosen(true)
+                setShowAllWorkflows(true)
+              }}
             />
           )}
-
-
 
           {selectedItem && (
             <Request
@@ -1925,11 +2080,12 @@ const RequestsPage = () => {
               key={selectedRequestKey}
               workflowId={selectedWorkflow?.id}
               onBack={closeRequest}
-              onNext={hasNext ? onNext : undefined}
-              onPrev={hasPrev ? onPrev : undefined}
+              onNext={hasNext && !showAllWorkflows ? onNext : undefined}
+              onPrev={hasPrev && !showAllWorkflows ? onPrev : undefined}
             />
           )}
           {!selectedItem &&
+            !showAllWorkflows &&
             (workflow?.id === 'procurement' ? (
               <div className='flex h-full w-full flex-1 overflow-hidden border-0'>
                 <iframe

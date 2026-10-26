@@ -1,9 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
 import { useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
-import type { Report } from '@/pages/report-builder/types'
-import Button from '@/components/base/button/Button'
+import type { Report, ReportStatus } from '@/pages/report-builder/types'
 import IconButton from '@/components/base/button/IconButton'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Icon from '@/components/base/icon/Icon'
@@ -20,6 +20,7 @@ import {
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import useUserGroupOptions from '@/pages/report-builder/hooks/useUserGroupOptions'
 import ReportShareButton from './ReportShareButton'
 import RowActionsMenu from './RowActionsMenu'
 import Table from './Table'
@@ -68,6 +69,7 @@ const ReportsListView = ({
   const [search, setSearch] = useState('')
   const [domainFilter, setDomainFilter] = useState('')
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipScope>('')
+  const [statusFilter, setStatusFilter] = useState<ReportStatus | ''>('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [deletingReport, setDeletingReport] = useState<Report | null>(null)
@@ -81,6 +83,10 @@ const ReportsListView = ({
 
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
+      // /reports only lists published reports; drafts live in the builder.
+      if (variant === 'standalone' && report.status !== 'Published')
+        return false
+      if (statusFilter && report.status !== statusFilter) return false
       if (!matchesOwnershipScope(report, ownershipFilter)) return false
       if (domainFilter && report.domain !== domainFilter) return false
       if (search) {
@@ -95,7 +101,7 @@ const ReportsListView = ({
       }
       return true
     })
-  }, [reports, domainFilter, ownershipFilter, search])
+  }, [reports, variant, statusFilter, domainFilter, ownershipFilter, search])
 
   const paginatedReports = useMemo(() => {
     if (pageSize === 0) return filteredReports
@@ -106,6 +112,16 @@ const ReportsListView = ({
   // AI list rows only say "Workflow"/"Folder"; show the actual source name.
   const sourceNames = useAiReportSourceNames(paginatedReports)
 
+  // Owner/modifier may arrive as a user id; show the user's name instead.
+  const { userOptions } = useUserGroupOptions()
+  const userNames = useMemo(
+    () =>
+      new Map(
+        userOptions.map((user) => [String(user.id).toLowerCase(), user.name]),
+      ),
+    [userOptions],
+  )
+
   const rows = useMemo(
     () => [
       {
@@ -113,14 +129,19 @@ const ReportsListView = ({
         groupId: 'all',
         groupKey: '',
         groupValue: '',
-        items: paginatedReports.map((report) =>
-          sourceNames[report.id]
-            ? { ...report, domain: sourceNames[report.id] }
-            : report,
-        ),
+        items: paginatedReports.map((report) => {
+          const nameOf = (value?: string) =>
+            (value && userNames.get(value.toLowerCase())) || value || ''
+          return {
+            ...report,
+            domain: sourceNames[report.id] || report.domain,
+            modifiedBy: nameOf(report.modifiedBy),
+            owner: nameOf(report.owner),
+          }
+        }),
       },
     ],
-    [paginatedReports, sourceNames],
+    [paginatedReports, sourceNames, userNames],
   )
 
   const columns: Column[] = useMemo(() => {
@@ -171,7 +192,7 @@ const ReportsListView = ({
           id: 'modifiedBy',
           label: t`Modified By`,
           size: 160,
-          renderCell: (row: Report) => row.owner || '-',
+          renderCell: (row: Report) => row.modifiedBy || row.owner || '-',
         },
       ]
     }
@@ -236,7 +257,7 @@ const ReportsListView = ({
         id: 'owner',
         label: t`Owner`,
         size: 140,
-        renderCell: (row: Report) => row.owner,
+        renderCell: (row: Report) => row.owner || '-',
       },
       {
         id: 'modified',
@@ -282,6 +303,32 @@ const ReportsListView = ({
     label: domain,
     value: domain,
   }))
+  const deletingReportName = deletingReport?.name ?? ''
+
+  const handleConfirmDelete = () => {
+    if (!deletingReport) return
+    deleteReportMutation.mutate(deletingReport, {
+      onError: (error) => {
+        showToast({
+          message:
+            error instanceof Error ? error.message : t`Failed to delete report`,
+          variant: 'error',
+        })
+      },
+      onSuccess: () => {
+        showToast({
+          message: t`Report deleted successfully`,
+          variant: 'success',
+        })
+        setDeletingReport(null)
+      },
+    })
+  }
+
+  const statusFilterOptions = [
+    { label: t`Draft`, value: 'Draft' },
+    { label: t`Published`, value: 'Published' },
+  ]
   const ownershipFilterOptions = [
     { label: t`Private to me`, value: 'private' },
     { label: t`Shared with me`, value: 'shared' },
@@ -300,74 +347,14 @@ const ReportsListView = ({
         </div>
       )}
 
-      {deletingReport && (
-        <div className='animate-in fade-in slide-in-from-top-4 mx-4 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
-          <div className='flex items-center gap-3'>
-            <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-3 text-red-11'>
-              <Icon
-                className='h-5 w-5 animate-pulse text-red-11'
-                name='lucide:triangle-alert'
-              />
-            </div>
-            <div>
-              <h4 className='text-sm font-semibold text-red-12'>{t`Delete Report`}</h4>
-              <p className='mt-0.5 text-xs text-red-11'>
-                {t`Are you sure you want to delete`}{' '}
-                <span className='font-bold text-red-12'>
-                  "{deletingReport.name}"
-                </span>
-                ? {t`This action is permanent and cannot be undone.`}
-              </p>
-            </div>
-          </div>
-          <div className='flex shrink-0 items-center gap-2'>
-            <Button
-              color='gray'
-              size='sm'
-              variant='subtle'
-              onClick={() => setDeletingReport(null)}
-            >
-              {t`Cancel`}
-            </Button>
-            <Button
-              color='red'
-              icon='lucide:trash-2'
-              loading={deleteReportMutation.isPending}
-              size='sm'
-              variant='solid'
-              onClick={() => {
-                deleteReportMutation.mutate(deletingReport.id, {
-                  onError: (error) => {
-                    showToast({
-                      message:
-                        error instanceof Error
-                          ? error.message
-                          : t`Failed to delete report`,
-                      variant: 'error',
-                    })
-                  },
-                  onSuccess: () => {
-                    showToast({
-                      message: t`Report deleted successfully`,
-                      variant: 'success',
-                    })
-                    setDeletingReport(null)
-                  },
-                })
-              }}
-            >
-              {t`Yes, Delete`}
-            </Button>
-          </div>
-        </div>
-      )}
-
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-surface-muted/50 p-4'>
         <div className='mb-3'>
           <CustomFilter
             searchPlaceholder={t`Search reports...`}
             searchQuery={search}
-            showReset={Boolean(search || domainFilter || ownershipFilter)}
+            showReset={Boolean(
+              search || domainFilter || ownershipFilter || statusFilter,
+            )}
             trailingActions={
               <IconButton
                 ariaLabel={t`Refresh`}
@@ -383,6 +370,7 @@ const ReportsListView = ({
             activeFilters={{
               ...(domainFilter ? { domain: domainFilter } : {}),
               ...(ownershipFilter ? { ownership: ownershipFilter } : {}),
+              ...(statusFilter ? { status: statusFilter } : {}),
             }}
             addButton={
               shouldShowCreate
@@ -394,6 +382,15 @@ const ReportsListView = ({
                 : undefined
             }
             filters={[
+              ...(variant === 'settings'
+                ? [
+                    {
+                      id: 'status',
+                      label: t`Status`,
+                      options: statusFilterOptions,
+                    },
+                  ]
+                : []),
               {
                 id: 'ownership',
                 label: t`Sharing`,
@@ -414,11 +411,16 @@ const ReportsListView = ({
                 setOwnershipFilter(value as OwnershipScope)
                 setPage(1)
               }
+              if (id === 'status') {
+                setStatusFilter(value as ReportStatus | '')
+                setPage(1)
+              }
             }}
             onReset={() => {
               setSearch('')
               setDomainFilter('')
               setOwnershipFilter('')
+              setStatusFilter('')
               setPage(1)
             }}
             onSearchChange={(value) => {
@@ -441,6 +443,18 @@ const ReportsListView = ({
           />
         </div>
       </div>
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Yes, Delete`}
+        description={t`Are you sure you want to delete "${deletingReportName}"? This action is permanent and cannot be undone.`}
+        isConfirming={deleteReportMutation.isPending}
+        opened={Boolean(deletingReport)}
+        title={t`Delete Report`}
+        variant='danger'
+        onCancel={() => setDeletingReport(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

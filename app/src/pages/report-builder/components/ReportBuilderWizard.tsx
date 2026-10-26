@@ -161,6 +161,16 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     }
   }
 
+  // Back to the Report Builder list (not /reports), dropping `?step=` so the
+  // next new report starts on the first step.
+  const exitToList = () => {
+    void navigate({
+      to: '/settings',
+      search: (prev: { step?: string }) => ({ ...prev, step: undefined }),
+    })
+    onBack()
+  }
+
   const persistAndExit = async (status: ReportStatus) => {
     setIsSaving(true)
 
@@ -195,7 +205,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
             : t`Report saved as draft`,
         variant: 'success',
       })
-      void navigate({ to: '/reports' })
+      exitToList()
     } catch (error) {
       showToast({
         message:
@@ -209,12 +219,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
 
   const handleCancel = () => {
     resetDraft()
-    // Drop `?step=` so the next new report starts on the first step.
-    void navigate({
-      to: '/settings',
-      search: (prev: { step?: string }) => ({ ...prev, step: undefined }),
-    })
-    onBack()
+    exitToList()
   }
 
   const renderStep = () => {

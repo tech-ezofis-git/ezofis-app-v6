@@ -10,7 +10,6 @@ import type {
 } from '@/components/common/CustomFilter'
 import type { Report } from '@/pages/report-builder/types'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
-import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
@@ -22,6 +21,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
+import PageEmptyState from '@/components/common/PageEmptyState'
 import { DocumentDetailsView } from '@/pages/folders/components/DocumentDetailsView'
 import {
   useReportAgentDataQuery,
@@ -152,7 +152,8 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
   const isFetching = isAgentReport
     ? agentQuery.isFetching
     : legacyQuery.isFetching
-  const agentError = isAgentReport ? agentQuery.error?.message : undefined
+  const runError = (isAgentReport ? agentQuery.error : legacyQuery.error)
+    ?.message
 
   const refresh = () =>
     void (isAgentReport ? agentQuery.refetch() : legacyQuery.refetch())
@@ -645,19 +646,16 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     state: { searchState, ...restState },
   })
 
-  if (agentError) {
+  // Same full-page empty state the rest of the app uses for failures.
+  if (runError) {
     return (
-      <div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-red-6 bg-red-2 p-6 text-center'>
-        <p className='text-13 text-red-11'>{agentError}</p>
-        <Button
-          color='gray'
-          icon='lucide:refresh-cw'
-          label={t`Run again`}
-          size='sm'
-          variant='outline'
-          onClick={() => void agentQuery.refetch()}
-        />
-      </div>
+      <PageEmptyState
+        description={runError}
+        icon='lucide:circle-alert'
+        primaryActionLabel={t`Retry`}
+        title={t`Something went wrong`}
+        onPrimaryAction={refresh}
+      />
     )
   }
 

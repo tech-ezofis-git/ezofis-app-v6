@@ -10,6 +10,11 @@ import type {
 } from '@/api/v6/reportAgent'
 import type { ReportRunResult } from '@/api/v6/reportBuilder'
 import { createReportAgentSessionId } from '@/api/v6/reportAgent'
+import {
+  MODIFIED_BY_KEYS,
+  OWNER_KEYS,
+  pickUserLabel,
+} from '@/api/v6/reportBuilder'
 import type {
   Report,
   ReportAgentConfig,
@@ -190,6 +195,38 @@ const fieldSettingToHighlight = (
   }
 }
 
+const OBJECTIVE_KEYS = ['objective', 'summary', 'description', 'purpose']
+
+/**
+ * The agent sometimes returns `objective` as the whole JSON spec (raw or in
+ * a ```json fence) instead of a sentence; pull the readable objective out of
+ * it, and show nothing rather than raw JSON when there isn't one.
+ */
+export const readableObjective = (value: unknown): string => {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) return ''
+    const record = value as Record<string, unknown>
+    const key = OBJECTIVE_KEYS.find((k) => readableObjective(record[k]))
+    return key ? readableObjective(record[key]) : ''
+  }
+  const text = String(value).trim()
+  const unfenced = text
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
+  if (!/^[[{]/.test(unfenced)) return text
+  try {
+    return readableObjective(JSON.parse(unfenced))
+  } catch {
+    // Truncated/invalid JSON: salvage a quoted objective if there is one.
+    const match = unfenced.match(
+      /"(?:objective|summary|description)"\s*:\s*"((?:[^"\\]|\\.)*)"/i,
+    )
+    return match ? match[1].replace(/\\"/g, '"').trim() : ''
+  }
+}
+
 /** Wizard draft state after a successful generate-prompt call. */
 export const draftPatchFromPromptResult = (
   result: ReportAgentPromptResult,
@@ -200,11 +237,11 @@ export const draftPatchFromPromptResult = (
 ) => {
   const spec = result.reportSpec
   const picked = (spec.columns ?? []).filter((c) => c.selected !== false)
-  // Keep selected defaults at the front. Unselected defaults (Repository on a
-  // single-folder report) stay out of the table.
-  const defaults = (spec.defaultColumns ?? [])
-    .filter((column) => column.selected !== false)
-    .map((column) => picked.find((c) => c.key === column.key) ?? column)
+  // Default columns are always part of the report, whatever the agent
+  // selected — they lead the table, followed by the agent's other picks.
+  const defaults = (spec.defaultColumns ?? []).map(
+    (column) => picked.find((c) => c.key === column.key) ?? column,
+  )
   const defaultKeys = new Set(defaults.map((c) => c.key))
   const selected = [
     ...defaults,
@@ -218,7 +255,7 @@ export const draftPatchFromPromptResult = (
   )
 
   const draft = {
-    description: spec.objective || '',
+    description: readableObjective(spec.objective),
     fields: selected.map((c) => c.key),
     fieldSettings,
     filters: (spec.filters ?? []).map(specFilterToDraft),
@@ -284,6 +321,11 @@ export const buildAgentConfigFromDraft = (
   const fieldSet = new Set(draft.fields)
   const markSelected = (list?: ReportSpecColumn[]) =>
     list?.map((c) => ({ ...c, selected: fieldSet.has(c.key) }))
+  // Columns the spec had selected that the user has since removed; sort and
+  // grouping on them would bring them back on the next run.
+  const removed = new Set(
+    (spec.columns ?? []).map((c) => c.key).filter((key) => !fieldSet.has(key)),
+  )
 
   const columns: ReportSpecColumn[] = draft.fields.map((key) => {
     const base = catalog.get(key) ?? { key, label: key }
@@ -307,7 +349,9 @@ export const buildAgentConfigFromDraft = (
     filters: draft.filters
       .filter((f) => f.field)
       .map((f) => draftFilterToSpec(f, spec.filters ?? [])),
-    objective: draft.description || spec.objective,
+    groupBy: spec.groupBy?.filter((key) => !removed.has(key)),
+    objective: draft.description || readableObjective(spec.objective),
+    sort: spec.sort && removed.has(spec.sort.field) ? null : spec.sort,
     title: draft.name || spec.title,
     userdefinedColumns: markSelected(spec.userdefinedColumns),
   }
@@ -317,37 +361,6 @@ export const buildAgentConfigFromDraft = (
     reportPrompt: syncReportPrompt(agent.reportPrompt, draft.fields),
     reportSpec: nextSpec as unknown as Record<string, unknown>,
   }
-}
-
-const compactKey = (value: string) => value.toLowerCase().replace(/[\s_-]/g, '')
-
-const FILE_NAME_ALIASES = ['filename', 'file_name', 'ifilename', 'originalfilename']
-const USER_NAME_ALIASES = ['createdby', 'startedby', 'actedby']
-
-/** Prefer the column key, then label, then known SQL aliases such as file_name. */
-export const pickRowValue = (
-  row: Record<string, unknown> | undefined,
-  ...names: string[]
-): unknown => {
-  if (!row) return undefined
-  const wanted = new Set(
-    names
-      .flatMap((name) => {
-        const compact = compactKey(name)
-        if (FILE_NAME_ALIASES.includes(compact)) return FILE_NAME_ALIASES
-        if (USER_NAME_ALIASES.includes(compact)) return [compact, `${compact}name`]
-        return [compact]
-      })
-      .filter(Boolean),
-  )
-  for (const [key, value] of Object.entries(row)) {
-    if (!wanted.has(compactKey(key))) continue
-    if (value != null && String(value).trim() !== '') return value
-  }
-  for (const [key, value] of Object.entries(row)) {
-    if (wanted.has(compactKey(key))) return value
-  }
-  return undefined
 }
 
 const toCellText = (value: unknown): string => {
@@ -382,7 +395,7 @@ export const agentRunToReportRunResult = (
         mapped[key] = toCellText(value)
     })
     columns.forEach((column) => {
-      const text = toCellText(pickRowValue(row, column.key, column.label))
+      const text = toCellText(row[column.key] ?? row[column.label])
       mapped[column.key] = text
       mapped[column.label] = text
     })
@@ -461,7 +474,7 @@ const toReportVisibility = (
 export const aiListItemToReport = (item: ReportAiListItem): Report => ({
   createdAt: item.createdAtUtc,
   customFields: [],
-  description: item.description || '',
+  description: readableObjective(item.description),
   domain: aiReportDomain(item),
   fields: [],
   fieldSettings: {},
@@ -469,8 +482,14 @@ export const aiListItemToReport = (item: ReportAiListItem): Report => ({
   id: item.id,
   isAiReport: true,
   modified: item.modifiedAtUtc,
+  // The list is shared across users, so read who owns/changed it rather
+  // than assuming the viewer.
+  modifiedBy: pickUserLabel(
+    item as unknown as Record<string, unknown>,
+    MODIFIED_BY_KEYS,
+  ),
   name: item.name,
-  owner: 'You',
+  owner: pickUserLabel(item as unknown as Record<string, unknown>, OWNER_KEYS),
   runs: item.runs ?? 0,
   schedule: DEFAULT_SCHEDULE,
   scheduled: false,

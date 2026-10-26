@@ -22,7 +22,10 @@ import Tooltip from '@/components/base/Tooltip'
 import DynamicFilter, {
   type DynamicFilterField,
 } from '@/components/common/DynamicFilter'
-import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
+import {
+  extractDueDate,
+  isInboxRowOverdue as isOverdue,
+} from '@/pages/requests/utils/inboxItemDisplay'
 import { DUE_DATE_FILTER_OPTIONS } from '@/utils/filterUtils'
 import type { RequestViewMode, TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
@@ -115,20 +118,6 @@ const getParsedFormData = (row: any): any => {
   return {}
 }
 
-const isOverdue = (row: any) => {
-  const dueDateStr = extractDueDate(row)
-  if (!dueDateStr || dueDateStr === '-') return false
-  try {
-    const dueDate = new Date(dueDateStr)
-    if (Number.isNaN(dueDate.getTime())) return false
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    dueDate.setHours(0, 0, 0, 0)
-    return dueDate < today
-  } catch {
-    return false
-  }
-}
 
 const extractAmountStr = (val: any): string | null => {
   if (val == null) return null

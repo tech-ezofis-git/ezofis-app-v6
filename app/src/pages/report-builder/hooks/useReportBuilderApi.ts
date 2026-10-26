@@ -19,6 +19,7 @@ import {
   updateReportBuilderReport,
 } from '@/api/v6/reportBuilder'
 import {
+  deleteReportAiReport,
   getReportAiReport,
   listReportAiReports,
   runReportAiReport,
@@ -220,13 +221,17 @@ export const usePublishReportBuilderReportMutation = () => {
 export const useDeleteReportBuilderReportMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const result = await deleteReportBuilderReport(id)
+    // AI reports live under /report-ai-builder, manual ones under /report-builder.
+    mutationFn: async (report: Report) => {
+      const result = report.isAiReport
+        ? await deleteReportAiReport(report.id)
+        : await deleteReportBuilderReport(report.id)
       if (result.error) throw new Error(result.error)
-      return id
+      return report.id
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       void queryClient.invalidateQueries({ queryKey: reportBuilderKeys.list() })
+      queryClient.removeQueries({ queryKey: reportBuilderKeys.detail(id) })
     },
   })
 }
