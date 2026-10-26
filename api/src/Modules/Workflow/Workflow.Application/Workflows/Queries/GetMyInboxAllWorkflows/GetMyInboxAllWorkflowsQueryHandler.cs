@@ -66,6 +66,12 @@ public sealed class GetMyInboxAllWorkflowsQueryHandler
                 .ToList();
             var newToday = items.Count(i => i.IsNewToday == true);
             var earlier = items.Count - newToday;
+            var latestActivity = items
+                .Select(i => i.TransactionCreatedAt ?? i.CreatedAtUtc)
+                .Where(d => d.HasValue)
+                .Select(d => d!.Value)
+                .DefaultIfEmpty()
+                .Max();
 
             groups.Add(new MyInboxWorkflowGroup(
                 workflow.Id,
@@ -73,10 +79,15 @@ public sealed class GetMyInboxAllWorkflowsQueryHandler
                 result.TotalCount,
                 newToday,
                 earlier,
+                latestActivity == default ? null : latestActivity,
                 items));
         }
 
-        groups = groups.OrderByDescending(g => g.TotalCount).ToList();
+        // Most recently active workflow first -- not raw ticket count -- so a workflow with one
+        // brand-new ticket surfaces above one with many stale ones.
+        groups = groups
+            .OrderByDescending(g => g.LatestActivityAtUtc ?? DateTime.MinValue)
+            .ToList();
 
         return new GetMyInboxAllWorkflowsResult(groups, groups.Sum(g => g.TotalCount));
     }

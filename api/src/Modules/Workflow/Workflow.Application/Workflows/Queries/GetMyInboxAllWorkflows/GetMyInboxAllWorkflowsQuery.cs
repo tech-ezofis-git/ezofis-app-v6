@@ -21,6 +21,8 @@ public sealed record MyInboxWorkflowGroup(
     int NewTodayCount,
     /// <summary>Of the fetched items: everything not NewTodayCount -- landed in this user's inbox before today. NewTodayCount + EarlierCount == Items.Count (not TotalCount when a workflow has more open tickets than itemsPerWorkflow).</summary>
     int EarlierCount,
+    /// <summary>Most recent TransactionCreatedAt (or CreatedAtUtc) among the fetched items -- workflow groups are ordered by this, most recent first.</summary>
+    DateTime? LatestActivityAtUtc,
     IReadOnlyList<LegacyMailboxRowDto> Items);
 
 public sealed record GetMyInboxAllWorkflowsResult(
