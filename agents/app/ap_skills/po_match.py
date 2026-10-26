@@ -12,6 +12,7 @@ from app.ap_skills.types import (
     field_number,
     field_text,
     invoice_from,
+    line_description,
     name_similarity,
 )
 
@@ -377,14 +378,7 @@ def _po_line_mapped(po: dict[str, Any]) -> list[dict[str, Any]]:
             if text:
                 item[label] = text
 
-        description = field_text(
-            row,
-            "materialDescription",
-            "material_description",
-            "Material Description",
-            "description",
-            "Description",
-        )
+        description = line_description(row)
         if description and "Description" not in item:
             item["Description"] = description
         if description and "Material Description" not in item:

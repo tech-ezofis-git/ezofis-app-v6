@@ -1,6 +1,6 @@
 """Resolve tenant items table (repository or workflow) and read rows from Postgres.
 
-Always caps item reads at ROW_LIMIT (50) so large tenant tables stay bounded.
+Item reads return every non-deleted row unless the caller passes a limit.
 """
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ from app.data_import.ident import quote_ident
 
 logger = logging.getLogger("orchestrator.dashboard.store")
 
-ROW_LIMIT = 50
 _UNSAFE_IDENT = re.compile(r"[\x00-\x1f;]|--|/\*|\*/")
 
 
@@ -71,10 +70,11 @@ def _safe_ident(name: str) -> str:
     return quote_ident(raw)
 
 
-def _clamp_limit(limit: Optional[int]) -> int:
+def _clamp_limit(limit: Optional[int]) -> Optional[int]:
+    """None means every row. A positive number is an optional sample size."""
     if limit is None:
-        return ROW_LIMIT
-    return max(1, min(int(limit), ROW_LIMIT))
+        return None
+    return max(1, int(limit))
 
 
 class DashboardStore:
@@ -274,17 +274,21 @@ class DashboardStore:
                     f"WHERE COALESCE(({deleted_sql})::text, 'false') "
                     "NOT IN ('1', 'true', 't', 'TRUE', 'True')"
                 )
-            sql = f"SELECT {quoted_cols} FROM {qualified} {where} LIMIT {cap}"
+            limit_sql = f" LIMIT {cap}" if cap is not None else ""
+            sql = f"SELECT {quoted_cols} FROM {qualified} {where}{limit_sql}"
             rows = await pool.fetch(sql)
             if rows:
-                return [dict(row) for row in rows][:cap]
+                fetched = [dict(row) for row in rows]
+                return fetched[:cap] if cap is not None else fetched
         except Exception as exc:
             logger.warning("dashboard_items_specific_query_failed, falling back to SELECT *: %s", exc)
             try:
-                fallback_sql = f"SELECT * FROM {clean_schema}.{clean_table} LIMIT {cap}"
+                limit_sql = f" LIMIT {cap}" if cap is not None else ""
+                fallback_sql = f"SELECT * FROM {clean_schema}.{clean_table}{limit_sql}"
                 rows = await pool.fetch(fallback_sql)
                 if rows:
-                    return [dict(row) for row in rows][:cap]
+                    fetched = [dict(row) for row in rows]
+                    return fetched[:cap] if cap is not None else fetched
             except Exception as inner_exc:
                 logger.warning("dashboard_items_fallback_failed: %s", inner_exc)
                 return []
@@ -297,7 +301,7 @@ class DashboardStore:
         tenant_id: str,
         item_keys: list[str],
     ) -> dict[str, dict[str, Any]]:
-        keys = [key.strip() for key in item_keys if key and str(key).strip()][:ROW_LIMIT]
+        keys = [key.strip() for key in item_keys if key and str(key).strip()]
         if not keys:
             return {}
         try:

@@ -885,7 +885,7 @@ def load_data(
         table_data[tbl_id] = {
             "columns": req_cols,
             "total_rows": len(rows),
-            "rows": rows[:50],
+            "rows": rows,
         }
 
     # Hydrate Filters

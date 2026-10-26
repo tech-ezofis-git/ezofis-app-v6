@@ -342,7 +342,6 @@ class DashboardAgent:
             schema=target["schema"],
             table=target["table"],
             columns=fetch_cols,
-            limit=200,
         )
         data_source = "items_table"
         if amounts_missing(rows, bound) and bound.get("amount"):

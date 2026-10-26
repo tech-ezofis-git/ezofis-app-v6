@@ -1,11 +1,11 @@
-"""Dashboard agent: catalog slug, /chat intent, 50-row cap. No skill pack."""
+"""Dashboard agent: catalog slug, /chat intent, full item reads. No skill pack."""
 from __future__ import annotations
 
 import asyncio
 
 from app.core.intent_router import Intent, IntentRouter
 from app.dashboard.insights import fallback_insights
-from app.dashboard.store import ROW_LIMIT, _clamp_limit
+from app.dashboard.store import _clamp_limit
 
 
 TENANT = "b843b988-00ec-44e3-aca2-b8470133ef63"
@@ -25,9 +25,9 @@ def test_intent_router_dashboard_before_search():
     assert asyncio.run(router.classify("search for the PTO policy")) == Intent.SEARCH
 
 
-def test_clamp_limit_caps_at_fifty():
-    assert _clamp_limit(None) == ROW_LIMIT
-    assert _clamp_limit(5000) == 50
+def test_clamp_limit_reads_every_row_unless_a_sample_is_requested():
+    assert _clamp_limit(None) is None
+    assert _clamp_limit(5000) == 5000
     assert _clamp_limit(10) == 10
     assert _clamp_limit(0) == 1
 
@@ -64,7 +64,7 @@ class _FakeStore:
 
         cap = clamp(limit)
         self.last_limit = cap
-        return self.rows[:cap]
+        return self.rows if cap is None else self.rows[:cap]
 
     async def fetch_extract_artifacts(self, *, tenant_id, item_keys):
         return {}
@@ -194,7 +194,7 @@ def test_dashboard_schema_from_workflow_navigates_to_repo(client, monkeypatch):
     assert result["workflow_id"] == WORKFLOW
 
 
-def test_dashboard_data_caps_rows_at_50(client, monkeypatch):
+def test_dashboard_data_reads_every_row(client, monkeypatch):
     store = _install_fake(client, monkeypatch)
     schema = client.post(
         "/chat",
@@ -228,7 +228,7 @@ def test_dashboard_data_caps_rows_at_50(client, monkeypatch):
         },
     )
     assert response.status_code == 200
-    assert store.last_limit == 50
+    assert store.last_limit is None
     assert "text/html" in response.headers.get("content-type", "")
     body = response.text
     assert body.lstrip().startswith("<!DOCTYPE html>") or body.lstrip().startswith("<style>")
@@ -265,7 +265,7 @@ def test_dashboard_data_payload_kpis_charts_only(client, monkeypatch):
         },
     )
     assert response.status_code == 200, response.text
-    assert store.last_limit == 50
+    assert store.last_limit is None
     assert "text/html" in response.headers.get("content-type", "")
     assert "ez-dash" in response.text
 
