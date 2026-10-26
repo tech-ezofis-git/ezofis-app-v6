@@ -294,7 +294,7 @@ const formatRaisedDate = (dateStr?: string | number | Date) => {
 }
 
 const Header: React.FC<HeaderProps> = ({
-  actions,
+  actions: actionsProp,
   activeAction,
   agentData,
   approveLoading,
@@ -304,7 +304,7 @@ const Header: React.FC<HeaderProps> = ({
   commentsCount = 0,
   currency,
   enableAIInsights = true,
-  hideActions: _hideActions,
+  hideActions = false,
   isEditing = false,
   isFourthItem,
   isLoading: _isLoading,
@@ -337,6 +337,9 @@ const Header: React.FC<HeaderProps> = ({
   const { i18n, t } = useLingui()
   const queryClient = useQueryClient()
   const requestListTab = requestStore((state) => state.requestListTab)
+  // Read-only views (e.g. a request opened from a report) show no review
+  // actions.
+  const actions = hideActions ? [] : actionsProp
 
   // List tab this request was opened from (Inbox / Sent / Approved …).
   const listTabBadge = (
@@ -2064,11 +2067,11 @@ const Header: React.FC<HeaderProps> = ({
               className={cn(
                 'flex items-center gap-2',
                 // Divider between the icon tools and the review buttons.
-                (isEditing || Boolean(actions?.length)) &&
+                ((isEditing && !hideActions) || Boolean(actions?.length)) &&
                   'border-l border-gray-3 pl-3',
               )}
             >
-              {isEditing && (
+              {isEditing && !hideActions && (
                 <Button
                   color='primary'
                   icon='lucide:save'
