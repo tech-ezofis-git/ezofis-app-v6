@@ -21,7 +21,7 @@ import type {
 } from '../types'
 import { DEFAULT_SCHEDULE } from '../types'
 import { reportSpecColumnToFieldSetting } from './fromReportSpec'
-import { findUserPrompt, isIdColumn } from './hiddenColumns'
+import { findUserPrompt, isIdColumn, pickRowValue } from './hiddenColumns'
 
 /** Sentinel source ids for the agent's tenant-wide scopes. */
 export const ALL_WORKFLOWS_SOURCE_ID = '__all_workflows__'
@@ -350,7 +350,7 @@ export const agentRunToReportRunResult = (
         mapped[key] = toCellText(value)
     })
     columns.forEach((column) => {
-      const text = toCellText(row[column.key] ?? row[column.label])
+      const text = toCellText(pickRowValue(row, column.key, column.label))
       mapped[column.key] = text
       mapped[column.label] = text
     })

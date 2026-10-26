@@ -728,6 +728,7 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
                     item["Repository"] = item[key]
                 elif compact in {"filename"}:
                     item["FileName"] = item[key]
+                    item["File Name"] = item[key]
         _split_user_fields_on_row(item)
         shaped.append(item)
     return shaped
@@ -769,6 +770,7 @@ def _keep_valued_columns(
                 item["Repository"] = item[key]
             elif compact in {"filename"}:
                 item["FileName"] = item[key]
+                item["File Name"] = item[key]
         _split_user_fields_on_row(item)
         new_rows.append(item)
     new_spec = spec.model_copy(update={"columns": keep})
@@ -1473,6 +1475,7 @@ def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: Report
             row["Repository"] = row[key]
         elif _listing_compact(key) in {"filename"}:
             row["FileName"] = row[key]
+            row["File Name"] = row[key]
 
 
 def _copy_repository_fields(row: dict[str, Any], repo_row: dict[str, Any], spec: ReportSpec) -> None:
@@ -1505,6 +1508,7 @@ def _copy_repository_fields(row: dict[str, Any], repo_row: dict[str, Any], spec:
             row["Repository"] = row[key]
         elif compact in {"filename"}:
             row["FileName"] = row[key]
+            row["File Name"] = row[key]
 
 
 async def attach_listing_fields_to_form_rows(

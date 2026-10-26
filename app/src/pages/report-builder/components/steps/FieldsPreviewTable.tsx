@@ -12,6 +12,7 @@ import { formatReportDate, isIsoDateString } from '@/utils/utcDate'
 import type { ReportFieldSetting } from '../../types'
 import type { PreviewColumn } from '../../utils/previewSampleData'
 import { sampleValue } from '../../utils/previewSampleData'
+import { pickRowValue } from '../../utils/hiddenColumns'
 import { resolveFieldStatus } from '../../utils/resolveFieldStatus'
 
 export type {
@@ -63,7 +64,7 @@ const FieldsPreviewTable = ({
     const status = resolveFieldStatus(fieldSettings?.[column.id], row)
     if (status)
       return <StatusPill color={status.color} label={status.label || '-'} />
-    const value = row[column.label] ?? row[column.id]
+    const value = pickRowValue(row, column.label, column.id)
     if (value == null) return '-'
     const json = parseJsonValue(value)
     if (json) {
