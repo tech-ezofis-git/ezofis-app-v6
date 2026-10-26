@@ -29,6 +29,7 @@ import InboxList from './components/InboxList'
 import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
 import Request from './components/request/Request'
 import { transformProcess, useInboxData } from './hooks/useInboxData'
+import { useStableRequestKey } from './hooks/useStableRequestKey'
 import requestStore from './stores/useRequestStore'
 import {
   findRequestRow,
@@ -1083,6 +1084,14 @@ const RequestsPage = () => {
     [inboxResult?.data],
   )
 
+  // Same request keeps the same key when ids arrive later (e.g. processId
+  // after the agent finishes), so the open request is not remounted.
+  const selectedRequestKey = useStableRequestKey([
+    selectedItem?.processId,
+    selectedItem?.id,
+    selectedItem?.transactionId,
+  ])
+
   const selectedIndex = useMemo(() => {
     if (!selectedItem) return -1
     const selId =
@@ -1913,7 +1922,7 @@ const RequestsPage = () => {
               isFourthItem={selectedIndex === 3}
               isThirdItem={selectedIndex === 2}
               item={selectedItem}
-              key={selectedItem.processId || selectedItem.id}
+              key={selectedRequestKey}
               workflowId={selectedWorkflow?.id}
               onBack={closeRequest}
               onNext={hasNext ? onNext : undefined}
