@@ -8,13 +8,17 @@ import {
 } from '@/api/v6/folder/security'
 import { getGroupById, getGroups, type V6GroupItem } from '@/api/v6/user'
 import authUserStore from '@/stores/authUserStore'
+import { isTenantAdminRole } from '@/utils/sessionPermissions'
 import { decodeRepositoryNodeId } from '../api/folderApi'
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // In-memory cache for group details across hook calls
-const groupDetailsCache = new Map<string, { group: V6GroupItem | null; timestamp: number }>()
+const groupDetailsCache = new Map<
+  string,
+  { group: V6GroupItem | null; timestamp: number }
+>()
 const GROUP_CACHE_TTL_MS = 60_000
 
 const extractSecurityFolderId = (activeFolder?: string | null) => {
@@ -60,14 +64,18 @@ const isUserMemberOfGroup = (
         .trim()
       return (
         (Boolean(uId) && uId === normalizedUserId) ||
-        (Boolean(uEmail) && Boolean(normalizedEmail) && uEmail === normalizedEmail)
+        (Boolean(uEmail) &&
+          Boolean(normalizedEmail) &&
+          uEmail === normalizedEmail)
       )
     }
     return false
   })
 }
 
-async function fetchCachedGroupById(groupId: string): Promise<V6GroupItem | null> {
+async function fetchCachedGroupById(
+  groupId: string,
+): Promise<V6GroupItem | null> {
   const cached = groupDetailsCache.get(groupId)
   if (cached && Date.now() - cached.timestamp < GROUP_CACHE_TTL_MS) {
     return cached.group
@@ -85,6 +93,8 @@ export default function useFolderSecurityPermissions(
   const session = authUserStore((state) => state.session)
   const userId = String(session?.id || '').trim()
   const userEmail = String(session?.email || '').trim()
+  // Tenant admins can upload, download, edit, etc. in every folder.
+  const isTenantAdmin = isTenantAdminRole(session?.role)
   const securityFolderId = useMemo(
     () => extractSecurityFolderId(activeFolder),
     [activeFolder],
@@ -93,13 +103,13 @@ export default function useFolderSecurityPermissions(
   // Start restrictive so denied actions (download, upload, …) do not flash on
   // while policies are still loading.
   const [permissions, setPermissions] = useState<FolderPermissionFlags>(
-    FOLDER_PERMISSIONS_VIEW_ONLY,
+    isTenantAdmin ? FOLDER_PERMISSIONS_ALLOW_ALL : FOLDER_PERMISSIONS_VIEW_ONLY,
   )
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const repoId = String(repositoryId || '').trim()
-    if (!repoId) {
+    if (!repoId || isTenantAdmin) {
       setPermissions(FOLDER_PERMISSIONS_ALLOW_ALL)
       setIsLoading(false)
       return
@@ -148,7 +158,9 @@ export default function useFolderSecurityPermissions(
       if (cancelled) return
 
       const matchedFromDetails = detailedGroups
-        .filter((g): g is V6GroupItem => Boolean(g && isUserMemberOfGroup(g, userId, userEmail)))
+        .filter((g): g is V6GroupItem =>
+          Boolean(g && isUserMemberOfGroup(g, userId, userEmail)),
+        )
         .map((g) => String(g.id || (g as any).groupId || '').trim())
         .filter(Boolean)
 
@@ -170,7 +182,7 @@ export default function useFolderSecurityPermissions(
     return () => {
       cancelled = true
     }
-  }, [repositoryId, securityFolderId, userEmail, userId])
+  }, [isTenantAdmin, repositoryId, securityFolderId, userEmail, userId])
 
   return {
     isLoading,
@@ -178,4 +190,3 @@ export default function useFolderSecurityPermissions(
     securityFolderId,
   }
 }
-

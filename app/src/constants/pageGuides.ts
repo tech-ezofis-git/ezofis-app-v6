@@ -285,3 +285,26 @@ export const UPLOAD_GUIDE: PageGuide = {
   description: msg`Drop files or browse to upload them to this folder. Each file is read automatically, then you check the extracted fields, fill in any required ones, and save the document.`,
   title: msg`Upload and index documents`,
 }
+
+export const DELEGATION_GUIDES: Record<string, PageGuide> = {
+  actions: {
+    description: msg`Choose how new and existing requests are handled during the leave period, and what happens to unfinished work when the assignee returns.`,
+    title: msg`Decide what happens to requests`,
+  },
+  assignee: {
+    description: msg`Pick the person who will be away. You will choose a backup user for each of their workflows in the Delegates step.`,
+    title: msg`Choose whose requests to delegate`,
+  },
+  dates: {
+    description: msg`Delegation starts at 00:00 on the start date and stops at 23:59 on the end date. You can end it early from the Delegations list.`,
+    title: msg`Set the absence period`,
+  },
+  delegates: {
+    description: msg`Add each workflow to hand over, optionally limit it to one stage, and pick the backup user. Anyone on leave during these dates is shown as unavailable.`,
+    title: msg`Pick a backup user for each workflow`,
+  },
+  review: {
+    description: msg`Check the details below. Once saved, the delegation starts automatically on the start date and delegates are notified if selected.`,
+    title: msg`Review before saving`,
+  },
+}

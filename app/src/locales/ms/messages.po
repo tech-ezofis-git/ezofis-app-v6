@@ -76,6 +76,17 @@ msgstr ""
 msgid "{0} - Usage Details"
 msgstr "{0} - Butiran Penggunaan"
 
+#. placeholder {0}: count('Active')
+#. placeholder {1}: count('Scheduled')
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:379
+msgid "{0} active · {1} scheduled"
+msgstr ""
+
+#. placeholder {0}: userName(effectiveAssigneeId)
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:462
+msgid "{0} already has an active or scheduled delegation. New dates must not overlap it."
+msgstr ""
+
 #. placeholder {0}: kindLabel[kind]
 #: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:451
 msgid "{0} column · click to add"
@@ -111,6 +122,19 @@ msgstr "{0} kredit ({percentage}%)"
 #: src/pages/settings/components/credits/Credits.tsx:765
 msgid "{0} credits, highest this period"
 msgstr "{0} kredit, tertinggi dalam tempoh ini"
+
+#. placeholder {0}: days.all
+#. placeholder {1}: days.working
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:276
+msgid "{0} days · {1} working"
+msgstr ""
+
+#. placeholder {0}: dayCount.all
+#. placeholder {1}: dayCount.working
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:539
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:872
+msgid "{0} days ({1} working)"
+msgstr ""
 
 #. placeholder {0}: editableFields.length
 #: src/pages/folders/components/EditMetadataView.tsx:447
@@ -718,6 +742,15 @@ msgstr ""
 msgid "a trigger field"
 msgstr "medan pencetus"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:62
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:867
+msgid "Absence Dates"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:207
+msgid "Absence Period"
+msgstr ""
+
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1296
 msgid "Accept"
 msgstr ""
@@ -752,7 +785,7 @@ msgstr "Akses"
 msgid "Access & Document Actions"
 msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:434
+#: src/pages/settings/SettingsMain.tsx:459
 msgid "Access Control"
 msgstr "Kawalan Akses"
 
@@ -814,6 +847,8 @@ msgstr "Tindakan Diperlukan"
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1003
 #: src/pages/requests/components/Table.tsx:96
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3653
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:74
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:905
 #: src/pages/settings/components/Menus.tsx:416
 #: src/pages/workflows/components/Table.tsx:118
 msgid "Actions"
@@ -992,6 +1027,10 @@ msgstr "Tambah pilihan tersuai"
 msgid "Add Document Rule"
 msgstr "Tambah Peraturan Dokumen"
 
+#: src/constants/pageGuides.ts:303
+msgid "Add each workflow to hand over, optionally limit it to one stage, and pick the backup user. Anyone on leave during these dates is shown as unavailable."
+msgstr ""
+
 #: src/pages/forms/FormEntriesPage.tsx:3030
 msgid "Add Entry"
 msgstr "Tambah Entri"
@@ -1039,7 +1078,11 @@ msgstr "Tambah medan untuk melihat pratonton langsung jadual laporan."
 #: src/pages/portal/components/PortalMobileHome.tsx:333
 #: src/pages/portal/components/PortalMobileHome.tsx:655
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:85
+<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:542
+=======
+#: src/pages/reports/components/OverviewTab.tsx:506
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Add filter"
 msgstr "Tambah penapis"
 
@@ -1159,11 +1202,15 @@ msgstr "Tambah Pengguna"
 msgid "Add users and a password for each. In document details, those users enter this password on the eye control to reveal the original file."
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:711
+msgid "Add workflow"
+msgstr ""
+
 #: src/constants/pageGuides.ts:131
 msgid "Add your logo and favicon"
 msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:331
+#: src/pages/settings/SettingsMain.tsx:355
 msgid "Add, edit, and manage platform users. Configure authentication and assign roles."
 msgstr "Tambah, edit dan urus pengguna platform. Konfigurasikan pengesahan dan tetapkan peranan."
 
@@ -1178,6 +1225,15 @@ msgstr "Syarat tambahan"
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:737
 #~ msgid "Advanced settings"
 #~ msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:920
+msgid "After leave: delegate keeps in-progress requests"
+msgstr ""
+
+#. placeholder {0}: userName(effectiveAssigneeId)
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:919
+msgid "After leave: return unfinished requests to {0}"
+msgstr ""
 
 #: src/pages/portal/components/PortalTicketComments.tsx:51
 #: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:60
@@ -1413,6 +1469,7 @@ msgstr "Menjajarkan pengepala CSV/XLSX dengan skema pemetaan pangkalan data."
 #: src/pages/requests/components/InboxList.tsx:1473
 #: src/pages/requests/components/InboxList.tsx:1482
 #: src/pages/search/SearchPage.tsx:309
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:176
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:740
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:564
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:632
@@ -1505,6 +1562,14 @@ msgstr ""
 msgid "All search results for “{searchLabel}”"
 msgstr "Semua hasil carian untuk “{searchLabel}”"
 
+<<<<<<< HEAD
+=======
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:589
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:892
+msgid "All stages"
+msgstr ""
+
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalHome.tsx:107
 msgid "All Status"
 msgstr "Semua Status"
@@ -1541,6 +1606,10 @@ msgstr "Sudah ada akaun?"
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:402
 msgid "Already mapped"
 msgstr "Sudah dipetakan"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:671
+msgid "Alternative Assignee"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:258
 #~ msgid "amount"
@@ -1950,6 +2019,12 @@ msgstr "Pengguna & Kumpulan Ditugaskan"
 msgid "Assigned Users & Groups ({0})"
 msgstr "Pengguna & Kumpulan Ditugaskan ({0})"
 
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:204
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:56
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:860
+msgid "Assignee"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5957
 msgid "Associated Entity"
 msgstr ""
@@ -2012,7 +2087,11 @@ msgid "Attachment view"
 msgstr ""
 
 #: src/pages/portal/components/PortalDetail.tsx:432
+<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:319
+=======
+#: src/pages/portal/components/PortalShell.tsx:318
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalWizard.tsx:1442
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:610
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:642
@@ -2029,7 +2108,7 @@ msgstr "Lampiran"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:172
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:41
-#: src/pages/settings/SettingsMain.tsx:376
+#: src/pages/settings/SettingsMain.tsx:400
 msgid "Audit & Monitoring"
 msgstr "Audit & Pemantauan"
 
@@ -2199,8 +2278,13 @@ msgstr "Menunggu Pengesahan"
 #: src/pages/folders/components/Upload/Upload.tsx:4551
 #: src/pages/forms/components/AiFormBuilder.tsx:132
 #: src/pages/portal/components/PortalBackButton.tsx:16
+<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:163
 #: src/pages/portal/components/PortalShell.tsx:206
+=======
+#: src/pages/portal/components/PortalShell.tsx:162
+#: src/pages/portal/components/PortalShell.tsx:205
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalWizard.tsx:1309
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:212
@@ -2339,6 +2423,10 @@ msgstr ""
 msgid "Backorder detected on purchase order fulfillment"
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:65
+msgid "Backup user per workflow"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6297
 msgid "Balance Qty"
 msgstr ""
@@ -2400,7 +2488,7 @@ msgstr "Pilihan jenama berjaya disimpan!"
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:605
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:39
-#: src/pages/settings/SettingsMain.tsx:352
+#: src/pages/settings/SettingsMain.tsx:376
 msgid "Branding"
 msgstr "Penjenamaan"
 
@@ -2435,8 +2523,13 @@ msgstr "Semak imbas"
 msgid "browse files"
 msgstr "menyemak imbas fail"
 
+<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:287
 #: src/pages/requests/components/request/components/Header.tsx:1027
+=======
+#: src/pages/portal/components/PortalShell.tsx:286
+#: src/pages/requests/components/request/components/Header.tsx:1022
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Budget"
 msgstr ""
 
@@ -2444,7 +2537,7 @@ msgstr ""
 msgid "Build a custom report from any of your organization's data domains."
 msgstr "Bina laporan tersuai daripada mana-mana domain data organisasi anda."
 
-#: src/pages/settings/SettingsMain.tsx:324
+#: src/pages/settings/SettingsMain.tsx:342
 msgid "Build and configure custom reports"
 msgstr "Bina dan konfigurasikan laporan tersuai"
 
@@ -2617,7 +2710,11 @@ msgstr "Boleh Lihat"
 #: src/pages/forms/FormsPage.tsx:573
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1353
+<<<<<<< HEAD
 #: src/pages/reports/components/ReportsListView.tsx:326
+=======
+#: src/pages/reports/components/ReportsListView.tsx:318
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:282
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:303
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
@@ -2811,6 +2908,10 @@ msgstr "Daftar Keluar"
 msgid "Check the conditions, action, and target users, then save the rule. You can go back to any step before saving."
 msgstr ""
 
+#: src/constants/pageGuides.ts:307
+msgid "Check the details below. Once saved, the delegation starts automatically on the start date and delegates are notified if selected."
+msgstr ""
+
 #: src/constants/pageGuides.ts:74
 msgid "Check the group name and its members, then save. You can edit the group later as your team changes."
 msgstr ""
@@ -2902,6 +3003,11 @@ msgstr "Pilih aliran kerja untuk melihat penyerahannya."
 #~ msgid "Choose an AI design option or describe your dashboard needs"
 #~ msgstr "Pilih pilihan reka bentuk AI atau huraikan keperluan papan pemuka anda"
 
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:224
+#: src/pages/settings/SettingsMain.tsx:349
+msgid "Choose backup users so workflow requests keep moving while someone is on leave."
+msgstr ""
+
 #: src/components/base/data-table/actions/TableSearch.tsx:165
 #~ msgid "Choose column"
 #~ msgstr "Pilih lajur"
@@ -2932,6 +3038,10 @@ msgstr "Pilih Fail"
 
 #: src/constants/pageGuides.ts:96
 msgid "Choose how external users sign in to the portal: application sign-in, a master form login, or email with a one-time code. You can also allow Google or Microsoft sign-in."
+msgstr ""
+
+#: src/constants/pageGuides.ts:291
+msgid "Choose how new and existing requests are handled during the leave period, and what happens to unfinished work when the assignee returns."
 msgstr ""
 
 #: src/pages/forms/components/header/components/FormWizard.tsx:29
@@ -3060,6 +3170,10 @@ msgstr ""
 
 #: src/constants/pageGuides.ts:169
 msgid "Choose who the rule applies to"
+msgstr ""
+
+#: src/constants/pageGuides.ts:296
+msgid "Choose whose requests to delegate"
 msgstr ""
 
 #: src/constants/pageGuides.ts:252
@@ -3355,7 +3469,11 @@ msgstr "Lajur yang Dimakan:"
 #~ msgstr "Akan Datang"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2050
+<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:325
+=======
+#: src/pages/portal/components/PortalShell.tsx:324
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:616
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:648
 #: src/pages/requests/components/request/components/Header.tsx:943
@@ -3470,7 +3588,7 @@ msgid "Confidence Scoring"
 msgstr "Pemarkahan Keyakinan"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:134
-#: src/pages/settings/SettingsMain.tsx:429
+#: src/pages/settings/SettingsMain.tsx:454
 msgid "Configuration"
 msgstr "Konfigurasi"
 
@@ -3565,6 +3683,10 @@ msgstr "Sahkan & Naik Taraf ke Pengeluaran"
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:68
 msgid "Confirm and activate the policy"
 msgstr "Sahkan dan aktifkan dasar"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:77
+msgid "Confirm and save"
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2780
 msgid "Confirm Decline"
@@ -3955,7 +4077,7 @@ msgstr "Cipta akses untuk menandatangani"
 #~ msgid "Create and manage folders with custom fields, storage, and versioning."
 #~ msgstr "Cipta dan urus folder dengan medan tersuai, storan dan pemversian."
 
-#: src/pages/settings/SettingsMain.tsx:301
+#: src/pages/settings/SettingsMain.tsx:319
 msgid "Create and manage forms with fields, validation, and data collection."
 msgstr "Cipta dan urus borang dengan medan, pengesahan dan pengumpulan data."
 
@@ -3967,9 +4089,13 @@ msgstr "Cipta dan urus borang dengan medan, pengesahan dan pengumpulan data."
 msgid "Create branded portals with login methods and connected workflows."
 msgstr "Cipta portal berjenama dengan kaedah log masuk dan aliran kerja yang disambungkan."
 
-#: src/pages/settings/SettingsMain.tsx:317
+#: src/pages/settings/SettingsMain.tsx:335
 msgid "Create branded portals, configure login methods, and connect workflows."
 msgstr "Cipta portal berjenama, konfigurasikan kaedah log masuk dan sambungkan aliran kerja."
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:360
+msgid "Create delegation"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1240
 #~ msgid "Create Folder"
@@ -3980,7 +4106,7 @@ msgid "Create Group"
 msgstr "Cipta Kumpulan"
 
 #: src/pages/settings/components/GroupManagement.tsx:596
-#: src/pages/settings/SettingsMain.tsx:337
+#: src/pages/settings/SettingsMain.tsx:361
 msgid "Create logical groups to organize users by team, department, or function."
 msgstr "Cipta kumpulan logik untuk menyusun pengguna mengikut pasukan, jabatan atau fungsi."
 
@@ -4082,7 +4208,7 @@ msgstr "Carta Garis Masa Kredit"
 
 #: src/pages/settings/components/credits/Credits.tsx:574
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:43
-#: src/pages/settings/SettingsMain.tsx:358
+#: src/pages/settings/SettingsMain.tsx:382
 msgid "Credit Usage"
 msgstr "Penggunaan Kredit"
 
@@ -4160,6 +4286,10 @@ msgstr "Kunci Mata Wang"
 msgid "Current"
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:400
+msgid "Current Assignee"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5936
 #~ msgid "Current Invoice Back Order Status"
 #~ msgstr ""
@@ -4206,7 +4336,7 @@ msgstr "Julat Tersuai"
 msgid "Customize Design"
 msgstr "Sesuaikan Reka Bentuk"
 
-#: src/pages/settings/SettingsMain.tsx:349
+#: src/pages/settings/SettingsMain.tsx:373
 msgid "Customize logos, brand colors, and visual identity across the platform."
 msgstr "Sesuaikan logo, warna jenama dan identiti visual merentas platform."
 
@@ -4335,6 +4465,10 @@ msgstr "Tarikh Diubah Suai"
 msgid "Date To"
 msgstr "Tarikh Kepada"
 
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:280
+msgid "Dates not set"
+msgstr ""
+
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:67
 msgid "Day"
 msgstr "Hari"
@@ -4366,6 +4500,10 @@ msgstr "Disember"
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1280
 msgid "Decide how document revisions are tracked when files are updated."
 msgstr "Tentukan cara semakan dokumen dijejaki apabila fail dikemas kini."
+
+#: src/constants/pageGuides.ts:292
+msgid "Decide what happens to requests"
+msgstr ""
 
 #: src/constants/pageGuides.ts:271
 msgid "Decide what happens when a file with the same name is uploaded again: replace it, keep each version with a timestamp, or number versions automatically."
@@ -4407,6 +4545,10 @@ msgstr "Pilihan storan lalai disediakan dengan akaun anda untuk akses segera."
 msgid "Default URL"
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:409
+msgid "Defaults to you. Admins can set up delegation for any user."
+msgstr ""
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:62
 msgid "Define document rules"
 msgstr "Tentukan peraturan dokumen"
@@ -4423,7 +4565,7 @@ msgstr "Tentukan Peraturan Pengekalan"
 #~ msgid "Define role details, access scopes, and permission privilege matrices"
 #~ msgstr "Tentukan butiran peranan, skop akses dan matriks keistimewaan kebenaran"
 
-#: src/pages/settings/SettingsMain.tsx:343
+#: src/pages/settings/SettingsMain.tsx:367
 msgid "Define roles and configure granular permissions across all modules."
 msgstr "Tentukan peranan dan konfigurasikan keizinan terperinci merentas semua modul."
 
@@ -4451,6 +4593,41 @@ msgstr ""
 #~ msgid "Define the role name, assign users, and describe its scope."
 #~ msgstr "Tentukan nama peranan, tetapkan pengguna dan terangkan skopnya."
 
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:205
+msgid "Delegated To"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:68
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:877
+msgid "Delegates"
+msgstr ""
+
+#: src/pages/settings/SettingsMain.tsx:352
+msgid "Delegation"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:141
+msgid "Delegation created"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:374
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:381
+msgid "Delegation Details"
+msgstr ""
+
+#: src/constants/pageGuides.ts:299
+msgid "Delegation starts at 00:00 on the start date and stops at 23:59 on the end date. You can end it early from the Delegations list."
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:140
+msgid "Delegation updated"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:155
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:359
+msgid "Delegations"
+msgstr ""
+
 #: src/pages/folders/components/DocumentsListView.tsx:1143
 #: src/pages/folders/components/DocumentsListView.tsx:1159
 #: src/pages/folders/components/FolderTable.tsx:570
@@ -4462,6 +4639,8 @@ msgstr ""
 #: src/pages/forms/FormsPage.tsx:337
 #: src/pages/reports/components/RowActionsMenu.tsx:44
 #: src/pages/requests/components/Table.tsx:119
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:355
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:357
 #: src/pages/settings/components/Folders/FolderRetention.tsx:197
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:508
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:690
@@ -4797,7 +4976,7 @@ msgstr "Nyahpilih Semua"
 msgid "Deselect request"
 msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:309
+#: src/pages/settings/SettingsMain.tsx:327
 msgid "Design and configure automated workflows and process routing."
 msgstr "Reka bentuk dan konfigurasikan aliran kerja automatik dan penghalaan proses."
 
@@ -5354,7 +5533,16 @@ msgstr "Perlu Bayar Hari Ini"
 msgid "Duplicate"
 msgstr "Pendua"
 
+<<<<<<< HEAD
 #: src/pages/requests/components/request/components/Header.tsx:895
+=======
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:308
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:310
+msgid "Duplicate as draft"
+msgstr ""
+
+#: src/pages/requests/components/request/components/Header.tsx:890
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Duplicate Check"
 msgstr ""
 
@@ -5487,6 +5675,9 @@ msgstr ""
 #: src/pages/forms/FormsPage.tsx:326
 #: src/pages/reports/components/RowActionsMenu.tsx:29
 #: src/pages/requests/components/Table.tsx:113
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:298
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:300
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:955
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2646
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2721
 #: src/pages/settings/components/Folders/AiFolderBuilderTimeline.tsx:124
@@ -5516,6 +5707,11 @@ msgstr "Edit kad"
 
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:416
 msgid "Edit column \"{col}\""
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:376
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:383
+msgid "Edit Delegation"
 msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:118
@@ -5691,6 +5887,10 @@ msgstr "E-mel / Nama pengguna"
 msgid "Email Address"
 msgstr "Alamat E-mel"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:766
+msgid "Email and in-app notice with the dates and workflows they are covering."
+msgstr ""
+
 #: src/pages/settings/components/ManageUser.tsx:168
 msgid "Email and password"
 msgstr "E-mel dan kata laluan"
@@ -5756,6 +5956,15 @@ msgstr "Dayakan untuk menetapkan kata laluan baharu untuk pengguna ini"
 #: src/pages/settings/components/PortalConfiguration.tsx:1099
 msgid "Enabled"
 msgstr "Didayakan"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:234
+msgid "End date must be on or after the start date."
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:332
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:334
+msgid "End delegation now"
+msgstr ""
 
 #: src/features/builder/components/Page.tsx:59
 #~ msgid "End of Section {0} .0"
@@ -6008,6 +6217,12 @@ msgstr "Tajuk Acara"
 msgid "Every invoice line matches the purchase order and the goods receipt. Nothing is missing, extra, or priced differently."
 msgstr ""
 
+#. placeholder {0}: formatShortDay(fromDate)
+#. placeholder {1}: formatShortDay(toDate)
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:756
+msgid "Every request that arrives between {0} and {1} goes straight to the delegate."
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5618
 msgid "Exact Invoice Number string similarity."
 msgstr ""
@@ -6087,7 +6302,7 @@ msgstr "Tamat tempoh dalam beberapa hari mestilah sekurang-kurangnya 1."
 msgid "Expiry / Due Date"
 msgstr "Tarikh Luput / Tamat Tempoh"
 
-#: src/pages/settings/SettingsMain.tsx:367
+#: src/pages/settings/SettingsMain.tsx:391
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "Terokai, uji dan nyahpepijat titik akhir API dengan permintaan langsung dan sampel respons."
 
@@ -6924,7 +7139,7 @@ msgstr ""
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1230
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:172
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:29
-#: src/pages/settings/SettingsMain.tsx:298
+#: src/pages/settings/SettingsMain.tsx:316
 msgid "Folder Configuration"
 msgstr "Konfigurasi Folder"
 
@@ -7159,7 +7374,7 @@ msgstr "Format"
 #: src/pages/forms/FormsPage.tsx:90
 #: src/pages/search/SearchPage.tsx:317
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:32
-#: src/pages/settings/SettingsMain.tsx:306
+#: src/pages/settings/SettingsMain.tsx:324
 msgid "Forms"
 msgstr "Borang"
 
@@ -7189,6 +7404,10 @@ msgstr "ditemui dalam data Master PO anda. Pilih caranya"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1122
 msgid "From"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:501
+msgid "From Date"
 msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:473
@@ -7469,7 +7688,7 @@ msgstr "Butiran Kumpulan"
 #: src/pages/settings/components/GroupManagement.tsx:597
 #: src/pages/settings/components/GroupManagement.tsx:828
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:27
-#: src/pages/settings/SettingsMain.tsx:340
+#: src/pages/settings/SettingsMain.tsx:364
 msgid "Group Management"
 msgstr "Pengurusan Kumpulan"
 
@@ -7518,6 +7737,10 @@ msgstr "Kumpulan"
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:566
 msgid "Guidelines validated"
 msgstr "Garis panduan disahkan"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:357
+msgid "Hand over workflow requests to backup users for specific dates and workflows."
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:458
 msgid "Handwritten"
@@ -7682,7 +7905,11 @@ msgstr ""
 #~ msgid "Historical Match Results"
 #~ msgstr "Keputusan Perlawanan Sejarah"
 
+<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:333
+=======
+#: src/pages/portal/components/PortalShell.tsx:332
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:618
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:650
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1658
@@ -8268,6 +8495,10 @@ msgstr "Perincian Invois"
 msgid "Invoicing terms and conditions"
 msgstr "Terma dan syarat invois"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:632
+msgid "Involved Workflow"
+msgstr ""
+
 #: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:42
 msgid "Is empty"
 msgstr ""
@@ -8399,6 +8630,10 @@ msgstr ""
 #: src/pages/sign-in/components/SignInForm.tsx:1155
 msgid "Keep me logged in"
 msgstr "Teruskan saya log masuk"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:812
+msgid "Keep with the delegate"
+msgstr ""
 
 #: src/pages/folders/components/AiSummaryView.tsx:320
 msgid "Key Facts Extracted"
@@ -8551,6 +8786,10 @@ msgstr ""
 msgid "Leave {site}? Your new request may not be saved."
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:59
+msgid "Leave start and end"
+msgstr ""
+
 #: src/pages/folders/components/Upload/FileExitDialogs.tsx:117
 msgid "Leave this file?"
 msgstr ""
@@ -8610,7 +8849,7 @@ msgstr "Mari sediakan aliran kerja AP anda"
 #~ msgstr "Mari mulakan penyerahan anda."
 
 #: src/pages/settings/components/license/LicenseSettings.tsx:207
-#: src/pages/settings/SettingsMain.tsx:364
+#: src/pages/settings/SettingsMain.tsx:388
 msgid "License & Subscription"
 msgstr "Lesen & Langganan"
 
@@ -9631,7 +9870,7 @@ msgstr "Akses modul & matriks keistimewaan"
 msgid "Modules"
 msgstr "Modul"
 
-#: src/pages/settings/SettingsMain.tsx:355
+#: src/pages/settings/SettingsMain.tsx:379
 msgid "Monitor credit consumption, usage trends, and module-wise activity across the platform."
 msgstr "Pantau penggunaan kredit, trend penggunaan dan aktiviti mengikut modul merentas platform."
 
@@ -9765,6 +10004,11 @@ msgstr "Tanda Saya"
 #: src/pages/portal/components/PortalHome.tsx:278
 msgid "My Submissions"
 msgstr "Penyerahan Saya"
+
+#. placeholder {0}: user.displayName || user.email
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:325
+msgid "Myself — {0}"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:89
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:107
@@ -9919,10 +10163,20 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:700
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
+<<<<<<< HEAD
 #: src/pages/requests/components/request/components/Header.tsx:2027
+=======
+#: src/pages/requests/components/request/components/Header.tsx:2021
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/RequestsPage.tsx:1909
 msgid "New"
 msgstr "baru"
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:158
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:377
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:384
+msgid "New Delegation"
+msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:843
 msgid "New Field"
@@ -10013,6 +10267,10 @@ msgstr "Seterusnya"
 msgid "Next >>"
 msgstr "Seterusnya >>"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:336
+msgid "Next 3 days"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:928
 #~ msgid "Next 4 Weeks"
 #~ msgstr "4 Minggu Seterusnya"
@@ -10042,6 +10300,10 @@ msgstr ""
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:646
 msgid "Next step"
 msgstr "Langkah seterusnya"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:343
+msgid "Next week (Mon–Fri)"
+msgstr ""
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:65
 #~ msgid "Next-gen AI workspace, dynamic forms & automation."
@@ -10189,6 +10451,14 @@ msgstr ""
 #: src/pages/requests/components/request/components/Header.tsx:1559
 msgid "No decision details available for this request."
 msgstr "Tiada butiran keputusan tersedia untuk permintaan ini."
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:218
+msgid "No delegations found"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:219
+msgid "No delegations yet"
+msgstr ""
 
 #: src/pages/settings/components/credits/Credits.tsx:1061
 msgid "No distribution data for this period."
@@ -10549,7 +10819,11 @@ msgstr "Tiada peranan lagi"
 msgid "No rows added"
 msgstr ""
 
+<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:525
+=======
+#: src/pages/reports/components/OverviewTab.tsx:479
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "No rows for this report."
 msgstr ""
 
@@ -10774,7 +11048,15 @@ msgstr "Tidak dijadualkan"
 msgid "Not selected"
 msgstr "Tidak dipilih"
 
+<<<<<<< HEAD
 #: src/pages/requests/components/request/components/Header.tsx:809
+=======
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:256
+msgid "Not set"
+msgstr ""
+
+#: src/pages/requests/components/request/components/Header.tsx:804
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Not specified"
 msgstr ""
 
@@ -10799,6 +11081,10 @@ msgstr "Tiada apa-apa yang dipadamkan"
 #: src/layouts/app/components/topbar/components/notifications/components/NotificationsTrigger.tsx:20
 msgid "Notifications"
 msgstr "Pemberitahuan"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:915
+msgid "Notify alternative assignees"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:689
 msgid "Notify document owner beforehand"
@@ -10891,6 +11177,12 @@ msgstr ""
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:109
 msgid "On Boarding"
 msgstr "Semasa menaiki pesawat"
+
+#. placeholder {0}: formatShortDay(away.fromDate)
+#. placeholder {1}: formatShortDay(away.toDate)
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:212
+msgid "On leave {0} – {1}"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:785
 msgid "once activated."
@@ -11012,6 +11304,10 @@ msgstr ""
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:257
 msgid "Optional Field"
 msgstr "Medan Pilihan"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:695
+msgid "Optional note"
+msgstr ""
 
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:185
 msgid "Optional supporting documents"
@@ -11432,6 +11728,10 @@ msgstr "telefon"
 msgid "Phone Number"
 msgstr "Nombor Telefon"
 
+#: src/constants/pageGuides.ts:304
+msgid "Pick a backup user for each workflow"
+msgstr ""
+
 #: src/constants/pageGuides.ts:217
 msgid "Pick a layout for the form. You can add, move, and edit fields in the form builder after it is created."
 msgstr ""
@@ -11450,6 +11750,10 @@ msgstr "Pilih satu strategi import. Tiada apa-apa disimpan sehingga langkah sete
 
 #: src/constants/pageGuides.ts:145
 msgid "Pick the columns to include and arrange them in the order they should appear in the report."
+msgstr ""
+
+#: src/constants/pageGuides.ts:295
+msgid "Pick the person who will be away. You will choose a backup user for each of their workflows in the Delegates step."
 msgstr ""
 
 #: src/constants/pageGuides.ts:32
@@ -11518,7 +11822,7 @@ msgstr ""
 #~ msgid "Platform and monitoring"
 #~ msgstr "Platform dan pemantauan"
 
-#: src/pages/settings/SettingsMain.tsx:439
+#: src/pages/settings/SettingsMain.tsx:464
 msgid "Platform Management"
 msgstr "Pengurusan Platform"
 
@@ -11531,7 +11835,7 @@ msgid "Playground"
 msgstr "Taman permainan"
 
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:45
-#: src/pages/settings/SettingsMain.tsx:370
+#: src/pages/settings/SettingsMain.tsx:394
 msgid "Playground API"
 msgstr "API Playground"
 
@@ -12185,7 +12489,7 @@ msgstr ""
 #: src/pages/settings/components/PortalConfiguration.tsx:655
 #: src/pages/settings/components/PortalConfiguration.tsx:1108
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
-#: src/pages/settings/SettingsMain.tsx:321
+#: src/pages/settings/SettingsMain.tsx:339
 msgid "Portal Configuration"
 msgstr "Konfigurasi Portal"
 
@@ -12718,7 +13022,11 @@ msgstr ""
 msgid "Quote changed after the PDF was generated"
 msgstr ""
 
+<<<<<<< HEAD
 #: src/pages/requests/components/request/Request.tsx:3063
+=======
+#: src/pages/requests/components/request/Request.tsx:3062
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Quote data has changed. Regenerate the PDF before you continue."
 msgstr ""
 
@@ -12888,6 +13196,10 @@ msgstr "Papan Pemuka Masa Nyata"
 msgid "Reason for declining"
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:694
+msgid "Reason for Selection"
+msgstr ""
+
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:870
 msgid "Receive transparent confidence rankings for top candidate folder matches."
 msgstr ""
@@ -12977,6 +13289,14 @@ msgstr ""
 msgid "Redaction level"
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:909
+msgid "Redirect new requests during leave"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:755
+msgid "Redirect new requests to the alternative assignee"
+msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2783
 #: src/pages/folders/components/DocumentSigningPage.tsx:2902
 #: src/pages/folders/components/DocumentSigningPage.tsx:2909
@@ -13005,8 +13325,11 @@ msgstr "Nombor Dokumen Rujukan"
 #: src/pages/portal/components/PortalHome.tsx:590
 #: src/pages/portal/components/PortalHome.tsx:595
 #: src/pages/portal/components/PortalMobileHome.tsx:248
+<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:547
 #: src/pages/reports/components/OverviewTab.tsx:552
+=======
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
 #: src/pages/requests/components/InboxList.tsx:2150
@@ -13167,6 +13490,10 @@ msgstr "Buang penandatangan"
 msgid "Remove tab"
 msgstr "Alih keluar tab"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:615
+msgid "Remove workflow"
+msgstr ""
+
 #: src/pages/folders/components/DocumentDetailsView.tsx:673
 msgid "Removed from related"
 msgstr "Dialih keluar daripada berkaitan"
@@ -13214,7 +13541,11 @@ msgstr "Ganti Fail"
 #: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:73
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:261
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:269
+<<<<<<< HEAD
 #: src/pages/settings/SettingsMain.tsx:328
+=======
+#: src/pages/settings/SettingsMain.tsx:346
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Report Builder"
 msgstr "Pembina Laporan"
 
@@ -13372,7 +13703,11 @@ msgstr "Pemilik Permintaan"
 msgid "Request saved successfully"
 msgstr "Permintaan berjaya disimpan"
 
+<<<<<<< HEAD
 #: src/pages/requests/components/request/components/Header.tsx:670
+=======
+#: src/pages/requests/components/request/components/Header.tsx:665
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/Request.tsx:3005
 msgid "Request shared successfully"
 msgstr "Permintaan berjaya dikongsi"
@@ -13416,6 +13751,11 @@ msgstr ""
 #: src/pages/search/SearchPage.tsx:334
 msgid "Requests"
 msgstr "Permintaan"
+
+#. placeholder {0}: formatShortDay(fromDate)
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:761
+msgid "Requests already in the assignee's inbox move to the delegate on {0}."
+msgstr ""
 
 #: src/pages/settings/components/ManageUser.tsx:1711
 msgid "Require additional verification for sign-in"
@@ -13566,6 +13906,8 @@ msgstr "Pencetus pengekalan"
 #: src/pages/portal/components/PortalMobileHome.tsx:371
 #: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:452
 #: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:559
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:435
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:738
 msgid "Retry"
 msgstr "Cuba semula"
 
@@ -13577,10 +13919,16 @@ msgstr "Cuba Semula Pengambilan"
 msgid "Retry Loading"
 msgstr "Retry Memuatkan"
 
+#. placeholder {0}: userName(effectiveAssigneeId)
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:807
+msgid "Return to {0}"
+msgstr ""
+
 #: src/pages/folders/components/DocumentDetailsView.tsx:2251
 #~ msgid "Reveal original"
 #~ msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:80
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1292
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:22
 #: src/pages/settings/components/GroupManagement.tsx:88
@@ -13688,6 +14036,10 @@ msgstr ""
 
 #: src/constants/pageGuides.ts:60
 msgid "Review and save the user"
+msgstr ""
+
+#: src/constants/pageGuides.ts:308
+msgid "Review before saving"
 msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1785
@@ -13815,7 +14167,7 @@ msgstr "Peranan"
 #: src/pages/settings/components/RolesPermissions.tsx:1046
 #: src/pages/settings/components/RolesPermissions.tsx:1803
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:25
-#: src/pages/settings/SettingsMain.tsx:346
+#: src/pages/settings/SettingsMain.tsx:370
 msgid "Roles & Permissions"
 msgstr "Peranan & Keizinan"
 
@@ -13876,7 +14228,11 @@ msgstr ""
 msgid "rows"
 msgstr "barisan"
 
+<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:595
+=======
+#: src/pages/reports/components/OverviewTab.tsx:544
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Rows"
 msgstr "Baris"
 
@@ -13908,7 +14264,11 @@ msgstr "Peraturan"
 #: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:512
 #: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:532
 #: src/pages/report-builder/components/steps/SourceStep.tsx:624
+<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:512
+=======
+#: src/pages/reports/components/OverviewTab.tsx:466
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Run again"
 msgstr ""
 
@@ -13992,6 +14352,10 @@ msgstr ""
 msgid "Save & Regenerate Fields"
 msgstr "Simpan & Jana Semula Medan"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:366
+msgid "Save as draft"
+msgstr ""
+
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:265
 #~ msgid "Save as Draft"
 #~ msgstr "Simpan sebagai Draf"
@@ -14003,6 +14367,10 @@ msgstr "Simpan Tugasan"
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:606
 msgid "Save Branding"
 msgstr "Simpan Penjenamaan"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:360
+msgid "Save changes"
+msgstr ""
 
 #: src/pages/folders/components/EditMetadataView.tsx:427
 #: src/pages/forms/FormEntriesPage.tsx:1056
@@ -14099,6 +14467,10 @@ msgstr ""
 #: src/pages/folders/components/DocumentSigningPage.tsx:2027
 msgid "Saved ({0})"
 msgstr "Disimpan ({0})"
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:138
+msgid "Saved as draft"
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2322
 msgid "Saved signature removed."
@@ -14207,7 +14579,11 @@ msgid "Search"
 msgstr "Cari"
 
 #. placeholder {0}: col.label
+<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:369
+=======
+#: src/pages/reports/components/OverviewTab.tsx:323
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Search {0}..."
 msgstr ""
 
@@ -14242,6 +14618,10 @@ msgstr "Cari dan pilih pengguna..."
 msgid "Search and select workflows..."
 msgstr "Cari dan pilih aliran kerja..."
 
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:191
+msgid "Search assignee, delegate…"
+msgstr ""
+
 #: src/pages/settings/components/ManageUser.tsx:1612
 msgid "Search business unit..."
 msgstr "Cari unit perniagaan..."
@@ -14275,6 +14655,10 @@ msgstr "Carian dibuat oleh..."
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:690
 msgid "Search currency..."
 msgstr "Cari mata wang..."
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:189
+msgid "Search delegations"
+msgstr ""
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:176
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:669
@@ -14631,6 +15015,10 @@ msgstr "Pilih sumber dalam langkah Butiran terlebih dahulu."
 msgid "Select a specific workflow or folder above to proceed with report creation."
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:513
+msgid "Select a start date."
+msgstr ""
+
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:179
 msgid "Select a target folder before indexing"
 msgstr ""
@@ -14647,6 +15035,10 @@ msgstr "Pilih pengguna dan tandakan sekurang-kurangnya satu tempat."
 msgid "Select a user for each password."
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:403
+msgid "Select a user…"
+msgstr ""
+
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:244
 #~ msgid "Select a workflow"
 #~ msgstr "Pilih aliran kerja"
@@ -14654,6 +15046,10 @@ msgstr ""
 #: src/pages/report-builder/components/steps/AskAiStep.tsx:350
 #~ msgid "Select a workflow or folder above to proceed with report creation."
 #~ msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:650
+msgid "Select a workflow."
+msgstr ""
 
 #: src/pages/sign-in/components/SignInForm.tsx:882
 msgid "Select account"
@@ -14683,6 +15079,14 @@ msgstr ""
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:405
 msgid "Select an action..."
 msgstr "Pilih tindakan..."
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:689
+msgid "Select an alternative assignee."
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:528
+msgid "Select an end date."
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/StepOne.tsx:123
 msgid "Select an integration"
@@ -14725,6 +15129,11 @@ msgstr ""
 
 #: src/pages/report-builder/components/steps/SourceStep.tsx:373
 msgid "Select Data Source"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:564
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:673
+msgid "Select delegate…"
 msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1380
@@ -14906,6 +15315,10 @@ msgstr "Pilih akses sasaran"
 msgid "Select the storage provider where documents for this folder should be stored."
 msgstr "Pilih pembekal storan di mana dokumen untuk folder ini harus disimpan."
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:423
+msgid "Select the user who will be away."
+msgstr ""
+
 #: src/constants/pageGuides.ts:179
 msgid "Select the users and groups this policy controls. Everyone you add gets the permissions set in the next step."
 msgstr ""
@@ -14987,6 +15400,10 @@ msgstr ""
 #~ msgid "Select Workflow Template"
 #~ msgstr "Pilih Templat Aliran Kerja"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:635
+msgid "Select workflow…"
+msgstr ""
+
 #: src/pages/my-account/components/preferences/components/ChangeLanguage.tsx:15
 msgid "Select your preferred language"
 msgstr "Pilih bahasa pilihan anda"
@@ -15040,6 +15457,10 @@ msgstr "Klasifikasi Semantik"
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:175
 msgid "Send"
 msgstr "Hantar"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:765
+msgid "Send a notification to the alternative assignee"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:385
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:387
@@ -15134,6 +15555,10 @@ msgstr ""
 msgid "Set sign-in security"
 msgstr ""
 
+#: src/constants/pageGuides.ts:300
+msgid "Set the absence period"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1204
 #~ msgid "Set the conditions that decide which documents this rule covers, then choose the security action. Review each step before you save."
 #~ msgstr ""
@@ -15175,7 +15600,7 @@ msgstr ""
 msgid "Set up document security rules"
 msgstr "Sediakan peraturan keselamatan dokumen"
 
-#: src/pages/settings/SettingsMain.tsx:294
+#: src/pages/settings/SettingsMain.tsx:312
 msgid "Set up folders with custom fields, storage, security, and versioning."
 msgstr "Sediakan folder dengan medan tersuai, storan, keselamatan dan versi."
 
@@ -15211,7 +15636,7 @@ msgstr "Menyediakan..."
 #: src/pages/settings/components/SettingsSetupHeader.tsx:41
 #: src/pages/settings/components/SettingsWizardLayout.tsx:103
 #: src/pages/settings/hooks/useSettingsOriginBreadcrumbs.ts:25
-#: src/pages/settings/SettingsMain.tsx:409
+#: src/pages/settings/SettingsMain.tsx:434
 msgid "Settings"
 msgstr "Tetapan"
 
@@ -15442,6 +15867,12 @@ msgstr "Tunjukkan Aliran Kerja dalam Tetapan → Konfigurasi"
 msgid "Showing"
 msgstr ""
 
+#. placeholder {0}: visible.length
+#. placeholder {1}: delegations.length
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:377
+msgid "Showing {0} of {1}"
+msgstr ""
+
 #. placeholder {0}: Math.min(previewRows.length, PREVIEW_ROWS)
 #: src/pages/report-builder/components/steps/FieldsStepAgent.tsx:498
 msgid "Showing {0} of {previewTotal} rows"
@@ -15559,8 +15990,13 @@ msgstr ""
 
 #: src/pages/portal/components/PortalMobileHome.tsx:707
 #: src/pages/portal/components/PortalShell.tsx:116
+<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:129
 #: src/pages/portal/components/PortalShell.tsx:142
+=======
+#: src/pages/portal/components/PortalShell.tsx:128
+#: src/pages/portal/components/PortalShell.tsx:141
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "Sign out"
 msgstr "Log keluar"
 
@@ -15841,6 +16277,10 @@ msgstr "Garis masa SLA standard. Tiada pengecualian harga dijumpai."
 msgid "Start"
 msgstr "Mula"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:230
+msgid "Start date cannot be in the past."
+msgstr ""
+
 #: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:528
 msgid "Start from an existing quote:"
 msgstr ""
@@ -15890,6 +16330,7 @@ msgstr "Aliran kredit statik untuk {selectedMonth}"
 #: src/pages/requests/components/request/components/Header.tsx:884
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:208
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2337
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4163
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4168
@@ -16056,7 +16497,11 @@ msgstr "Butiran Penyerahan"
 msgid "submissions"
 msgstr "penyerahan"
 
+<<<<<<< HEAD
 #: src/pages/portal/components/PortalShell.tsx:189
+=======
+#: src/pages/portal/components/PortalShell.tsx:188
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalWizard.tsx:981
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:154
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:170
@@ -16535,6 +16980,14 @@ msgstr ""
 msgid "The agent stopped. Review the request and try again."
 msgstr ""
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:408
+msgid "The assignee cannot be changed on an existing delegation."
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:813
+msgid "The delegate completes anything already in progress."
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1088
 msgid "the demo data"
 msgstr "data demo"
@@ -16617,6 +17070,13 @@ msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:14
 msgid "There is no invoice data to display yet. Processed invoices and analytics will appear here."
+msgstr ""
+
+#. placeholder {0}: userName(effectiveAssigneeId)
+#. placeholder {1}: formatShortDay(overlapping.fromDate)
+#. placeholder {2}: formatDay(overlapping.toDate)
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:545
+msgid "These dates overlap an existing delegation for {0} ({1} – {2}). Adjust the dates or edit that delegation instead."
 msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:783
@@ -16758,7 +17218,11 @@ msgstr ""
 msgid "This related document cannot be removed."
 msgstr "Dokumen berkaitan ini tidak boleh dialih keluar."
 
+<<<<<<< HEAD
 #: src/pages/reports/components/OverviewTab.tsx:531
+=======
+#: src/pages/reports/components/OverviewTab.tsx:485
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 msgid "This report has no fields configured yet."
 msgstr "Laporan ini belum mempunyai medan yang dikonfigurasikan."
 
@@ -16888,6 +17352,10 @@ msgstr ""
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "Untuk bermula: apakah nama folder ini? Gunakan nama perniagaan yang jelas, pilih contoh di bawah, atau terangkan idea folder penuh untuk jana persediaan lengkap."
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:519
+msgid "To Date"
+msgstr ""
+
 #: src/pages/forms/FormEntriesPage.tsx:3059
 msgid "to Trash?"
 msgstr "ke Sampah?"
@@ -16910,6 +17378,10 @@ msgstr "Barisan Tindakan Hari Ini"
 #: src/layouts/app/components/sidebar/SidebarToggle.tsx:22
 msgid "Toggle sidebar"
 msgstr "Togel bar sisi"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:331
+msgid "Tomorrow"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1179
 #~ msgid "Top 10 suppliers by invoice value"
@@ -17046,6 +17518,15 @@ msgstr "Mata wang urus niaga"
 msgid "Transactions"
 msgstr "Transaksi"
 
+#. placeholder {0}: formatShortDay(fromDate)
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:912
+msgid "Transfer current requests on {0}"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:760
+msgid "Transfer current requests to the alternative assignee"
+msgstr ""
+
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:91
 #: src/pages/forms/FormEntriesPage.tsx:3022
 msgid "Trash"
@@ -17083,6 +17564,10 @@ msgstr ""
 #: src/pages/folders/components/DocumentsListView.tsx:998
 msgid "Try changing the file search or resetting the selected filters."
 msgstr "Cuba ubah carian fail atau tetapkan semula penapis yang dipilih."
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:223
+msgid "Try clearing the filters or search."
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:477
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:789
@@ -17352,6 +17837,10 @@ msgstr "Buat Asal"
 
 #: src/pages/requests/components/request/components/generic-overview/tableHistory.tsx:114
 msgid "Undo (Ctrl+Z)"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:808
+msgid "Unfinished requests go back to the original assignee."
 msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:11
@@ -17765,6 +18254,10 @@ msgstr "Gunakan storan selamat terbina dalam untuk dokumen invois."
 msgid "Use demo data"
 msgstr "Gunakan data demo"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:557
+msgid "Use one delegate for all workflows"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:407
 msgid "Use secure cloud storage"
 msgstr "Gunakan storan awan yang selamat"
@@ -17844,7 +18337,7 @@ msgstr "Pengguna Email"
 #: src/pages/settings/components/ManageUser.tsx:1552
 #: src/pages/settings/components/ManageUser.tsx:2815
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:23
-#: src/pages/settings/SettingsMain.tsx:334
+#: src/pages/settings/SettingsMain.tsx:358
 msgid "User Management"
 msgstr "Pengurusan Pengguna"
 
@@ -18100,6 +18593,8 @@ msgstr "Strategi versi disimpan. Adakah anda memerlukan integrasi ERP atau siste
 #: src/pages/folders/components/FolderSharePopover.tsx:158
 #: src/pages/folders/components/FolderSharePopover.tsx:883
 #: src/pages/reports/components/ReportShareButton.tsx:23
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:298
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:300
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:76
 msgid "View"
 msgstr "Lihat"
@@ -18108,7 +18603,7 @@ msgstr "Lihat"
 msgid "View {remainingCount} more suggestions"
 msgstr "Lihat {remainingCount} lagi cadangan"
 
-#: src/pages/settings/SettingsMain.tsx:373
+#: src/pages/settings/SettingsMain.tsx:397
 msgid "View activity logs, security events, and configuration change history."
 msgstr "Lihat log aktiviti, acara keselamatan dan sejarah perubahan konfigurasi."
 
@@ -18178,7 +18673,7 @@ msgstr "Lihat cadangan"
 msgid "View trial usage summary and upgrade to production."
 msgstr "Lihat ringkasan penggunaan percubaan dan naik taraf ke pengeluaran."
 
-#: src/pages/settings/SettingsMain.tsx:361
+#: src/pages/settings/SettingsMain.tsx:385
 msgid "View trial usage summary, manage license status, and upgrade to production."
 msgstr "Lihat ringkasan penggunaan percubaan, urus status lesen dan naik taraf ke pengeluaran."
 
@@ -18283,6 +18778,17 @@ msgstr ""
 msgid "We couldn’t identify this request, so it couldn’t be moved."
 msgstr "Kami tidak dapat mengenal pasti permintaan ini, jadi ia tidak dapat dialihkan."
 
+<<<<<<< HEAD
+=======
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:429
+msgid "We couldn't load users."
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:732
+msgid "We couldn't load workflows."
+msgstr ""
+
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/portal/components/PortalMobileHome.tsx:367
 msgid "We couldn't load your requests."
 msgstr ""
@@ -18368,6 +18874,10 @@ msgstr "Apakah bentuk yang akan kita cipta?"
 msgid "What Happens Next?"
 msgstr "Apa yang Berlaku Seterusnya?"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:71
+msgid "What happens to requests"
+msgstr ""
+
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:922
 #: src/pages/forms/components/header/components/FormWizard.tsx:31
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1206
@@ -18389,6 +18899,10 @@ msgstr "Apakah aliran kerja yang akan kita buat?"
 msgid "When enabled, page and card backgrounds use a light or dark wash of the primary color."
 msgstr "Apabila didayakan, latar belakang halaman dan kad menggunakan warna utama yang terang atau gelap."
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:800
+msgid "When the absence period ends"
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:600
 msgid "Where"
 msgstr "di mana"
@@ -18407,6 +18921,10 @@ msgstr "Pembekal manakah yang membawa pendedahan risiko paling banyak?"
 msgid "Which versioning strategy should apply when the same file is uploaded again?"
 msgstr "Strategi versi yang manakah harus digunakan apabila fail yang sama dimuat naik semula?"
 
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:53
+msgid "Who will be away"
+msgstr ""
+
 #: src/pages/report-builder/components/steps/SourceSelectionSection.tsx:177
 #: src/pages/report-builder/components/steps/SourceStep.tsx:102
 #: src/pages/requests/components/request/components/newrequest/DocumentFormUpload.tsx:147
@@ -18415,6 +18933,15 @@ msgstr "Strategi versi yang manakah harus digunakan apabila fail yang sama dimua
 #: src/pages/settings/components/PortalConfiguration.tsx:986
 msgid "Workflow"
 msgstr "Aliran kerja"
+
+#. placeholder {0}: index + 1
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:611
+msgid "Workflow {0}"
+msgstr ""
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:749
+msgid "Workflow and request delegation action"
+msgstr ""
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:97
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:139
@@ -18447,6 +18974,13 @@ msgstr "ID Aliran Kerja tiada. Tidak boleh memulakan aliran kerja."
 msgid "Workflow Name"
 msgstr ""
 
+<<<<<<< HEAD
+=======
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:654
+msgid "Workflow Stage"
+msgstr ""
+
+>>>>>>> 000738a852fd62671fc6c207a759feacfe7b2279
 #: src/pages/requests/components/request/components/StageTrail.tsx:50
 #: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:251
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:185
@@ -18465,6 +18999,7 @@ msgstr "Aliran kerja bermula tetapi tidak mengembalikan sebarang data."
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:79
 #: src/pages/portal/components/PortalHome.tsx:416
 #: src/pages/search/SearchPage.tsx:322
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:206
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:63
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:129
 #: src/pages/settings/components/PortalConfiguration.tsx:88
@@ -18472,7 +19007,7 @@ msgstr "Aliran kerja bermula tetapi tidak mengembalikan sebarang data."
 #: src/pages/settings/components/PortalConfiguration.tsx:1373
 #: src/pages/settings/components/PortalConfiguration.tsx:1527
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
-#: src/pages/settings/SettingsMain.tsx:314
+#: src/pages/settings/SettingsMain.tsx:332
 #: src/pages/workflows/components/Table.tsx:556
 #: src/pages/workflows/WorkflowsPage.tsx:13
 msgid "Workflows"
