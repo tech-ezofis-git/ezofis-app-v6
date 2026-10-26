@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 from app.agents.ocr_helpers import InvalidOcrPageError, resolve_pageno
 from app.ap_skills.payment_terms import due_date_from_terms, looks_like_payment_terms
-from app.ap_skills.types import ApContext, ApSkillError, ApSkillResult, field_text, norm_token
+from app.ap_skills.types import ApContext, ApSkillError, ApSkillResult, field_text, line_description, norm_token
 
 logger = logging.getLogger("orchestrator.ap.extract_invoice")
 
@@ -130,7 +130,7 @@ def _as_invoice(data: dict[str, Any]) -> dict[str, Any]:
             amount = line.get("Extended")
         normalized_lines.append(
             {
-                "description": field_text(line, "description", "item", "name", "Description"),
+                "description": line_description(line),
                 "qty": qty,
                 "price": price,
                 "amount": amount,

@@ -153,22 +153,70 @@ _PLACEHOLDER_VALUES = frozenset(
 )
 
 
+_MEASURE_UNITS = frozenset(
+    {
+        "lb",
+        "lbs",
+        "kg",
+        "kgs",
+        "g",
+        "oz",
+        "pc",
+        "pcs",
+        "ea",
+        "each",
+        "unit",
+        "units",
+        "pk",
+        "pkg",
+    }
+)
+
+
+def _is_measure_only(text: str) -> bool:
+    """True for a unit or a quantity plus a unit, such as ``4 lb`` or ``6 lb``."""
+    parts = normalize_name(text).split()
+    if len(parts) == 1:
+        token = parts[0]
+        if token in _MEASURE_UNITS:
+            return True
+        for unit in _MEASURE_UNITS:
+            amount = token[: -len(unit)] if token.endswith(unit) else ""
+            if amount.isdigit():
+                return True
+        return False
+    if len(parts) == 2 and parts[0].isdigit() and parts[1] in _MEASURE_UNITS:
+        return True
+    return False
+
+
 def line_description(line: dict[str, Any]) -> str:
     """Product name used to pair PO and invoice lines.
 
     The material description is the name shown on the line table. A part
     code in ``description`` or ``item`` is used only when that name is absent.
+    A unit by itself, such as ``4 lb``, is skipped so the product name on
+    the same line is used instead.
     """
-    return field_text(
-        line,
+    for key in (
         "materialDescription",
         "material_description",
         "Material Description",
+        "productName",
+        "product_name",
+        "Product Name",
+        "itemName",
+        "item_name",
+        "Item Name",
         "description",
         "Description",
         "name",
         "item",
-    )
+    ):
+        text = field_text(line, key)
+        if text and not _is_measure_only(text):
+            return text
+    return ""
 
 
 def field_text(data: dict[str, Any], *keys: str) -> str:

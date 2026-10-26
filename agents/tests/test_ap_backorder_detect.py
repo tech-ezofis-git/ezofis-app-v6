@@ -79,6 +79,24 @@ async def test_material_description_pairs_when_description_is_only_a_code():
     assert result.data["missing_qty_by_item"] == []
 
 
+async def test_unit_only_description_pairs_on_the_product_name():
+    """A weight such as ``4 lb`` is not the product. Pairing must use the
+    product name on the same line, so equal quantities are not a backorder."""
+    po = {
+        "lines": [
+            {"description": "4 lb", "name": "Network Edge Router", "qty": 2},
+            {"description": "6 lb", "name": "Managed Network Switch", "qty": 3},
+        ]
+    }
+    invoice_lines = [
+        {"description": "NET-RTR-220 Network Edge Router", "qty": 2},
+        {"description": "NET-SW-140 Managed Network Switch", "qty": 3},
+    ]
+    result = await backorder_run(_ctx(invoice_lines=invoice_lines, po=po))
+    assert result.data["detected"] is False
+    assert result.data["missing_qty_by_item"] == []
+
+
 async def test_po_line_with_no_matching_invoice_line_is_flagged_distinctly():
     invoice_lines = [{"description": "Widget A", "qty": 10}]  # Widget B never invoiced at all
     result = await backorder_run(_ctx(invoice_lines=invoice_lines))
