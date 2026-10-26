@@ -254,6 +254,49 @@ def test_part_code_does_not_lower_a_matching_product_name():
     assert lines[1]["Line Score"] == 100
 
 
+def test_llm_pairs_a_part_code_with_the_product_name():
+    invoice = {
+        "line_items": [
+            {"description": "FUSE-KIT-50", "qty": 5, "price": 42, "amount": 210},
+        ]
+    }
+    po = {"lines": [{"description": "Industrial Fuse Kit", "qty": 5, "price": 42, "amount": 210}]}
+    lines = _line_matching(
+        invoice,
+        po,
+        llm_pairs={"invoice_to_po": {0: 0}, "kits": {}},
+    )
+    assert lines[0]["Description"]["Score"] == 100
+    assert lines[0]["Line Score"] == 100
+
+
+def test_llm_kit_pairs_score_100():
+    invoice = {
+        "line_items": [
+            {"description": "Wireless Optical Mouse", "qty": 2, "price": 40, "amount": 80},
+            {"description": "Laptop Charger", "qty": 2, "price": 65, "amount": 130},
+            {"description": "USB Keyboard", "qty": 2, "price": 45, "amount": 90},
+            {"description": "Laptop Docking Station", "qty": 2, "price": 150, "amount": 300},
+        ]
+    }
+    po = {
+        "lines": [
+            {
+                "description": "Laptop Hardware Kit",
+                "qty": 2,
+                "price": 300,
+                "amount": 600,
+            }
+        ]
+    }
+    lines = _line_matching(
+        invoice,
+        po,
+        llm_pairs={"invoice_to_po": {}, "kits": {0: [0, 1, 2, 3]}},
+    )
+    assert [line["Line Score"] for line in lines] == [100, 100, 100, 100]
+
+
 def test_kit_components_score_as_the_kit_line():
     invoice = {
         "line_items": [

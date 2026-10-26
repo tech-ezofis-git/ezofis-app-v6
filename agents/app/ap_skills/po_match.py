@@ -221,10 +221,12 @@ async def run(ctx: ApContext) -> ApSkillResult:
     elif inv_total is None or po_total is None:
         reasons.append("Missing total on invoice or PO.")
 
-    from app.ap_skills.agent_validation_response import _field_matching, _line_matching
+    from app.ap_skills.agent_validation_response import _field_matching, _invoice_lines, _line_matching, _po_lines
+    from app.ap_skills.line_pair_llm import pair_lines_with_llm
 
     po_dict = po if isinstance(po, dict) else {}
-    line_matching = _line_matching(invoice, po_dict, text_score=name_score)
+    llm_pairs = await pair_lines_with_llm(ctx, _invoice_lines(invoice), _po_lines(po_dict))
+    line_matching = _line_matching(invoice, po_dict, text_score=name_score, llm_pairs=llm_pairs)
     if line_matching:
         average = sum(float(row.get("Line Score") or 0) for row in line_matching) / len(line_matching)
         score += round(10.0 * average / 100.0, 2)
@@ -244,6 +246,7 @@ async def run(ctx: ApContext) -> ApSkillResult:
         "decision": decision,
         "vendor_similarity": sim,
         "reason": " ".join(reasons),
+        "line_pairs": llm_pairs,
     }
     if isinstance(po, dict) and po.get("form_id"):
         data["form_id"] = po.get("form_id")

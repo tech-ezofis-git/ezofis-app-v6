@@ -187,6 +187,7 @@ def _line_matching(
     *,
     text_score: Optional[Callable[[str, str], float]] = None,
     pair_score: Optional[Callable[[str, str], float]] = None,
+    llm_pairs: Optional[dict[str, Any]] = None,
 ) -> list[dict[str, Any]]:
     inv_lines = _invoice_lines(invoice)
     po_lines = _po_lines(po)
@@ -196,10 +197,22 @@ def _line_matching(
     def _desc(row: dict[str, Any]) -> str:
         return line_description(row)
 
-    paired = match_lines_by_description(
-        inv_lines, po_lines, describe=_desc, score_fn=pair_score or text_score
-    )
-    kit_po_for_invoice, fulfilled_kits = _pair_kit_components(inv_lines, po_lines, paired)
+    llm_invoice_indexes: set[int] = set()
+    if isinstance(llm_pairs, dict) and (llm_pairs.get("invoice_to_po") or llm_pairs.get("kits")):
+        paired = [None] * len(inv_lines)
+        for raw_inv, raw_po in (llm_pairs.get("invoice_to_po") or {}).items():
+            inv_i = int(raw_inv)
+            po_i = int(raw_po)
+            if 0 <= inv_i < len(inv_lines) and 0 <= po_i < len(po_lines):
+                paired[inv_i] = po_i
+                llm_invoice_indexes.add(inv_i)
+        kit_po_for_invoice, fulfilled_kits = _kits_from_llm(inv_lines, po_lines, llm_pairs.get("kits") or {})
+        llm_invoice_indexes.update(kit_po_for_invoice)
+    else:
+        paired = match_lines_by_description(
+            inv_lines, po_lines, describe=_desc, score_fn=pair_score or text_score
+        )
+        kit_po_for_invoice, fulfilled_kits = _pair_kit_components(inv_lines, po_lines, paired)
     out: list[dict[str, Any]] = []
     for inv_i, po_i in enumerate(paired):
         if po_i is None and inv_i in kit_po_for_invoice:
@@ -224,7 +237,8 @@ def _line_matching(
         po_amt = field_number(po_line, "amount", "line_amount", "Extended") if po_line else None
 
         kit_fulfilled = po_i is not None and po_i in fulfilled_kits
-        desc_score = 100.0 if kit_fulfilled else (
+        llm_paired = inv_i in llm_invoice_indexes
+        desc_score = 100.0 if kit_fulfilled or llm_paired else (
             _description_score(inv, po_line, text_score=text_score) if po_line else 0.0
         )
         qty_score = _field_score(
@@ -270,6 +284,40 @@ def _line_matching(
             }
         )
     return out
+
+
+def _kits_from_llm(
+    inv_lines: list[dict[str, Any]],
+    po_lines: list[dict[str, Any]],
+    kits: dict[Any, Any],
+) -> tuple[dict[int, int], set[int]]:
+    inv_to_po: dict[int, int] = {}
+    fulfilled: set[int] = set()
+    for raw_po, raw_indexes in kits.items():
+        try:
+            po_index = int(raw_po)
+        except (TypeError, ValueError):
+            continue
+        if not 0 <= po_index < len(po_lines):
+            continue
+        chosen = [int(index) for index in raw_indexes if 0 <= int(index) < len(inv_lines)]
+        if len(chosen) < 2:
+            continue
+        po_line = po_lines[po_index]
+        po_qty = field_number(po_line, "qty", "quantity", "Quantity", "orderQuantity")
+        po_amt = field_number(po_line, "amount", "line_amount", "Extended")
+        qtys_match = po_qty is None or all(
+            (field_number(inv_lines[index], "qty", "quantity", "Quantity") or 0) + 1e-9 >= po_qty
+            for index in chosen
+        )
+        amount_sum = sum(field_number(inv_lines[index], "amount", "line_amount", "Extended") or 0 for index in chosen)
+        amounts_match = po_amt is None or po_amt == 0 or abs(amount_sum - po_amt) / abs(po_amt) <= 0.01
+        if not qtys_match or not amounts_match:
+            continue
+        for inv_index in chosen:
+            inv_to_po[inv_index] = po_index
+        fulfilled.add(po_index)
+    return inv_to_po, fulfilled
 
 
 def _pair_kit_components(

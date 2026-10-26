@@ -26,6 +26,41 @@ def _description(line: dict) -> str:
     return line_description(line)
 
 
+def _pairs_for_po_lines(
+    po_lines: list[dict],
+    inv_lines: list[dict],
+    stored_pairs: dict,
+) -> list[int | None]:
+    """One invoice index per PO line. A kit uses the first piece only as the anchor."""
+    chosen = [None] * len(po_lines)
+    used: set[int] = set()
+    for raw_po, raw_indexes in (stored_pairs.get("kits") or {}).items():
+        try:
+            po_index = int(raw_po)
+        except (TypeError, ValueError):
+            continue
+        if not 0 <= po_index < len(po_lines):
+            continue
+        indexes = [int(index) for index in raw_indexes if 0 <= int(index) < len(inv_lines)]
+        if len(indexes) < 2:
+            continue
+        if all(_qty(inv_lines[index]) + 1e-9 >= _qty(po_lines[po_index]) for index in indexes):
+            chosen[po_index] = indexes[0]
+            used.update(indexes)
+    for raw_inv, raw_po in (stored_pairs.get("invoice_to_po") or {}).items():
+        try:
+            inv_index = int(raw_inv)
+            po_index = int(raw_po)
+        except (TypeError, ValueError):
+            continue
+        if inv_index in used or not 0 <= inv_index < len(inv_lines) or not 0 <= po_index < len(po_lines):
+            continue
+        if chosen[po_index] is None:
+            chosen[po_index] = inv_index
+            used.add(inv_index)
+    return chosen
+
+
 def _kit_invoice_indexes(po_line: dict, inv_lines: list[dict], used: set[int]) -> list[int] | None:
     """Invoice lines that are the pieces of one kit PO line, or None if incomplete."""
     components = kit_components(_description(po_line))
@@ -73,16 +108,20 @@ async def run(ctx: ApContext) -> ApSkillResult:
     po_lines = [line for line in raw_po_lines if isinstance(line, dict)]
 
     embedder = embedder_from(ctx)
-    if embedder is not None:
-        await embedder.warm(
-            [_description(line) for line in po_lines] + [_description(line) for line in inv_lines]
+    stored_pairs = po_match.get("line_pairs") if isinstance(po_match.get("line_pairs"), dict) else None
+    if stored_pairs and (stored_pairs.get("invoice_to_po") or stored_pairs.get("kits")):
+        matched_indexes = _pairs_for_po_lines(po_lines, inv_lines, stored_pairs)
+    else:
+        if embedder is not None:
+            await embedder.warm(
+                [_description(line) for line in po_lines] + [_description(line) for line in inv_lines]
+            )
+        matched_indexes = match_lines_by_description(
+            po_lines,
+            inv_lines,
+            describe=_description,
+            score_fn=embedder.score if embedder is not None else None,
         )
-    matched_indexes = match_lines_by_description(
-        po_lines,
-        inv_lines,
-        describe=_description,
-        score_fn=embedder.score if embedder is not None else None,
-    )
 
     used_invoice_indexes = {index for index in matched_indexes if index is not None}
     missing = []
