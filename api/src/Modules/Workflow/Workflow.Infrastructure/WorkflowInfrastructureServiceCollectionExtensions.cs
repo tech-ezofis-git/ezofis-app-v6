@@ -190,6 +190,7 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IQuanticsFormSyncJobClient, QuanticsFormSyncJobClient>();
         services.AddScoped<RunQuanticsFormSyncJob>();
         services.AddScoped<IWorkflowEndSyncService, WorkflowEndSyncService>();
+        services.AddScoped<IWorkflowDelegationService, WorkflowDelegationService>();
 
         services.AddHttpClient(nameof(FieldMappingService), client =>
         {

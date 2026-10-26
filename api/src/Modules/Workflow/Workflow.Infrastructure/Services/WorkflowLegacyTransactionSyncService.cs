@@ -28,6 +28,7 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
     private readonly IWorkflowTableCreator _tableCreator;
     private readonly WorkflowLegacyMailboxSyncService _mailboxSync;
     private readonly IRepositoryItemShareService _itemShares;
+    private readonly IWorkflowDelegationService _delegations;
     private readonly ILogger<WorkflowLegacyTransactionSyncService> _logger;
 
     public WorkflowLegacyTransactionSyncService(
@@ -35,12 +36,14 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         IWorkflowTableCreator tableCreator,
         WorkflowLegacyMailboxSyncService mailboxSync,
         IRepositoryItemShareService itemShares,
+        IWorkflowDelegationService delegations,
         ILogger<WorkflowLegacyTransactionSyncService> logger)
     {
         _tenantContext = tenantContext;
         _tableCreator = tableCreator;
         _mailboxSync = mailboxSync;
         _itemShares = itemShares;
+        _delegations = delegations;
         _logger = logger;
     }
 
@@ -97,6 +100,22 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         var txActivityId = ResolveTransactionActivityId(targetStep, activityId);
         var resolvedActivityUserId = activityUserId ?? targetStep.AssignedToUserId ?? userId;
         var hasReview = !string.IsNullOrWhiteSpace(review);
+
+        // Workflow delegation: when the resolved assignee is away and has an active delegation
+        // covering this workflow/stage with "redirect new requests" on, route to the delegate
+        // instead. Caller-supplied activityUserId (explicit reassignment) is never overridden.
+        if (activityUserId is null && _tenantContext.TenantId is { } delegationTenantId)
+        {
+            var resolvedDelegate = await _delegations.ResolveDelegateAsync(
+                delegationTenantId,
+                workflowId,
+                txActivityId,
+                resolvedActivityUserId,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                cancellationToken);
+            if (resolvedDelegate is { } delegateUserId)
+                resolvedActivityUserId = delegateUserId;
+        }
 
         await _tableCreator.EnsureLegacyTransactionTableAsync(workflowId, connectionString, cancellationToken);
         await _tableCreator.EnsureLegacyMailboxTablesAsync(workflowId, connectionString, cancellationToken);
