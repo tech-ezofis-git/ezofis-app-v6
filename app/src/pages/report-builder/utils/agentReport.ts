@@ -200,11 +200,11 @@ export const draftPatchFromPromptResult = (
 ) => {
   const spec = result.reportSpec
   const picked = (spec.columns ?? []).filter((c) => c.selected !== false)
-  // Default columns are always part of the report, whatever the agent
-  // selected — they lead the table, followed by the agent's other picks.
-  const defaults = (spec.defaultColumns ?? []).map(
-    (column) => picked.find((c) => c.key === column.key) ?? column,
-  )
+  // Keep selected defaults at the front. Unselected defaults (Repository on a
+  // single-folder report) stay out of the table.
+  const defaults = (spec.defaultColumns ?? [])
+    .filter((column) => column.selected !== false)
+    .map((column) => picked.find((c) => c.key === column.key) ?? column)
   const defaultKeys = new Set(defaults.map((c) => c.key))
   const selected = [
     ...defaults,
@@ -319,6 +319,37 @@ export const buildAgentConfigFromDraft = (
   }
 }
 
+const compactKey = (value: string) => value.toLowerCase().replace(/[\s_-]/g, '')
+
+const FILE_NAME_ALIASES = ['filename', 'file_name', 'ifilename', 'originalfilename']
+const USER_NAME_ALIASES = ['createdby', 'startedby', 'actedby']
+
+/** Prefer the column key, then label, then known SQL aliases such as file_name. */
+export const pickRowValue = (
+  row: Record<string, unknown> | undefined,
+  ...names: string[]
+): unknown => {
+  if (!row) return undefined
+  const wanted = new Set(
+    names
+      .flatMap((name) => {
+        const compact = compactKey(name)
+        if (FILE_NAME_ALIASES.includes(compact)) return FILE_NAME_ALIASES
+        if (USER_NAME_ALIASES.includes(compact)) return [compact, `${compact}name`]
+        return [compact]
+      })
+      .filter(Boolean),
+  )
+  for (const [key, value] of Object.entries(row)) {
+    if (!wanted.has(compactKey(key))) continue
+    if (value != null && String(value).trim() !== '') return value
+  }
+  for (const [key, value] of Object.entries(row)) {
+    if (wanted.has(compactKey(key))) return value
+  }
+  return undefined
+}
+
 const toCellText = (value: unknown): string => {
   if (value === null || value === undefined) return ''
   if (typeof value === 'object') return JSON.stringify(value)
@@ -351,7 +382,7 @@ export const agentRunToReportRunResult = (
         mapped[key] = toCellText(value)
     })
     columns.forEach((column) => {
-      const text = toCellText(row[column.key] ?? row[column.label])
+      const text = toCellText(pickRowValue(row, column.key, column.label))
       mapped[column.key] = text
       mapped[column.label] = text
     })

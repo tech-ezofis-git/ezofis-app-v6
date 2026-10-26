@@ -147,7 +147,13 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
         }
 
         var spec = ReportAgentChatMapper.ParseObjectOrEmpty(record.ReportSpecJson);
-        if (_query is not null && ReportAgentChatMapper.IsSpecifiedScope(record.ReportType))
+        // Workflow form SQL fills Request No / Stage. Folder reports must go
+        // through the Python agent: items.file_name and Users.display name are
+        // not ezfb controls, so the C# query leaves File Name empty and
+        // Created By as a GUID.
+        if (_query is not null
+            && ReportAgentChatMapper.IsSpecifiedScope(record.ReportType)
+            && !record.ReportType.Equals("specific_repository", StringComparison.OrdinalIgnoreCase))
             return await RunSpecifiedFormAsync(tenantId, reportId, record, spec, request, cancellationToken);
 
         ReportAgentProxyResult proxy;

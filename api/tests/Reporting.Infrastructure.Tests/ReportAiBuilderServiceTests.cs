@@ -257,6 +257,72 @@ public sealed class ReportAiBuilderServiceTests
     }
 
     [Fact]
+    public async Task RunSaved_specified_repository_uses_python_agent()
+    {
+        var store = new MemoryStore();
+        var id = Guid.NewGuid();
+        store.Rows[id] = new ReportAiDefinitionRecord
+        {
+            Id = id,
+            TenantId = TenantId,
+            OwnerUserId = UserId,
+            ReportType = "specific_repository",
+            RepositoryName = "Expense Reimbursement",
+            Name = "Expense Reimbursement Folder Summary",
+            ReportPrompt = """{"Objective":"Folder summary"}""",
+            ReportSpecJson = """
+                {"title":"Folder summary","columns":[
+                  {"key":"FileName","label":"File Name"},
+                  {"key":"CreatedBy","label":"Created By"}
+                ]}
+                """
+        };
+        var client = new FakeClient
+        {
+            Run = AgentResult(200, """
+                {"reply":"Report ready.","report_result":{
+                  "title":"Expense Reimbursement Folder Summary",
+                  "columns":[
+                    {"key":"FileName","label":"File Name"},
+                    {"key":"CreatedBy","label":"Created By"}
+                  ],
+                  "rows":[{"FileName":"BeerTown Food receipt with Tip.pdf","CreatedBy":"Student Lawyer"}],
+                  "totalCount":1,
+                  "page":1,
+                  "pageSize":25,
+                  "warnings":[]
+                }}
+                """)
+        };
+        var query = new FakeQuery
+        {
+            Result = new ReportRunResult(
+                id,
+                "Expense Reimbursement Folder Summary",
+                "Expense Reimbursement",
+                [new ReportColumnDto("File Name", "File Name", "None", "value", 160, false)],
+                [new Dictionary<string, string?> { ["File Name"] = null, ["Created By"] = "049b5a38-fb6c-4037-baca-5c732ee667d9" }],
+                null,
+                1,
+                null,
+                "form-1")
+        };
+        var service = new ReportAiBuilderService(client, store, query);
+
+        var result = await service.RunSavedAsync(TenantId, id, new ReportAiRunRequest());
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.NotNull(client.LastRun);
+        Assert.Equal("specific_repository", client.LastRun!.ReportType);
+        Assert.Equal("Expense Reimbursement", client.LastRun.RepositoryName);
+        Assert.Null(query.LastConfig);
+        var json = JsonSerializer.Serialize(result.Payload);
+        Assert.Contains("BeerTown Food receipt with Tip.pdf", json);
+        Assert.Contains("Student Lawyer", json);
+        Assert.DoesNotContain("049b5a38-fb6c-4037-baca-5c732ee667d9", json);
+    }
+
+    [Fact]
     public async Task RunSaved_download_returns_exported_file()
     {
         var store = SpecifiedStore(out var id);
