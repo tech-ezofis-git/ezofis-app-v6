@@ -2026,6 +2026,7 @@ const RequestsPage = () => {
             >
               <AllWorkflowsInbox
                 redirectWhenEmpty={!allWorkflowsChosen}
+                switcherWorkflows={allWorkflow || []}
                 workflows={(allWorkflow || []).filter(
                   (opt) => String(opt.id).toLowerCase() !== 'procurement',
                 )}

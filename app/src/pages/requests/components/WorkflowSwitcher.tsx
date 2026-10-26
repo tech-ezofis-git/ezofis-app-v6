@@ -79,8 +79,8 @@ export default function WorkflowSwitcher({
     ) : (
       <span className='flex shrink-0 items-center gap-2'>
         {overdue > 0 ? (
-          <span className='rounded-full bg-red-2 px-1.5 py-px text-[11px] font-semibold whitespace-nowrap text-red-11'>
-            {t`${overdue} overdue`}
+          <span className='rounded-full bg-orange-2 px-1.5 py-px text-[11px] font-semibold whitespace-nowrap text-orange-11'>
+            {t`${overdue} earlier`}
           </span>
         ) : null}
         <span className='min-w-5 text-right text-12 font-medium text-gray-10 tabular-nums'>
@@ -119,8 +119,11 @@ export default function WorkflowSwitcher({
             {isAllWorkflows ? t`All Workflows` : value?.name || t`Select`}
           </span>
           {selectedOverdue > 0 ? (
-            <Tooltip content={t`${selectedOverdue} overdue`} position='bottom'>
-              <span className='shrink-0 rounded-full bg-red-2 px-1.5 py-px text-[11px] font-bold text-red-11 tabular-nums'>
+            <Tooltip
+              content={t`${selectedOverdue} earlier — not yet actioned`}
+              position='bottom'
+            >
+              <span className='shrink-0 rounded-full bg-orange-2 px-1.5 py-px text-[11px] font-bold text-orange-11 tabular-nums'>
                 {selectedOverdue}
               </span>
             </Tooltip>

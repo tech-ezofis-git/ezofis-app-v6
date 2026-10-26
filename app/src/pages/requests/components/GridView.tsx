@@ -904,6 +904,8 @@ interface GridRowItemProps {
   isSelected: boolean
   row: any
   activeTab?: string
+  /** False hides the hover checkbox (rows can't be selected). */
+  selectable?: boolean
   workflow?: WorkflowOption | null
   toggleRowSelection: (id: string | number, e: React.MouseEvent) => void
   onRowClick: (item: any, tab: string) => void
@@ -916,6 +918,7 @@ export const GridRowItem = memo(
     index,
     isSelected,
     row,
+    selectable = true,
     toggleRowSelection,
     workflow,
     onRowClick,
@@ -1005,7 +1008,9 @@ export const GridRowItem = memo(
         row?.qualifyAgentResponse?.qualifier_result?.['Ai Insight'] ||
         '',
     ).trim()
-    const aiInsight = rawAiInsight.replace(/^[✨\u2728\u2729\u2730\s]+/, '').trim()
+    const aiInsight = rawAiInsight
+      .replace(/^[✨\u2728\u2729\u2730\s]+/, '')
+      .trim()
 
     const activeJobId = String(row?.apAgentJobId || row?.jobId || '').trim()
     const isJobProcessing =
@@ -1090,47 +1095,51 @@ export const GridRowItem = memo(
           onRowClick(row, 'Overview')
         }}
       >
-        <button
-          aria-label={isSelected ? t`Deselect request` : t`Select request`}
-          aria-pressed={isSelected}
-          type='button'
-          className={cn(
-            'absolute top-0 bottom-0 left-0 z-20 w-14 border-0 bg-transparent p-0',
-            isSelected || hasSelectionActive
-              ? 'cursor-pointer'
-              : 'pointer-events-none group-hover:pointer-events-auto group-hover:cursor-pointer',
-          )}
-          onClick={(e) => {
-            e.stopPropagation()
-            toggleRowSelection(rowId, e)
-          }}
-        />
+        {selectable ? (
+          <button
+            aria-label={isSelected ? t`Deselect request` : t`Select request`}
+            aria-pressed={isSelected}
+            type='button'
+            className={cn(
+              'absolute top-0 bottom-0 left-0 z-20 w-14 border-0 bg-transparent p-0',
+              isSelected || hasSelectionActive
+                ? 'cursor-pointer'
+                : 'pointer-events-none group-hover:pointer-events-auto group-hover:cursor-pointer',
+            )}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleRowSelection(rowId, e)
+            }}
+          />
+        ) : null}
         {/* Checkbox & Status Icon */}
         <div className='flex shrink-0 items-center'>
-          <div
-            className={cn(
-              'relative flex items-center overflow-hidden transition-all duration-200',
-              isSelected || hasSelectionActive
-                ? 'mr-4 w-5 opacity-100'
-                : 'mr-0 w-0 opacity-0 group-hover:mr-4 group-hover:w-5 group-hover:opacity-100',
-            )}
-          >
+          {selectable ? (
             <div
               className={cn(
-                'flex size-5 items-center justify-center rounded-md border-2 transition-all',
-                isSelected
-                  ? 'border-[var(--primary-9)] bg-surface'
-                  : 'border-[var(--gray-3)] bg-surface group-hover:border-[var(--primary-9)]',
+                'relative flex items-center overflow-hidden transition-all duration-200',
+                isSelected || hasSelectionActive
+                  ? 'mr-4 w-5 opacity-100'
+                  : 'mr-0 w-0 opacity-0 group-hover:mr-4 group-hover:w-5 group-hover:opacity-100',
               )}
             >
-              {isSelected && (
-                <Icon
-                  className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
-                  name='tabler:check'
-                />
-              )}
+              <div
+                className={cn(
+                  'flex size-5 items-center justify-center rounded-md border-2 transition-all',
+                  isSelected
+                    ? 'border-[var(--primary-9)] bg-surface'
+                    : 'border-[var(--gray-3)] bg-surface group-hover:border-[var(--primary-9)]',
+                )}
+              >
+                {isSelected && (
+                  <Icon
+                    className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
+                    name='tabler:check'
+                  />
+                )}
+              </div>
             </div>
-          </div>
+          ) : null}
           <div
             className={cn(
               'flex size-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-300',
@@ -1218,7 +1227,7 @@ export const GridRowItem = memo(
                 variant='outline-purple'
               />
               <HoverExpandableText
-                className='text-[10px] font-medium italic text-[var(--primary-9)]'
+                className='text-[10px] font-medium text-[var(--primary-9)] italic'
                 expandStyle='inline'
                 maxLines={2}
                 normalMaxWidthClass='max-w-[180px]'
@@ -1237,7 +1246,7 @@ export const GridRowItem = memo(
                 variant='outline-purple'
               />
               <HoverExpandableText
-                className='text-[11px] font-medium italic text-[var(--gray-11)]'
+                className='text-[11px] font-medium text-[var(--gray-11)] italic'
                 expandStyle='inline'
                 maxLines={2}
                 normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'

@@ -1,7 +1,8 @@
 import { useLingui } from '@lingui/react/macro'
+import { useClickOutside } from '@mantine/hooks'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import type { Option } from '@/types/option'
 import workflowsApiV6, { type AllWorkflowsInboxGroup } from '@/api/v6/workflows'
@@ -31,6 +32,11 @@ type AllWorkflowsInboxProps = {
    * user picked All Workflows themselves (they then see the empty page).
    */
   redirectWhenEmpty?: boolean
+  /**
+   * Options for the workflow dropdown when it lists more than the inbox
+   * workflows (e.g. Procurement, which has no inbox of its own).
+   */
+  switcherWorkflows?: Option[]
   workflows: Option[]
   onNewRequest: (workflow: Option) => void
   onOpenRequest: (workflowId: string, row: Record<string, any>) => void
@@ -73,6 +79,7 @@ const searchText = (row: Record<string, any>) =>
  */
 export default function AllWorkflowsInbox({
   redirectWhenEmpty = true,
+  switcherWorkflows,
   workflows,
   onNewRequest,
   onOpenRequest,
@@ -84,9 +91,17 @@ export default function AllWorkflowsInbox({
   const inbox = useAllWorkflowsInbox()
   // Only the first workflow starts open; the user opens the others.
   const [expanded, setExpanded] = useState<Set<string> | null>(null)
-  const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
+  const [searchExpanded, setSearchExpanded] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchRef = useClickOutside(() => {
+    if (!query) setSearchExpanded(false)
+  })
+  const openSearch = () => {
+    setSearchExpanded(true)
+    window.setTimeout(() => searchInputRef.current?.focus(), 50)
+  }
 
   const groups = useMemo(() => inbox.data?.workflows || [], [inbox.data])
   const expandedIds = useMemo(
@@ -201,56 +216,73 @@ export default function AllWorkflowsInbox({
         </div>
         <div className='flex items-center gap-2 py-2'>
           {/* Search + refresh, before the workflow switcher */}
-          <AnimatePresence initial={false}>
-            {searchOpen || query ? (
-              <motion.label
-                animate={{ opacity: 1, width: 240 }}
-                className='flex h-9 items-center gap-2 overflow-hidden rounded-lg border border-gray-4 bg-surface px-2.5 focus-within:border-primary-8'
-                exit={{ opacity: 0, width: 0 }}
-                initial={reduceMotion ? false : { opacity: 0, width: 0 }}
-                transition={{ duration: reduceMotion ? 0 : 0.18 }}
-              >
-                <Icon
-                  className='size-4 shrink-0 text-gray-9'
-                  name='tabler:search'
-                />
-                <input
-                  aria-label={t`Search requests`}
-                  className='min-w-0 flex-1 bg-transparent text-13 text-gray-13 outline-none placeholder:text-gray-8'
-                  placeholder={t`Search requests…`}
-                  value={query}
-                  autoFocus
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-                {query ? (
-                  <button
-                    aria-label={t`Clear search`}
-                    className='text-gray-9 hover:text-gray-12'
-                    type='button'
-                    onClick={() => setQuery('')}
-                  >
-                    <Icon className='size-4' name='tabler:x' />
-                  </button>
-                ) : null}
-              </motion.label>
-            ) : null}
-          </AnimatePresence>
-          <Tooltip content={t`Search`} position='bottom'>
-            <button
-              aria-label={t`Search`}
-              aria-pressed={searchOpen}
-              type='button'
+          {/* Same collapsible search as the Requests table: an icon that
+              opens into a box and folds back when left empty. */}
+          <div
+            aria-label={t`Search requests`}
+            ref={searchRef}
+            role='search'
+            className={cn(
+              'flex h-8 items-center overflow-hidden rounded-md border border-[var(--border-default)] bg-surface transition-all duration-300 select-none',
+              searchExpanded
+                ? 'focus-within:border-primary w-72 justify-start pr-1 max-sm:w-48'
+                : 'w-8 cursor-pointer justify-center text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
+            )}
+            onClick={openSearch}
+          >
+            <div
               className={cn(
-                'flex size-9 items-center justify-center rounded-lg border bg-surface transition-colors hover:border-primary-7 active:scale-95',
-                searchOpen
-                  ? 'border-primary-8 text-primary-11'
-                  : 'border-gray-4 text-gray-11',
+                'flex h-full shrink-0 items-center justify-center self-stretch',
+                searchExpanded
+                  ? 'w-7 bg-primary-4 text-primary-11'
+                  : 'text-gray-11',
               )}
-              onClick={() => setSearchOpen((open) => !open)}
             >
-              <Icon className='size-4' name='tabler:search' />
-            </button>
-          </Tooltip>
+              <Icon className='size-4 shrink-0' name='lucide:search' />
+            </div>
+            <div
+              className={cn(
+                'flex h-full min-w-0 items-center transition-[width] duration-300',
+                searchExpanded
+                  ? 'w-full flex-1'
+                  : 'w-0 flex-none overflow-hidden',
+              )}
+            >
+              <input
+                placeholder={t`Search`}
+                ref={searchInputRef}
+                type='text'
+                value={query}
+                className={cn(
+                  'h-full w-full min-w-0 border-0 bg-transparent pr-2 pl-2 text-13 font-medium text-gray-12 outline-0 placeholder:text-gray-9',
+                  searchExpanded
+                    ? 'opacity-100'
+                    : 'pointer-events-none opacity-0',
+                )}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    setQuery('')
+                    setSearchExpanded(false)
+                  }
+                }}
+              />
+            </div>
+            {searchExpanded && query ? (
+              <button
+                aria-label={t`Clear search`}
+                className='flex size-6 shrink-0 items-center justify-center rounded text-gray-9 transition-colors hover:bg-gray-4 hover:text-gray-12 active:scale-90'
+                type='button'
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setQuery('')
+                  searchInputRef.current?.focus()
+                }}
+              >
+                <Icon className='size-3.5' name='lucide:x' />
+              </button>
+            ) : null}
+          </div>
           <Tooltip content={t`Refresh`} position='bottom'>
             <button
               aria-label={t`Refresh`}
@@ -271,7 +303,7 @@ export default function AllWorkflowsInbox({
           </Tooltip>
           <WorkflowSwitcher
             value={null}
-            workflows={workflows}
+            workflows={switcherWorkflows ?? workflows}
             isAllWorkflows
             onSelect={onOpenWorkflow}
             onSelectAll={() => undefined}
@@ -396,7 +428,7 @@ export default function AllWorkflowsInbox({
                     role='button'
                     tabIndex={0}
                     className={cn(
-                      'flex cursor-pointer items-center gap-2.5 px-4 py-3 transition-colors select-none hover:bg-gray-1',
+                      'group/head flex cursor-pointer items-center gap-2.5 px-4 py-3 transition-colors select-none hover:bg-gray-1',
                       !isCollapsed && 'border-b border-gray-3',
                     )}
                     onClick={() => toggle(group.workflowId)}
@@ -410,8 +442,10 @@ export default function AllWorkflowsInbox({
                     <Icon
                       name='tabler:chevron-down'
                       className={cn(
-                        'size-4 shrink-0 text-gray-9 transition-transform',
-                        isCollapsed && '-rotate-90',
+                        'size-4 shrink-0 text-gray-9 transition-transform duration-200 group-hover/head:text-gray-12',
+                        isCollapsed
+                          ? '-rotate-90 group-hover/head:translate-x-0.5'
+                          : 'group-hover/head:translate-y-0.5',
                       )}
                     />
                     <span
@@ -432,12 +466,12 @@ export default function AllWorkflowsInbox({
                       </span>
                     ) : null}
                     {overdueCount > 0 ? (
-                      <span className='rounded-md bg-red-2 px-2 py-0.5 text-12 font-semibold text-red-11'>
-                        {t`${overdueCount} overdue`}
+                      <span className='rounded-md bg-orange-2 px-2 py-0.5 text-12 font-semibold text-orange-11'>
+                        {t`${overdueCount} earlier`}
                       </span>
                     ) : null}
                     <button
-                      className='ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-13 font-semibold text-primary-11 transition-colors hover:bg-primary-2 active:scale-95'
+                      className='group/open ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-13 font-semibold text-primary-11 transition-colors hover:bg-primary-2 active:scale-95'
                       type='button'
                       onClick={(event) => {
                         event.stopPropagation()
@@ -445,7 +479,10 @@ export default function AllWorkflowsInbox({
                       }}
                     >
                       {t`${shortNameFor(group, sourceIndex)}`}
-                      <Icon className='size-4' name='tabler:chevron-right' />
+                      <Icon
+                        className='size-4 transition-transform duration-200 group-hover/open:translate-x-1'
+                        name='tabler:chevron-right'
+                      />
                     </button>
                   </div>
                   {isCollapsed ? null : (
@@ -467,6 +504,7 @@ export default function AllWorkflowsInbox({
                                   index={rowIndexOf(raw)}
                                   isSelected={false}
                                   row={row}
+                                  selectable={false}
                                   toggleRowSelection={noop}
                                   workflow={detail}
                                   key={String(
