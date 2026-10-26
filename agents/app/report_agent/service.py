@@ -1327,6 +1327,7 @@ class ReportAgentService:
                 attach_listing_fields_to_form_rows,
                 has_form_columns,
                 needs_listing_fields,
+                resolve_user_names,
                 _keep_valued_columns,
             )
 
@@ -1344,6 +1345,13 @@ class ReportAgentService:
                     warnings.append(f"Could not attach workflow Request No / Stage: {exc}")
                 spec, rows, listing_cols = _keep_valued_columns(spec, rows)
                 columns_out = listing_cols
+            else:
+                try:
+                    rows = await resolve_user_names(
+                        self._ezofis, rows, tenant_id=request.tenant_id or "", db=db
+                    )
+                except Exception:
+                    pass
 
         logger.info(
             "report_agent_run_completed",

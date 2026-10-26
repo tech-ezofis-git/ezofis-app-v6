@@ -263,7 +263,7 @@ def test_prompt_json_splits_default_userdefined_and_agent_columns():
     labels = {c.label for c in spec.default_columns}
     assert {"Request No", "Stage", "Status", "Acted by", "Workflow", "Created At", "Workflow Id", "Item Id", "Instance Id"} <= labels
     default_keys = {c.key.lower() for c in spec.default_columns}
-    assert {"requestno", "workflowid", "itemid", "instanceid"} <= default_keys
+    assert {"requestno", "workflowid", "itemid", "instanceid", "actedby", "actedbyid", "startedby", "startedbyid"} <= default_keys
     assert any(c.key == "workflowName" and c.selected for c in spec.default_columns)
     assert any(c.key == "createdAtUtc" for c in spec.default_columns)
     assert spec.userdefined_columns == []
@@ -330,7 +330,18 @@ def test_userdefined_columns_come_from_form_table_only():
     assert any(c.key.lower() == "requestno" and c.selected for c in spec.default_columns)
     assert any(c.key.lower() == "stage" and c.selected for c in spec.default_columns)
     listing_keys = {c.key.lower() for c in spec.columns}
-    assert {"requestno", "stage", "status", "startedby", "workflowname"} <= listing_keys
+    assert {
+        "requestno",
+        "stage",
+        "status",
+        "startedby",
+        "startedbyid",
+        "actedby",
+        "actedbyid",
+        "workflowname",
+    } <= listing_keys
+    assert any(c.key == "actedBy" and c.label == "Acted by" for c in spec.default_columns)
+    assert any(c.key == "actedById" and "Id" in c.label for c in spec.default_columns)
 
 
 def test_repository_default_columns_include_item_id():
@@ -1794,7 +1805,7 @@ async def test_run_specific_workflow_fills_request_no_stage_and_acted_by():
                     "requestNo": "AP-6001",
                     "currentStepInstanceId": "2b459b4d-6970-4747-a6a2-a288ce1ff958",
                     "startedBy": "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd",
-                    "updatedBy": "verifier-user",
+                    "updatedBy": "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd",
                     "createdAtUtc": "2026-09-11T04:33:00Z",
                     "completedAtUtc": None,
                     "stepInstances": [
@@ -1808,6 +1819,9 @@ async def test_run_specific_workflow_fills_request_no_stage_and_acted_by():
                 }
             ]
 
+        async def get_user(self, *, tenant_id, user_id):
+            return {"id": user_id, "displayName": "Arasu"}
+
     spec = ReportSpec(
         title="AP requests",
         objective="List AP requests",
@@ -1816,14 +1830,20 @@ async def test_run_specific_workflow_fills_request_no_stage_and_acted_by():
             ReportSpecColumn(key="requestNo", label="Req No", kind="default", selected=True),
             ReportSpecColumn(key="stage", label="Stage", kind="default", selected=True),
             ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
-            ReportSpecColumn(key="startedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="startedBy", label="Started by", kind="default", selected=True),
+            ReportSpecColumn(key="startedById", label="Started by Id", kind="default", selected=True),
+            ReportSpecColumn(key="actedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="actedById", label="Acted by Id", kind="default", selected=True),
             ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
         ],
         default_columns=[
             ReportSpecColumn(key="requestNo", label="Req No", kind="default", selected=True),
             ReportSpecColumn(key="stage", label="Stage", kind="default", selected=True),
             ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
-            ReportSpecColumn(key="startedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="startedBy", label="Started by", kind="default", selected=True),
+            ReportSpecColumn(key="startedById", label="Started by Id", kind="default", selected=True),
+            ReportSpecColumn(key="actedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="actedById", label="Acted by Id", kind="default", selected=True),
             ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
         ],
         source_schema="dbo",
@@ -1854,8 +1874,18 @@ async def test_run_specific_workflow_fills_request_no_stage_and_acted_by():
     assert row.get("stage") == "Verifier"
     assert row.get("Stage") == "Verifier"
     assert row.get("status") == "In Progress"
-    assert row.get("startedBy") == "verifier-user"
+    assert row.get("startedById") == "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd"
+    assert row.get("startedBy") == "Arasu"
+    assert row.get("actedById") == "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd"
+    assert row.get("actedBy") == "Arasu"
+    assert _is_guid_like(row.get("actedById"))
+    assert not _is_guid_like(row.get("actedBy"))
     assert row.get("workflowName") == "Accounts Payable"
+
+
+def _is_guid_like(value: Any) -> bool:
+    text = str(value or "")
+    return len(text) == 36 and text.count("-") == 4
 
 
 @pytest.mark.asyncio
@@ -2066,7 +2096,7 @@ async def test_form_rows_receive_request_no_and_stage_from_instances():
             ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
             ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
             ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
-            ReportSpecColumn(key="startedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="actedBy", label="Acted by", kind="default", selected=True),
             ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
             ReportSpecColumn(key="Invoice_Amount", label="Invoice Amount", kind="userdefined", selected=True),
         ],
@@ -2081,7 +2111,7 @@ async def test_form_rows_receive_request_no_and_stage_from_instances():
     assert rows[0].get("RequestNo") == "REQ-136"
     assert rows[0].get("Stage") == "Verifier"
     assert rows[0].get("status") == "In Progress"
-    assert rows[0].get("startedBy") == "verifier-user"
+    assert rows[0].get("actedBy") == "verifier-user"
     assert rows[0].get("workflowName") == "Accounts Payable"
     assert rows[0].get("Invoice_Amount") == 45.5
 
@@ -2193,7 +2223,7 @@ async def test_run_mixed_form_report_fills_request_no_from_instances(monkeypatch
         ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
         ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
         ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
-        ReportSpecColumn(key="startedBy", label="Acted by", kind="default", selected=True),
+        ReportSpecColumn(key="actedBy", label="Acted by", kind="default", selected=True),
         ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
     ]
     form_cols = [
@@ -2243,7 +2273,7 @@ async def test_run_mixed_form_report_fills_request_no_from_instances(monkeypatch
     assert row.get("RequestNo") == "REQ-136"
     assert row.get("Stage") == "Verifier"
     assert row.get("status") == "In Progress"
-    assert row.get("startedBy") == "verifier-user"
+    assert row.get("actedBy") == "verifier-user"
     assert row.get("workflowName") == "Accounts Payable"
 
 
