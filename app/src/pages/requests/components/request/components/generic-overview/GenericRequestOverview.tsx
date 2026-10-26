@@ -39,6 +39,7 @@ import {
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
+import { useStableRequestKey } from '@/pages/requests/hooks/useStableRequestKey'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { setFieldForAttachment } from '@/pages/requests/utils/fieldAttachmentMap'
 import {
@@ -193,20 +194,43 @@ const DocumentApprovalSplitLayout = ({
       ? {
         _localFileUrl: selectedItem?._localFileUrl,
         fileExtension:
-          selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+          (
+            selectedItem?.repositoryItem?.fileName ||
+            selectedItem?._localFileName
+          )
+            ?.split('.')
+            .pop() || 'pdf',
         fileName:
-          selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          selectedItem?.repositoryItem?.fileName ||
+          selectedItem?.name ||
+          selectedItem?._localFileName,
         itemId: selectedItem?.itemId,
-        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        name:
+          selectedItem?.repositoryItem?.fileName ||
+          selectedItem?.name ||
+          selectedItem?._localFileName,
         repositoryId: selectedItem?.repositoryId,
+        type: selectedItem?._localFileType || undefined,
       }
       : null
 
+  // This layout always shows the first received file, so the uploaded copy
+  // stays on screen when its server copy arrives.
+  const approvalRequestKey = useStableRequestKey([
+    selectedItem?.itemId,
+    selectedItem?.id,
+    selectedItem?.requestId,
+    selectedItem?.transactionId,
+    selectedItem?.processId,
+  ])
   const {
     isLoading: previewLoading,
     mimeType,
     previewUrl,
-  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId)
+  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId, {
+    keepLocalPreview: true,
+    requestKey: approvalRequestKey,
+  })
 
   const previewFileName =
     previewAttachment?.fileName ||
@@ -407,6 +431,23 @@ const DocumentFormSplitLayout = ({
     '',
   )
 
+  // Same request keeps the same key when ids arrive later (an upload starts as
+  // a temporary request), so the viewer is not rebuilt when it is replaced.
+  const stableRequestKey = useStableRequestKey([
+    selectedItem?.itemId,
+    selectedItem?.id,
+    selectedItem?.requestId,
+    selectedItem?.transactionId,
+    selectedItem?.processId,
+    selectedItem?.apAgentJobId ? `job-${selectedItem.apAgentJobId}` : undefined,
+  ])
+  // True once the user opened another file or a new upload was added, so the
+  // viewer must follow the new file instead of keeping the first upload.
+  const viewerFileChangedRef = useRef({ changed: false, key: stableRequestKey })
+  if (viewerFileChangedRef.current.key !== stableRequestKey) {
+    viewerFileChangedRef.current = { changed: false, key: stableRequestKey }
+  }
+
   // Reset baseline when navigating to a different request.
   useEffect(() => {
     hasSeededAttachmentKeysRef.current = false
@@ -460,7 +501,10 @@ const DocumentFormSplitLayout = ({
         getLatestAttachment(addedFiles) ||
         addedFiles[addedFiles.length - 1],
     )
-    if (newestKey) setViewerAttachmentKey(newestKey)
+    if (newestKey) {
+      viewerFileChangedRef.current.changed = true
+      setViewerAttachmentKey(newestKey)
+    }
   }, [attachments, recentDocument, viewerAttachmentKey])
 
   // Viewer strip: original files plus anything uploaded during this visit,
@@ -488,6 +532,7 @@ const DocumentFormSplitLayout = ({
 
   const handleSelectViewerAttachment = useCallback((file: AttachmentItem) => {
     const key = attachmentKeyOf(file)
+    viewerFileChangedRef.current.changed = true
     setViewerAttachmentKey(key)
     if (!key) return
     setNewAttachmentKeys((prev) => {
@@ -683,12 +728,23 @@ const DocumentFormSplitLayout = ({
       ? {
         _localFileUrl: selectedItem?._localFileUrl,
         fileExtension:
-          selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+          (
+            selectedItem?.repositoryItem?.fileName ||
+            selectedItem?._localFileName
+          )
+            ?.split('.')
+            .pop() || 'pdf',
         fileName:
-          selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          selectedItem?.repositoryItem?.fileName ||
+          selectedItem?.name ||
+          selectedItem?._localFileName,
         itemId: selectedItem?.itemId,
-        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        name:
+          selectedItem?.repositoryItem?.fileName ||
+          selectedItem?.name ||
+          selectedItem?._localFileName,
         repositoryId: selectedItem?.repositoryId,
+        type: selectedItem?._localFileType || undefined,
       }
       : null
 
@@ -696,7 +752,10 @@ const DocumentFormSplitLayout = ({
     isLoading: previewLoading,
     mimeType: previewMimeType,
     previewUrl,
-  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId)
+  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId, {
+    keepLocalPreview: !viewerFileChangedRef.current.changed,
+    requestKey: stableRequestKey,
+  })
 
   const viewerFileName =
     previewAttachment?.fileName ||

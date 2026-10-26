@@ -2671,7 +2671,7 @@ const QuoteAgentResultView = ({
                 {!isCompareTab ? (
                 <div className='flex flex-wrap items-center justify-between gap-3'>
                   {!isCompareTab && activeOrderNumber ? (
-                    <div className='flex min-w-0 items-baseline gap-1.5 text-left text-sm text-gray-12'>
+                    <div className='flex min-w-0 flex-1 items-baseline gap-1.5 text-left text-sm text-gray-12'>
                       <span className='shrink-0 font-bold'>{t`Quote Number`}:</span>
                       <HoverEditShell
                         activeEditId={activeEditId}
@@ -2680,7 +2680,7 @@ const QuoteAgentResultView = ({
                           !readOnly &&
                           canEditField(activeOrderNumber.field)
                         }
-                        className='min-w-0'
+                        className='min-w-0 flex-1'
                         editor={
                           <InputText
                             value={activeOrderNumber.value}
@@ -2702,7 +2702,10 @@ const QuoteAgentResultView = ({
                         label={t`Quote Number`}
                         onActivate={setActiveEditId}
                       >
-                        <span className='truncate'>
+                        <span
+                          className='truncate'
+                          title={activeOrderNumber.value || undefined}
+                        >
                           {activeOrderNumber.value || 'NA'}
                         </span>
                       </HoverEditShell>
