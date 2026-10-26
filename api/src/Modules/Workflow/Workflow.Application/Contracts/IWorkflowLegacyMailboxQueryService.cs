@@ -95,7 +95,13 @@ public sealed record LegacyMailboxRowDto(
     /// Archive item for <see cref="RepositoryId"/> + <see cref="ItemId"/> (file metadata + repo field columns).
     /// Null when ids are missing or the item is not found.
     /// </summary>
-    LegacyMailboxRepositoryItemDto? RepositoryItem = null);
+    LegacyMailboxRepositoryItemDto? RepositoryItem = null,
+    /// <summary>
+    /// true when this row's TransactionCreatedAt (or CreatedAtUtc) falls today (UTC), false otherwise.
+    /// Only set by GET /inbox/all-workflows; omitted (null) on the plain inbox/sent/completed lists.
+    /// </summary>
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    bool? IsNewToday = null);
 
 /// <summary>Repository archive item snapshot returned on mailbox rows (raise-ticket / attached file).</summary>
 public sealed record LegacyMailboxRepositoryItemDto(

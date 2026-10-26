@@ -61,8 +61,11 @@ public sealed class GetMyInboxAllWorkflowsQueryHandler
             if (!result.TableExists || result.TotalCount == 0)
                 continue;
 
-            var newToday = result.Items.Count(i => (i.TransactionCreatedAt ?? i.CreatedAtUtc)?.Date == today);
-            var earlier = result.Items.Count - newToday;
+            var items = result.Items
+                .Select(i => i with { IsNewToday = (i.TransactionCreatedAt ?? i.CreatedAtUtc)?.Date == today })
+                .ToList();
+            var newToday = items.Count(i => i.IsNewToday == true);
+            var earlier = items.Count - newToday;
 
             groups.Add(new MyInboxWorkflowGroup(
                 workflow.Id,
@@ -70,7 +73,7 @@ public sealed class GetMyInboxAllWorkflowsQueryHandler
                 result.TotalCount,
                 newToday,
                 earlier,
-                result.Items));
+                items));
         }
 
         groups = groups.OrderByDescending(g => g.TotalCount).ToList();

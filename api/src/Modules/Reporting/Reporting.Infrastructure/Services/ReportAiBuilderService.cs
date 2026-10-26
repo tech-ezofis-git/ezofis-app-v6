@@ -147,9 +147,8 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
         }
 
         var spec = ReportAgentChatMapper.ParseObjectOrEmpty(record.ReportSpecJson);
-        // Folder and workflow AI reports must go through the Python agent.
-        // C# form SQL has no items.file_name and no Users lookup, so File Name
-        // stayed empty and Started by / Acted by / Created By stayed GUIDs.
+        if (_query is not null && ReportAgentChatMapper.IsSpecifiedScope(record.ReportType))
+            return await RunSpecifiedFormAsync(tenantId, reportId, record, spec, request, cancellationToken);
 
         ReportAgentProxyResult proxy;
         try

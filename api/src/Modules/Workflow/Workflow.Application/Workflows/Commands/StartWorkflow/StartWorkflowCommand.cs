@@ -39,4 +39,6 @@ public record StartWorkflowCommandResult(
     string? ApAgentJobId = null,
     IReadOnlyList<string>? Skills = null,
     /// <summary>Exact body POSTed to AP Agent <c>/chat</c> (null when no AP job was enqueued).</summary>
-    object? PythonInput = null);
+    object? PythonInput = null,
+    /// <summary>Ticket/request number allocated for this instance (e.g. EXP-2026-92).</summary>
+    string? RequestNo = null);

@@ -1283,7 +1283,14 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         CancellationToken cancellationToken)
     {
         var rows = await _attachments.GetAttachmentsAsync(args.WorkflowId, args.InstanceId, cancellationToken);
-        var row = rows.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.FilePath))
+        var candidates = rows.Where(r => !string.IsNullOrWhiteSpace(r.FilePath)).ToList();
+
+        // Qualify/Quote only ever want the original RFQ .eml -- never an attachment extracted
+        // from it (embedded PDF/PNG) or a quote PDF generated on a later run. GetAttachmentsAsync
+        // orders newest-first, so prefer the .eml explicitly; otherwise fall back to the oldest
+        // row (the original upload always archives before extraction/generation adds anything).
+        var row = candidates.FirstOrDefault(IsEmlAttachment)
+            ?? candidates.OrderBy(r => r.CreatedAtUtc).FirstOrDefault()
             ?? throw new InvalidOperationException("No archived RFQ file found for the FTL agent.");
 
         var connectionString = _configuration["EzofisBlobStorage:ConnectionString"]
@@ -1300,6 +1307,17 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         var blob = container.GetBlobClient(row.FilePath!.Trim().Replace('\\', '/'));
         var download = await blob.DownloadContentAsync(cancellationToken);
         return (download.Value.Content.ToArray(), row.FileName ?? "upload.bin", row.ContentType);
+    }
+
+    private static bool IsEmlAttachment(WorkflowAttachmentRowDto row)
+    {
+        if (!string.IsNullOrWhiteSpace(row.FileName)
+            && row.FileName.EndsWith(".eml", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return !string.IsNullOrWhiteSpace(row.ContentType)
+            && (row.ContentType.Contains("rfc822", StringComparison.OrdinalIgnoreCase)
+                || row.ContentType.Equals("message/rfc822", StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<string?> LoadLatestAgentResponseAsync(
