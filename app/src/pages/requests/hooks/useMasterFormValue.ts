@@ -123,3 +123,12 @@ export const useMasterFormValue = (
 
   return data ?? null
 }
+
+/**
+ * Header "Budget": the master form's "Remaining Budget" column for the request's
+ * lookup values, read directly from the master ("0" when blank).
+ */
+export const useHeaderBudget = (
+  panels: FormPanel[],
+  formModel: Record<string, unknown> | undefined,
+) => useMasterFormValue(panels, formModel, 'Remaining Budget', '0')

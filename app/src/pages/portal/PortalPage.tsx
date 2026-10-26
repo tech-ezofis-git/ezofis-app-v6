@@ -10,7 +10,7 @@ import PortalDetail from './components/PortalDetail'
 import PortalHome from './components/PortalHome'
 import PortalLogin from './components/PortalLogin'
 import PortalPicker from './components/PortalPicker'
-import PortalShell from './components/PortalShell'
+import PortalShell, { type PortalHeaderInfo } from './components/PortalShell'
 import PortalWizard from './components/PortalWizard'
 import { applyPortalBranding } from './helpers/portalBranding'
 import {
@@ -67,6 +67,19 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
   const [selectedSubmission, setSelectedSubmission] =
     useState<PortalSubmission | null>(null)
   const [submissionsTick, setSubmissionsTick] = useState(0)
+  // Shown in the list with a Retry action, so a failed load is not
+  // mistaken for "no submissions".
+  const [submissionsError, setSubmissionsError] = useState<string | null>(null)
+  // Stage trail + budget for the wizard / detail header (set by the page).
+  const [headerInfo, setHeaderInfo] = useState<PortalHeaderInfo | null>(null)
+  const handleHeaderInfoChange = useCallback(
+    (info: PortalHeaderInfo | null) => {
+      setHeaderInfo((prev) =>
+        JSON.stringify(prev) === JSON.stringify(info) ? prev : info,
+      )
+    },
+    [],
+  )
   const [wizardChrome, setWizardChrome] = useState<{
     canSubmit: boolean
     isFormInitiated: boolean
@@ -238,6 +251,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
 
     let cancelled = false
     setLoadingSubmissions(true)
+    setSubmissionsError(null)
     void listPortalSubmissions({
       tenantId: portal.tenantId,
       workflows: [selectedWorkflow],
@@ -246,15 +260,15 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         if (cancelled) return
         if (result.error) {
           showToast({ message: result.error, variant: 'error' })
+          setSubmissionsError(result.error)
         }
         setSubmissions(result.submissions)
       })
       .catch(() => {
         if (cancelled) return
-        showToast({
-          message: t`Unable to load submissions for the selected workflows.`,
-          variant: 'error',
-        })
+        const message = t`Unable to load submissions for the selected workflows.`
+        showToast({ message, variant: 'error' })
+        setSubmissionsError(message)
         setSubmissions([])
       })
       .finally(() => {
@@ -383,14 +397,32 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     ? selectedSummary?.canCreate !== false
     : fallbackSummaries.some((workflow) => workflow.canCreate !== false)
 
+  const handleSignOut = () => {
+    clearSession(portalId)
+    setSelectedSubmission(null)
+    setSelectedWorkflowId(
+      hasMultipleWorkflows
+        ? null
+        : portal.workflows[0]
+          ? String(portal.workflows[0].id)
+          : null,
+    )
+    setSubmissions([])
+    setView('home')
+  }
+
   let content = (
     <PortalHome
       canCreateSubmission={canCreateSubmission}
       displayName={displayName}
+      email={session.username}
       loadingSubmissions={loadingSubmissions}
       loadingWorkflows={loadingWorkflows}
       showWorkflowCards={hasMultipleWorkflows && !selectedWorkflowId}
       submissions={submissions}
+      submissionsError={submissionsError}
+      tenantId={portal.tenantId}
+      workflowId={selectedWorkflowId ? String(selectedWorkflowId) : undefined}
       workflowName={selectedWorkflowName}
       workflows={fallbackSummaries}
       onBackToWorkflows={hasMultipleWorkflows ? backToWorkflows : undefined}
@@ -400,6 +432,8 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         setView('detail')
       }}
       onOpenWorkflow={openWorkflow}
+      onRefreshSubmissions={() => setSubmissionsTick((tick) => tick + 1)}
+      onSignOut={handleSignOut}
     />
   )
 
@@ -420,6 +454,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         onCancel={() => setView('home')}
         onChromeChange={handleWizardChromeChange}
         onCountsChange={handleSectionCountsChange}
+        onHeaderInfoChange={handleHeaderInfoChange}
         onSubmitted={() => {
           setSubmissionsTick((tick) => tick + 1)
           setView('home')
@@ -433,6 +468,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         userId={session.userId}
         onChromeChange={handleDetailChromeChange}
         onCountsChange={handleSectionCountsChange}
+        onHeaderInfoChange={handleHeaderInfoChange}
         onMoved={() => {
           setSubmissionsTick((tick) => tick + 1)
           setSelectedSubmission(null)
@@ -446,6 +482,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     <PortalShell
       email={session.username}
       fill={view === 'detail' || view === 'wizard'}
+      headerInfo={view === 'detail' || view === 'wizard' ? headerInfo : null}
       portal={portal}
       detail={
         view === 'detail' && selectedSubmission
@@ -488,19 +525,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
             }
           : null
       }
-      onSignOut={() => {
-        clearSession(portalId)
-        setSelectedSubmission(null)
-        setSelectedWorkflowId(
-          hasMultipleWorkflows
-            ? null
-            : portal.workflows[0]
-              ? String(portal.workflows[0].id)
-              : null,
-        )
-        setSubmissions([])
-        setView('home')
-      }}
+      onSignOut={handleSignOut}
     >
       <AnimateSlideUp
         key={view}

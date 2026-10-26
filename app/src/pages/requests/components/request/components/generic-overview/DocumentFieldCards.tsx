@@ -58,17 +58,20 @@ const DocumentFieldCards = ({ cards, emptyLabel }: Props) => {
                   className='group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 hover:bg-gray-1'
                   key={`${card.id}:${row.label}`}
                 >
+                  {/* Phones have no hover: labels and values wrap there
+                      instead of truncating, so long emails / numbers stay
+                      readable without sideways scrolling. */}
                   <div className='min-w-0 flex-1 overflow-hidden pt-0.5 text-[13px] text-gray-10'>
                     <span
-                      className='block truncate text-left group-hover:overflow-visible group-hover:break-words group-hover:whitespace-normal'
+                      className='block truncate text-left group-hover:overflow-visible group-hover:break-words group-hover:whitespace-normal max-[768px]:[overflow-wrap:anywhere] max-[768px]:whitespace-normal'
                       title={row.label}
                     >
                       {row.label}
                     </span>
                   </div>
-                  <div className='ml-auto max-w-[50%] min-w-0 shrink-0 overflow-hidden pt-0.5 text-right transition-all group-hover:max-w-[65%] group-hover:overflow-visible'>
+                  <div className='ml-auto max-w-[50%] min-w-0 shrink-0 overflow-hidden pt-0.5 text-right transition-all group-hover:max-w-[65%] group-hover:overflow-visible max-[768px]:max-w-[60%]'>
                     <b
-                      className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 group-hover:overflow-visible group-hover:text-left group-hover:break-words group-hover:whitespace-normal'
+                      className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 group-hover:overflow-visible group-hover:text-left group-hover:break-words group-hover:whitespace-normal max-[768px]:[overflow-wrap:anywhere] max-[768px]:whitespace-normal'
                       title={displayVal}
                     >
                       {displayVal}

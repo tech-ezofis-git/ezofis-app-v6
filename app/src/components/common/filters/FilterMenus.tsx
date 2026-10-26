@@ -1,4 +1,4 @@
-import { ChevronRight, Loader2, Search } from 'lucide-react'
+import { Check, ChevronRight, Loader2, Search } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
 import type { FilterOption } from '@/utils/filterUtils'
 import InputDate from '@/components/base/inputs/InputDate'
@@ -18,12 +18,73 @@ interface FilterMenuProps {
   onClear: () => void
 }
 
-/** Shared option-row typography for filter dropdown lists (text-12). */
+/** Option rows: same look as the portal's status dropdown. */
 const FILTER_OPTION_ROW =
-  'group flex w-full max-w-full min-w-0 cursor-pointer items-start gap-2.5 rounded px-2.5 py-1.5 text-left text-12 transition-colors hover:bg-gray-2'
-const FILTER_OPTION_ROW_SELECTED = 'bg-primary-3/30 text-primary-9'
+  'group flex w-full max-w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-13 text-gray-12 transition-colors hover:bg-gray-2 active:bg-gray-3'
+const FILTER_OPTION_ROW_SELECTED = 'bg-primary-1 font-medium text-gray-13'
 const FILTER_OPTION_LABEL =
-  'block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-12 group-hover:whitespace-normal group-hover:break-words'
+  'block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap group-hover:whitespace-normal group-hover:break-words'
+/** Floating panel width; never wider than the screen on phones. */
+const FILTER_MENU_PANEL =
+  'flex w-60 max-w-[calc(100vw-1rem)] flex-col overflow-hidden bg-surface'
+
+/** Radio for single-choice lists. */
+const RadioMark = ({ checked }: { checked: boolean }) => (
+  <span
+    aria-hidden
+    className={cn(
+      'flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
+      checked
+        ? 'border-primary-9 bg-primary-9'
+        : 'border-gray-6 bg-surface group-hover:border-gray-8',
+    )}
+  >
+    {checked ? <span className='size-1.5 rounded-full bg-white' /> : null}
+  </span>
+)
+
+/** Checkbox for multi-choice lists. */
+const CheckMark = ({ checked }: { checked: boolean }) => (
+  <span
+    aria-hidden
+    className={cn(
+      'flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors',
+      checked
+        ? 'border-primary-9 bg-primary-9 text-white'
+        : 'border-gray-6 bg-surface group-hover:border-gray-8',
+    )}
+  >
+    {checked ? <Check className='size-3' strokeWidth={3} /> : null}
+  </span>
+)
+
+/** Search box with the tinted icon tile used by the portal dropdowns. */
+const FilterSearchInput = ({
+  disabled,
+  value,
+  onChange,
+}: {
+  disabled?: boolean
+  value: string
+  onChange: (value: string) => void
+}) => (
+  <div className='border-b border-border-default p-2'>
+    <div className='flex items-center overflow-hidden rounded-md border border-gray-4 bg-surface transition-colors focus-within:border-primary-7'>
+      <span className='flex size-8 shrink-0 items-center justify-center bg-primary-2 text-primary-11'>
+        <Search className='size-4' />
+      </span>
+      <input
+        className='w-full min-w-0 bg-transparent px-2.5 py-1.5 text-13 text-text-primary outline-none placeholder:text-text-muted'
+        disabled={disabled}
+        placeholder='Search'
+        type='text'
+        value={value}
+        autoFocus
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  </div>
+)
 const FILTER_MENU_ACTION =
   'cursor-pointer text-12 font-normal whitespace-nowrap transition-colors'
 const FILTER_MENU_ACTION_ENABLED =
@@ -161,23 +222,16 @@ export function CategoryFilterMenu({
   }
 
   return (
-    <div className='flex w-max max-w-64 flex-col overflow-hidden bg-surface'>
+    <div className={FILTER_MENU_PANEL}>
       {showSearch ? (
-        <div className='relative border-b border-border-default'>
-          <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted' />
-          <input
-            className='w-full min-w-0 bg-transparent py-2.5 pr-3 pl-9 text-12 text-text-primary outline-none placeholder:text-text-muted'
-            disabled={isApplying}
-            placeholder='Search...'
-            type='text'
-            value={search}
-            autoFocus
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <FilterSearchInput
+          disabled={isApplying}
+          value={search}
+          onChange={setSearch}
+        />
       ) : null}
 
-      <div className='ez-scrollbar flex max-h-[220px] w-full flex-col gap-0.5 overflow-y-auto p-2'>
+      <div className='ez-scrollbar flex max-h-[260px] w-full flex-col gap-0.5 overflow-y-auto p-1.5'>
         {filteredOptions.length === 0 ? (
           <div className='px-2 py-2 text-12 text-text-muted'>
             {isLoading ? 'Loading...' : 'No options found.'}
@@ -186,26 +240,24 @@ export function CategoryFilterMenu({
           filteredOptions.map((opt) => {
             const isSelected = isOptionSelected(opt)
             return (
-              <label
+              <button
+                aria-checked={isSelected}
+                disabled={isApplying}
                 key={opt.value}
+                role='checkbox'
+                type='button'
                 className={cn(
                   FILTER_OPTION_ROW,
-                  'gap-2',
                   isSelected && FILTER_OPTION_ROW_SELECTED,
                   isApplying && 'pointer-events-none opacity-60',
                 )}
+                onClick={() => toggleValue(opt)}
               >
-                <input
-                  checked={isSelected}
-                  className='mt-0.5 shrink-0 accent-primary-9'
-                  disabled={isApplying}
-                  type='checkbox'
-                  onChange={() => toggleValue(opt)}
-                />
+                <CheckMark checked={isSelected} />
                 <span className={FILTER_OPTION_LABEL}>
                   {isAllOption(opt) ? 'All' : opt.label}
                 </span>
-              </label>
+              </button>
             )
           })
         )}
@@ -415,8 +467,8 @@ export function DateFilterMenu({
   }
 
   return (
-    <div className='flex w-max max-w-64 flex-col overflow-hidden bg-surface'>
-      <div className='ez-scrollbar flex max-h-[240px] w-full flex-col gap-0.5 overflow-y-auto p-2'>
+    <div className={FILTER_MENU_PANEL}>
+      <div className='ez-scrollbar flex max-h-[260px] w-full flex-col gap-0.5 overflow-y-auto p-1.5'>
         {options.map((opt) => {
           const isCustom = opt.value === 'custom'
           const isSelected = isCustom
@@ -429,7 +481,9 @@ export function DateFilterMenu({
 
           return (
             <button
+              aria-checked={isSelected}
               key={opt.value}
+              role='radio'
               type='button'
               className={cn(
                 FILTER_OPTION_ROW,
@@ -443,18 +497,7 @@ export function DateFilterMenu({
                 onChange([opt.value])
               }}
             >
-              <span
-                className={cn(
-                  'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border',
-                  isSelected
-                    ? 'border-primary-9 bg-primary-9'
-                    : 'border-border-default bg-surface',
-                )}
-              >
-                {isSelected && (
-                  <span className='h-1.5 w-1.5 rounded-full bg-white' />
-                )}
-              </span>
+              <RadioMark checked={isSelected} />
               <span className={FILTER_OPTION_LABEL}>
                 {/^all(\s|$)/i.test(optionLabel) ? 'All' : optionLabel}
               </span>
@@ -559,8 +602,8 @@ export function NumberFilterMenu({
   }
 
   return (
-    <div className='flex w-max max-w-64 flex-col overflow-hidden bg-surface'>
-      <div className='ez-scrollbar flex max-h-[240px] w-full flex-col gap-0.5 overflow-y-auto p-2'>
+    <div className={FILTER_MENU_PANEL}>
+      <div className='ez-scrollbar flex max-h-[260px] w-full flex-col gap-0.5 overflow-y-auto p-1.5'>
         {options.map((opt) => {
           const isCustom = opt.value === 'custom'
           const isSelected = isCustom
@@ -590,25 +633,9 @@ export function NumberFilterMenu({
               }}
             >
               {isCustom ? (
-                <span
-                  className={cn(
-                    'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border',
-                    isSelected
-                      ? 'border-primary-9 bg-primary-9'
-                      : 'border-border-default bg-surface',
-                  )}
-                >
-                  {isSelected && (
-                    <span className='h-1.5 w-1.5 rounded-full bg-white' />
-                  )}
-                </span>
+                <RadioMark checked={isSelected} />
               ) : (
-                <input
-                  checked={isSelected}
-                  className='accent-primary-9'
-                  type='checkbox'
-                  readOnly
-                />
+                <CheckMark checked={isSelected} />
               )}
               <span className={FILTER_OPTION_LABEL}>{optionLabel}</span>
               {isCustom && (

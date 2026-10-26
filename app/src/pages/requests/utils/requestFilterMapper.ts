@@ -426,9 +426,48 @@ export const buildV6FilterClauses = (
     }
   }
 
+  // Amount column for the High Value / amount range filters.
+  const amountField =
+    fieldByName.get('invoice amount') ||
+    fieldByName.get('amount') ||
+    fieldByName.get('total amount') ||
+    fieldByName.get('invoice value') ||
+    fieldByName.get('total') ||
+    Array.from(filterFields).find(
+      (f) =>
+        /amount|total|value/i.test(f.name || '') &&
+        /NUMBER|CURRENCY|DECIMAL|INT|FLOAT/i.test(f.dataType || ''),
+    )
+
   // 2. Process active custom filters (overriding or adding to clausesMap)
   Object.entries(activeFilters).forEach(([fieldKey, val]) => {
     if (!val || (Array.isArray(val) && val.length === 0)) return
+
+    // High Value / amount ranges ("1000-5000", "custom:100-250") become one
+    // "between" clause on the amount column; several ranges use their
+    // combined span. Without an amount column nothing is sent.
+    const amountKey = fieldKey.toLowerCase().replace(/[\s_-]/g, '')
+    if (
+      ['amount', 'highvalue', 'invoicevalue', 'totalvalue'].includes(amountKey)
+    ) {
+      if (!amountField?.sqlColumnName) return
+      const bounds = (Array.isArray(val) ? val : [val])
+        .map((v) => String(v).replace(/^custom:/, ''))
+        .map((v) => v.match(/^(-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)$/))
+        .filter((m): m is RegExpMatchArray => Boolean(m))
+        .map((m) => [Number(m[1]), Number(m[2])] as const)
+      if (bounds.length === 0) return
+      const min = Math.min(...bounds.map(([lo]) => lo))
+      const max = Math.max(...bounds.map(([, hi]) => hi))
+      clausesMap.set(amountField.sqlColumnName, {
+        condition: 'between',
+        criteria: amountField.sqlColumnName,
+        dataType: amountField.dataType || 'NUMBER',
+        value: String(min),
+        valueTo: String(max),
+      })
+      return
+    }
 
     let schemaField = findField(fieldKey)
     if (!schemaField) {

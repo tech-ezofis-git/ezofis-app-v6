@@ -20,7 +20,7 @@ import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
 import { useAttachments } from '../../hooks/useAttachments'
 import { useComments } from '../../hooks/useComments'
-import { useMasterFormValue } from '../../hooks/useMasterFormValue'
+import { useHeaderBudget } from '../../hooks/useMasterFormValue'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
 import {
@@ -2000,12 +2000,7 @@ const Request = ({
     () => (isGenericWorkflow ? getFormPanels(overviewWorkflowData) : []),
     [isGenericWorkflow, overviewWorkflowData],
   )
-  const masterBudget = useMasterFormValue(
-    genericFormPanels,
-    genericFormModel,
-    'Budget',
-    '0',
-  )
+  const headerBudget = useHeaderBudget(genericFormPanels, genericFormModel)
 
   const resolvedRequestNo = useMemo(() => {
     let raw = ''
@@ -2996,7 +2991,7 @@ const Request = ({
           agentData={currentAgentData}
           approveLoading={submitting}
           assigneeLabel={assigneeLabel}
-          budget={masterBudget}
+          budget={headerBudget}
           currency={currency}
           enableAIInsights={hasAgentData}
           hideActions={hideActions}

@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import React, { useEffect, useMemo, useState } from 'react'
 // import TableSort from '@/components/base/data-table/actions/TableSort'
 // import TableColumns from '@/components/base/data-table/actions/TableColumns'
@@ -1382,7 +1382,13 @@ const InboxList: React.FC<InboxListProps> = ({
       const workflowId = workflow?.id
       if (!workflowId) return
 
-      const controlName = field.label || field.id
+      const schemaField = filterFields.find(
+        (f) =>
+          f.sqlColumnName === field.id ||
+          f.name === field.id ||
+          f.name === field.label,
+      )
+      const controlName = schemaField?.name || field.label || field.id
       try {
         const res = await workflowsApiV6.getControlValues(
           String(workflowId),
@@ -1402,8 +1408,84 @@ const InboxList: React.FC<InboxListProps> = ({
         console.error('Failed to fetch control values for', controlName, e)
       }
     },
-    [workflow?.id],
+    [filterFields, workflow?.id],
   )
+
+  // Accounts Payable quick filters read their option lists from the same
+  // control-values API, keyed by the field names in the filter schema.
+  const findSchemaFieldName = (candidates: string[]) =>
+    filterFields.find((f) =>
+      candidates.includes(String(f.name || '').toLowerCase().trim()),
+    )?.name
+  const supplierControlName = findSchemaFieldName([
+    'supplier name',
+    'vendor name',
+    'supplier',
+    'vendor',
+  ])
+  const matchedStatusControlName = findSchemaFieldName([
+    'matched status',
+    'status',
+    'decision',
+  ])
+  const loadControlOptions = async (controlName?: string) => {
+    if (!workflow?.id || !controlName) return []
+    const res = await workflowsApiV6.getControlValues(
+      String(workflow.id),
+      controlName,
+    )
+    if (res.error) throw new Error(res.error)
+    return Array.isArray(res.data?.values)
+      ? Array.from(
+          new Set(
+            res.data.values
+              .map((value: unknown) => String(value ?? '').trim())
+              .filter(Boolean),
+          ),
+        )
+      : []
+  }
+  const { data: supplierValues = [] } = useQuery({
+    enabled: Boolean(workflow?.id && supplierControlName),
+    queryFn: () => loadControlOptions(supplierControlName),
+    queryKey: ['control-values', workflow?.id, supplierControlName],
+    staleTime: 60_000,
+  })
+  const { data: matchedStatusValues = [] } = useQuery({
+    enabled: Boolean(workflow?.id && matchedStatusControlName),
+    queryFn: () => loadControlOptions(matchedStatusControlName),
+    queryKey: ['control-values', workflow?.id, matchedStatusControlName],
+    staleTime: 60_000,
+  })
+  const supplierOptions = useMemo(
+    () =>
+      [...supplierValues]
+        .sort((a, b) => a.localeCompare(b))
+        .map((value) => ({ label: value, value })),
+    [supplierValues],
+  )
+  const discrepancyOptions = useMemo(() => {
+    const values = matchedStatusValues.filter(
+      (value) => value.toLowerCase().replace(/[\s_-]/g, '') !== 'matched',
+    )
+    if (values.length === 0) {
+      return [
+        { label: t`All`, value: 'discrepancies:discrepancies' },
+        { label: t`Not Matched`, value: 'discrepancies:NOT_MATCHED' },
+        {
+          label: t`Partially Matched`,
+          value: 'discrepancies:PARTIALLY_MATCHED',
+        },
+      ]
+    }
+    return [
+      { label: t`All`, value: 'discrepancies:discrepancies' },
+      ...values.map((value) => ({
+        label: value,
+        value: `discrepancies:${value}`,
+      })),
+    ]
+  }, [matchedStatusValues, t])
 
   const optionalFilterFields = useMemo<DynamicFilterField[]>(() => {
     if (filterFields && filterFields.length > 0) {
@@ -1520,8 +1602,12 @@ const InboxList: React.FC<InboxListProps> = ({
     newFilters.forEach((f) => store.toggleQuickFilter(f))
   }
 
+  // With the filter schema loaded, the list API applies the filters (see
+  // onFilterClausesChange), so the returned page is not filtered again here.
+  const isServerFiltering = Boolean(onFilterClausesChange && isFilterFieldsLoaded)
   const quickFilteredRows = useMemo(() => {
     if (
+      isServerFiltering ||
       viewMode === 'kanban' ||
       activeTab !== 'Inbox' ||
       activeQuickFilters.length === 0
@@ -1530,7 +1616,7 @@ const InboxList: React.FC<InboxListProps> = ({
     }
 
     return filterRowsByQuickFilters(flatRows, activeQuickFilters)
-  }, [flatRows, activeQuickFilters, activeTab, viewMode])
+  }, [flatRows, activeQuickFilters, activeTab, isServerFiltering, viewMode])
 
   // ✅ Filter rows based on search state
   const filteredFlatRows = useMemo(() => {
@@ -2015,6 +2101,9 @@ const InboxList: React.FC<InboxListProps> = ({
                   {
                     id: 'Supplier Name',
                     label: t`Supplier`,
+                    options: supplierOptions.length
+                      ? supplierOptions
+                      : undefined,
                     valueGetter: (row) => getRowColumnValue(row, 'vendor'),
                   },
                 ]
@@ -2040,20 +2129,7 @@ const InboxList: React.FC<InboxListProps> = ({
                     icon: 'tabler:alert-triangle',
                     id: 'discrepancies',
                     label: t`Discrepancies`,
-                    options: [
-                      {
-                        label: t`All`,
-                        value: 'discrepancies:discrepancies',
-                      },
-                      {
-                        label: t`Not Matched`,
-                        value: 'discrepancies:NOT_MATCHED',
-                      },
-                      {
-                        label: t`Partially Matched`,
-                        value: 'discrepancies:PARTIALLY_MATCHED',
-                      },
-                    ],
+                    options: discrepancyOptions,
                     type: 'category',
                   },
                   {

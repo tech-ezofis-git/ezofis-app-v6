@@ -87,6 +87,12 @@ interface Props {
   panels?: any[]
   preparePhase?: 'extracting' | 'uploading' | null
   repoFieldHints?: string[]
+  /**
+   * Stops master "Fill Value" syncing. Defaults to `viewOnly`; the form
+   * renderer passes the form-level view-only flag so a disabled (locked)
+   * sync field still receives its master value.
+   */
+  syncReadOnly?: boolean
   viewOnly?: boolean
   // Extra files picked on a multiple-files upload field; the first file stays
   // in the field, the rest join the request's attachments.
@@ -938,6 +944,7 @@ const FieldRendererBase = ({
   preparePhase,
   repoFieldHints,
   repositoryId,
+  syncReadOnly,
   value,
   viewOnly,
   onAddAttachments,
@@ -1183,7 +1190,7 @@ const FieldRendererBase = ({
       allFields={allFields}
       field={field}
       formModel={formModel || {}}
-      readOnly={readOnly}
+      readOnly={syncReadOnly ?? readOnly}
       value={value}
       onChange={onChange}
     />

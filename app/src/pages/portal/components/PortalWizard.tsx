@@ -43,6 +43,11 @@ import {
 import RepoFieldsPanel from '@/pages/requests/components/workflow-request/components/RepoFieldsPanel'
 import UploadedFilePreview from '@/pages/requests/components/workflow-request/components/UploadedFilePreview'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import { useHeaderBudget } from '@/pages/requests/hooks/useMasterFormValue'
+import {
+  computeWorkflowStages,
+  getStageTrail,
+} from '@/pages/requests/utils/workflow.utils'
 import {
   WorkflowNameContext,
   WorkflowRepositoryIdContext,
@@ -80,6 +85,7 @@ import {
   type PortalWizardSource,
 } from '../helpers/portalWizardLoad'
 import { getStartActionLabel } from '../helpers/portalWorkflowAccess'
+import type { PortalHeaderInfo } from './PortalShell'
 import PortalDocumentUpload from './PortalDocumentUpload'
 import { PortalDetailSkeleton } from './PortalLayoutSkeleton'
 
@@ -114,6 +120,8 @@ type PortalWizardProps = {
     } | null,
   ) => void
   onCountsChange?: (counts: { attachments: number; comments: number }) => void
+  /** Stage trail and budget shown in the portal header. */
+  onHeaderInfoChange?: (info: PortalHeaderInfo | null) => void
   onSubmitted: () => void
 }
 
@@ -127,6 +135,7 @@ const PortalWizard = ({
   onCancel,
   onChromeChange,
   onCountsChange,
+  onHeaderInfoChange,
   onSubmitted,
 }: PortalWizardProps) => {
   const { t } = useLingui()
@@ -1190,6 +1199,31 @@ const PortalWizard = ({
       onChromeChange?.(null)
     },
     [onChromeChange],
+  )
+
+  // Header: where this new request will go, and the budget from its form.
+  const headerStageTrail = useMemo(
+    () =>
+      source?.workflow
+        ? getStageTrail(
+            computeWorkflowStages({ history: [], workflow: source.workflow }),
+            source.workflow,
+          )
+        : [],
+    [source?.workflow],
+  )
+  const headerBudget = useHeaderBudget(panels, tableUploadModel)
+  useEffect(() => {
+    onHeaderInfoChange?.({
+      budget: headerBudget,
+      stageTrail: headerStageTrail,
+    })
+  }, [headerBudget, headerStageTrail, onHeaderInfoChange])
+  useEffect(
+    () => () => {
+      onHeaderInfoChange?.(null)
+    },
+    [onHeaderInfoChange],
   )
 
   // Files added at the request level (the document upload and Attachments)

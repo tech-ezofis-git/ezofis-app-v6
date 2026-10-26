@@ -856,6 +856,10 @@ export function useFolderExplorer() {
   const isInitialMountRef = useRef(true)
   const prevActiveFolderRef = useRef(activeFolder)
   const isViewChangingRef = useRef(false)
+  // Grid view + a filter applied: switch to list view, whose load fetches
+  // every matching file. Returns true when it switched (the view change
+  // runs the load, so the caller skips its own).
+  const switchToListForFiltersRef = useRef<() => boolean>(() => false)
 
   useEffect(() => {
     if (!activeFolder) return
@@ -1047,6 +1051,8 @@ export function useFolderExplorer() {
     // Multi-select: keep local filtering while menu is open; API runs on close.
     if (deferFilterApiRef.current) return
 
+    if (switchToListForFiltersRef.current()) return
+
     cursorByFolderRef.current[activeFolder] = { 1: null }
     folderLoadLockRef.current = false
     lastRequestedFolderPageRef.current[activeFolder] = 1
@@ -1083,6 +1089,8 @@ export function useFolderExplorer() {
       if (getFilterSnapshot() === deferFilterSnapshotRef.current) return
 
       if (!activeFolder) return
+
+      if (switchToListForFiltersRef.current()) return
 
       cursorByFolderRef.current[activeFolder] = { 1: null }
       folderLoadLockRef.current = false
@@ -1312,6 +1320,19 @@ export function useFolderExplorer() {
 
     setViewModeState(nextView)
     setAppView('explorer')
+  }
+
+  switchToListForFiltersRef.current = () => {
+    if (viewMode !== 'grid' || embedMode.isEmbed) return false
+    const hasFilter = [fileFiltersRef.current, folderFiltersRef.current].some(
+      (filters) =>
+        Object.values(filters || {}).some((value) =>
+          String(value ?? '').trim(),
+        ),
+    )
+    if (!hasFilter) return false
+    changeViewMode('list')
+    return true
   }
 
   const openFile = (id: string) => {

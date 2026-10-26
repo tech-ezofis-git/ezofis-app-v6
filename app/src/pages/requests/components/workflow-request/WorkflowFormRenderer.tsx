@@ -13,7 +13,9 @@ import { getFieldAttachmentMap } from '@/pages/requests/utils/fieldAttachmentMap
 import cn from '@/utils/cn'
 import ExtractedFieldCell from './components/ExtractedFieldCell'
 import FieldRenderer from './components/FieldRenderer'
+import MasterFillSync from './components/MasterFillSync'
 import {
+  fillsFromElsewhere,
   getColumnSizeClass,
   getDependentChildFieldIds,
   isFieldFilled,
@@ -418,6 +420,39 @@ const WorkflowFormRenderer = ({
     }
   }
 
+  // Hidden fields are not rendered, so their master "Fill Value" sync would
+  // never run. Mount just the sync (no UI) for hidden fields that fill from
+  // a master table or another field, so their values stay current.
+  const allFormFields = useMemo(
+    () => (panels || []).flatMap((panel: any) => panel?.fields || []),
+    [panels],
+  )
+  const hiddenFillSyncs = allFormFields
+    .filter((field: any) => {
+      if (!fillsFromElsewhere(field)) return false
+      if (
+        !['SHORT_TEXT', 'NUMBER', 'DATE', 'DATE_TIME'].includes(
+          resolveRuntimeFieldType(field),
+        )
+      ) {
+        return false
+      }
+      const state = evaluatedFieldStates[field.id]
+      const isHiddenByRule = state ? !state.visible : isFieldHidden(field)
+      return isHiddenByRule || Boolean(hiddenFieldIds?.has(field.id))
+    })
+    .map((field: any) => (
+      <MasterFillSync
+        allFields={allFormFields}
+        field={field}
+        formModel={formModel || {}}
+        key={`fill-sync-${field.id}`}
+        readOnly={Boolean(viewOnly)}
+        value={formModel?.[field.id]}
+        onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
+      />
+    ))
+
   const resolvePanelValue = (panel: any, index: number) =>
     getPanelValue?.(panel, index) || `panel-${index}`
 
@@ -527,6 +562,7 @@ const WorkflowFormRenderer = ({
                     Boolean(preparePhase) &&
                     preparingFieldId === String(field.id)
                   }
+                  syncReadOnly={Boolean(viewOnly)}
                   viewOnly={isFieldEffectiveReadOnly}
                   onAddAttachments={onAddAttachments}
                   onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
@@ -596,6 +632,7 @@ const WorkflowFormRenderer = ({
                 isPreparing={
                   Boolean(preparePhase) && preparingFieldId === String(field.id)
                 }
+                syncReadOnly={Boolean(viewOnly)}
                 viewOnly={isFieldEffectiveReadOnly}
                 onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
                 onMultiFieldChange={(patch) => {
@@ -645,6 +682,7 @@ const WorkflowFormRenderer = ({
           }
         >
           {stageBar}
+          {hiddenFillSyncs}
           <AnimateFadeIn delay={0.1}>
             <div className='flex flex-col gap-6'>
               {panels.map((panel: any, panelIndex: number) => {
@@ -686,6 +724,7 @@ const WorkflowFormRenderer = ({
       }
     >
       {stageBar}
+      {hiddenFillSyncs}
       <AnimateFadeIn delay={0.1}>
         <Accordion
           multiple={!exclusive}
