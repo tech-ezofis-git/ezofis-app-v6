@@ -435,12 +435,12 @@ export const getRepositoryItemFilterFields = async (repositoryId: string) => {
     const payload = unwrap(data) as RepositoryItemFilterFieldsResponse
     const fields = Array.isArray(payload?.fields)
       ? payload.fields.filter(
-          (field) =>
-            Boolean(field?.sqlColumnName || field?.name) &&
-            !EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES.has(
-              String(field?.dataType || '').toUpperCase(),
-            ),
-        )
+        (field) =>
+          Boolean(field?.sqlColumnName || field?.name) &&
+          !EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES.has(
+            String(field?.dataType || '').toUpperCase(),
+          ),
+      )
       : []
 
     response.data = { fields }
@@ -901,14 +901,14 @@ export const updateRepositoryItemMetadata = async (payload: {
   return response
 }
 
-// Keep the API object extensible for existing imports.
-;(authApiV6 as any).getRepositoryItems = getRepositoryItems
-;(authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
-;(authApiV6 as any).shareRepositoryItem = shareRepositoryItem
-;(authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
-;(authApiV6 as any).getSharedWithMe = getSharedWithMe
-;(authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
-;(authApiV6 as any).deleteRepositoryItem = deleteRepositoryItem
+  // Keep the API object extensible for existing imports.
+  ; (authApiV6 as any).getRepositoryItems = getRepositoryItems
+  ; (authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
+  ; (authApiV6 as any).shareRepositoryItem = shareRepositoryItem
+  ; (authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
+  ; (authApiV6 as any).getSharedWithMe = getSharedWithMe
+  ; (authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
+  ; (authApiV6 as any).deleteRepositoryItem = deleteRepositoryItem
 
 export interface RepositoryItemCommentsDto {
   comments?: Array<Record<string, any>>
@@ -1268,7 +1268,7 @@ export const uploadForOcr = async (
 // `ocrResult` (possibly a JSON string) is returned as `data.ocrResult`.
 const STATIC_METADATA_TOKEN = 'TenantId 7'
 // Fixed repository for now, to confirm whether the endpoint needs one.
-const STATIC_METADATA_REPOSITORY_ID = '3'
+const STATIC_METADATA_REPOSITORY_ID = '1'
 // Lives on a different host than the rest of V6, so the absolute URL bypasses
 // axiosV6's baseURL.
 const STATIC_METADATA_URL =
@@ -1456,8 +1456,8 @@ const fetchRepositoryItemAiSummary = async (payload: {
     const { data, status } = await axiosV6({
       headers: language
         ? {
-            'Accept-Language': language,
-          }
+          'Accept-Language': language,
+        }
         : undefined,
       method: 'POST',
       // Long-running; do not abort when React Strict Mode remounts.
@@ -1549,14 +1549,14 @@ export const getRepositoryItemAiSummary = async (payload: {
   inflightAiSummaryRequests.set(key, request)
   return request
 }
-;(authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
-;(authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
-;(authApiV6 as any).getRepositoryItemRelatedSaved =
-  getRepositoryItemRelatedSaved
-;(authApiV6 as any).saveRepositoryItemRelated = saveRepositoryItemRelated
-;(authApiV6 as any).deleteRepositoryItemRelatedSaved =
-  deleteRepositoryItemRelatedSaved
-;(authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
-;(authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
-;(authApiV6 as any).uploadForOcr = uploadForOcr
-;(authApiV6 as any).UploadFiles = UploadFiles
+  ; (authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
+  ; (authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
+  ; (authApiV6 as any).getRepositoryItemRelatedSaved =
+    getRepositoryItemRelatedSaved
+  ; (authApiV6 as any).saveRepositoryItemRelated = saveRepositoryItemRelated
+  ; (authApiV6 as any).deleteRepositoryItemRelatedSaved =
+    deleteRepositoryItemRelatedSaved
+  ; (authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
+  ; (authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
+  ; (authApiV6 as any).uploadForOcr = uploadForOcr
+  ; (authApiV6 as any).UploadFiles = UploadFiles
