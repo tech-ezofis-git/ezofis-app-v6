@@ -11,6 +11,8 @@ interface Props {
   activePanel?: SidePanel | null
   attachmentCount?: number
   badge?: string
+  /** Master form "Remaining Budget" for the request's lookup values. */
+  budget?: string | null
   commentCount?: number
   isSubmitDisabled?: boolean
   isSubmitting?: boolean
@@ -28,6 +30,7 @@ const Header = ({
   activePanel,
   attachmentCount = 0,
   badge,
+  budget,
   commentCount = 0,
   isSubmitDisabled,
   isSubmitting,
@@ -96,6 +99,28 @@ const Header = ({
       ) : null}
 
       <div className='flex shrink-0 items-center gap-1'>
+        {(() => {
+          const raw = String(budget ?? '').trim()
+          if (!raw) return null
+          const amount = Number(raw.replace(/[^0-9.-]/g, ''))
+          const isAmount =
+            /\d/.test(raw) && Number.isFinite(amount) && !/[a-z]/i.test(raw)
+          return (
+            <div className='mr-2 flex shrink-0 flex-col border-r border-gray-3 pr-3 text-right'>
+              <span className='mb-1 text-[10px] leading-none font-semibold whitespace-nowrap text-gray-11'>
+                {t`Budget`}
+              </span>
+              <span className='text-13 leading-tight font-semibold whitespace-nowrap text-primary-9'>
+                {isAmount
+                  ? `$ ${amount.toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                      minimumFractionDigits: 2,
+                    })}`
+                  : raw}
+              </span>
+            </div>
+          )
+        })()}
         {/* <Tooltip content={t`Console / Workflow API`} position='bottom'>
           <button
             aria-label={t`Console`}
