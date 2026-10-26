@@ -14,6 +14,8 @@ export type Delegation = {
   isDraft: boolean
   modifiedAt: string
   onPeriodEnd: DelegationEndAction
+  /** Status computed by the server on read, when loaded from the API. */
+  status?: DelegationStatus
   toDate: string
 }
 
@@ -39,8 +41,9 @@ export const DATE_FORMAT = 'YYYY-MM-DD'
 export const todayIso = () => dayjs().format(DATE_FORMAT)
 
 export const getDelegationStatus = (item: Delegation): DelegationStatus => {
-  if (item.isDraft) return 'Draft'
+  if (item.isDraft || !item.fromDate || !item.toDate) return 'Draft'
   if (item.endedEarly) return 'Ended'
+  if (item.status) return item.status
   const today = todayIso()
   if (item.fromDate && today < item.fromDate) return 'Scheduled'
   if (item.toDate && today > item.toDate) return 'Completed'

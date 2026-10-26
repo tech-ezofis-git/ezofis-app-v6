@@ -3690,8 +3690,13 @@ export function DocumentDetailsView({
                         <div className='flex flex-col gap-3'>
                           {ticketData.history.map(
                             (hist: any, index: number) => {
+                              // Last step is pending unless the workflow has
+                              // already completed (milestone "completed").
                               const isPending =
-                                index === ticketData.history.length - 1
+                                index === ticketData.history.length - 1 &&
+                                String(hist.milestone || '')
+                                  .trim()
+                                  .toLowerCase() !== 'completed'
                               return (
                                 <div
                                   key={index}

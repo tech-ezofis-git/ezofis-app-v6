@@ -43,6 +43,7 @@ import {
 type DelegationWizardProps = {
   existing: Delegation[]
   initial?: Delegation | null
+  isSaving?: boolean
   onBackToSettings: () => void
   onCancel: () => void
   onSave: (delegation: Delegation) => void
@@ -91,6 +92,7 @@ const emptyRow = (): DelegationRow => ({
 export default function DelegationWizard({
   existing,
   initial,
+  isSaving,
   onBackToSettings,
   onCancel,
   onSave,
@@ -356,6 +358,7 @@ export default function DelegationWizard({
       activeStep={activeStep}
       headerDescription={msg`Hand over workflow requests to backup users for specific dates and workflows.`}
       isNextHidden={readOnly && activeStep === STEP_MSGS.length - 1}
+      isSaving={isSaving}
       moduleTitle={msg`Delegations`}
       saveLabel={isEdit ? t`Save changes` : t`Create delegation`}
       steps={steps}
@@ -363,6 +366,7 @@ export default function DelegationWizard({
         !readOnly && !isEdit && activeStep === STEP_MSGS.length - 1 ? (
           <Button
             color='gray'
+            disabled={isSaving}
             label={t`Save as draft`}
             variant='outline'
             onClick={() => handleSave(true)}

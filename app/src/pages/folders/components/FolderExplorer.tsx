@@ -72,6 +72,7 @@ export function FolderExplorer() {
     openFile,
     openFileAction,
     openFolder,
+    openFolderFromBreadcrumb,
     refreshData,
     refreshing,
     repositoryNodes,
@@ -612,15 +613,15 @@ export function FolderExplorer() {
           selectFolder('')
           setAppView('explorer')
         } else {
-          void openFolder('')
+          openFolderFromBreadcrumb('')
         }
         return
       }
 
       if (appView === 'Upload') selectFolder(key)
-      else void openFolder(key)
+      else openFolderFromBreadcrumb(key)
     },
-    [appView, openFolder, selectFolder, setAppView, tree],
+    [appView, openFolderFromBreadcrumb, selectFolder, setAppView, tree],
   )
 
   const foldersTopbar = useMemo(() => {
@@ -986,7 +987,7 @@ export function FolderExplorer() {
           view={viewMode}
           setView={changeViewMode}
           onAiSummary={(id) => handleFileAction(id, 'aiSummary')}
-          onBreadcrumbSelect={openFolder}
+          onBreadcrumbSelect={openFolderFromBreadcrumb}
           onDeleteFile={handleDeleteArchivedFile}
           onDeleteStagedFile={handleDeleteStagedFile}
           onEdit={
@@ -1092,7 +1093,7 @@ export function FolderExplorer() {
               canGoBack={canGoBackInExplorer}
               loading={loading}
               onBack={goBackInExplorer}
-              onSelect={openFolder}
+              onSelect={openFolderFromBreadcrumb}
             />
           ) : null}
           <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>

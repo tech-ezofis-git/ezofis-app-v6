@@ -1,13 +1,23 @@
 import { useLingui } from '@lingui/react/macro'
-import { useQuery } from '@tanstack/react-query'
-import dayjs from 'dayjs'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { getUsers } from '@/api/v6/user'
+import {
+  createDelegation,
+  deleteDelegation,
+  endDelegation,
+  listDelegations,
+  updateDelegation,
+} from '@/api/v6/workflowDelegations'
 import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
 } from '@/api/v6/workflows'
-import IconButton from '@/components/base/button/IconButton'
+import Button from '@/components/base/button/Button'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import Icon from '@/components/base/icon/Icon'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
+import Skeleton from '@/components/base/Skeleton'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
@@ -22,7 +32,6 @@ import {
   formatShortDay,
   getDelegationStatus,
   STATUS_TONE,
-  todayIso,
 } from './delegationHelpers'
 import DelegationWizard from './DelegationWizard'
 
@@ -43,14 +52,35 @@ const STATUS_FILTERS: Array<'all' | DelegationStatus> = [
   'Ended',
 ]
 
+const DELEGATIONS_KEY = ['workflow-delegations']
+
 /**
- * Settings › Delegations: list of delegations created in this session and a
- * wizard to create one. There is no delegation API yet, so saving logs the
- * delegation JSON to the console.
+ * Settings › Delegations: the tenant's delegations (GET /workflow-delegations)
+ * and a wizard to create or edit one. Saving, ending and deleting call the
+ * workflow-delegations API and refresh the list.
  */
 export default function DelegationSettings({ onBack }: { onBack: () => void }) {
   const { t } = useLingui()
-  const [delegations, setDelegations] = useState<Delegation[]>([])
+  const queryClient = useQueryClient()
+  const delegationsQuery = useQuery({
+    queryFn: listDelegations,
+    queryKey: DELEGATIONS_KEY,
+  })
+  const delegations = useMemo(
+    () => delegationsQuery.data || [],
+    [delegationsQuery.data],
+  )
+  const [deleting, setDeleting] = useState<Delegation | null>(null)
+  // Manual refresh shows the row skeleton until the list has reloaded.
+  const [refreshing, setRefreshing] = useState(false)
+  const refreshNow = async () => {
+    setRefreshing(true)
+    try {
+      await delegationsQuery.refetch()
+    } finally {
+      setRefreshing(false)
+    }
+  }
   const [editing, setEditing] = useState<Delegation | null | undefined>(
     undefined,
   )
@@ -114,11 +144,63 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [delegations, query, statusFilter, usersQuery.data, workflowsQuery.data])
 
-  const upsert = (item: Delegation) =>
-    setDelegations((prev) =>
-      prev.some((existing) => existing.id === item.id)
-        ? prev.map((existing) => (existing.id === item.id ? item : existing))
-        : [item, ...prev],
+  const refreshList = () =>
+    queryClient.invalidateQueries({ queryKey: DELEGATIONS_KEY })
+  const showError = (error: Error) =>
+    showToast({ message: error.message, variant: 'error' })
+
+  const saveMutation = useMutation({
+    mutationFn: (item: Delegation) =>
+      editing?.id ? updateDelegation(editing.id, item) : createDelegation(item),
+    onError: showError,
+    onSuccess: (saved) => {
+      void refreshList()
+      setEditing(undefined)
+      showToast({
+        message: saved.isDraft
+          ? t`Saved as draft`
+          : editing?.id
+            ? t`Delegation updated`
+            : t`Delegation created`,
+        variant: 'success',
+      })
+    },
+  })
+  const duplicateMutation = useMutation({
+    mutationFn: (item: Delegation) =>
+      createDelegation({ ...item, fromDate: '', isDraft: true, toDate: '' }),
+    onError: showError,
+    onSuccess: () => {
+      void refreshList()
+      showToast({
+        message: t`Copied as a draft — set new dates to activate`,
+        variant: 'success',
+      })
+    },
+  })
+  const endMutation = useMutation({
+    mutationFn: (item: Delegation) => endDelegation(item.id),
+    onError: showError,
+    onSuccess: (ended) => {
+      void refreshList()
+      showToast({
+        message: t`Delegation ended — open requests return to ${userName(ended.assigneeUserId)}`,
+        variant: 'success',
+      })
+    },
+  })
+  const deleteMutation = useMutation({
+    mutationFn: (item: Delegation) => deleteDelegation(item.id),
+    onError: showError,
+    onSuccess: () => {
+      void refreshList()
+      setDeleting(null)
+      showToast({ message: t`Delegation deleted`, variant: 'success' })
+    },
+  })
+  const rowBusy = (id: string) =>
+    [duplicateMutation, endMutation, deleteMutation].some(
+      (mutation) => mutation.isPending && mutation.variables?.id === id,
     )
 
   if (editing !== undefined) {
@@ -126,22 +208,10 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
       <DelegationWizard
         existing={delegations}
         initial={editing}
+        isSaving={saveMutation.isPending}
         onBackToSettings={onBack}
         onCancel={() => setEditing(undefined)}
-        onSave={(item) => {
-          // No delegation API yet: the saved JSON goes to the console.
-          console.log('Delegation JSON', JSON.stringify(item, null, 2))
-          upsert(item)
-          setEditing(undefined)
-          showToast({
-            message: item.isDraft
-              ? t`Saved as draft`
-              : editing
-                ? t`Delegation updated`
-                : t`Delegation created`,
-            variant: 'success',
-          })
-        }}
+        onSave={(item) => saveMutation.mutate(item)}
       />
     )
   }
@@ -180,19 +250,38 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
           </div>
         }
         toolbar={
-          <label className='flex h-9 w-full items-center gap-2 rounded-lg border border-gray-5 bg-surface px-3 focus-within:border-primary-8 sm:w-64'>
-            <Icon
-              className='size-4 shrink-0 text-gray-9'
-              name='tabler:search'
-            />
-            <input
-              aria-label={t`Search delegations`}
-              className='min-w-0 flex-1 bg-transparent text-13 text-gray-13 outline-none placeholder:text-gray-8'
-              placeholder={t`Search assignee, delegate…`}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </label>
+          <div className='flex w-full items-center gap-2 sm:w-auto'>
+            <label className='flex h-9 w-full items-center gap-2 rounded-lg border border-gray-5 bg-surface px-3 focus-within:border-primary-8 sm:w-64'>
+              <Icon
+                className='size-4 shrink-0 text-gray-9'
+                name='tabler:search'
+              />
+              <input
+                aria-label={t`Search delegations`}
+                className='min-w-0 flex-1 bg-transparent text-13 text-gray-13 outline-none placeholder:text-gray-8'
+                placeholder={t`Search assignee, delegate…`}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
+            <Tooltip content={t`Refresh`} position='top'>
+              <button
+                aria-label={t`Refresh delegations`}
+                className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-gray-5 bg-surface text-gray-11 transition-colors hover:border-primary-7 hover:text-primary-11 active:scale-95 disabled:opacity-60'
+                disabled={delegationsQuery.isFetching}
+                type='button'
+                onClick={() => void refreshNow()}
+              >
+                <Icon
+                  name='tabler:refresh'
+                  className={cn(
+                    'size-4',
+                    delegationsQuery.isFetching && 'animate-spin',
+                  )}
+                />
+              </button>
+            </Tooltip>
+          </div>
         }
         onBack={onBack}
       />
@@ -201,7 +290,7 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
         {/* Fills the page; rows scroll inside under a sticky header. */}
         <div className='ez-scrollbar min-h-0 flex-1 overflow-auto overscroll-contain rounded-xl border border-gray-4 bg-surface'>
           <div className='flex min-h-full min-w-[860px] flex-col'>
-            <div className='sticky top-0 z-10 grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,1fr)_110px_120px] items-center gap-3 border-b border-gray-4 bg-gray-2 px-5 py-3 text-13 font-medium text-gray-11'>
+            <div className='sticky top-0 z-10 grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,1fr)_110px_56px] items-center gap-3 border-b border-gray-4 bg-gray-2 px-5 py-3 text-13 font-medium text-gray-11'>
               <span>{t`Assignee`}</span>
               <span>{t`Delegated To`}</span>
               <span>{t`Workflows`}</span>
@@ -209,7 +298,42 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
               <span>{t`Status`}</span>
               <span />
             </div>
-            {visible.length === 0 ? (
+            {delegationsQuery.isLoading || refreshing ? (
+              <div aria-busy='true' className='flex flex-col'>
+                {[0, 1, 2, 3, 4].map((index) => (
+                  <div
+                    className='grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,1fr)_110px_56px] items-center gap-3 border-b border-gray-3 px-5 py-4'
+                    key={index}
+                  >
+                    <Skeleton className='h-4 w-32' />
+                    <Skeleton className='h-4 w-28' />
+                    <Skeleton className='h-5 w-36 rounded-md' />
+                    <Skeleton className='h-4 w-28' />
+                    <Skeleton className='h-5 w-20 rounded-full' />
+                    <span />
+                  </div>
+                ))}
+              </div>
+            ) : delegationsQuery.isError ? (
+              <div className='flex flex-1 flex-col items-center justify-center gap-3 px-6 py-14 text-center'>
+                <span className='flex size-12 items-center justify-center rounded-full bg-red-2 text-red-11'>
+                  <Icon className='size-5' name='tabler:alert-triangle' />
+                </span>
+                <p className='text-14 font-semibold text-gray-13'>
+                  {t`We couldn't load delegations.`}
+                </p>
+                <p className='max-w-sm text-13 text-gray-10'>
+                  {delegationsQuery.error?.message}
+                </p>
+                <Button
+                  icon='tabler:refresh'
+                  label={t`Retry`}
+                  size='sm'
+                  variant='outline'
+                  onClick={() => void delegationsQuery.refetch()}
+                />
+              </div>
+            ) : visible.length === 0 ? (
               <div className='flex flex-1 flex-col items-center justify-center gap-2 px-6 py-14 text-center'>
                 <span className='flex size-12 items-center justify-center rounded-full bg-primary-2 text-primary-11'>
                   <Icon className='size-5' name='tabler:user-share' />
@@ -239,7 +363,7 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
                 const finished = status === 'Completed' || status === 'Ended'
                 return (
                   <div
-                    className='grid cursor-pointer grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,1fr)_110px_120px] items-center gap-3 border-b border-gray-3 px-5 py-3 text-13 transition-colors last:border-b-0 hover:bg-gray-2'
+                    className='grid cursor-pointer grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,1fr)_110px_56px] items-center gap-3 border-b border-gray-3 px-5 py-3 text-13 transition-colors hover:bg-gray-2'
                     key={item.id}
                     role='button'
                     tabIndex={0}
@@ -293,80 +417,56 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
                       </span>
                     </span>
                     <span
-                      className='flex justify-end gap-1'
+                      className='flex justify-end'
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <Tooltip content={finished ? t`View` : t`Edit`}>
-                        <IconButton
-                          ariaLabel={finished ? t`View` : t`Edit`}
-                          color='gray'
-                          icon={finished ? 'tabler:eye' : 'tabler:pencil'}
-                          size='sm'
-                          variant='ghost'
+                      <Menu
+                        position='bottom-end'
+                        width={200}
+                        withinPortal
+                        target={
+                          <button
+                            aria-label={t`More actions`}
+                            className='flex size-8 items-center justify-center rounded-lg text-gray-11 transition-colors hover:bg-gray-3 active:scale-95 disabled:opacity-50 aria-expanded:bg-gray-4'
+                            disabled={rowBusy(item.id)}
+                            type='button'
+                          >
+                            <Icon
+                              className='size-[18px]'
+                              name={
+                                rowBusy(item.id)
+                                  ? 'tabler:loader-2'
+                                  : 'tabler:dots-vertical'
+                              }
+                            />
+                          </button>
+                        }
+                      >
+                        <MenuItem
+                          icon={finished ? 'tabler:eye' : 'tabler:edit'}
+                          label={finished ? t`View details` : t`Edit`}
                           onClick={() => setEditing(item)}
                         />
-                      </Tooltip>
-                      <Tooltip content={t`Duplicate as draft`}>
-                        <IconButton
-                          ariaLabel={t`Duplicate as draft`}
-                          color='gray'
+                        <MenuItem
                           icon='tabler:copy'
-                          size='sm'
-                          variant='ghost'
-                          onClick={() =>
-                            upsert({
-                              ...item,
-                              delegations: item.delegations.map((row) => ({
-                                ...row,
-                              })),
-                              endedEarly: false,
-                              fromDate: '',
-                              id: `${Date.now()}`,
-                              isDraft: true,
-                              modifiedAt: dayjs().toISOString(),
-                              toDate: '',
-                            })
-                          }
+                          label={t`Duplicate`}
+                          onClick={() => duplicateMutation.mutate(item)}
                         />
-                      </Tooltip>
-                      {status === 'Active' ? (
-                        <Tooltip content={t`End delegation now`}>
-                          <IconButton
-                            ariaLabel={t`End delegation now`}
-                            color='gray'
+                        {status === 'Active' ? (
+                          <MenuItem
                             icon='tabler:player-stop'
-                            size='sm'
-                            variant='ghost'
-                            onClick={() => {
-                              const ended = {
-                                ...item,
-                                endedEarly: true,
-                                modifiedAt: dayjs().toISOString(),
-                                toDate: todayIso(),
-                              }
-                              console.log(
-                                'Delegation JSON',
-                                JSON.stringify(ended, null, 2),
-                              )
-                              upsert(ended)
-                            }}
+                            label={t`End delegation now`}
+                            onClick={() => endMutation.mutate(item)}
                           />
-                        </Tooltip>
-                      ) : null}
-                      <Tooltip content={t`Delete`}>
-                        <IconButton
-                          ariaLabel={t`Delete`}
-                          color='red'
+                        ) : null}
+                        <MenuItem
+                          className='text-red-11'
                           icon='tabler:trash'
-                          size='sm'
-                          variant='ghost'
-                          onClick={() =>
-                            setDelegations((prev) =>
-                              prev.filter((other) => other.id !== item.id),
-                            )
-                          }
+                          iconClass='text-red-11'
+                          label={t`Delete`}
+                          onClick={() => setDeleting(item)}
                         />
-                      </Tooltip>
+                      </Menu>
                     </span>
                   </div>
                 )
@@ -381,6 +481,22 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
           </span>
         </div>
       </div>
+      <ConfirmDialog
+        confirmLabel={t`Delete`}
+        isConfirming={deleteMutation.isPending}
+        opened={Boolean(deleting)}
+        title={t`Delete delegation`}
+        variant='danger'
+        description={
+          deleting
+            ? t`Delete the delegation for ${userName(deleting.assigneeUserId)}? Requests stop routing to the delegate.`
+            : ''
+        }
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => {
+          if (deleting) deleteMutation.mutate(deleting)
+        }}
+      />
     </div>
   )
 }

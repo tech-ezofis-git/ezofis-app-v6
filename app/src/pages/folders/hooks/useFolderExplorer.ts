@@ -1150,6 +1150,55 @@ export function useFolderExplorer() {
     selectFolder(id)
   }
 
+  /**
+   * Breadcrumb click: always shows that folder without any filters or
+   * search, including the top "Folders" level (id ''), which the
+   * activeFolder effect does not reset. The same folder reloads its plain
+   * listing.
+   */
+  const openFolderFromBreadcrumb = (id: string) => {
+    setAppView('explorer')
+
+    const hasSearch = Boolean(
+      fileSearchRef.current.trim() || folderSearchRef.current.trim(),
+    )
+    const hasFilters = [fileFiltersRef.current, folderFiltersRef.current].some(
+      (filters) =>
+        Object.values(filters || {}).some((value) => String(value ?? '').trim()),
+    )
+    if (!hasSearch && !hasFilters) {
+      if (id !== activeFolder) selectFolder(id)
+      return
+    }
+
+    markFilterSource(null)
+    deferFilterApiRef.current = false
+    // Same folder: when a search is cleared the search effect reloads
+    // (reading the emptied filter refs), so skip the filter effect's
+    // duplicate load.
+    if (id === activeFolder && hasSearch && hasFilters) {
+      skipFilterReloadRef.current = true
+    }
+    // Another folder: its own load runs with the cleared state, so neither
+    // the search nor the filter effect should load the old folder again.
+    if (id !== activeFolder) {
+      lastExecutedSearchRef.current = { fileSearch: '', folderSearch: '' }
+      skipFilterReloadRef.current = true
+    }
+    fileSearchRef.current = ''
+    folderSearchRef.current = ''
+    fileFiltersRef.current = {}
+    folderFiltersRef.current = {}
+    setFileSearchState('')
+    setFolderSearchState('')
+    setFileFiltersState({})
+    setFolderFiltersState({})
+    setFolderFilterOptionSource([])
+    setFilterOptionsCache({})
+    // Another folder (or the top level): the cleared state loads with it.
+    if (id !== activeFolder) selectFolder(id)
+  }
+
   const toggleFolder = async (id: string) => {
     const node = findNodeById(tree, id)
     const shouldLoad = !expandedIds.includes(id)
@@ -1500,6 +1549,7 @@ export function useFolderExplorer() {
     openFile,
     openFileAction,
     openFolder,
+    openFolderFromBreadcrumb,
     pageSize,
     refreshData,
     refreshing,
