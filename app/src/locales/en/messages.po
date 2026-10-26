@@ -78,12 +78,12 @@ msgstr "{0} - Usage Details"
 
 #. placeholder {0}: count('Active')
 #. placeholder {1}: count('Scheduled')
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:379
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:480
 msgid "{0} active · {1} scheduled"
 msgstr "{0} active · {1} scheduled"
 
 #. placeholder {0}: userName(effectiveAssigneeId)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:462
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:466
 msgid "{0} already has an active or scheduled delegation. New dates must not overlap it."
 msgstr "{0} already has an active or scheduled delegation. New dates must not overlap it."
 
@@ -125,14 +125,14 @@ msgstr "{0} credits, highest this period"
 
 #. placeholder {0}: days.all
 #. placeholder {1}: days.working
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:276
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:401
 msgid "{0} days · {1} working"
 msgstr "{0} days · {1} working"
 
 #. placeholder {0}: dayCount.all
 #. placeholder {1}: dayCount.working
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:539
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:872
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:543
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:876
 msgid "{0} days ({1} working)"
 msgstr "{0} days ({1} working)"
 
@@ -374,7 +374,7 @@ msgstr "{filesCount} documents in queue"
 msgid "{filesPct}% file capacity"
 msgstr "{filesPct}% file capacity"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3885
+#: src/pages/folders/components/DocumentDetailsView.tsx:3890
 #: src/pages/folders/components/StartWorkflowView.tsx:44
 msgid "{fileType} Viewer"
 msgstr "{fileType} Viewer"
@@ -742,12 +742,12 @@ msgstr "A quantity on the invoice does not match the purchase order or the recei
 msgid "a trigger field"
 msgstr "a trigger field"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:62
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:867
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:63
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:871
 msgid "Absence Dates"
 msgstr "Absence Dates"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:207
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:297
 msgid "Absence Period"
 msgstr "Absence Period"
 
@@ -847,8 +847,8 @@ msgstr "Action Required"
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1003
 #: src/pages/requests/components/Table.tsx:96
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:3653
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:74
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:905
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:75
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:909
 #: src/pages/settings/components/Menus.tsx:416
 #: src/pages/workflows/components/Table.tsx:118
 msgid "Actions"
@@ -1079,7 +1079,10 @@ msgstr "Add fields to see a live preview of the report table."
 #: src/pages/portal/components/PortalMobileHome.tsx:655
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:85
 #: src/pages/reports/components/OverviewTab.tsx:542
+<<<<<<< HEAD
+=======
 #: src/pages/reports/components/OverviewTab.tsx:506
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 msgid "Add filter"
 msgstr "Add filter"
 
@@ -1199,7 +1202,7 @@ msgstr "Add User"
 msgid "Add users and a password for each. In document details, those users enter this password on the eye control to reveal the original file."
 msgstr "Add users and a password for each. In document details, those users enter this password on the eye control to reveal the original file."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:711
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:715
 msgid "Add workflow"
 msgstr "Add workflow"
 
@@ -1223,12 +1226,12 @@ msgstr "Additional conditions"
 #~ msgid "Advanced settings"
 #~ msgstr "Advanced settings"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:920
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:924
 msgid "After leave: delegate keeps in-progress requests"
 msgstr "After leave: delegate keeps in-progress requests"
 
 #. placeholder {0}: userName(effectiveAssigneeId)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:919
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:923
 msgid "After leave: return unfinished requests to {0}"
 msgstr "After leave: return unfinished requests to {0}"
 
@@ -1333,15 +1336,15 @@ msgid "AI generated"
 msgstr "AI generated"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1975
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5595
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5590
 msgid "AI Insight"
 msgstr "AI Insight"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6150
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6145
 msgid "AI Insight & Back Order Analysis"
 msgstr "AI Insight & Back Order Analysis"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4938
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4933
 msgid "AI Insight & Verification Summary"
 msgstr "AI Insight & Verification Summary"
 
@@ -1466,7 +1469,7 @@ msgstr "Aligning CSV/XLSX headers with database mapping schema."
 #: src/pages/requests/components/InboxList.tsx:1473
 #: src/pages/requests/components/InboxList.tsx:1482
 #: src/pages/search/SearchPage.tsx:309
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:176
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:246
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:740
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:564
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:632
@@ -1547,7 +1550,7 @@ msgstr "All Mandatory fields are filled."
 msgid "All options must be checked to fulfill requirements."
 msgstr "All options must be checked to fulfill requirements."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6111
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6106
 msgid "All purchase order quantities match this invoice. No outstanding back orders detected."
 msgstr "All purchase order quantities match this invoice. No outstanding back orders detected."
 
@@ -1559,8 +1562,8 @@ msgstr "All purchase order quantities match this invoice. No outstanding back or
 msgid "All search results for “{searchLabel}”"
 msgstr "All search results for “{searchLabel}”"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:589
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:892
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:593
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:896
 msgid "All stages"
 msgstr "All stages"
 
@@ -1601,7 +1604,7 @@ msgstr "Already have an account?"
 msgid "Already mapped"
 msgstr "Already mapped"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:671
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:675
 msgid "Alternative Assignee"
 msgstr "Alternative Assignee"
 
@@ -1808,7 +1811,7 @@ msgstr "Application Sign in"
 #~ msgstr "Applied to draft"
 
 #: src/pages/portal/components/PortalMobileHome.tsx:567
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1988
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1989
 msgid "Apply"
 msgstr "Apply"
 
@@ -1942,7 +1945,7 @@ msgstr "Are you sure you want to delete this role? This action cannot be undone.
 msgid "Are you sure you want to delete this user? This action cannot be undone."
 msgstr "Are you sure you want to delete this user? This action cannot be undone."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3853
+#: src/pages/folders/components/DocumentDetailsView.tsx:3858
 msgid "Are you sure you want to exit signing mode? Any unsaved signature placements will be lost."
 msgstr "Are you sure you want to exit signing mode? Any unsaved signature placements will be lost."
 
@@ -2013,13 +2016,13 @@ msgstr "Assigned Users & Groups"
 msgid "Assigned Users & Groups ({0})"
 msgstr "Assigned Users & Groups ({0})"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:204
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:56
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:860
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:294
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:57
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:864
 msgid "Assignee"
 msgstr "Assignee"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5957
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5952
 msgid "Associated Entity"
 msgstr "Associated Entity"
 
@@ -2089,7 +2092,7 @@ msgstr "Attachment view"
 #: src/pages/requests/components/request/components/Header.tsx:937
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:55
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:707
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4857
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4852
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:80
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:184
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:466
@@ -2134,7 +2137,7 @@ msgstr "Authentication required. Please log in again."
 msgid "Authenticator App"
 msgstr "Authenticator App"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5121
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5116
 msgid "Authorized Amount"
 msgstr "Authorized Amount"
 
@@ -2279,7 +2282,7 @@ msgstr "Awaiting Verification"
 #: src/pages/requests/components/request/components/generic-overview/QuoteAgentResultView.tsx:2516
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:69
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1166
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1292
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1293
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:726
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:986
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2444
@@ -2301,7 +2304,7 @@ msgstr "Awaiting Verification"
 msgid "Back"
 msgstr "Back"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4742
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4737
 msgid "Back Order"
 msgstr "Back Order"
 
@@ -2309,7 +2312,7 @@ msgstr "Back Order"
 msgid "Back Order Detected"
 msgstr "Back Order Detected"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6012
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6007
 msgid "Back Order Reconciliation"
 msgstr "Back Order Reconciliation"
 
@@ -2411,11 +2414,11 @@ msgstr "Backorder Detected"
 msgid "Backorder detected on purchase order fulfillment"
 msgstr "Backorder detected on purchase order fulfillment"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:65
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:66
 msgid "Backup user per workflow"
 msgstr "Backup user per workflow"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6297
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6292
 msgid "Balance Qty"
 msgstr "Balance Qty"
 
@@ -2678,7 +2681,7 @@ msgstr "Can View"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:172
 #: src/pages/folders/components/DocumentDetailsView.tsx:2397
 #: src/pages/folders/components/DocumentDetailsView.tsx:2756
-#: src/pages/folders/components/DocumentDetailsView.tsx:3851
+#: src/pages/folders/components/DocumentDetailsView.tsx:3856
 #: src/pages/folders/components/DocumentsListView.tsx:1158
 #: src/pages/folders/components/FolderTable.tsx:1640
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:1037
@@ -2696,7 +2699,10 @@ msgstr "Can View"
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalWizard.tsx:1353
 #: src/pages/reports/components/ReportsListView.tsx:326
+<<<<<<< HEAD
+=======
 #: src/pages/reports/components/ReportsListView.tsx:318
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:282
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:303
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
@@ -2707,7 +2713,7 @@ msgstr "Can View"
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:531
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:765
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:1025
-#: src/pages/requests/RequestsPage.tsx:1886
+#: src/pages/requests/RequestsPage.tsx:1895
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:799
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:847
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:959
@@ -2726,7 +2732,7 @@ msgstr "Cancel edit"
 msgid "Cancel reconnect"
 msgstr "Cancel reconnect"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2227
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2228
 msgid "Cancel Remaining"
 msgstr "Cancel Remaining"
 
@@ -2782,7 +2788,7 @@ msgstr "Cash required — next 7 days"
 msgid "Cash This Week"
 msgstr "Cash This Week"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5205
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5200
 #: src/pages/settings/components/AuditMonitoring.tsx:195
 #: src/pages/settings/components/AuditMonitoring.tsx:343
 #: src/pages/settings/components/AuditMonitoring.tsx:344
@@ -2985,7 +2991,7 @@ msgstr "Choose a workflow to view its submissions."
 #~ msgid "Choose an AI design option or describe your dashboard needs"
 #~ msgstr "Choose an AI design option or describe your dashboard needs"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:224
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:349
 #: src/pages/settings/SettingsMain.tsx:349
 msgid "Choose backup users so workflow requests keep moving while someone is on leave."
 msgstr "Choose backup users so workflow requests keep moving while someone is on leave."
@@ -3339,7 +3345,7 @@ msgstr "Close"
 msgid "Close AI Insights"
 msgstr "Close AI Insights"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6126
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6121
 msgid "Close out remaining purchase order quantities and request a credit memo or amended PO."
 msgstr "Close out remaining purchase order quantities and request a credit memo or amended PO."
 
@@ -3347,7 +3353,7 @@ msgstr "Close out remaining purchase order quantities and request a credit memo 
 msgid "Close panel"
 msgstr "Close panel"
 
-#: src/pages/requests/RequestsPage.tsx:1982
+#: src/pages/requests/RequestsPage.tsx:1991
 msgid "Close Tab"
 msgstr "Close Tab"
 
@@ -3458,7 +3464,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/Header.tsx:943
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:61
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:187
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4862
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4857
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:76
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:168
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:472
@@ -3501,7 +3507,7 @@ msgstr "Complete setup to start your AP automation."
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:760
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1421
-#: src/pages/requests/RequestsPage.tsx:330
+#: src/pages/requests/RequestsPage.tsx:331
 #: src/pages/requests/utils/workflow.utils.ts:430
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Completed"
@@ -3525,7 +3531,7 @@ msgstr ""
 msgid "Compliance & Risk Assessment"
 msgstr "Compliance & Risk Assessment"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5984
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5979
 msgid "Compliance Note"
 msgstr "Compliance Note"
 
@@ -3663,7 +3669,7 @@ msgstr "Confirm & Upgrade to Production"
 msgid "Confirm and activate the policy"
 msgstr "Confirm and activate the policy"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:77
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:78
 msgid "Confirm and save"
 msgstr "Confirm and save"
 
@@ -3691,7 +3697,7 @@ msgstr "Connect {0}"
 msgid "Connect {providerLabel}"
 msgstr "Connect {providerLabel}"
 
-#: src/pages/requests/RequestsPage.tsx:1896
+#: src/pages/requests/RequestsPage.tsx:1905
 msgid "Connect Email Watch"
 msgstr "Connect Email Watch"
 
@@ -3743,7 +3749,7 @@ msgid "Connect your QuickBooks account to sync PO and invoice data automatically
 msgstr "Connect your QuickBooks account to sync PO and invoice data automatically."
 
 #: src/pages/requests/components/Header.tsx:147
-#: src/pages/requests/RequestsPage.tsx:1963
+#: src/pages/requests/RequestsPage.tsx:1972
 msgid "Connected"
 msgstr "Connected"
 
@@ -3755,11 +3761,11 @@ msgstr "Connected • REST v11.13"
 msgid "Connected • SID: {sapSystemId}"
 msgstr "Connected • SID: {sapSystemId}"
 
-#: src/pages/requests/RequestsPage.tsx:1747
+#: src/pages/requests/RequestsPage.tsx:1756
 msgid "Connected successfully"
 msgstr "Connected successfully"
 
-#: src/pages/requests/RequestsPage.tsx:1955
+#: src/pages/requests/RequestsPage.tsx:1964
 msgid "Connected Successfully!"
 msgstr "Connected Successfully!"
 
@@ -3772,7 +3778,7 @@ msgid "Connecting to SAP Host ({sapHost})..."
 msgstr "Connecting to SAP Host ({sapHost})..."
 
 #: src/pages/requests/components/Header.tsx:150
-#: src/pages/requests/RequestsPage.tsx:1876
+#: src/pages/requests/RequestsPage.tsx:1885
 msgid "Connecting..."
 msgstr "Connecting..."
 
@@ -3792,7 +3798,7 @@ msgstr "Connection Successful! SAP ERP ({sapSystemId}) RFC Destination verified 
 msgid "Connector"
 msgstr "Connector"
 
-#: src/pages/requests/RequestsPage.tsx:1968
+#: src/pages/requests/RequestsPage.tsx:1977
 msgid "Connector ID:"
 msgstr "Connector ID:"
 
@@ -3804,11 +3810,11 @@ msgstr "Connector ID:"
 #~ msgid "Console / Workflow API"
 #~ msgstr "Console / Workflow API"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2219
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2220
 msgid "Contact Vendor"
 msgstr "Contact Vendor"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6123
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6118
 msgid "Contact vendor for estimated delivery schedule on remaining backordered quantities."
 msgstr "Contact vendor for estimated delivery schedule on remaining backordered quantities."
 
@@ -3886,6 +3892,10 @@ msgstr "Control with Readiness Timelines"
 msgid "Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view."
 msgstr "Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view."
 
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:176
+msgid "Copied as a draft — set new dates to activate"
+msgstr "Copied as a draft — set new dates to activate"
+
 #: src/pages/requests/components/request/components/generic-overview/QuoteVariantCards.tsx:229
 msgid "Copied from"
 msgstr "Copied from"
@@ -3927,7 +3937,7 @@ msgstr "Copy this URL and open it in another tab to use the portal."
 msgid "Copy URL"
 msgstr "Copy URL"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6002
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5997
 msgid "Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets."
 msgstr "Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets."
 
@@ -3976,15 +3986,15 @@ msgstr "Could not regenerate the PDF: {error}"
 #~ msgid "Couldn't delete selected staged files."
 #~ msgstr "Couldn't delete selected staged files."
 
-#: src/pages/folders/components/FolderExplorer.tsx:356
+#: src/pages/folders/components/FolderExplorer.tsx:357
 msgid "Couldn't delete this document. Missing document or repository ID."
 msgstr "Couldn't delete this document. Missing document or repository ID."
 
-#: src/pages/folders/components/FolderExplorer.tsx:237
+#: src/pages/folders/components/FolderExplorer.tsx:238
 msgid "Couldn't delete this staged file."
 msgstr "Couldn't delete this staged file."
 
-#: src/pages/folders/components/FolderExplorer.tsx:320
+#: src/pages/folders/components/FolderExplorer.tsx:321
 msgid "Couldn't export this staged file. Missing ID."
 msgstr "Couldn't export this staged file. Missing ID."
 
@@ -4072,7 +4082,7 @@ msgstr "Create branded portals with login methods and connected workflows."
 msgid "Create branded portals, configure login methods, and connect workflows."
 msgstr "Create branded portals, configure login methods, and connect workflows."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:360
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:363
 msgid "Create delegation"
 msgstr "Create delegation"
 
@@ -4232,7 +4242,7 @@ msgstr "Critical"
 #~ msgid "Critical Exceptions"
 #~ msgstr "Critical Exceptions"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5538
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5533
 msgid "Cross-Check Status"
 msgstr "Cross-Check Status"
 
@@ -4260,12 +4270,12 @@ msgstr "Currency"
 msgid "Currency Key"
 msgstr "Currency Key"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6178
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6173
 #: src/pages/sign-in/components/SignInForm.tsx:826
 msgid "Current"
 msgstr "Current"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:400
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:404
 msgid "Current Assignee"
 msgstr "Current Assignee"
 
@@ -4444,7 +4454,7 @@ msgstr "Date Modified"
 msgid "Date To"
 msgstr "Date To"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:280
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:405
 msgid "Dates not set"
 msgstr "Dates not set"
 
@@ -4460,7 +4470,7 @@ msgstr "Day {trialDay} of {trialLengthDays}"
 msgid "days"
 msgstr "days"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5822
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5817
 msgid "Days"
 msgstr "Days"
 
@@ -4468,7 +4478,7 @@ msgstr "Days"
 msgid "days remaining in evaluation"
 msgstr "days remaining in evaluation"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5921
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5916
 msgid "Deadlines & Penalty Insights"
 msgstr "Deadlines & Penalty Insights"
 
@@ -4524,7 +4534,7 @@ msgstr "Default storage option provided with your account for immediate access."
 msgid "Default URL"
 msgstr "Default URL"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:409
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:413
 msgid "Defaults to you. Admins can set up delegation for any user."
 msgstr "Defaults to you. Admins can set up delegation for any user."
 
@@ -4572,12 +4582,12 @@ msgstr "Define the retention rule"
 #~ msgid "Define the role name, assign users, and describe its scope."
 #~ msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:205
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:295
 msgid "Delegated To"
 msgstr "Delegated To"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:68
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:877
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:69
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:881
 msgid "Delegates"
 msgstr "Delegates"
 
@@ -4585,25 +4595,34 @@ msgstr "Delegates"
 msgid "Delegation"
 msgstr "Delegation"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:141
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:164
 msgid "Delegation created"
 msgstr "Delegation created"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:374
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:381
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:198
+msgid "Delegation deleted"
+msgstr "Delegation deleted"
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:378
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:385
 msgid "Delegation Details"
 msgstr "Delegation Details"
+
+#. placeholder {0}: userName(ended.assigneeUserId)
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:187
+msgid "Delegation ended — open requests return to {0}"
+msgstr "Delegation ended — open requests return to {0}"
 
 #: src/constants/pageGuides.ts:299
 msgid "Delegation starts at 00:00 on the start date and stops at 23:59 on the end date. You can end it early from the Delegations list."
 msgstr "Delegation starts at 00:00 on the start date and stops at 23:59 on the end date. You can end it early from the Delegations list."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:140
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:163
 msgid "Delegation updated"
 msgstr "Delegation updated"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:155
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:359
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:225
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:362
 msgid "Delegations"
 msgstr "Delegations"
 
@@ -4618,8 +4637,8 @@ msgstr "Delegations"
 #: src/pages/forms/FormsPage.tsx:337
 #: src/pages/reports/components/RowActionsMenu.tsx:44
 #: src/pages/requests/components/Table.tsx:119
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:355
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:357
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:466
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:485
 #: src/pages/settings/components/Folders/FolderRetention.tsx:197
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:508
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:690
@@ -4657,6 +4676,10 @@ msgstr "Delete Column"
 #: src/pages/folders/components/Upload/TableFieldInput.tsx:427
 msgid "Delete column \"{col}\""
 msgstr "Delete column \"{col}\""
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:488
+msgid "Delete delegation"
+msgstr "Delete delegation"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1163
 #: src/pages/folders/components/FolderTable.tsx:1645
@@ -4752,6 +4775,11 @@ msgstr "Delete staged file"
 #: src/pages/folders/components/Upload/Upload.tsx:5148
 msgid "Delete staged files"
 msgstr "Delete staged files"
+
+#. placeholder {0}: userName(deleting.assigneeUserId)
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:492
+msgid "Delete the delegation for {0}? Requests stop routing to the delegate."
+msgstr "Delete the delegation for {0}? Requests stop routing to the delegate."
 
 #: src/features/builder/components/FieldSidebar.tsx:272
 #~ msgid "Delete This Field"
@@ -4904,7 +4932,7 @@ msgstr "Describe your form"
 #: src/pages/requests/components/request/components/generic-overview/QuoteLineItemsTable.tsx:1353
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:152
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:627
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5202
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5197
 #: src/pages/settings/components/credits/Credits.tsx:509
 #: src/pages/settings/components/credits/Credits.tsx:510
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2346
@@ -4975,7 +5003,7 @@ msgstr "Details"
 msgid "Detect type"
 msgstr "Detect type"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6016
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6011
 msgid "Detected"
 msgstr "Detected"
 
@@ -5030,7 +5058,7 @@ msgstr "Discuss this request with the approvers"
 msgid "Dismiss"
 msgstr "Dismiss"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1993
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1994
 msgid "Dismiss suggestion"
 msgstr "Dismiss suggestion"
 
@@ -5058,7 +5086,7 @@ msgstr "docs"
 msgid "Document"
 msgstr "Document"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5081
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5076
 msgid "Document & Procurement Ledger Mapping"
 msgstr "Document & Procurement Ledger Mapping"
 
@@ -5090,7 +5118,7 @@ msgstr "Document Date"
 msgid "Document Date in Document"
 msgstr "Document Date in Document"
 
-#: src/pages/folders/components/FolderExplorer.tsx:376
+#: src/pages/folders/components/FolderExplorer.tsx:377
 msgid "Document deleted successfully."
 msgstr "Document deleted successfully."
 
@@ -5283,7 +5311,7 @@ msgstr "Double click to rename or drag to reorder"
 msgid "Double payments flagged by ledger algorithms"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5614
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5609
 msgid "Double-payment prevention checks analyze historical invoices by combining:"
 msgstr "Double-payment prevention checks analyze historical invoices by combining:"
 
@@ -5480,7 +5508,7 @@ msgstr "Due & Terms"
 #: src/pages/requests/components/InboxList.tsx:2119
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5899
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5894
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Due Date"
 msgstr "Due Date"
@@ -5509,13 +5537,14 @@ msgstr "Due Today"
 
 #: src/pages/requests/components/request/components/Header.tsx:1391
 #: src/pages/requests/utils/localizeRequestUi.ts:45
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:452
 msgid "Duplicate"
 msgstr "Duplicate"
 
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:308
 #: src/pages/settings/components/delegation/DelegationSettings.tsx:310
-msgid "Duplicate as draft"
-msgstr "Duplicate as draft"
+#~ msgid "Duplicate as draft"
+#~ msgstr "Duplicate as draft"
 
 #: src/pages/requests/components/request/components/Header.tsx:895
 #: src/pages/requests/components/request/components/Header.tsx:890
@@ -5526,7 +5555,7 @@ msgstr "Duplicate Check"
 msgid "Duplicate Detected"
 msgstr "Duplicate Detected"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4592
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4587
 msgid "Duplicate Detection"
 msgstr "Duplicate Detection"
 
@@ -5534,7 +5563,7 @@ msgstr "Duplicate Detection"
 msgid "Duplicate invoice watch"
 msgstr "Duplicate invoice watch"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5513
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5508
 msgid "Duplicate Payment Check"
 msgstr "Duplicate Payment Check"
 
@@ -5651,9 +5680,8 @@ msgstr "Earlier drafts"
 #: src/pages/forms/FormsPage.tsx:326
 #: src/pages/reports/components/RowActionsMenu.tsx:29
 #: src/pages/requests/components/Table.tsx:113
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:298
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:300
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:955
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:447
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:959
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2646
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2721
 #: src/pages/settings/components/Folders/AiFolderBuilderTimeline.tsx:124
@@ -5685,8 +5713,8 @@ msgstr "Edit card"
 msgid "Edit column \"{col}\""
 msgstr "Edit column \"{col}\""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:376
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:383
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:380
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:387
 msgid "Edit Delegation"
 msgstr "Edit Delegation"
 
@@ -5863,7 +5891,7 @@ msgstr "Email / Username"
 msgid "Email Address"
 msgstr "Email Address"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:766
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:770
 msgid "Email and in-app notice with the dates and workflows they are covering."
 msgstr "Email and in-app notice with the dates and workflows they are covering."
 
@@ -5933,12 +5961,11 @@ msgstr "Enable to set a new password for this user"
 msgid "Enabled"
 msgstr "Enabled"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:234
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:236
 msgid "End date must be on or after the start date."
 msgstr "End date must be on or after the start date."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:332
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:334
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:458
 msgid "End delegation now"
 msgstr "End delegation now"
 
@@ -6136,7 +6163,7 @@ msgstr "ERP & sync mapping"
 msgid "ERP data will be used to validate incoming invoices to match with PO information and supplier data."
 msgstr "ERP data will be used to validate incoming invoices to match with PO information and supplier data."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5181
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5176
 msgid "ERP PO Line Items Mapped"
 msgstr "ERP PO Line Items Mapped"
 
@@ -6144,11 +6171,11 @@ msgstr "ERP PO Line Items Mapped"
 msgid "ERP Settings"
 msgstr "ERP Settings"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5844
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5839
 msgid "ERP System"
 msgstr "ERP System"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5555
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5550
 msgid "Error Severity"
 msgstr "Error Severity"
 
@@ -6195,11 +6222,11 @@ msgstr "Every invoice line matches the purchase order and the goods receipt. Not
 
 #. placeholder {0}: formatShortDay(fromDate)
 #. placeholder {1}: formatShortDay(toDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:756
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:760
 msgid "Every request that arrives between {0} and {1} goes straight to the delegate."
 msgstr "Every request that arrives between {0} and {1} goes straight to the delegate."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5618
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5613
 msgid "Exact Invoice Number string similarity."
 msgstr "Exact Invoice Number string similarity."
 
@@ -6225,7 +6252,7 @@ msgid "Exception uploading file: {detail}"
 msgstr "Exception uploading file: {detail}"
 
 #: src/pages/requests/components/InboxList.tsx:2294
-#: src/pages/requests/RequestsPage.tsx:329
+#: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/requests/utils/localizeRequestUi.ts:46
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Exceptions"
@@ -6245,8 +6272,8 @@ msgstr "Existing requests"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2507
 #: src/pages/folders/components/DocumentDetailsView.tsx:2528
-#: src/pages/folders/components/DocumentDetailsView.tsx:3852
-#: src/pages/folders/components/DocumentDetailsView.tsx:3855
+#: src/pages/folders/components/DocumentDetailsView.tsx:3857
+#: src/pages/folders/components/DocumentDetailsView.tsx:3860
 msgid "Exit Signing"
 msgstr "Exit Signing"
 
@@ -6378,7 +6405,7 @@ msgstr "Extracted by OCR"
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:1081
 #: src/pages/folders/components/Upload/Upload.tsx:4818
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:598
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4847
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4842
 #: src/pages/requests/components/RequestSummary.tsx:194
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:454
 msgid "Extracted Data"
@@ -6494,7 +6521,7 @@ msgstr "Failed to classify document"
 msgid "Failed to complete signing process"
 msgstr "Failed to complete signing process"
 
-#: src/pages/requests/RequestsPage.tsx:1499
+#: src/pages/requests/RequestsPage.tsx:1508
 msgid "Failed to connect watch email."
 msgstr "Failed to connect watch email."
 
@@ -6642,7 +6669,7 @@ msgstr "Failed to Load Workflow"
 #~ msgid "Failed to move this request."
 #~ msgstr "Failed to move this request."
 
-#: src/pages/requests/RequestsPage.tsx:1486
+#: src/pages/requests/RequestsPage.tsx:1495
 msgid "Failed to obtain sign-in URL from server."
 msgstr "Failed to obtain sign-in URL from server."
 
@@ -6799,7 +6826,7 @@ msgid "FI / MM (Financial Accounting & Materials)"
 msgstr "FI / MM (Financial Accounting & Materials)"
 
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:106
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5357
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5352
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:734
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:912
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:1135
@@ -6807,7 +6834,7 @@ msgid "Field"
 msgstr "Field"
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:255
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5336
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5331
 msgid "Field Matching"
 msgstr "Field Matching"
 
@@ -7081,7 +7108,7 @@ msgstr "First Name Field"
 msgid "Fixed Order"
 msgstr "Fixed Order"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6120
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6115
 msgid "Flag or reject transaction. Short shipment deviates from the vendor purchase agreement without prior authorization."
 msgstr "Flag or reject transaction. Short shipment deviates from the vendor purchase agreement without prior authorization."
 
@@ -7261,7 +7288,7 @@ msgstr "Folder updated successfully."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:31
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:77
-#: src/pages/folders/components/FolderExplorer.tsx:635
+#: src/pages/folders/components/FolderExplorer.tsx:636
 #: src/pages/search/SearchPage.tsx:328
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:74
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:134
@@ -7382,7 +7409,7 @@ msgstr "found in your PO Master data. Choose how"
 msgid "From"
 msgstr "From"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:501
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:505
 msgid "From Date"
 msgstr "From Date"
 
@@ -7394,11 +7421,11 @@ msgstr "From Date"
 msgid "FTP Agent"
 msgstr "FTP Agent"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6300
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6295
 msgid "Fulfillment"
 msgstr "Fulfillment"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6200
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6195
 msgid "Fulfillment & Ledger Summary"
 msgstr "Fulfillment & Ledger Summary"
 
@@ -7526,11 +7553,11 @@ msgstr "Give your report a name, description, and configure sharing permissions.
 msgid "GL & Category"
 msgstr "GL & Category"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4716
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4711
 msgid "GL Account Matching"
 msgstr "GL Account Matching"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5713
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5708
 msgid "GL Account Matching Report"
 msgstr "GL Account Matching Report"
 
@@ -7604,7 +7631,7 @@ msgstr "Google Workspace"
 msgid "Google Workspace sign-in"
 msgstr "Google Workspace sign-in"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5619
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5614
 msgid "Grand Total and individual line-item value mapping."
 msgstr "Grand Total and individual line-item value mapping."
 
@@ -7714,7 +7741,7 @@ msgstr "Groups"
 msgid "Guidelines validated"
 msgstr "Guidelines validated"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:357
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:359
 msgid "Hand over workflow requests to backup users for specific dates and workflows."
 msgstr "Hand over workflow requests to backup users for specific dates and workflows."
 
@@ -7731,7 +7758,7 @@ msgstr "Handwritten Invoice"
 msgid "Header Fields"
 msgstr "Header Fields"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5349
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5344
 msgid "Header Fields Checked"
 msgstr "Header Fields Checked"
 
@@ -7873,7 +7900,7 @@ msgstr "Highest Credit Consumption"
 msgid "Highlighted"
 msgstr "Highlighted"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5533
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5528
 msgid "Historical Match & Integrity Results"
 msgstr "Historical Match & Integrity Results"
 
@@ -7886,8 +7913,13 @@ msgstr "Historical Match & Integrity Results"
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:618
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:650
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:1658
+<<<<<<< HEAD
+#: src/pages/requests/components/request/components/Header.tsx:940
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4862
+=======
 #: src/pages/requests/components/request/components/Header.tsx:945
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4867
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:474
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:510
 msgid "History"
@@ -7897,7 +7929,7 @@ msgstr "History"
 msgid "Hold"
 msgstr "Hold"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6117
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6112
 msgid "Hold balance or keep PO open. Track remaining units under backorder until the supplemental shipment and invoice arrive."
 msgstr "Hold balance or keep PO open. Track remaining units under backorder until the supplemental shipment and invoice arrive."
 
@@ -8045,7 +8077,7 @@ msgstr "Inactive"
 
 #: src/pages/requests/components/request/components/Header.tsx:354
 #: src/pages/requests/components/request/Request.tsx:1938
-#: src/pages/requests/RequestsPage.tsx:330
+#: src/pages/requests/RequestsPage.tsx:331
 #: src/pages/requests/utils/localizeRequestUi.ts:49
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Inbox"
@@ -8247,7 +8279,7 @@ msgstr "Intelligent Document Processing"
 #~ msgid "Intelligent Upload"
 #~ msgstr "Intelligent Upload"
 
-#: src/pages/folders/components/FolderExplorer.tsx:644
+#: src/pages/folders/components/FolderExplorer.tsx:645
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadView.tsx:798
 msgid "Intelligent Upload & Classify"
 msgstr "Intelligent Upload & Classify"
@@ -8340,7 +8372,7 @@ msgstr "Invoice #"
 #~ msgid "Invoice aging analysis"
 #~ msgstr "Invoice aging analysis"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6205
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6200
 #: src/pages/requests/utils/localizeRequestUi.ts:13
 msgid "Invoice Amount"
 msgstr "Invoice Amount"
@@ -8348,7 +8380,7 @@ msgstr "Invoice Amount"
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2104
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5860
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5855
 #: src/pages/requests/utils/localizeRequestUi.ts:14
 msgid "Invoice Date"
 msgstr "Invoice Date"
@@ -8378,7 +8410,7 @@ msgid "Invoice Extracted Line Item"
 msgstr "Invoice Extracted Line Item"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2971
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6738
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6733
 msgid "Invoice Line Items"
 msgstr "Invoice Line Items"
 
@@ -8396,7 +8428,7 @@ msgid "Invoice Number"
 msgstr "Invoice Number"
 
 #. placeholder {0}: agentData?.erpSystem || (agentData?.poMasterSourceType === 'quickbooks' ? 'QuickBooks' : 'SAP')
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5926
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5921
 msgid "Invoice payment has been successfully processed and synced with ERP database ({0}). No outstanding balance or late penalties remain."
 msgstr "Invoice payment has been successfully processed and synced with ERP database ({0}). No outstanding balance or late penalties remain."
 
@@ -8404,7 +8436,7 @@ msgstr "Invoice payment has been successfully processed and synced with ERP data
 msgid "Invoice processing funnel"
 msgstr "Invoice processing funnel"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5564
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5559
 msgid "Invoice Ref"
 msgstr "Invoice Ref"
 
@@ -8425,12 +8457,17 @@ msgstr "Invoice Summary"
 msgid "Invoice Tax Amount"
 msgstr "Invoice Tax Amount"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6306
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6301
 msgid "Invoice Total"
 msgstr "Invoice Total"
 
+<<<<<<< HEAD
+#: src/pages/requests/components/request/components/Header.tsx:1476
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5353
+=======
 #: src/pages/requests/components/request/components/Header.tsx:1482
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5358
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 msgid "Invoice Value"
 msgstr "Invoice Value"
 
@@ -8438,7 +8475,7 @@ msgstr "Invoice Value"
 msgid "Invoice value reduced."
 msgstr "Invoice value reduced."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6294
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6289
 msgid "Invoiced Qty"
 msgstr "Invoiced Qty"
 
@@ -8447,7 +8484,7 @@ msgstr "Invoiced Qty"
 #~ msgstr "invoices"
 
 #: src/pages/requests/components/request/Request.tsx:1937
-#: src/pages/requests/RequestsPage.tsx:329
+#: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Invoices"
 msgstr "Invoices"
@@ -8468,7 +8505,7 @@ msgstr "Invoices Drill-Down"
 msgid "Invoicing terms and conditions"
 msgstr "Invoicing terms and conditions"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:632
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:636
 msgid "Involved Workflow"
 msgstr "Involved Workflow"
 
@@ -8538,11 +8575,11 @@ msgstr "It looks like {accountEmail} is used with more than one account. Which a
 msgid "It will be removed from Draft Files. This can't be undone."
 msgstr "It will be removed from Draft Files. This can't be undone."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6233
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6228
 msgid "item"
 msgstr "item"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5437
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5432
 msgid "Item Description"
 msgstr "Item Description"
 
@@ -8552,7 +8589,7 @@ msgstr "ITEM DESCRIPTION"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2141
 #: src/pages/forms/FormEntriesPage.tsx:2142
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6234
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6229
 msgid "items"
 msgstr "items"
 
@@ -8604,7 +8641,7 @@ msgstr "Keep draft & leave"
 msgid "Keep me logged in"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:812
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:816
 msgid "Keep with the delegate"
 msgstr "Keep with the delegate"
 
@@ -8759,7 +8796,7 @@ msgstr "Leave {site}? Your {requestName} request may not be saved."
 msgid "Leave {site}? Your new request may not be saved."
 msgstr "Leave {site}? Your new request may not be saved."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:59
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:60
 msgid "Leave start and end"
 msgstr "Leave start and end"
 
@@ -8787,7 +8824,7 @@ msgstr "Legal contracts folder"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5937
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5932
 msgid "Legal Matter Association Check"
 msgstr "Legal Matter Association Check"
 
@@ -8849,11 +8886,11 @@ msgstr "Line {0}: Invoice Qty {1} vs PO Qty {2}. Remaining: {3}"
 msgid "Line #{0}"
 msgstr "Line #{0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6274
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6269
 msgid "Line Item"
 msgstr "Line Item"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6288
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6283
 msgid "Line Item Description"
 msgstr "Line Item Description"
 
@@ -8874,11 +8911,11 @@ msgstr "Line item info: PO Number mapping not matched. Please map the same PO Nu
 #~ msgstr "Line Item Mapping"
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:307
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5416
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5411
 msgid "Line Item Matching"
 msgstr "Line Item Matching"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6429
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6424
 msgid "line item reconciled"
 msgstr "line item reconciled"
 
@@ -8890,25 +8927,25 @@ msgstr "line item reconciled"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1519
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4852
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6275
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4847
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6270
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:459
 msgid "Line Items"
 msgstr "Line Items"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5190
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5185
 msgid "Line Items Mapped"
 msgstr "Line Items Mapped"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6430
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6425
 msgid "line items reconciled"
 msgstr "line items reconciled"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5429
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5424
 msgid "Line Items Verified"
 msgstr "Line Items Verified"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5441
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5436
 msgid "Line Score"
 msgstr "Line Score"
 
@@ -8916,7 +8953,7 @@ msgstr "Line Score"
 msgid "Line Variance"
 msgstr "Line Variance"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6213
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6208
 msgid "Lines Invoiced"
 msgstr "Lines Invoiced"
 
@@ -8987,7 +9024,7 @@ msgstr "Loading activity..."
 msgid "Loading attachments..."
 msgstr "Loading attachments..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6782
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6777
 msgid "Loading Attachments..."
 msgstr ""
 
@@ -9000,7 +9037,7 @@ msgstr "Loading comments..."
 msgid "Loading comments…"
 msgstr "Loading comments…"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6825
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6820
 msgid "Loading Comments..."
 msgstr "Loading Comments..."
 
@@ -9046,7 +9083,7 @@ msgstr "Loading groups..."
 msgid "Loading history..."
 msgstr "Loading history..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6854
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6849
 msgid "Loading History..."
 msgstr ""
 
@@ -9331,7 +9368,7 @@ msgstr "Mandatory fields are missing"
 #~ msgid "Mandatory Fields Missing"
 #~ msgstr "Mandatory Fields Missing"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1651
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1652
 #: src/pages/requests/components/workflow-request/components/ExtractedFieldCell.tsx:95
 msgid "Manual"
 msgstr "Manual"
@@ -9516,7 +9553,7 @@ msgid "Match ANY condition (OR logic)"
 msgstr "Match ANY condition (OR logic)"
 
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:94
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4961
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4956
 msgid "Match Score"
 msgstr "Match Score"
 
@@ -9528,13 +9565,13 @@ msgstr "Match:"
 #: src/pages/requests/components/InboxList.tsx:2126
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:498
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4558
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4913
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4553
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4908
 #: src/pages/requests/utils/localizeRequestUi.ts:50
 msgid "Matched"
 msgstr "Matched"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5731
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5726
 msgid "Matched GL Account"
 msgstr "Matched GL Account"
 
@@ -9564,23 +9601,23 @@ msgstr "Matching PO details"
 #~ msgid "Matching supplier records..."
 #~ msgstr "Matching supplier records..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5203
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5198
 msgid "Material Group"
 msgstr "Material Group"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5201
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5196
 msgid "Material ID"
 msgstr "Material ID"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5962
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5957
 msgid "Matter Reference"
 msgstr "Matter Reference"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4822
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4817
 msgid "Matter Validation"
 msgstr "Matter Validation"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5998
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5993
 msgid "Matter Validation Rules"
 msgstr "Matter Validation Rules"
 
@@ -9762,11 +9799,11 @@ msgstr "Minimize all steps"
 msgid "Minimum 8 characters"
 msgstr "Minimum 8 characters"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5687
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5682
 msgid "Mismatches"
 msgstr "Mismatches"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5692
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5687
 msgid "Mismatches Found"
 msgstr "Mismatches Found"
 
@@ -9880,6 +9917,10 @@ msgstr "more"
 msgid "More (+{hiddenCount})"
 msgstr "More (+{hiddenCount})"
 
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:429
+msgid "More actions"
+msgstr "More actions"
+
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:497
 msgid "More than"
 msgstr "More than"
@@ -9979,7 +10020,7 @@ msgid "My Submissions"
 msgstr "My Submissions"
 
 #. placeholder {0}: user.displayName || user.email
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:325
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:327
 msgid "Myself — {0}"
 msgstr "Myself — {0}"
 
@@ -10118,7 +10159,7 @@ msgstr "needs engineering review"
 #~ msgid "Needs Engineering Review"
 #~ msgstr "Needs Engineering Review"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5971
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5966
 msgid "Needs Manual Entry"
 msgstr "Needs Manual Entry"
 
@@ -10130,7 +10171,7 @@ msgstr "Net 30 Days"
 msgid "Net Amount"
 msgstr "Net Amount"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5208
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5203
 msgid "Net Value"
 msgstr "Net Value"
 
@@ -10138,13 +10179,13 @@ msgstr "Net Value"
 #: src/pages/requests/components/request/components/generic-overview/LeftViewerAttachmentStrip.tsx:103
 #: src/pages/requests/components/request/components/Header.tsx:2027
 #: src/pages/requests/components/request/components/Header.tsx:2021
-#: src/pages/requests/RequestsPage.tsx:1909
+#: src/pages/requests/RequestsPage.tsx:1918
 msgid "New"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:158
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:377
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:384
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:228
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:381
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:388
 msgid "New Delegation"
 msgstr "New Delegation"
 
@@ -10237,7 +10278,7 @@ msgstr "Next"
 msgid "Next >>"
 msgstr "Next >>"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:336
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:338
 msgid "Next 3 days"
 msgstr "Next 3 days"
 
@@ -10271,7 +10312,7 @@ msgstr "Next stages"
 msgid "Next step"
 msgstr "Next step"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:343
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:345
 msgid "Next week (Mon–Fri)"
 msgstr "Next week (Mon–Fri)"
 
@@ -10280,7 +10321,11 @@ msgstr "Next week (Mon–Fri)"
 #~ msgstr "Next-gen AI workspace, dynamic forms & automation."
 
 #: src/pages/reports/components/ReportsListView.tsx:228
+<<<<<<< HEAD
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5972
+=======
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5977
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 msgid "No"
 msgstr "No"
 
@@ -10422,11 +10467,11 @@ msgstr "No data to preview"
 msgid "No decision details available for this request."
 msgstr "No decision details available for this request."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:218
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:343
 msgid "No delegations found"
 msgstr "No delegations found"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:219
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:344
 msgid "No delegations yet"
 msgstr "No delegations yet"
 
@@ -10484,7 +10529,7 @@ msgstr "No Due Date"
 msgid "No Duplicate"
 msgstr "No Duplicate"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4612
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4607
 #: src/pages/requests/utils/localizeRequestUi.ts:52
 msgid "No duplicates detected"
 msgstr "No duplicates detected"
@@ -10608,7 +10653,7 @@ msgstr "No key facts extracted."
 msgid "No line items available for this quote."
 msgstr "No line items available for this quote."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6317
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6312
 msgid "No line items found for this back order record"
 msgstr "No line items found for this back order record"
 
@@ -10706,7 +10751,7 @@ msgstr "No permissions granted"
 msgid "No permissions to configure"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4572
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4567
 #: src/pages/requests/utils/localizeRequestUi.ts:53
 msgid "No PO Found"
 msgstr "No PO Found"
@@ -10790,7 +10835,10 @@ msgid "No rows added"
 msgstr "No rows added"
 
 #: src/pages/reports/components/OverviewTab.tsx:525
+<<<<<<< HEAD
+=======
 #: src/pages/reports/components/OverviewTab.tsx:479
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 msgid "No rows for this report."
 msgstr "No rows for this report."
 
@@ -10991,8 +11039,8 @@ msgstr "Not mapped"
 
 #: src/pages/requests/components/InboxList.tsx:1474
 #: src/pages/requests/components/request/components/sections/history/History.tsx:508
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4559
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4914
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4554
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4909
 #: src/pages/requests/utils/localizeRequestUi.ts:54
 msgid "Not Matched"
 msgstr "Not Matched"
@@ -11015,7 +11063,7 @@ msgstr "Not scheduled"
 msgid "Not selected"
 msgstr "Not selected"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:256
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:381
 msgid "Not set"
 msgstr "Not set"
 
@@ -11024,7 +11072,7 @@ msgstr "Not set"
 msgid "Not specified"
 msgstr "Not specified"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4626
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4621
 #: src/pages/requests/utils/localizeRequestUi.ts:55
 msgid "Not Verified"
 msgstr "Not Verified"
@@ -11046,7 +11094,7 @@ msgstr "Nothing is purged"
 msgid "Notifications"
 msgstr "Notifications"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:915
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:919
 msgid "Notify alternative assignees"
 msgstr "Notify alternative assignees"
 
@@ -11144,7 +11192,7 @@ msgstr "On Boarding"
 
 #. placeholder {0}: formatShortDay(away.fromDate)
 #. placeholder {1}: formatShortDay(away.toDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:212
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:214
 msgid "On leave {0} – {1}"
 msgstr "On leave {0} – {1}"
 
@@ -11269,7 +11317,7 @@ msgstr "Optional"
 msgid "Optional Field"
 msgstr "Optional Field"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:695
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:699
 msgid "Optional note"
 msgstr "Optional note"
 
@@ -11425,7 +11473,11 @@ msgstr "Overdue and due-soonest first — process top-down"
 #: src/pages/folders/components/FolderSharePopover.tsx:806
 #: src/pages/folders/components/FolderSharePopover.tsx:866
 #: src/pages/reports/components/ReportsListView.tsx:233
+<<<<<<< HEAD
+#: src/pages/requests/components/request/components/Header.tsx:1880
+=======
 #: src/pages/requests/components/request/components/Header.tsx:1886
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 #: src/pages/settings/components/Folders/retentionMockData.ts:61
 #: src/pages/settings/components/license/LicenseRecentResources.tsx:202
 msgid "Owner"
@@ -11444,7 +11496,7 @@ msgstr "Page {currentPage} / {totalPages}"
 msgid "Paid"
 msgstr "Paid"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5876
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5871
 msgid "Paid Date"
 msgstr "Paid Date"
 
@@ -11539,7 +11591,7 @@ msgstr "Payment calendar"
 msgid "Payment Channel"
 msgstr "Payment Channel"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5920
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5915
 msgid "Payment Completion Insights"
 msgstr "Payment Completion Insights"
 
@@ -11547,7 +11599,7 @@ msgstr "Payment Completion Insights"
 #~ msgid "Payment Deadlines"
 #~ msgstr "Payment Deadlines"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5779
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5774
 msgid "Payment Deadlines & Terms"
 msgstr "Payment Deadlines & Terms"
 
@@ -11563,24 +11615,24 @@ msgstr "Payment due date"
 msgid "Payment Method"
 msgstr "Payment Method"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4766
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4761
 msgid "Payment Status"
 msgstr "Payment Status"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4792
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5784
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4787
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5779
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 #: src/pages/requests/utils/localizeRequestUi.ts:37
 msgid "Payment Terms"
 msgstr "Payment Terms"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5773
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5768
 msgid "Payment Terms Analysis"
 msgstr "Payment Terms Analysis"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5927
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5922
 msgid "Payment terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries."
 msgstr "Payment terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries."
 
@@ -11604,7 +11656,7 @@ msgstr "Peak usage period"
 msgid "Pen width"
 msgstr "Pen width"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6389
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6384
 msgid "pending"
 msgstr "pending"
 
@@ -11625,7 +11677,7 @@ msgstr "Pending classification"
 msgid "Pending delivery items."
 msgstr "Pending delivery items."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6221
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6216
 msgid "Pending Items"
 msgstr "Pending Items"
 
@@ -11633,7 +11685,7 @@ msgstr "Pending Items"
 msgid "Pending Payments"
 msgstr "Pending Payments"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6240
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6235
 msgid "Pending PO Balance"
 msgstr "Pending PO Balance"
 
@@ -11774,7 +11826,7 @@ msgstr "Placeholder Column 2"
 msgid "Plain Value"
 msgstr "Plain Value"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5204
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5199
 msgid "Plant"
 msgstr "Plant"
 
@@ -11835,7 +11887,7 @@ msgstr "Please choose what should happen and how the rule should work."
 #~ msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 #~ msgstr "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4646
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4641
 msgid "Please click 'Verify' to validate this supplier and ensure vendor compliance."
 msgstr "Please click 'Verify' to validate this supplier and ensure vendor compliance."
 
@@ -12303,14 +12355,14 @@ msgstr "PO #"
 msgid "PO Amount"
 msgstr "PO Amount"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5117
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5112
 #: src/pages/requests/utils/localizeRequestUi.ts:23
 msgid "PO Date"
 msgstr "PO Date"
 
 #. placeholder {0}: totalRemainingUnits === 1 ? '' : 's'
 #. placeholder {1}: pendingItemsCount === 1 ? '' : 's'
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6109
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6104
 msgid "PO fulfillment is partial: {totalRemainingUnits} unit{0} across {pendingItemsCount} line item{1} remain unfulfilled. This invoice accounts for {totalReceivedUnits} of {totalPoQty} ordered units."
 msgstr "PO fulfillment is partial: {totalRemainingUnits} unit{0} across {pendingItemsCount} line item{1} remain unfulfilled. This invoice accounts for {totalReceivedUnits} of {totalPoQty} ordered units."
 
@@ -12330,11 +12382,11 @@ msgstr "PO issuer or procurement contact"
 msgid "PO Line Item"
 msgstr "PO Line Item"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6689
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6684
 msgid "PO Line Items"
 msgstr "PO Line Items"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6264
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6259
 msgid "PO Line Items & Backorder Reconciliation"
 msgstr "PO Line Items & Backorder Reconciliation"
 
@@ -12342,7 +12394,7 @@ msgstr "PO Line Items & Backorder Reconciliation"
 #~ msgid "PO Line Items vs Invoices"
 #~ msgstr "PO Line Items vs Invoices"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1678
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1679
 msgid "PO Master"
 msgstr "PO Master"
 
@@ -12364,11 +12416,11 @@ msgstr "PO Master file received"
 msgid "PO Master Update"
 msgstr "PO Master Update"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4555
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4550
 msgid "PO Matching"
 msgstr "PO Matching"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4909
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4904
 msgid "PO Matching Analysis"
 msgstr "PO Matching Analysis"
 
@@ -12376,7 +12428,7 @@ msgstr "PO Matching Analysis"
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:2024
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5086
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5081
 #: src/pages/requests/utils/localizeRequestUi.ts:25
 msgid "PO Number"
 msgstr "PO Number"
@@ -12385,7 +12437,7 @@ msgstr "PO Number"
 #~ msgid "PO Number (Extracted)"
 #~ msgstr "PO Number (Extracted)"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6291
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6286
 msgid "PO Qty"
 msgstr "PO Qty"
 
@@ -12404,7 +12456,7 @@ msgstr "PO Setup"
 
 #: src/pages/requests/components/request/components/Header.tsx:1501
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5359
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5354
 msgid "PO Value"
 msgstr "PO Value"
 
@@ -12676,7 +12728,7 @@ msgstr "Print documents"
 msgid "Print file"
 msgstr "Print file"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6191
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6186
 msgid "Prior Ticket"
 msgstr "Prior Ticket"
 
@@ -12721,7 +12773,7 @@ msgid "Process Overview"
 msgstr "Process Overview"
 
 #: src/pages/requests/components/InboxList.tsx:2296
-#: src/pages/requests/RequestsPage.tsx:329
+#: src/pages/requests/RequestsPage.tsx:330
 #: src/pages/requests/utils/localizeRequestUi.ts:61
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:45
 msgid "Processed"
@@ -12884,7 +12936,7 @@ msgstr "Purged"
 msgid "Qty"
 msgstr "Qty"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5206
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5201
 msgid "Qty / UOM"
 msgstr "Qty / UOM"
 
@@ -12908,7 +12960,7 @@ msgstr "Qualify each lead and prospect using the rules on this step."
 msgid "Quantity"
 msgstr "Quantity"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5438
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5433
 msgid "Quantity (Inv / PO)"
 msgstr "Quantity (Inv / PO)"
 
@@ -13153,7 +13205,7 @@ msgstr "Real-Time Dashboard"
 msgid "Reason for declining"
 msgstr "Reason for declining"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:694
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:698
 msgid "Reason for Selection"
 msgstr "Reason for Selection"
 
@@ -13209,7 +13261,7 @@ msgstr "Recommended"
 msgid "Recommended {0} fields for “{1}”. Adjust them below, then continue."
 msgstr "Recommended {0} fields for “{1}”. Adjust them below, then continue."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6158
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6153
 msgid "Recommended Action"
 msgstr "Recommended Action"
 
@@ -13237,7 +13289,7 @@ msgstr "Recurrence"
 #~ msgid "Recv Qty"
 #~ msgstr "Recv Qty"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3827
+#: src/pages/folders/components/DocumentDetailsView.tsx:3832
 msgid "Redacted"
 msgstr "Redacted"
 
@@ -13246,11 +13298,11 @@ msgstr "Redacted"
 msgid "Redaction level"
 msgstr "Redaction level"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:909
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:913
 msgid "Redirect new requests during leave"
 msgstr "Redirect new requests during leave"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:755
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:759
 msgid "Redirect new requests to the alternative assignee"
 msgstr "Redirect new requests to the alternative assignee"
 
@@ -13289,6 +13341,7 @@ msgstr "Reference Document Number"
 #: src/pages/requests/components/InboxList.tsx:2150
 #: src/pages/settings/components/AuditMonitoring.tsx:186
 #: src/pages/settings/components/credits/Credits.tsx:925
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:267
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2316
 #: src/pages/settings/components/GroupManagement.tsx:612
 #: src/pages/settings/components/ManageUser.tsx:1565
@@ -13301,6 +13354,10 @@ msgstr "Refresh"
 #: src/pages/settings/components/credits/Credits.tsx:586
 msgid "Refresh credit usage"
 msgstr "Refresh credit usage"
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:269
+msgid "Refresh delegations"
+msgstr "Refresh delegations"
 
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:237
 msgid "Refresh Preview"
@@ -13334,11 +13391,11 @@ msgstr "Regenerate PDF"
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "Regional volume and spend exposure analysis"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5699
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5694
 msgid "Registry Verification Log"
 msgstr "Registry Verification Log"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2203
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2204
 msgid "Reject Transaction"
 msgstr "Reject Transaction"
 
@@ -13444,7 +13501,7 @@ msgstr "Remove signer"
 msgid "Remove tab"
 msgstr "Remove tab"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:615
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:619
 msgid "Remove workflow"
 msgstr "Remove workflow"
 
@@ -13701,7 +13758,7 @@ msgid "Requests"
 msgstr "Requests"
 
 #. placeholder {0}: formatShortDay(fromDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:761
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:765
 msgid "Requests already in the assignee's inbox move to the delegate on {0}."
 msgstr "Requests already in the assignee's inbox move to the delegate on {0}."
 
@@ -13854,8 +13911,9 @@ msgstr "Retention trigger"
 #: src/pages/portal/components/PortalMobileHome.tsx:371
 #: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:452
 #: src/pages/requests/components/request/components/generic-overview/AgentDetailPlaceholder.tsx:559
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:435
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:738
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:330
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:439
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:742
 msgid "Retry"
 msgstr "Retry"
 
@@ -13868,7 +13926,7 @@ msgid "Retry Loading"
 msgstr "Retry Loading"
 
 #. placeholder {0}: userName(effectiveAssigneeId)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:807
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:811
 msgid "Return to {0}"
 msgstr "Return to {0}"
 
@@ -13876,7 +13934,7 @@ msgstr "Return to {0}"
 #~ msgid "Reveal original"
 #~ msgstr "Reveal original"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:80
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:81
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1292
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:22
 #: src/pages/settings/components/GroupManagement.tsx:88
@@ -13998,7 +14056,7 @@ msgstr "Review Column Mapping"
 msgid "Review fields before export..."
 msgstr "Review fields before export..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6128
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6123
 msgid "Review line item fulfillment against purchase order terms and vendor delivery schedule."
 msgstr "Review line item fulfillment against purchase order terms and vendor delivery schedule."
 
@@ -14177,7 +14235,10 @@ msgid "rows"
 msgstr "rows"
 
 #: src/pages/reports/components/OverviewTab.tsx:595
+<<<<<<< HEAD
+=======
 #: src/pages/reports/components/OverviewTab.tsx:544
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 msgid "Rows"
 msgstr "Rows"
 
@@ -14210,7 +14271,10 @@ msgstr "Rules"
 #: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:532
 #: src/pages/report-builder/components/steps/SourceStep.tsx:624
 #: src/pages/reports/components/OverviewTab.tsx:512
+<<<<<<< HEAD
+=======
 #: src/pages/reports/components/OverviewTab.tsx:466
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 msgid "Run again"
 msgstr "Run again"
 
@@ -14235,7 +14299,7 @@ msgstr "Runs as part of this workflow."
 msgid "Sample template downloaded successfully"
 msgstr "Sample template downloaded successfully"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1678
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1679
 msgid "SAP"
 msgstr "SAP"
 
@@ -14247,7 +14311,7 @@ msgstr "SAP ERP Connection"
 msgid "SAP Field"
 msgstr "SAP Field"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5796
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5791
 msgid "SAP Invoice Status"
 msgstr "SAP Invoice Status"
 
@@ -14294,7 +14358,7 @@ msgstr "Save & Publish"
 msgid "Save & Regenerate Fields"
 msgstr "Save & Regenerate Fields"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:366
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:370
 msgid "Save as draft"
 msgstr "Save as draft"
 
@@ -14310,7 +14374,7 @@ msgstr "Save Assignments"
 msgid "Save Branding"
 msgstr "Save Branding"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:360
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:363
 msgid "Save changes"
 msgstr "Save changes"
 
@@ -14410,7 +14474,7 @@ msgstr "Saved"
 msgid "Saved ({0})"
 msgstr "Saved ({0})"
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:138
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:161
 msgid "Saved as draft"
 msgstr "Saved as draft"
 
@@ -14495,7 +14559,7 @@ msgid "Schema Validation"
 msgstr "Schema Validation"
 
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:655
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5360
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5355
 msgid "Score"
 msgstr "Score"
 
@@ -14522,7 +14586,10 @@ msgstr "Search"
 
 #. placeholder {0}: col.label
 #: src/pages/reports/components/OverviewTab.tsx:369
+<<<<<<< HEAD
+=======
 #: src/pages/reports/components/OverviewTab.tsx:323
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 msgid "Search {0}..."
 msgstr "Search {0}..."
 
@@ -14557,7 +14624,7 @@ msgstr ""
 msgid "Search and select workflows..."
 msgstr "Search and select workflows..."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:191
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:262
 msgid "Search assignee, delegate…"
 msgstr "Search assignee, delegate…"
 
@@ -14595,7 +14662,7 @@ msgstr "Search created by..."
 msgid "Search currency..."
 msgstr "Search currency..."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:189
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:260
 msgid "Search delegations"
 msgstr "Search delegations"
 
@@ -14824,7 +14891,7 @@ msgstr "Section {0}"
 msgid "Security"
 msgstr "Security"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5610
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5605
 msgid "Security & Auditing Policy"
 msgstr "Security & Auditing Policy"
 
@@ -14900,7 +14967,7 @@ msgstr "Select a file to view its extracted data."
 #~ msgid "Select a folder"
 #~ msgstr "Select a folder"
 
-#: src/pages/folders/components/FolderExplorer.tsx:682
+#: src/pages/folders/components/FolderExplorer.tsx:683
 msgid "Select a folder before uploading."
 msgstr "Select a folder before uploading."
 
@@ -14912,8 +14979,8 @@ msgstr "Select a folder before uploading."
 #~ msgid "Select a quote with line items to preview"
 #~ msgstr "Select a quote with line items to preview"
 
-#: src/pages/folders/components/FolderExplorer.tsx:695
-#: src/pages/folders/components/FolderExplorer.tsx:709
+#: src/pages/folders/components/FolderExplorer.tsx:696
+#: src/pages/folders/components/FolderExplorer.tsx:710
 msgid "Select a repository before uploading."
 msgstr "Select a repository before uploading."
 
@@ -14954,7 +15021,7 @@ msgstr "Select a source in the Details step first."
 msgid "Select a specific workflow or folder above to proceed with report creation."
 msgstr "Select a specific workflow or folder above to proceed with report creation."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:513
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:517
 msgid "Select a start date."
 msgstr "Select a start date."
 
@@ -14974,7 +15041,7 @@ msgstr "Select a user and mark at least one signature place on the document."
 msgid "Select a user for each password."
 msgstr "Select a user for each password."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:403
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:407
 msgid "Select a user…"
 msgstr "Select a user…"
 
@@ -14986,7 +15053,7 @@ msgstr "Select a user…"
 #~ msgid "Select a workflow or folder above to proceed with report creation."
 #~ msgstr "Select a workflow or folder above to proceed with report creation."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:650
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:654
 msgid "Select a workflow."
 msgstr "Select a workflow."
 
@@ -15019,11 +15086,11 @@ msgstr "Select all rows"
 msgid "Select an action..."
 msgstr "Select an action..."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:689
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:693
 msgid "Select an alternative assignee."
 msgstr "Select an alternative assignee."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:528
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:532
 msgid "Select an end date."
 msgstr "Select an end date."
 
@@ -15070,8 +15137,8 @@ msgstr "Select Data Basis"
 msgid "Select Data Source"
 msgstr "Select Data Source"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:564
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:673
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:568
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:677
 msgid "Select delegate…"
 msgstr "Select delegate…"
 
@@ -15254,7 +15321,7 @@ msgstr "Select target access"
 msgid "Select the storage provider where documents for this folder should be stored."
 msgstr "Select the storage provider where documents for this folder should be stored."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:423
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:427
 msgid "Select the user who will be away."
 msgstr "Select the user who will be away."
 
@@ -15339,7 +15406,7 @@ msgstr "Select Workflow"
 #~ msgid "Select Workflow Template"
 #~ msgstr "Select Workflow Template"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:635
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:639
 msgid "Select workflow…"
 msgstr "Select workflow…"
 
@@ -15397,7 +15464,7 @@ msgstr "Semantic Classification"
 msgid "Send"
 msgstr "Send"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:765
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:769
 msgid "Send a notification to the alternative assignee"
 msgstr "Send a notification to the alternative assignee"
 
@@ -15459,7 +15526,7 @@ msgstr "Sends OTP to the Email"
 msgid "Sensitive Values to Redact"
 msgstr "Sensitive Values to Redact"
 
-#: src/pages/requests/RequestsPage.tsx:330
+#: src/pages/requests/RequestsPage.tsx:331
 #: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:46
 msgid "Sent"
 msgstr "Sent"
@@ -15695,7 +15762,7 @@ msgstr "Ship To Address"
 msgid "Shipping destination address"
 msgstr "Shipping destination address"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6367
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6362
 msgid "Short Ship"
 msgstr "Short Ship"
 
@@ -15808,7 +15875,7 @@ msgstr "Showing"
 
 #. placeholder {0}: visible.length
 #. placeholder {1}: delegations.length
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:377
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:478
 msgid "Showing {0} of {1}"
 msgstr "Showing {0} of {1}"
 
@@ -15958,7 +16025,7 @@ msgstr "Sign request sent. Assigned places stay visible on the document."
 msgid "Sign Up"
 msgstr "Sign Up"
 
-#: src/pages/requests/RequestsPage.tsx:1692
+#: src/pages/requests/RequestsPage.tsx:1701
 msgid "Sign-in or watch creation failed."
 msgstr "Sign-in or watch creation failed."
 
@@ -16143,7 +16210,7 @@ msgstr "Source File:"
 #~ msgid "Source Form"
 #~ msgstr "Source Form"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5094
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5089
 msgid "Source System"
 msgstr "Source System"
 
@@ -16156,19 +16223,19 @@ msgstr "Source Type"
 #~ msgid "Source:"
 #~ msgstr "Source:"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1645
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1646
 msgid "Source: Manual Entry"
 msgstr "Source: Manual Entry"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:3806
+#: src/pages/folders/components/DocumentDetailsView.tsx:3811
 msgid "Source: OCR Document"
 msgstr "Source: OCR Document"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1671
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1672
 msgid "Source: PO Master (ERP/Excel Data)"
 msgstr "Source: PO Master (ERP/Excel Data)"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1670
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1671
 msgid "Source: SAP (HANA Cloud)"
 msgstr "Source: SAP (HANA Cloud)"
 
@@ -16188,13 +16255,13 @@ msgstr "Stage unavailable"
 msgid "Staged"
 msgstr "Staged"
 
-#: src/pages/folders/components/FolderExplorer.tsx:256
+#: src/pages/folders/components/FolderExplorer.tsx:257
 #: src/pages/folders/components/Upload/Upload.tsx:2682
 #: src/pages/folders/components/Upload/Upload.tsx:3874
 msgid "Staged file deleted."
 msgstr "Staged file deleted."
 
-#: src/pages/folders/components/FolderExplorer.tsx:338
+#: src/pages/folders/components/FolderExplorer.tsx:339
 msgid "Staged file exported successfully."
 msgstr "Staged file exported successfully."
 
@@ -16213,7 +16280,7 @@ msgstr "Standard SLA timeline. No pricing exceptions found."
 msgid "Start"
 msgstr "Start"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:230
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:232
 msgid "Start date cannot be in the past."
 msgstr "Start date cannot be in the past."
 
@@ -16263,10 +16330,14 @@ msgstr "Static credit trend for {selectedMonth}"
 #: src/pages/forms/FormsPage.tsx:221
 #: src/pages/forms/FormsPage.tsx:641
 #: src/pages/reports/components/ReportsListView.tsx:213
+<<<<<<< HEAD
+#: src/pages/requests/components/request/components/Header.tsx:879
+=======
 #: src/pages/requests/components/request/components/Header.tsx:884
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:208
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:298
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2337
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4163
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4168
@@ -16479,7 +16550,7 @@ msgstr "Suggest Folder"
 msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 msgstr "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5726
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5721
 msgid "Suggested Allocation"
 msgstr "Suggested Allocation"
 
@@ -16540,7 +16611,7 @@ msgstr "Supplier Address"
 msgid "Supplier Conflict"
 msgstr "Supplier Conflict"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5648
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5643
 msgid "Supplier Details"
 msgstr "Supplier Details"
 
@@ -16556,7 +16627,7 @@ msgstr "Supplier Follow-ups"
 #~ msgid "Supplier geographic distribution"
 #~ msgstr "Supplier geographic distribution"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5113
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5108
 msgid "Supplier ID"
 msgstr "Supplier ID"
 
@@ -16582,11 +16653,11 @@ msgstr "Supplier physical billing address"
 msgid "Supplier Risk Radar"
 msgstr "Supplier Risk Radar"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5667
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5662
 msgid "Supplier Status"
 msgstr "Supplier Status"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5617
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5612
 msgid "Supplier tax identity and banking details."
 msgstr "Supplier tax identity and banking details."
 
@@ -16594,22 +16665,22 @@ msgstr "Supplier tax identity and banking details."
 msgid "Supplier Trend Insight"
 msgstr "Supplier Trend Insight"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4625
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4658
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4677
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4620
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4653
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4672
 msgid "Supplier Verification"
 msgstr "Supplier Verification"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2872
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2873
 msgid "Supplier verification completed: {0}"
 msgstr "Supplier verification completed: {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5629
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5624
 msgid "Supplier Verification Registry"
 msgstr "Supplier Verification Registry"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4703
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4698
 msgid "Supplier verified"
 msgstr "Supplier verified"
 
@@ -16913,11 +16984,11 @@ msgstr "The agent did not return a result."
 msgid "The agent stopped. Review the request and try again."
 msgstr "The agent stopped. Review the request and try again."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:408
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:412
 msgid "The assignee cannot be changed on an existing delegation."
 msgstr "The assignee cannot be changed on an existing delegation."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:813
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:817
 msgid "The delegate completes anything already in progress."
 msgstr "The delegate completes anything already in progress."
 
@@ -17008,7 +17079,7 @@ msgstr "There is no invoice data to display yet. Processed invoices and analytic
 #. placeholder {0}: userName(effectiveAssigneeId)
 #. placeholder {1}: formatShortDay(overlapping.fromDate)
 #. placeholder {2}: formatDay(overlapping.toDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:545
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:549
 msgid "These dates overlap an existing delegation for {0} ({1} – {2}). Adjust the dates or edit that delegation instead."
 msgstr "These dates overlap an existing delegation for {0} ({1} – {2}). Adjust the dates or edit that delegation instead."
 
@@ -17051,8 +17122,8 @@ msgid "This email address has already been added."
 msgstr "This email address has already been added."
 
 #: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:128
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1861
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1951
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1862
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1952
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:501
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:559
@@ -17152,7 +17223,10 @@ msgid "This related document cannot be removed."
 msgstr "This related document cannot be removed."
 
 #: src/pages/reports/components/OverviewTab.tsx:531
+<<<<<<< HEAD
+=======
 #: src/pages/reports/components/OverviewTab.tsx:485
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 msgid "This report has no fields configured yet."
 msgstr "This report has no fields configured yet."
 
@@ -17282,7 +17356,7 @@ msgstr "To"
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:519
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:523
 msgid "To Date"
 msgstr "To Date"
 
@@ -17313,7 +17387,7 @@ msgstr "Today's Action Queue"
 msgid "Toggle sidebar"
 msgstr "Toggle sidebar"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:331
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:333
 msgid "Tomorrow"
 msgstr "Tomorrow"
 
@@ -17346,7 +17420,7 @@ msgstr "Total"
 msgid "Total Amount"
 msgstr "Total Amount"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5440
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5435
 msgid "Total Amount (Inv / PO)"
 msgstr "Total Amount (Inv / PO)"
 
@@ -17453,11 +17527,11 @@ msgid "Transactions"
 msgstr "Transactions"
 
 #. placeholder {0}: formatShortDay(fromDate)
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:912
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:916
 msgid "Transfer current requests on {0}"
 msgstr "Transfer current requests on {0}"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:760
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:764
 msgid "Transfer current requests to the alternative assignee"
 msgstr "Transfer current requests to the alternative assignee"
 
@@ -17499,7 +17573,7 @@ msgstr "Try Again"
 msgid "Try changing the file search or resetting the selected filters."
 msgstr "Try changing the file search or resetting the selected filters."
 
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:223
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:348
 msgid "Try clearing the filters or search."
 msgstr "Try clearing the filters or search."
 
@@ -17773,7 +17847,7 @@ msgstr "Undo"
 msgid "Undo (Ctrl+Z)"
 msgstr "Undo (Ctrl+Z)"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:808
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:812
 msgid "Unfinished requests go back to the original assignee."
 msgstr "Unfinished requests go back to the original assignee."
 
@@ -17785,20 +17859,20 @@ msgstr "Unique PO Identifier"
 msgid "Unit"
 msgstr "Unit"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5207
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5202
 msgid "Unit Cost"
 msgstr "Unit Cost"
 
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:89
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6303
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6298
 msgid "Unit Price"
 msgstr "Unit Price"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5439
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5434
 msgid "Unit Price (Inv / PO)"
 msgstr "Unit Price (Inv / PO)"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6235
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:6230
 msgid "units"
 msgstr "units"
 
@@ -17938,7 +18012,7 @@ msgid "Upgrading…"
 msgstr "Upgrading…"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2026
-#: src/pages/folders/components/FolderExplorer.tsx:641
+#: src/pages/folders/components/FolderExplorer.tsx:642
 #: src/pages/folders/components/FolderFilterBar.tsx:771
 #: src/pages/folders/components/Upload/DraftFilesMediaLibrary.tsx:861
 #: src/pages/folders/components/Upload/Upload.tsx:4171
@@ -18188,7 +18262,7 @@ msgstr "Use built-in secure storage for invoice documents."
 msgid "Use demo data"
 msgstr ""
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:557
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:561
 msgid "Use one delegate for all workflows"
 msgstr "Use one delegate for all workflows"
 
@@ -18353,7 +18427,7 @@ msgstr "Validate accounts to master"
 msgid "Validate mappings and confirm to finalize import payload."
 msgstr "Validate mappings and confirm to finalize import payload."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4634
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4629
 msgid "Validate supplier credentials and ensure vendor compliance"
 msgstr "Validate supplier credentials and ensure vendor compliance"
 
@@ -18415,9 +18489,9 @@ msgstr "Vendor Check"
 msgid "Vendor identity mismatch."
 msgstr "Vendor identity mismatch."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5098
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5578
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5653
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5093
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5573
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5648
 #: src/pages/requests/utils/localizeRequestUi.ts:39
 msgid "Vendor Name"
 msgstr "Vendor Name"
@@ -18426,7 +18500,7 @@ msgstr "Vendor Name"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "Vendors needing prompt outreach or query resolution"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5703
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5698
 msgid "Verification checks supplier address registry, bank details, and business license status against corporate supplier directories and compliance watchlists."
 msgstr "Verification checks supplier address registry, bank details, and business license status against corporate supplier directories and compliance watchlists."
 
@@ -18434,11 +18508,11 @@ msgstr "Verification checks supplier address registry, bank details, and busines
 msgid "Verification Code"
 msgstr "Verification Code"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2879
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2880
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "Verification failed. 1 credit has been refunded."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5676
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5671
 msgid "Verification Rationale"
 msgstr "Verification Rationale"
 
@@ -18446,7 +18520,7 @@ msgstr "Verification Rationale"
 msgid "Verified"
 msgstr "Verified"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4641
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4636
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "Verify"
@@ -18497,8 +18571,8 @@ msgstr "Verify your email to review and sign this document."
 msgid "Verify your security rules before applying settings."
 msgstr "Verify your security rules before applying settings."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4656
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4668
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4651
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4663
 msgid "Verifying..."
 msgstr "Verifying..."
 
@@ -18527,8 +18601,6 @@ msgstr "Versioning strategy saved. Do you require an ERP or system integration, 
 #: src/pages/folders/components/FolderSharePopover.tsx:158
 #: src/pages/folders/components/FolderSharePopover.tsx:883
 #: src/pages/reports/components/ReportShareButton.tsx:23
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:298
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:300
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:76
 msgid "View"
 msgstr "View"
@@ -18572,6 +18644,10 @@ msgstr "View all attachments ({moreCount} more)"
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:106
 msgid "View All Versions"
 msgstr "View All Versions"
+
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:447
+msgid "View details"
+msgstr "View details"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1110
 #: src/pages/folders/components/FolderTable.tsx:1512
@@ -18632,7 +18708,7 @@ msgstr "vs last period"
 msgid "Wait for AI classification to finish before indexing."
 msgstr "Wait for AI classification to finish before indexing."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2211
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2212
 msgid "Wait for Balance"
 msgstr "Wait for Balance"
 
@@ -18712,11 +18788,15 @@ msgstr "We couldn't get your email address from Google. Please try again."
 msgid "We couldn’t identify this request, so it couldn’t be moved."
 msgstr "We couldn’t identify this request, so it couldn’t be moved."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:429
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:323
+msgid "We couldn't load delegations."
+msgstr "We couldn't load delegations."
+
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:433
 msgid "We couldn't load users."
 msgstr "We couldn't load users."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:732
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:736
 msgid "We couldn't load workflows."
 msgstr "We couldn't load workflows."
 
@@ -18805,7 +18885,7 @@ msgstr "What form shall we create?"
 msgid "What Happens Next?"
 msgstr "What Happens Next?"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:71
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:72
 msgid "What happens to requests"
 msgstr "What happens to requests"
 
@@ -18830,7 +18910,7 @@ msgstr "What workflow shall we create?"
 msgid "When enabled, page and card backgrounds use a light or dark wash of the primary color."
 msgstr "When enabled, page and card backgrounds use a light or dark wash of the primary color."
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:800
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:804
 msgid "When the absence period ends"
 msgstr "When the absence period ends"
 
@@ -18852,7 +18932,7 @@ msgstr "Which vendors carry the most risk exposure?"
 msgid "Which versioning strategy should apply when the same file is uploaded again?"
 msgstr "Which versioning strategy should apply when the same file is uploaded again?"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:53
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:54
 msgid "Who will be away"
 msgstr "Who will be away"
 
@@ -18866,11 +18946,11 @@ msgid "Workflow"
 msgstr "Workflow"
 
 #. placeholder {0}: index + 1
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:611
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:615
 msgid "Workflow {0}"
 msgstr "Workflow {0}"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:749
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:753
 msgid "Workflow and request delegation action"
 msgstr "Workflow and request delegation action"
 
@@ -18905,7 +18985,7 @@ msgstr "Workflow ID is missing. Cannot start workflow."
 msgid "Workflow Name"
 msgstr "Workflow Name"
 
-#: src/pages/settings/components/delegation/DelegationWizard.tsx:654
+#: src/pages/settings/components/delegation/DelegationWizard.tsx:658
 msgid "Workflow Stage"
 msgstr "Workflow Stage"
 
@@ -18927,7 +19007,7 @@ msgstr "Workflow started but did not return any data."
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:79
 #: src/pages/portal/components/PortalHome.tsx:416
 #: src/pages/search/SearchPage.tsx:322
-#: src/pages/settings/components/delegation/DelegationSettings.tsx:206
+#: src/pages/settings/components/delegation/DelegationSettings.tsx:296
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:63
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:129
 #: src/pages/settings/components/PortalConfiguration.tsx:88
@@ -18974,7 +19054,11 @@ msgid "years"
 msgstr "years"
 
 #: src/pages/reports/components/ReportsListView.tsx:225
+<<<<<<< HEAD
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5971
+=======
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5976
+>>>>>>> 20ca7023e2427d8de4cf5b6ec531239c0a3670e4
 msgid "Yes"
 msgstr "Yes"
 
@@ -18994,7 +19078,7 @@ msgstr "Yesterday"
 msgid "You"
 msgstr "You"
 
-#: src/pages/requests/RequestsPage.tsx:1975
+#: src/pages/requests/RequestsPage.tsx:1984
 msgid "You can close this tab or return to the main window."
 msgstr "You can close this tab or return to the main window."
 
@@ -19059,7 +19143,7 @@ msgstr "Your AI agent will start monitoring your email and processing incoming i
 msgid "Your image is too large. Please upload an image smaller than 5 MB."
 msgstr "Your image is too large. Please upload an image smaller than 5 MB."
 
-#: src/pages/requests/RequestsPage.tsx:1958
+#: src/pages/requests/RequestsPage.tsx:1967
 msgid "Your mailbox has been connected and the enquiry watch is active."
 msgstr "Your mailbox has been connected and the enquiry watch is active."
 

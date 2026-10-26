@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
 import type { Report } from '@/pages/report-builder/types'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Icon from '@/components/base/icon/Icon'
@@ -16,6 +17,7 @@ import {
   useDeleteReportBuilderReportMutation,
   useReportBuilderListQuery,
 } from '@/pages/report-builder/hooks/useReportBuilderApi'
+import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import ReportShareButton from './ReportShareButton'
@@ -57,7 +59,9 @@ const ReportsListView = ({
   const {
     data: reports = [],
     error: listError,
+    isFetching,
     isLoading,
+    refetch,
   } = useReportBuilderListQuery()
   const deleteReportMutation = useDeleteReportBuilderReportMutation()
 
@@ -358,12 +362,24 @@ const ReportsListView = ({
         </div>
       )}
 
-      <div className='bg-surface-muted/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-surface-muted/50 p-4'>
         <div className='mb-3'>
           <CustomFilter
             searchPlaceholder={t`Search reports...`}
             searchQuery={search}
             showReset={Boolean(search || domainFilter || ownershipFilter)}
+            trailingActions={
+              <IconButton
+                ariaLabel={t`Refresh`}
+                color='gray'
+                disabled={isFetching}
+                icon='lucide:refresh-cw'
+                iconClass={cn(isFetching && 'animate-spin')}
+                tooltip={t`Refresh reports`}
+                variant='outline'
+                onClick={() => void refetch()}
+              />
+            }
             activeFilters={{
               ...(domainFilter ? { domain: domainFilter } : {}),
               ...(ownershipFilter ? { ownership: ownershipFilter } : {}),

@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
-import { useMatches, useParams } from '@tanstack/react-router'
+import { useMatches, useNavigate, useParams } from '@tanstack/react-router'
 import formApi from '@/api/form/form'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
@@ -11,6 +11,7 @@ import {
   openDmsSetupPreview,
 } from '@/pages/dashboard/workflows/setupPreview'
 import useFoldersTopbarStore from '@/pages/folders/stores/useFoldersTopbarStore'
+import { useReportBuilderByIdQuery } from '@/pages/report-builder/hooks/useReportBuilderApi'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import SettingsBreadcrumbs from '@/pages/settings/components/SettingsBreadcrumbs'
 import useSettingsTopbarStore from '@/pages/settings/stores/useSettingsTopbarStore'
@@ -19,6 +20,7 @@ import cn from '@/utils/cn'
 
 const PageTitle = () => {
   const { t } = useLingui()
+  const navigate = useNavigate()
   const matches = useMatches()
   const { closeRequest, isRequestOpen, selectedWorkflow } = requestStore(
     (state) => state,
@@ -51,7 +53,13 @@ const PageTitle = () => {
     routeId === '/embed/dashboard' ||
     routeId === '/embed'
 
-  const { formId } = useParams({ strict: false }) as any
+  const isReportDetailRoute = routeId === '/_app/reports_/$reportId'
+
+  const { formId, reportId } = useParams({ strict: false }) as any
+  // Same cached query the report page loads, so this costs no extra request.
+  const { data: reportDetail } = useReportBuilderByIdQuery(
+    isReportDetailRoute ? reportId : null,
+  )
   const { data: formData } = useQuery({
     enabled: !!formId && isFormEntriesRoute,
     queryKey: ['forms', 'detail', formId],
@@ -174,6 +182,18 @@ const PageTitle = () => {
         <SettingsBreadcrumbs
           items={settingsBreadcrumbs}
           onNavigate={settingsNavigate}
+        />
+      )
+    }
+
+    if (isReportDetailRoute && reportDetail?.name) {
+      return (
+        <SettingsBreadcrumbs
+          items={[
+            { key: 'reports', label: t`Report Details` },
+            { label: reportDetail.name },
+          ]}
+          onNavigate={() => void navigate({ to: '/reports' })}
         />
       )
     }

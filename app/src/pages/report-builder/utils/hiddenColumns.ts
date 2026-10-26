@@ -36,6 +36,23 @@ export const isIdColumn = (key: string, label?: string) => {
 
 const normalizeKey = (key: string) => key.toLowerCase().replace(/[\s_-]/g, '')
 
+// The report's own source (its workflow / repository name) repeats on every
+// row, so it isn't displayed.
+const SOURCE_NAME_COLUMNS = new Set([
+  'repo',
+  'reponame',
+  'repository',
+  'repositoryname',
+  'workflow',
+  'workflowname',
+])
+
+/** Columns report tables don't display: ids and the source workflow/repository. */
+export const isHiddenReportColumn = (key: string, label?: string) =>
+  isIdColumn(key, label) ||
+  SOURCE_NAME_COLUMNS.has(normalizeKey(key)) ||
+  SOURCE_NAME_COLUMNS.has(normalizeKey(label ?? ''))
+
 /**
  * Finds a `userPrompt` value (any of `userPrompt`, `user_prompt`,
  * `User Prompt`, ...) at the top level of each source or one level down.

@@ -30,6 +30,7 @@ import DocumentPreviewViewer from '@/components/common/document-preview/Document
 import { isKanbanMissingMatch } from '@/pages/requests/helpers/kanbanBoard'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
+import { useStableRequestKey } from '@/pages/requests/hooks/useStableRequestKey'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/search/lib/styles/index.css'
@@ -4168,19 +4169,13 @@ const Overview = (props: any) => {
     [],
   )
 
-  const requestFileKey = useMemo(
-    () =>
-      [
-        selectedItem?.processId,
-        selectedItem?.id,
-        selectedItem?.transactionId,
-        selectedItem?.itemId,
-        repositoryId,
-      ]
-        .filter(Boolean)
-        .join(':'),
-    [repositoryId, selectedItem],
-  )
+  // Stays the same while the same request is open, so the preview is not
+  // cleared and re-downloaded when the agent finishes and new data arrives.
+  const requestFileKey = useStableRequestKey([
+    selectedItem?.processId,
+    selectedItem?.id,
+    selectedItem?.transactionId,
+  ])
 
   const zoomTo = (nextScale: number) => {
     const boundedScale = Math.min(
