@@ -11,9 +11,19 @@ public interface IReportAiDefinitionService
         Guid reportId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Private (owner + shared only) / Public / Selected Users / Selected Groups visibility check for one record.</summary>
+    Task<bool> CanSeeAsync(
+        Guid tenantId,
+        Guid userId,
+        bool isAdmin,
+        ReportAiDefinitionRecord record,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Returns only the records <paramref name="userId"/> is allowed to see, per Visibility/SharedUsers/SharedGroups.</summary>
     Task<IReadOnlyList<ReportAiDefinitionRecord>> ListAsync(
         Guid tenantId,
         Guid userId,
+        bool isAdmin,
         CancellationToken cancellationToken = default);
 
     Task<ReportAiDefinitionRecord?> UpdateAsync(

@@ -84,7 +84,7 @@ public sealed class TenantPilotTokenService : IApAgentPilotAuthProvider
             pilotEmail,
             _pilotOptions.Password,
             tenantId,
-            cancellationToken);
+            cancellationToken: cancellationToken);
 
         if (login is LoginRequiresTwoFactor)
         {

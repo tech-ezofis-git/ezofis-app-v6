@@ -29,12 +29,16 @@ public sealed class EzofisAuthService : IEzofisAuthService
     private readonly ILoginEmailOtpService _loginEmailOtp;
     private readonly IMemoryCache _cache;
     private readonly IConfiguration _configuration;
+    private readonly LoginHistoryStore _loginHistory;
 
     private sealed record PendingTwoFactorLogin(
         string UserId,
         Guid TenantId,
         string Method,
-        string? EmailOtp);
+        string? EmailOtp,
+        string? LoggedFrom,
+        string? IpAddress,
+        string? UserAgent);
 
     public EzofisAuthService(
         IUserRepository userRepository,
@@ -44,7 +48,8 @@ public sealed class EzofisAuthService : IEzofisAuthService
         ITwoFactorService twoFactorService,
         ILoginEmailOtpService loginEmailOtp,
         IMemoryCache cache,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        LoginHistoryStore loginHistory)
     {
         _userRepository = userRepository;
         _guestProvisioning = guestProvisioning;
@@ -54,9 +59,17 @@ public sealed class EzofisAuthService : IEzofisAuthService
         _loginEmailOtp = loginEmailOtp;
         _cache = cache;
         _configuration = configuration;
+        _loginHistory = loginHistory;
     }
 
-    public async Task<LoginResult> LoginAsync(string email, string password, Guid tenantId, CancellationToken cancellationToken = default)
+    public async Task<LoginResult> LoginAsync(
+        string email,
+        string password,
+        Guid tenantId,
+        string? loggedFrom = null,
+        string? ipAddress = null,
+        string? userAgent = null,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("Email is required.");
@@ -108,7 +121,7 @@ public sealed class EzofisAuthService : IEzofisAuthService
 
             _cache.Set(
                 PendingLoginCacheKeyPrefix + tempToken,
-                new PendingTwoFactorLogin(user.Id.ToString(), tenantId, method, emailOtp),
+                new PendingTwoFactorLogin(user.Id.ToString(), tenantId, method, emailOtp, loggedFrom, ipAddress, userAgent),
                 PendingLoginExpiry);
 
             return new LoginRequiresTwoFactor(
@@ -120,7 +133,9 @@ public sealed class EzofisAuthService : IEzofisAuthService
                 message);
         }
 
-        return BuildLoginSuccess(user, tenantId);
+        var success = BuildLoginSuccess(user, tenantId);
+        await RecordLoginHistoryAsync(user.Id, tenantId, user.Email, loggedFrom, ipAddress, userAgent, cancellationToken);
+        return success;
     }
 
     public async Task<LoginResult> SetShareInvitePasswordAsync(
@@ -385,7 +400,34 @@ public sealed class EzofisAuthService : IEzofisAuthService
         if (user == null)
             throw new UnauthorizedAccessException("User not found.");
 
-        return BuildLoginSuccess(user, cached.TenantId);
+        var success = BuildLoginSuccess(user, cached.TenantId);
+        await RecordLoginHistoryAsync(
+            user.Id, cached.TenantId, user.Email, cached.LoggedFrom, cached.IpAddress, cached.UserAgent, cancellationToken);
+        return success;
+    }
+
+    private async Task RecordLoginHistoryAsync(
+        Guid userId,
+        Guid tenantId,
+        string? email,
+        string? loggedFrom,
+        string? ipAddress,
+        string? userAgent,
+        CancellationToken cancellationToken)
+    {
+        await _loginHistory.InsertAsync(
+            new LoginHistoryInsertRequest
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                UserId = userId,
+                Email = email,
+                LoggedFrom = loggedFrom,
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                CreatedAtUtc = DateTime.UtcNow
+            },
+            cancellationToken);
     }
 
     private static string ResolveMfaMethod(SaaSApp.Users.Domain.Entities.User user)

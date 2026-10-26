@@ -59,5 +59,12 @@ internal static class ReportSchemaSql
             ON reporting."ReportAiDefinitions" ("TenantId", "IsDeleted", "ModifiedAtUtc");
         CREATE INDEX IF NOT EXISTS "IX_ReportAiDefinitions_Owner"
             ON reporting."ReportAiDefinitions" ("TenantId", "OwnerUserId", "IsDeleted");
+
+        -- Private (default, owner + explicitly shared only) | Public (whole tenant) |
+        -- Selected Users | Selected Groups. ALTER (not part of the CREATE above) so this is
+        -- picked up on tenants whose ReportAiDefinitions table already existed.
+        ALTER TABLE reporting."ReportAiDefinitions" ADD COLUMN IF NOT EXISTS "Visibility" varchar(32) NOT NULL DEFAULT 'Private';
+        ALTER TABLE reporting."ReportAiDefinitions" ADD COLUMN IF NOT EXISTS "SharedUsers" text NOT NULL DEFAULT '[]';
+        ALTER TABLE reporting."ReportAiDefinitions" ADD COLUMN IF NOT EXISTS "SharedGroups" text NOT NULL DEFAULT '[]';
         """;
 }

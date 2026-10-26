@@ -355,7 +355,7 @@ public sealed class ReportAiBuilderServiceTests
 
         Assert.Equal(200, result.StatusCode);
         Assert.False(store.Rows.ContainsKey(id));
-        var missing = await service.GetAsync(TenantId, id);
+        var missing = await service.GetAsync(TenantId, UserId, isAdmin: false, id);
         Assert.Equal(404, missing.StatusCode);
     }
 
@@ -466,9 +466,24 @@ public sealed class ReportAiBuilderServiceTests
         public Task<IReadOnlyList<ReportAiDefinitionRecord>> ListAsync(
             Guid tenantId,
             Guid userId,
+            bool isAdmin,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<ReportAiDefinitionRecord>>(
-                Rows.Values.Where(r => r.TenantId == tenantId).Select(Clone).ToList());
+                Rows.Values.Where(r => r.TenantId == tenantId
+                    && (isAdmin || r.OwnerUserId == userId
+                        || (r.Visibility ?? "Private").Equals("Public", StringComparison.OrdinalIgnoreCase)))
+                    .Select(Clone).ToList());
+
+        public Task<bool> CanSeeAsync(
+            Guid tenantId,
+            Guid userId,
+            bool isAdmin,
+            ReportAiDefinitionRecord record,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(
+                isAdmin
+                || record.OwnerUserId == userId
+                || (record.Visibility ?? "Private").Equals("Public", StringComparison.OrdinalIgnoreCase));
 
         public Task<ReportAiDefinitionRecord?> UpdateAsync(
             Guid tenantId,

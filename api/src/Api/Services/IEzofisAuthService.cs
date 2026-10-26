@@ -4,7 +4,15 @@ namespace SaaSApp.Api.Services;
 public interface IEzofisAuthService
 {
     /// <summary>Login with email and password. Returns JWT or LoginRequiresTwoFactor if 2FA enabled.</summary>
-    Task<LoginResult> LoginAsync(string email, string password, Guid tenantId, CancellationToken cancellationToken = default);
+    /// <param name="loggedFrom">Client-supplied login channel, e.g. WEB or MOBILE. Recorded against the login history row.</param>
+    Task<LoginResult> LoginAsync(
+        string email,
+        string password,
+        Guid tenantId,
+        string? loggedFrom = null,
+        string? ipAddress = null,
+        string? userAgent = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Complete login after 2FA. Verifies authenticator TOTP or email OTP and returns JWT.</summary>
     Task<LoginResult> CompleteTwoFactorAsync(string tempToken, string code, CancellationToken cancellationToken = default);

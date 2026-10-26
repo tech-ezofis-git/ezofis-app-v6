@@ -202,21 +202,26 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
 
     public async Task<ReportAiHttpResult> GetAsync(
         Guid tenantId,
+        Guid userId,
+        bool isAdmin,
         Guid reportId,
         CancellationToken cancellationToken = default)
     {
         var record = await _store.GetAsync(tenantId, reportId, cancellationToken);
-        return record is null
-            ? ReportAiHttpResult.Error(404, "Report not found.")
-            : ReportAiHttpResult.Ok(ReportAgentChatMapper.ToDto(record));
+        if (record is null)
+            return ReportAiHttpResult.Error(404, "Report not found.");
+        if (!await _store.CanSeeAsync(tenantId, userId, isAdmin, record, cancellationToken))
+            return ReportAiHttpResult.Error(404, "Report not found.");
+        return ReportAiHttpResult.Ok(ReportAgentChatMapper.ToDto(record, userId, isAdmin));
     }
 
     public async Task<ReportAiHttpResult> ListAsync(
         Guid tenantId,
         Guid userId,
+        bool isAdmin,
         CancellationToken cancellationToken = default)
     {
-        var rows = await _store.ListAsync(tenantId, userId, cancellationToken);
+        var rows = await _store.ListAsync(tenantId, userId, isAdmin, cancellationToken);
         var items = rows.Select(row => new ReportAiListItemDto
         {
             Id = row.Id,
@@ -228,23 +233,34 @@ public sealed class ReportAiBuilderService : IReportAiBuilderService
             Status = row.Status,
             Runs = row.Runs,
             CreatedAtUtc = row.CreatedAtUtc,
-            ModifiedAtUtc = row.ModifiedAtUtc
+            ModifiedAtUtc = row.ModifiedAtUtc,
+            Visibility = row.Visibility,
+            CanEdit = isAdmin || row.OwnerUserId == userId,
+            Access = row.OwnerUserId == userId ? "owner" : isAdmin ? "admin" : "shared"
         }).ToList();
         return ReportAiHttpResult.Ok(items);
     }
 
     public async Task<ReportAiHttpResult> UpdateAsync(
         Guid tenantId,
+        Guid userId,
+        bool isAdmin,
         Guid reportId,
         ReportAiUpdateRequest request,
         CancellationToken cancellationToken = default)
     {
+        var existing = await _store.GetAsync(tenantId, reportId, cancellationToken);
+        if (existing is null)
+            return ReportAiHttpResult.Error(404, "Report not found.");
+        if (!isAdmin && existing.OwnerUserId != userId)
+            return ReportAiHttpResult.Error(403, "Only the owner or an Admin can edit this report.");
+
         try
         {
             var updated = await _store.UpdateAsync(tenantId, reportId, request, cancellationToken);
             return updated is null
                 ? ReportAiHttpResult.Error(404, "Report not found.")
-                : ReportAiHttpResult.Ok(ReportAgentChatMapper.ToDto(updated));
+                : ReportAiHttpResult.Ok(ReportAgentChatMapper.ToDto(updated, userId, isAdmin));
         }
         catch (KeyNotFoundException)
         {

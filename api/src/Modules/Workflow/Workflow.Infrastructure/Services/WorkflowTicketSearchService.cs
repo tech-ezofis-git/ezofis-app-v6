@@ -1019,26 +1019,29 @@ public sealed class WorkflowTicketSearchService : IWorkflowTicketSearchService
 
         switch (cond)
         {
+            // Postgres string comparisons are case-sensitive by default (unlike SQL Server's
+            // default collation) -- eq/neq compare lower(), and contains/startswith/endswith use
+            // ILIKE instead of LIKE, so a filter value's case never changes whether it matches.
             case "eq" or "=" or "equal":
                 if (isDate && TryBuildDateEquals(columnExpr, paramBase, scalar, out sql, out parameters))
                     return true;
-                sql = $"{columnExpr} = {paramBase}";
+                sql = $"LOWER({columnExpr}) = LOWER({paramBase})";
                 parameters.Add(new NpgsqlParameter(paramBase, scalar ?? string.Empty));
                 return true;
             case "neq" or "!=" or "notequal":
-                sql = $"{columnExpr} <> {paramBase}";
+                sql = $"LOWER({columnExpr}) <> LOWER({paramBase})";
                 parameters.Add(new NpgsqlParameter(paramBase, scalar ?? string.Empty));
                 return true;
             case "contains" or "like":
-                sql = $"{columnExpr} LIKE {paramBase}";
+                sql = $"{columnExpr} ILIKE {paramBase}";
                 parameters.Add(new NpgsqlParameter(paramBase, $"%{scalar ?? string.Empty}%"));
                 return true;
             case "startswith":
-                sql = $"{columnExpr} LIKE {paramBase}";
+                sql = $"{columnExpr} ILIKE {paramBase}";
                 parameters.Add(new NpgsqlParameter(paramBase, $"{scalar ?? string.Empty}%"));
                 return true;
             case "endswith":
-                sql = $"{columnExpr} LIKE {paramBase}";
+                sql = $"{columnExpr} ILIKE {paramBase}";
                 parameters.Add(new NpgsqlParameter(paramBase, $"%{scalar ?? string.Empty}"));
                 return true;
             case "gt":
@@ -1060,10 +1063,10 @@ public sealed class WorkflowTicketSearchService : IWorkflowTicketSearchService
                 for (var i = 0; i < values.Count; i++)
                 {
                     var name = $"{paramBase}_{i}";
-                    names.Add(name);
+                    names.Add($"LOWER({name})");
                     parameters.Add(new NpgsqlParameter(name, values[i]));
                 }
-                sql = $"{columnExpr} IN ({string.Join(", ", names)})";
+                sql = $"LOWER({columnExpr}) IN ({string.Join(", ", names)})";
                 return true;
             }
             case "isnull":

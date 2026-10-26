@@ -323,19 +323,19 @@ public sealed partial class FormService
         var cond = filter.Condition.Trim().ToLowerInvariant();
         if (cond is "contains" or "like")
         {
-            conditionSql = $"{col} LIKE {paramName}";
+            conditionSql = $"{col} ILIKE {paramName}";
             parameter = new NpgsqlParameter(paramName, $"%{filter.Value ?? string.Empty}%");
             return true;
         }
         if (cond is "eq" or "=" or "equal")
         {
-            conditionSql = $"{col} = {paramName}";
+            conditionSql = $"LOWER({col}) = LOWER({paramName})";
             parameter = new NpgsqlParameter(paramName, filter.Value ?? string.Empty);
             return true;
         }
         if (cond is "neq" or "!=" or "notequal")
         {
-            conditionSql = $"{col} <> {paramName}";
+            conditionSql = $"LOWER({col}) <> LOWER({paramName})";
             parameter = new NpgsqlParameter(paramName, filter.Value ?? string.Empty);
             return true;
         }

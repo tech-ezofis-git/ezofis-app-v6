@@ -88,6 +88,7 @@ builder.Services.Configure<AgentsChatOptions>(
     builder.Configuration.GetSection(AgentsChatOptions.SectionName));
 builder.Services.AddHttpClient<JiraIssueClient>();
 builder.Services.AddScoped<SupportTicketStore>();
+builder.Services.AddScoped<LoginHistoryStore>();
 builder.Services.AddScoped<SupportTicketEmailService>();
 builder.Services.AddScoped<IWorkflowSchemaService, WorkflowSchemaService>();
 builder.Services.AddScoped<IDmsSchemaService, DmsSchemaService>();

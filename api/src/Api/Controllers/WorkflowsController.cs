@@ -27,6 +27,7 @@ using SaaSApp.Workflow.Application.Workflows.Queries.GetSlaStatus;
 using SaaSApp.Workflow.Application.Workflows.Queries.ListSlaBreaches;
 using SaaSApp.Workflow.Application.Workflows.Queries.GetWorkflowCounts;
 using SaaSApp.Workflow.Application.Workflows.Queries.GetWorkflowWiseInboxCounts;
+using SaaSApp.Workflow.Application.Workflows.Queries.GetMyInboxAllWorkflows;
 using SaaSApp.Workflow.Application.Contracts;
 using SaaSApp.Workflow.Application.Forms;
 using SaaSApp.Workflow.Application.Workflows.Queries.GetLegacyMailboxInstanceCount;
@@ -1719,6 +1720,23 @@ public sealed class WorkflowsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Open inbox tickets for the current user across every workflow they have access to, grouped
+    /// by workflow -- the "All Workflows" inbox landing page. Same rows/shape as GET inbox?workflowId=,
+    /// just run once per accessible workflow and grouped, so the client doesn't need N calls.
+    /// Each group's totalCount is exact; items/newTodayCount only reflect the first itemsPerWorkflow
+    /// rows (default 20) -- raise itemsPerWorkflow if a workflow's badge needs to reflect more.
+    /// </summary>
+    [HttpGet("inbox/all-workflows")]
+    [ProducesResponseType(typeof(GetMyInboxAllWorkflowsResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyInboxAllWorkflows(
+        [FromQuery] int itemsPerWorkflow = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new GetMyInboxAllWorkflowsQuery(itemsPerWorkflow), cancellationToken);
+        return Ok(result);
+    }
+
     /// <summary>List open inbox tasks assigned to the current user (hidden after approve/sent or workflow complete). Requires workflowId.</summary>
     [HttpGet("inbox")]
     [ProducesResponseType(typeof(LegacyMailboxListResult), StatusCodes.Status200OK)]
@@ -2566,21 +2584,23 @@ public sealed class WorkflowsController : ControllerBase
 
         var paramName = $"@f_{Math.Abs((filter.Criteria + filter.Condition + filter.Value).GetHashCode())}";
         var cond = filter.Condition.Trim().ToLowerInvariant();
+        // Postgres text comparisons are case-sensitive by default (unlike SQL Server's default
+        // collation): ILIKE for contains, LOWER() for eq/neq, so filter value case never matters.
         if (cond is "contains" or "like")
         {
-            conditionSql = $"{col} LIKE {paramName}";
+            conditionSql = $"{col} ILIKE {paramName}";
             parameter = new NpgsqlParameter(paramName, $"%{filter.Value ?? string.Empty}%");
             return true;
         }
         if (cond is "eq" or "=" or "equal")
         {
-            conditionSql = $"{col} = {paramName}";
+            conditionSql = $"LOWER({col}) = LOWER({paramName})";
             parameter = new NpgsqlParameter(paramName, filter.Value ?? string.Empty);
             return true;
         }
         if (cond is "neq" or "!=" or "notequal")
         {
-            conditionSql = $"{col} <> {paramName}";
+            conditionSql = $"LOWER({col}) <> LOWER({paramName})";
             parameter = new NpgsqlParameter(paramName, filter.Value ?? string.Empty);
             return true;
         }
@@ -2624,19 +2644,19 @@ public sealed class WorkflowsController : ControllerBase
         var cond = filter.Condition.Trim().ToLowerInvariant();
         if (cond is "contains" or "like")
         {
-            conditionSql = $"{column} LIKE {paramName}";
+            conditionSql = $"{column} ILIKE {paramName}";
             parameter = new NpgsqlParameter(paramName, $"%{filter.Value ?? string.Empty}%");
             return true;
         }
         if (cond is "eq" or "=" or "equal")
         {
-            conditionSql = $"{column} = {paramName}";
+            conditionSql = $"LOWER({column}) = LOWER({paramName})";
             parameter = new NpgsqlParameter(paramName, filter.Value ?? string.Empty);
             return true;
         }
         if (cond is "neq" or "!=" or "notequal")
         {
-            conditionSql = $"{column} <> {paramName}";
+            conditionSql = $"LOWER({column}) <> LOWER({paramName})";
             parameter = new NpgsqlParameter(paramName, filter.Value ?? string.Empty);
             return true;
         }

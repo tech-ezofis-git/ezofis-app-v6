@@ -45,7 +45,7 @@ public sealed class ReportAiBuilderController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken cancellationToken) =>
-        ToActionResult(await _service.ListAsync(RequireTenantId(), RequireUserId(), cancellationToken));
+        ToActionResult(await _service.ListAsync(RequireTenantId(), RequireUserId(), IsAdmin(), cancellationToken));
 
     /// <summary>Generate a report prompt from the user description and save it. Returns the report id.</summary>
     [HttpPost("prompt")]
@@ -60,7 +60,7 @@ public sealed class ReportAiBuilderController : ControllerBase
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken) =>
-        ToActionResult(await _service.GetAsync(RequireTenantId(), id, cancellationToken));
+        ToActionResult(await _service.GetAsync(RequireTenantId(), RequireUserId(), IsAdmin(), id, cancellationToken));
 
     [HttpPatch("{id:guid}")]
     public async Task<IActionResult> Update(
@@ -69,7 +69,8 @@ public sealed class ReportAiBuilderController : ControllerBase
         CancellationToken cancellationToken)
     {
         request ??= new ReportAiUpdateRequest();
-        return ToActionResult(await _service.UpdateAsync(RequireTenantId(), id, request, cancellationToken));
+        return ToActionResult(
+            await _service.UpdateAsync(RequireTenantId(), RequireUserId(), IsAdmin(), id, request, cancellationToken));
     }
 
     /// <summary>Soft-delete a saved AI report. Owner or Admin only.</summary>

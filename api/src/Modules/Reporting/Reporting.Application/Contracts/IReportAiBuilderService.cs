@@ -16,16 +16,21 @@ public interface IReportAiBuilderService
 
     Task<ReportAiHttpResult> GetAsync(
         Guid tenantId,
+        Guid userId,
+        bool isAdmin,
         Guid reportId,
         CancellationToken cancellationToken = default);
 
     Task<ReportAiHttpResult> ListAsync(
         Guid tenantId,
         Guid userId,
+        bool isAdmin,
         CancellationToken cancellationToken = default);
 
     Task<ReportAiHttpResult> UpdateAsync(
         Guid tenantId,
+        Guid userId,
+        bool isAdmin,
         Guid reportId,
         ReportAiUpdateRequest request,
         CancellationToken cancellationToken = default);

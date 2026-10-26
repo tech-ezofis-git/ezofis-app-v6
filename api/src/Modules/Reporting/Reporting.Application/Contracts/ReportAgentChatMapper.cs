@@ -378,9 +378,10 @@ public static class ReportAgentChatMapper
         };
     }
 
-    public static ReportAiDefinitionDto ToDto(ReportAiDefinitionRecord row)
+    public static ReportAiDefinitionDto ToDto(ReportAiDefinitionRecord row, Guid userId = default, bool isAdmin = false)
     {
         var spec = ParseObjectOrEmpty(row.ReportSpecJson);
+        var canEdit = isAdmin || row.OwnerUserId == userId;
         return new ReportAiDefinitionDto
         {
             Id = row.Id,
@@ -396,7 +397,12 @@ public static class ReportAgentChatMapper
             Status = row.Status,
             Runs = row.Runs,
             CreatedAtUtc = row.CreatedAtUtc,
-            ModifiedAtUtc = row.ModifiedAtUtc
+            ModifiedAtUtc = row.ModifiedAtUtc,
+            Visibility = row.Visibility,
+            SharedUsers = row.SharedUsers,
+            SharedGroups = row.SharedGroups,
+            CanEdit = canEdit,
+            Access = row.OwnerUserId == userId ? "owner" : isAdmin ? "admin" : "shared"
         };
     }
 

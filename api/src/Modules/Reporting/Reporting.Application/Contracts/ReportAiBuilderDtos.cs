@@ -46,6 +46,11 @@ public sealed class ReportAiUpdateRequest
     public string? SessionId { get; set; }
     public string? ReportPrompt { get; set; }
     public JsonElement ReportSpec { get; set; }
+    public string? Status { get; set; }
+    /// <summary>Private (owner + shared only, default) | Public (whole tenant) | Selected Users | Selected Groups.</summary>
+    public string? Visibility { get; set; }
+    public List<string>? SharedUsers { get; set; }
+    public List<string>? SharedGroups { get; set; }
 }
 
 public sealed class ReportAiDefinitionRecord
@@ -66,6 +71,10 @@ public sealed class ReportAiDefinitionRecord
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? ModifiedAtUtc { get; set; }
     public DateTime? LastRunAtUtc { get; set; }
+    /// <summary>Private (owner + shared only, default) | Public (whole tenant) | Selected Users | Selected Groups.</summary>
+    public string Visibility { get; set; } = "Private";
+    public List<string> SharedUsers { get; set; } = [];
+    public List<string> SharedGroups { get; set; } = [];
 }
 
 public sealed class ReportAiDefinitionDto
@@ -87,6 +96,11 @@ public sealed class ReportAiDefinitionDto
     public int Runs { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? ModifiedAtUtc { get; set; }
+    public string Visibility { get; set; } = "Private";
+    public List<string> SharedUsers { get; set; } = [];
+    public List<string> SharedGroups { get; set; } = [];
+    public bool CanEdit { get; set; }
+    public string Access { get; set; } = "owner";
 }
 
 public sealed class ReportAiListItemDto
@@ -101,6 +115,9 @@ public sealed class ReportAiListItemDto
     public int Runs { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? ModifiedAtUtc { get; set; }
+    public string Visibility { get; set; } = "Private";
+    public bool CanEdit { get; set; }
+    public string Access { get; set; } = "owner";
 }
 
 public sealed record ReportAiSpecColumn(string Key, string Label, string? Formula);

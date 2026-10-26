@@ -40,7 +40,14 @@ public sealed class LoginController : ControllerBase
 
         try
         {
-            var result = await _authService.LoginAsync(request.Email, request.Password, tenantId.Value, cancellationToken);
+            var result = await _authService.LoginAsync(
+                request.Email,
+                request.Password,
+                tenantId.Value,
+                request.LoggedFrom,
+                HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Request.Headers.UserAgent.ToString(),
+                cancellationToken);
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -248,7 +255,8 @@ public sealed class LoginController : ControllerBase
 }
 
 /// <summary>Email and password for Ezofis login. Requires X-Tenant-Id header.</summary>
-public record LoginRequest(string Email, string Password);
+/// <param name="LoggedFrom">Client-supplied login channel, e.g. "WEB" or "MOBILE". Recorded against the login history row; defaults to WEB if omitted.</param>
+public record LoginRequest(string Email, string Password, string? LoggedFrom = null);
 
 /// <summary>TempToken from login response when 2FA required; Code from email OTP or authenticator app. Requires X-Tenant-Id header.</summary>
 public record CompleteTwoFactorRequest(string TempToken, string Code);
