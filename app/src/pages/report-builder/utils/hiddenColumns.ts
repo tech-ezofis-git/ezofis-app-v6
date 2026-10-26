@@ -43,16 +43,21 @@ const VALUE_ALIASES: Record<string, string[]> = {
   repositoryname: ['repository', 'repositoryname', 'repository_name'],
 }
 
+const cellText = (value: unknown): string | undefined => {
+  if (value == null || value === '') return undefined
+  return typeof value === 'string' ? value : String(value)
+}
+
 /** Read a live report cell by key, label, or compact alias (File Name / FileName). */
 export const pickRowValue = (
   row: Record<string, unknown> | undefined,
   ...names: Array<string | undefined>
-) => {
+): string | undefined => {
   if (!row) return undefined
   for (const name of names) {
     if (!name) continue
-    const direct = row[name]
-    if (direct != null && direct !== '') return direct
+    const direct = cellText(row[name])
+    if (direct != null) return direct
   }
   const wants = new Set<string>()
   for (const name of names) {
@@ -62,8 +67,9 @@ export const pickRowValue = (
     for (const alias of VALUE_ALIASES[compact] || []) wants.add(alias)
   }
   for (const [key, value] of Object.entries(row)) {
-    if (value == null || value === '') continue
-    if (wants.has(normalizeKey(key))) return value
+    const text = cellText(value)
+    if (text == null) continue
+    if (wants.has(normalizeKey(key))) return text
   }
   return undefined
 }
