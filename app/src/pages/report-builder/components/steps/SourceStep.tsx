@@ -1,7 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import {
@@ -343,12 +343,31 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
       ? PROMPT_EXAMPLES_FOLDER
       : PROMPT_EXAMPLES_WORKFLOW
 
-  // Preview rows aren't persisted with the draft; re-run when coming back here.
+  // Same condition the "Build with AI" section renders under.
+  const isAiBuilderMounted =
+    (!isEditing || Boolean(draft.agent)) && isSourceReady
+  const hasAutoRunRef = useRef(false)
+
+  // Preview rows aren't persisted with the draft, so run once whenever the
+  // AI builder mounts. A new report only has something to run after
+  // Generate; an edited AI report already carries its saved prompt/spec, so
+  // run it directly (no /prompt call) and show its suggestion card.
   useEffect(() => {
-    if (suggestion && draft.agent && !isEditing)
-      void runPreview(buildAgentConfigFromDraft(draft.agent, draft))
+    if (!isAiBuilderMounted || !draft.agent || hasAutoRunRef.current) return
+    if (!suggestion && !isEditing) return
+    hasAutoRunRef.current = true
+    if (!suggestion) {
+      setDraft({
+        aiSuggestion: {
+          fieldIds: draft.fields,
+          name: draft.name,
+          summary: draft.description,
+        },
+      })
+    }
+    void runPreview(buildAgentConfigFromDraft(draft.agent, draft))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isAiBuilderMounted])
 
   // Internal identifier columns stay in the report spec but aren't displayed.
   const visibleFields = useMemo(
@@ -459,7 +478,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
           available when editing an AI report so its prompt can be refined. */}
       {(!isEditing || draft.agent) && (
         <AnimatePresence mode='wait'>
-          {isSourceReady && (
+          {isAiBuilderMounted && (
             <motion.div
               animate={{ opacity: 1, scale: 1, y: 0 }}
               className='flex flex-col gap-5 rounded-2xl border border-primary-4/50 bg-surface p-6 shadow-sm'
