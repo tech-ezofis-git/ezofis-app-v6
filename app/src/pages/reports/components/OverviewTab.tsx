@@ -16,7 +16,10 @@ import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
+import Icon from '@/components/base/icon/Icon'
 import Pagination from '@/components/base/pagination/Pagination'
+import showToast from '@/components/base/toast/showToast'
+import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
 import {
   useReportAgentDataQuery,
@@ -24,6 +27,9 @@ import {
 } from '@/pages/report-builder/hooks/useReportBuilderApi'
 import { isIdColumn } from '@/pages/report-builder/utils/hiddenColumns'
 import { resolveFieldStatus } from '@/pages/report-builder/utils/resolveFieldStatus'
+import Request from '@/pages/requests/components/request/Request'
+import useInlineRequestOverview from '@/pages/requests/hooks/useInlineRequestOverview'
+import cn from '@/utils/cn'
 import {
   detectFieldType,
   generateCategoryOptions,
@@ -35,7 +41,7 @@ import {
   matchesDateRangeValue,
   parseFilterValues,
 } from '@/utils/filterUtils'
-import { parseUtcDate } from '@/utils/utcDate'
+import { formatReportDate, parseUtcDate } from '@/utils/utcDate'
 import StatusPill from './StatusPill'
 
 interface OverviewColumn {
@@ -79,17 +85,6 @@ const toTableRow = (row: Record<string, string>, index: number) => ({
   name: '',
 })
 
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
-
-/** UTC timestamps shown in local time, e.g. 21-10-2026 12:54 PM. */
-const formatDateCell = (value: string) => {
-  const date = parseUtcDate(value)
-  if (!date) return value
-  return dayjs(date).format(
-    DATE_ONLY_PATTERN.test(value.trim()) ? 'DD-MM-YYYY' : 'DD-MM-YYYY hh:mm A',
-  )
-}
-
 /** The local calendar day of a UTC timestamp, so date filters match what is shown. */
 const toLocalDay = (value: string) => {
   const date = parseUtcDate(value)
@@ -98,7 +93,6 @@ const toLocalDay = (value: string) => {
 
 const OverviewTab = ({ report }: Props) => {
   const { t } = useLingui()
-  const navigate = useNavigate()
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
@@ -192,18 +186,29 @@ const OverviewTab = ({ report }: Props) => {
     })
   }, [runResult, previewColumns, linkColumns])
 
+  // A row's request opens in place of the table; the table stays mounted
+  // (hidden) so its filters, page and scroll survive the round trip.
+  const requestOverview = useInlineRequestOverview({
+    onClosedByAction: () => {
+      // An approve/reject may have changed the row's stage/status.
+      void (isAgentReport ? agentQuery.refetch() : legacyQuery.refetch())
+    },
+    onError: () =>
+      showToast({
+        message: t`Couldn't open this request. Try again.`,
+        variant: 'error',
+      }),
+  })
+  const { open: openRequestOverview } = requestOverview
+
   const openRequest = useCallback(
     (row: Row) => {
       const workflowId = String(row[WORKFLOW_ID_KEY] ?? '')
       const instanceId = String(row[INSTANCE_ID_KEY] ?? '')
       if (!workflowId || !instanceId) return
-      // Same deep link Global Search uses; RequestsPage opens the overview.
-      void navigate({
-        search: { processId: instanceId, workflowId },
-        to: '/requests',
-      })
+      void openRequestOverview({ instanceId, workflowId })
     },
-    [navigate],
+    [openRequestOverview],
   )
 
   const valueForColumn = useCallback(
@@ -233,7 +238,7 @@ const OverviewTab = ({ report }: Props) => {
     (col: OverviewColumn, row: Record<string, string>) => {
       const value = valueForColumn(col, row)
       return value && isDateColumnType(columnTypes[col.id])
-        ? formatDateCell(value)
+        ? formatReportDate(value)
         : value
     },
     [valueForColumn, columnTypes],
@@ -258,13 +263,22 @@ const OverviewTab = ({ report }: Props) => {
               row[WORKFLOW_ID_KEY] &&
               row[INSTANCE_ID_KEY]
             ) {
+              const isOpening =
+                requestOverview.loadingInstanceId === row[INSTANCE_ID_KEY]
               return (
                 <button
-                  className='cursor-pointer font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70'
+                  className='inline-flex cursor-pointer items-center gap-1.5 font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70 disabled:cursor-wait'
+                  disabled={Boolean(requestOverview.loadingInstanceId)}
                   type='button'
                   onClick={() => openRequest(row)}
                 >
                   {(row[key] as string) || '-'}
+                  {isOpening && (
+                    <Icon
+                      className='size-3.5 animate-spin'
+                      name='lucide:loader-2'
+                    />
+                  )}
                 </button>
               )
             }
@@ -280,12 +294,17 @@ const OverviewTab = ({ report }: Props) => {
               )
             }
             const value = row[key] as string
-            if (isDate && value) return formatDateCell(value)
+            if (isDate && value) return formatReportDate(value)
             return value ?? '-'
           },
         }
       }),
-    [previewColumns, fieldSettings, columnTypes, openRequest],
+    [
+      previewColumns,
+      fieldSettings, columnTypes,
+      openRequest,
+      requestOverview.loadingInstanceId,
+    ],
   )
 
   const { searchState, ...restState } = useDataTableState({
@@ -534,73 +553,76 @@ const OverviewTab = ({ report }: Props) => {
   }
 
   return (
-    <div className='flex min-h-0 flex-1 flex-col gap-3'>
-      <CustomFilter
-        activeFilters={activeFilters}
-        filters={filterDefinitions}
-        moreFilters={moreFilterGroups}
-        moreFiltersLabel={t`Add filter`}
-        customSearchComponent={
-          <>
-            <TableSearch table={table as any} />
-            <IconButton
-              ariaLabel={t`Refresh`}
-              color='gray'
-              disabled={isFetching}
-              icon='lucide:refresh-cw'
-              loading={isFetching}
-              tooltip={t`Refresh`}
-              variant='outline'
-              onClick={refresh}
-            />
-          </>
-        }
-        showReset={Boolean(
-          search ||
-          selectedColumnId ||
-          Object.values(activeFilters).some(Boolean),
-        )}
-        trailingActions={
-          <TableExport
-            fileName={report.name || 'report'}
-            table={renderTable as any}
+    <>
+      {requestOverview.isOpen && (
+        <AnimateFadeIn className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface'>
+          <Request
+            item={requestOverview.item}
+            key={requestOverview.item?.processId || requestOverview.item?.id}
+            workflowId={requestOverview.workflowId ?? undefined}
+            onBack={requestOverview.close}
           />
-        }
-        onFilterChange={(id, value) => {
-          setActiveFilters((prev) => ({ ...prev, [id]: value }))
-          setPage(1)
-        }}
-        onReset={() => {
-          table.setGlobalFilter({ id: '', value: '' })
-          setActiveFilters({})
-          setPage(1)
-        }}
-      />
+        </AnimateFadeIn>
+      )}
+      <div
+        className={cn(
+          'flex min-h-0 flex-1 flex-col gap-3',
+          requestOverview.isOpen && 'hidden',
+        )}
+      >
+        <CustomFilter
+          activeFilters={activeFilters}
+          customSearchComponent={<TableSearch table={table as any} />}
+          filters={filterDefinitions}
+          moreFilters={moreFilterGroups}
+          moreFiltersLabel={t`Add filter`}
+          showReset={Boolean(
+            search ||
+            selectedColumnId ||
+            Object.values(activeFilters).some(Boolean),
+          )}
+          trailingActions={
+            <TableExport
+              fileName={report.name || 'report'}
+              table={renderTable as any}
+            />
+          }
+          onFilterChange={(id, value) => {
+            setActiveFilters((prev) => ({ ...prev, [id]: value }))
+            setPage(1)
+          }}
+          onReset={() => {
+            table.setGlobalFilter({ id: '', value: '' })
+            setActiveFilters({})
+            setPage(1)
+          }}
+        />
 
-      <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
-        <DataTable
-          isLoading={isLoading}
-          isReLoading={false}
+        <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
+          <DataTable
+            isLoading={isLoading}
+            isReLoading={false}
+            pageSize={pageSize}
+            table={renderTable}
+            hideActionBar
+            hideGrouping
+            stickyHeader
+            onReload={() => {}}
+          />
+        </div>
+
+        <Pagination
+          className='shrink-0'
+          itemLabel={t`Rows`}
+          page={page}
           pageSize={pageSize}
-          table={renderTable}
-          hideActionBar
-          hideGrouping
-          stickyHeader
-          onReload={() => {}}
+          showPageNumbers={false}
+          totalItems={filteredRows.length}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
         />
       </div>
-
-      <Pagination
-        className='shrink-0'
-        itemLabel={t`Rows`}
-        page={page}
-        pageSize={pageSize}
-        showPageNumbers={false}
-        totalItems={filteredRows.length}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-      />
-    </div>
+    </>
   )
 }
 
