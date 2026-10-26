@@ -115,6 +115,7 @@ import {
   type DocumentSigningState,
   type SavedSignature,
 } from './DocumentSigningPage'
+import DynamicTableColumnCell from './DynamicTableColumnCell'
 import FolderSharePopover from './FolderSharePopover'
 import { DynamicIcon } from './icons'
 import { InlineMetadataEditPanel } from './InlineMetadataEditPanel'
@@ -138,7 +139,14 @@ type CommentItem = {
 type DetailCard = {
   iconKey: string
   id: string
-  rows: Array<{ color?: string; id?: string; label: string; value: string }>
+  rows: Array<{
+    color?: string
+    id?: string
+    label: string
+    /** Table fields: rows shown in the table popup (as in the folder list). */
+    table?: Array<Record<string, string>>
+    value: string
+  }>
   title: string
 }
 type DetailField = { key?: string; label?: string; value?: any }
@@ -3869,6 +3877,19 @@ export function DocumentDetailsView({
                               >
                                 {`*****${maskedTail}`}
                               </b>
+                            ) : row.table ? (
+                              <span className='flex justify-end'>
+                                {row.table.length ? (
+                                  <DynamicTableColumnCell
+                                    rawVal={row.table}
+                                    title={row.label}
+                                  />
+                                ) : (
+                                  <b className='text-[13px] font-semibold text-gray-13'>
+                                    -
+                                  </b>
+                                )}
+                              </span>
                             ) : row.label.toLowerCase() === 'status' ? (
                               <StatusPill status={plainVal} />
                             ) : (
