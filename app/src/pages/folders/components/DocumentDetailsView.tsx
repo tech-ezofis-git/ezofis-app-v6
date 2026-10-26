@@ -32,6 +32,7 @@ import {
 import IconButton from '@/components/base/button/IconButton'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import Icon from '@/components/base/icon/Icon'
+import Skeleton from '@/components/base/Skeleton'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
@@ -85,6 +86,7 @@ import {
   toTextValue,
   useEditMetadataForm,
 } from '../hooks/useEditMetadataForm'
+import { useTicketFormRows } from '../hooks/useTicketFormRows'
 import {
   type DocumentPreviewKind,
   getFileExtension,
@@ -136,7 +138,7 @@ type CommentItem = {
 type DetailCard = {
   iconKey: string
   id: string
-  rows: Array<{ color?: string; label: string; value: string }>
+  rows: Array<{ color?: string; id?: string; label: string; value: string }>
   title: string
 }
 type DetailField = { key?: string; label?: string; value?: any }
@@ -461,6 +463,12 @@ export function DocumentDetailsView({
   )
   const [data, setData] = useState<WorkspaceDocumentDetail | null>(null)
   const [ticketData, setTicketData] = useState<any>(null)
+  // Right panel: document details, or the ticket's workflow form (read-only).
+  const [rightTab, setRightTab] = useState<'details' | 'form'>('details')
+  const hasTicketForm = Boolean(
+    ticketData?.workflowId && ticketData?.workflowInstanceId,
+  )
+  const showTicketForm = hasTicketForm && rightTab === 'form'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'timeline' | 'comments' | 'relatedDocs'>(
@@ -1720,18 +1728,44 @@ export function DocumentDetailsView({
     return buildInfoCards(data, t)
   }, [data, t])
 
+  // "Form Details" tab: the ticket's workflow form as label / value rows,
+  // loaded when the tab is first opened. Shares the click-to-highlight in
+  // the preview with the Details cards (allCards).
+  const [ticketFormOpened, setTicketFormOpened] = useState(false)
+  useEffect(() => {
+    if (showTicketForm) setTicketFormOpened(true)
+  }, [showTicketForm])
+  const ticketForm = useTicketFormRows(
+    hasTicketForm ? String(ticketData.workflowId) : undefined,
+    hasTicketForm ? String(ticketData.workflowInstanceId) : undefined,
+    hasTicketForm && ticketFormOpened,
+  )
+  const formCard = useMemo<DetailCard>(
+    () => ({
+      iconKey: 'fileText',
+      id: 'ticket-form',
+      rows: ticketForm.rows,
+      title: t`Form Details`,
+    }),
+    [t, ticketForm.rows],
+  )
+  const allCards = useMemo(
+    () => (formCard.rows.length ? [...infoCards, formCard] : infoCards),
+    [formCard, infoCards],
+  )
+
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null)
   const [fieldFocusRequestId, setFieldFocusRequestId] = useState(0)
   const [matchedFieldValues, setMatchedFieldValues] = useState<Set<string>>(
     () => new Set(),
   )
-  const infoCardsRef = useRef(infoCards)
-  infoCardsRef.current = infoCards
+  const infoCardsRef = useRef(allCards)
+  infoCardsRef.current = allCards
 
   const fieldProbeTerms = useMemo(() => {
     const terms: string[] = []
     const seen = new Set<string>()
-    for (const card of infoCards) {
+    for (const card of allCards) {
       for (const row of card.rows) {
         const value = getFieldDisplayValue(row.value)
         if (!value || seen.has(value)) continue
@@ -1740,7 +1774,7 @@ export function DocumentDetailsView({
       }
     }
     return terms
-  }, [infoCards])
+  }, [allCards])
 
   const fieldProbeKey = fieldProbeTerms.join('\u0001')
 
@@ -1758,7 +1792,7 @@ export function DocumentDetailsView({
       if (previous) {
         for (const card of cards) {
           for (const row of card.rows) {
-            const rowKey = `${card.id}:${row.label}`
+            const rowKey = `${card.id}:${row.id ?? row.label}`
             if (rowKey !== previous) continue
             const value = getFieldDisplayValue(row.value)
             if (value && matchedSet.has(value)) return previous
@@ -1771,16 +1805,16 @@ export function DocumentDetailsView({
 
   const activeHighlightTerm = useMemo(() => {
     if (!activeFieldKey) return null
-    for (const card of infoCards) {
+    for (const card of allCards) {
       for (const row of card.rows) {
-        const rowKey = `${card.id}:${row.label}`
+        const rowKey = `${card.id}:${row.id ?? row.label}`
         if (rowKey !== activeFieldKey) continue
         const value = getFieldDisplayValue(row.value)
         return value || null
       }
     }
     return null
-  }, [activeFieldKey, infoCards])
+  }, [activeFieldKey, allCards])
 
   const activeHighlightColor = useMemo(() => {
     if (!activeFieldKey) return undefined
@@ -3642,7 +3676,75 @@ export function DocumentDetailsView({
                   }}
                 />
               ) : null}
-              {!isEditingMetadata && ticketData ? (
+              {!isEditingMetadata && hasTicketForm ? (
+                <div
+                  className='flex items-center gap-5 border-b border-gray-3 px-1'
+                  role='tablist'
+                >
+                  {(
+                    [
+                      ['details', t`Details`, 'tabler:info-circle'],
+                      ['form', t`Form Details`, 'tabler:forms'],
+                    ] as const
+                  ).map(([value, label, icon]) => (
+                    <button
+                      aria-selected={rightTab === value}
+                      key={value}
+                      role='tab'
+                      type='button'
+                      className={cn(
+                        '-mb-px flex items-center gap-1.5 border-b-2 px-0.5 py-2.5 text-13 font-medium transition-colors',
+                        rightTab === value
+                          ? 'border-primary-9 text-primary-11'
+                          : 'border-transparent text-gray-10 hover:text-gray-12',
+                      )}
+                      onClick={() => setRightTab(value)}
+                    >
+                      <Icon className='size-4' name={icon} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {!isEditingMetadata &&
+              showTicketForm &&
+              (ticketForm.isLoading ||
+                ticketForm.isError ||
+                !ticketForm.rows.length) ? (
+                <Card className='overflow-hidden p-0' key='ticket-form-state'>
+                  {ticketForm.isLoading ? (
+                    <div aria-busy='true' className='divide-y divide-gray-3'>
+                      {[0, 1, 2, 3, 4, 5].map((index) => (
+                        <div
+                          className='flex items-center justify-between gap-3 px-3.5 py-3'
+                          key={index}
+                        >
+                          <Skeleton className='h-3.5 w-24' />
+                          <Skeleton className='h-3.5 w-32' />
+                        </div>
+                      ))}
+                    </div>
+                  ) : ticketForm.isError ? (
+                    <div className='flex flex-col items-center gap-3 px-6 py-8 text-center'>
+                      <p className='text-[13px] font-medium text-gray-12'>
+                        {t`We couldn't load the request form.`}
+                      </p>
+                      <Buttons
+                        icon='tabler:refresh'
+                        label={t`Retry`}
+                        size='sm'
+                        variant='outline'
+                        onClick={ticketForm.retry}
+                      />
+                    </div>
+                  ) : (
+                    <p className='px-6 py-8 text-center text-[13px] text-gray-10'>
+                      {t`This workflow has no form fields.`}
+                    </p>
+                  )}
+                </Card>
+              ) : null}
+              {!isEditingMetadata && ticketData && !showTicketForm ? (
                 <Card className='overflow-hidden p-0' key='ticket-info'>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
                     <DynamicIcon
@@ -3749,7 +3851,14 @@ export function DocumentDetailsView({
                   </div>
                 </Card>
               ) : null}
-              {(isEditingMetadata ? [] : infoCards).map((card) => (
+              {(isEditingMetadata
+                ? []
+                : showTicketForm
+                  ? formCard.rows.length && !ticketForm.isLoading
+                    ? [formCard]
+                    : []
+                  : infoCards
+              ).map((card) => (
                 <Card className='overflow-hidden p-0' key={card.id}>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
                     <DynamicIcon
@@ -3760,7 +3869,7 @@ export function DocumentDetailsView({
                   </h3>
                   <div>
                     {card.rows.map((row) => {
-                      const rowKey = `${card.id}:${row.label}`
+                      const rowKey = `${card.id}:${row.id ?? row.label}`
                       const fieldValue = getFieldDisplayValue(row.value)
                       const maskField = isSelectedPiiLabel(row.label)
                       const hasPdfMatch =
@@ -3804,7 +3913,7 @@ export function DocumentDetailsView({
                             focusField()
                           }}
                         >
-                          {/* 1. OCR Icon Only with Tooltip */}
+                          {/* 1. OCR Icon Only with Tooltip (when the value is found in the PDF) */}
                           <span className='flex h-5 w-5 shrink-0 items-center justify-center pt-0.5'>
                             {hasPdfMatch ? (
                               <Tooltip
@@ -3820,7 +3929,10 @@ export function DocumentDetailsView({
 
                           {/* 2. Label */}
                           <div className='min-w-0 flex-1 overflow-hidden pt-0.5 text-[13px] text-gray-10'>
-                            <span className='block truncate text-left hover:overflow-hidden hover:break-words hover:whitespace-normal'>
+                            <span
+                              className='block truncate text-left hover:overflow-hidden hover:break-words hover:whitespace-normal'
+                              title={row.label}
+                            >
                               {row.label}
                             </span>
                           </div>
@@ -3837,7 +3949,10 @@ export function DocumentDetailsView({
                             ) : row.label.toLowerCase() === 'status' ? (
                               <StatusPill status={plainVal} />
                             ) : (
-                              <b className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:break-words hover:whitespace-normal'>
+                              <b
+                                className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:break-words hover:whitespace-normal'
+                                title={plainVal}
+                              >
                                 {plainVal}
                               </b>
                             )}

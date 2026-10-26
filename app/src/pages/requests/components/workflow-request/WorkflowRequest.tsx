@@ -21,6 +21,7 @@ import {
 } from '@/pages/requests/utils/workflow.utils'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import { useHeaderBudget } from '../../hooks/useMasterFormValue'
 import AgentDetailPlaceholder from '../request/components/generic-overview/AgentDetailPlaceholder'
 import AgentSummaryBoxes, {
   formatAgentDisplayLabel,
@@ -611,6 +612,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     () => ({ ...formModel, ...tableUploadValues }),
     [formModel, tableUploadValues],
   )
+  // Header "Budget": master form "Remaining Budget" for the current lookups.
+  const headerBudget = useHeaderBudget(panels, tableUploadModel)
   const missingTableUploadIds = useMemo(
     () =>
       getMissingMandatoryFieldIds(
@@ -671,6 +674,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         <Header
           activePanel={activePanel}
           attachmentCount={attachments.length}
+          budget={headerBudget}
           commentCount={comments.length}
           isSubmitDisabled={
             isLoadingForm || !!loadError || Boolean(activeTableUpload)

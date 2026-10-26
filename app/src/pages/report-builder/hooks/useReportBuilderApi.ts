@@ -24,7 +24,12 @@ import {
   runReportAiReport,
   updateReportAiReport,
 } from '@/api/v6/reportAgent'
-import type { Report, ReportAgentConfig, ReportStatus } from '../types'
+import type {
+  Report,
+  ReportAgentConfig,
+  ReportStatus,
+  ReportVisibility,
+} from '../types'
 import {
   agentRunToReportRunResult,
   aiListItemToReport,
@@ -238,14 +243,20 @@ export const useSaveReportAiMutation = () => {
       agent: ReportAgentConfig
       description: string
       name: string
+      sharedGroups: string[]
+      sharedUsers: string[]
       status?: ReportStatus
+      visibility: ReportVisibility
     }) => {
       const result = await updateReportAiReport(payload.agent.id, {
         description: payload.description,
         name: payload.name,
         reportPrompt: payload.agent.reportPrompt,
         reportSpec: payload.agent.reportSpec,
+        sharedGroups: payload.sharedGroups,
+        sharedUsers: payload.sharedUsers,
         status: payload.status,
+        visibility: payload.visibility,
       })
       if (result.error || !result.data) {
         throw new Error(result.error || 'Failed to save the AI report')

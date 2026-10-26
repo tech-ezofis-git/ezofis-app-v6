@@ -23,6 +23,15 @@ import GenericStagePill from './GenericStagePill'
 
 // Matches the "Xh Ym ago" granularity already used in the request-detail
 // History panel, instead of dayjs's coarser "8 hours ago".
+/** Card icon colors for a connection's button color (stage trail colors). */
+const STAGE_TONE: Record<string, { bg: string; text: string }> = {
+  green: { bg: 'bg-green-2', text: 'text-green-9' },
+  orange: { bg: 'bg-orange-2', text: 'text-orange-9' },
+  primary: { bg: 'bg-primary-2', text: 'text-primary-9' },
+  red: { bg: 'bg-red-2', text: 'text-red-9' },
+  secondary: { bg: 'bg-secondary-2', text: 'text-secondary-9' },
+}
+
 const formatRunningTime = (date: any): string => {
   if (!date) return ''
   // Bare ISO datetimes from the API are UTC without a Z/offset — parse them
@@ -203,10 +212,10 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     row?.actionDate ||
     startedAt
 
-  const { currentLabel, isTerminal, previousLabel } = getGenericStageInfo(
-    workflow,
-    row,
-  )
+  const { color, currentLabel, isTerminal, previousLabel } =
+    getGenericStageInfo(workflow, row)
+  // Same color as the stage in the request header's stage trail.
+  const stageTone = color ? STAGE_TONE[color] : undefined
 
   // Only the Hangfire job-driven path uses the spinner-only card.
   // Agent-stage rows without a job id keep the normal stage/title card.
@@ -287,15 +296,18 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
       <div
         className={cn(
           'flex size-9 shrink-0 items-center justify-center rounded-full',
-          isTerminal ? 'bg-green-2' : 'bg-orange-2',
+          isJobProcessing
+            ? 'bg-orange-2'
+            : stageTone?.bg || (isTerminal ? 'bg-green-2' : 'bg-orange-2'),
         )}
       >
         <Icon
           className={cn(
             'size-4',
             isJobProcessing && 'animate-spin text-orange-9',
-            !isJobProcessing && isTerminal && 'text-green-9',
-            !isJobProcessing && !isTerminal && 'text-orange-9',
+            !isJobProcessing &&
+              (stageTone?.text ||
+                (isTerminal ? 'text-green-9' : 'text-orange-9')),
           )}
           name={
             isJobProcessing
@@ -317,6 +329,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
             {requestNo}
           </h3>
           <GenericStagePill
+            color={color}
             currentLabel={currentLabel}
             isTerminal={isTerminal}
             previousLabel={previousLabel}

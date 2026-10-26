@@ -18,10 +18,11 @@ import type {
   ReportFilter,
   ReportFilterOperator,
   ReportStatus,
+  ReportVisibility,
 } from '../types'
 import { DEFAULT_SCHEDULE } from '../types'
 import { reportSpecColumnToFieldSetting } from './fromReportSpec'
-import { findUserPrompt, isIdColumn, pickRowValue } from './hiddenColumns'
+import { findUserPrompt, isIdColumn } from './hiddenColumns'
 
 /** Sentinel source ids for the agent's tenant-wide scopes. */
 export const ALL_WORKFLOWS_SOURCE_ID = '__all_workflows__'
@@ -350,7 +351,7 @@ export const agentRunToReportRunResult = (
         mapped[key] = toCellText(value)
     })
     columns.forEach((column) => {
-      const text = toCellText(pickRowValue(row, column.key, column.label))
+      const text = toCellText(row[column.key] ?? row[column.label])
       mapped[column.key] = text
       mapped[column.label] = text
     })
@@ -407,8 +408,23 @@ export const hasGenericAiDomain = (report: Report) =>
   (Object.values(AGENT_TYPE_DOMAIN).includes(report.domain) ||
     report.domain === 'AI report')
 
+// Case-insensitive: the backend may echo 'published'/'PUBLISHED'.
 const toReportStatus = (status: string | null | undefined): ReportStatus =>
-  status === 'Published' ? 'Published' : 'Draft'
+  String(status || '').toLowerCase() === 'published' ? 'Published' : 'Draft'
+
+const REPORT_VISIBILITIES: ReportVisibility[] = [
+  'Private',
+  'Public',
+  'Selected Users',
+  'Selected Groups',
+]
+
+const toReportVisibility = (
+  visibility: string | null | undefined,
+): ReportVisibility =>
+  REPORT_VISIBILITIES.find(
+    (value) => value.toLowerCase() === String(visibility || '').toLowerCase(),
+  ) ?? 'Private'
 
 /** A /report-ai-builder list row as a (summary) `Report` for the reports list. */
 export const aiListItemToReport = (item: ReportAiListItem): Report => ({
@@ -427,11 +443,11 @@ export const aiListItemToReport = (item: ReportAiListItem): Report => ({
   runs: item.runs ?? 0,
   schedule: DEFAULT_SCHEDULE,
   scheduled: false,
-  sharedGroups: [],
-  sharedUsers: [],
+  sharedGroups: Array.isArray(item.sharedGroups) ? item.sharedGroups : [],
+  sharedUsers: Array.isArray(item.sharedUsers) ? item.sharedUsers : [],
   sourceType: AGENT_TYPE_SOURCE[item.reportType] ?? 'Workflow',
   status: toReportStatus(item.status),
-  visibility: 'Private',
+  visibility: toReportVisibility(item.visibility),
 })
 
 /**

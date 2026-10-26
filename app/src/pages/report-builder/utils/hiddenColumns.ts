@@ -34,49 +34,18 @@ export const isIdColumn = (key: string, label?: string) => {
   return looksLikeId(key)
 }
 
-export const normalizeKey = (key: string) =>
-  key.toLowerCase().replace(/[\s_-]/g, '')
+const normalizeKey = (key: string) => key.toLowerCase().replace(/[\s_-]/g, '')
 
-const VALUE_ALIASES: Record<string, string[]> = {
-  filename: ['filename', 'file_name', 'originalfilename', 'original_file_name'],
-  repository: ['repository', 'repositoryname', 'repository_name'],
-  repositoryname: ['repository', 'repositoryname', 'repository_name'],
-}
-
-const cellText = (value: unknown): string | undefined => {
-  if (value == null || value === '') return undefined
-  return typeof value === 'string' ? value : String(value)
-}
-
-/** Read a live report cell by key, label, or compact alias (File Name / FileName). */
-export const pickRowValue = (
-  row: Record<string, unknown> | undefined,
-  ...names: Array<string | undefined>
-): string | undefined => {
-  if (!row) return undefined
-  for (const name of names) {
-    if (!name) continue
-    const direct = cellText(row[name])
-    if (direct != null) return direct
-  }
-  const wants = new Set<string>()
-  for (const name of names) {
-    if (!name) continue
-    const compact = normalizeKey(name)
-    wants.add(compact)
-    for (const alias of VALUE_ALIASES[compact] || []) wants.add(alias)
-  }
-  for (const [key, value] of Object.entries(row)) {
-    const text = cellText(value)
-    if (text == null) continue
-    if (wants.has(normalizeKey(key))) return text
-  }
-  return undefined
-}
-
-// Workflow name repeats on every row of a single-workflow report.
-// Repository / File Name are data columns on folder reports and must stay visible.
-const SOURCE_NAME_COLUMNS = new Set(['workflow', 'workflowname'])
+// The report's own source (its workflow / repository name) repeats on every
+// row, so it isn't displayed.
+const SOURCE_NAME_COLUMNS = new Set([
+  'repo',
+  'reponame',
+  'repository',
+  'repositoryname',
+  'workflow',
+  'workflowname',
+])
 
 /** Columns report tables don't display: ids and the source workflow/repository. */
 export const isHiddenReportColumn = (key: string, label?: string) =>
