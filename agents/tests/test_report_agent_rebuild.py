@@ -2117,6 +2117,85 @@ async def test_form_rows_receive_request_no_and_stage_from_instances():
 
 
 @pytest.mark.asyncio
+async def test_mixed_keep_valued_splits_guid_into_id_then_resolves_name():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.catalog_execute import (
+        _keep_valued_columns,
+        attach_listing_fields_to_form_rows,
+        resolve_user_names,
+    )
+
+    item_id = "f24a6955-8caf-4226-993e-da556980981e"
+    user_id = "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd"
+
+    class _CatalogEzofis:
+        async def list_workflows(self, tenant_id):
+            return [{"id": "452859c2-9bbe-4e17-acd2-f11524a0650e", "name": "Accounts Payable"}]
+
+        async def list_workflow_instances(self, *, tenant_id, workflow_id, limit=200):
+            return [
+                {
+                    "id": "b541030f-89c6-4a94-9b87-ab45eaa57329",
+                    "itemId": item_id,
+                    "workflowName": "Accounts Payable",
+                    "status": 1,
+                    "requestNo": "REQ-138",
+                    "startedBy": user_id,
+                    "updatedBy": user_id,
+                    "currentStepInstanceId": "step-1",
+                    "stepInstances": [{"id": "step-1", "stepName": "AP AGENT 1", "status": 1}],
+                }
+            ]
+
+        async def get_user(self, *, tenant_id, user_id):
+            return {"id": user_id, "displayName": "RAJA"}
+
+    spec = ReportSpec(
+        title="Duplicate Invoice Report",
+        report_type="specific_workflow",
+        columns=[
+            ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
+            ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
+            ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
+            ReportSpecColumn(key="startedBy", label="Started by", kind="default", selected=True),
+            ReportSpecColumn(key="startedById", label="Started by Id", kind="default", selected=True),
+            ReportSpecColumn(key="actedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="actedById", label="Acted by Id", kind="default", selected=True),
+            ReportSpecColumn(key="Invoice_No", label="Invoice No", kind="userdefined", selected=True),
+        ],
+    )
+    form_row = {
+        "RequestNo": "REQ-138",
+        "Stage": "AP AGENT 1",
+        "status": "Running",
+        "startedBy": user_id,
+        "startedById": "",
+        "actedBy": user_id,
+        "actedById": "",
+        "workflowName": "Accounts Payable",
+        "item_id": item_id,
+        "instanceId": "b541030f-89c6-4a94-9b87-ab45eaa57329",
+        "Invoice_No": "INV-2026-3101",
+    }
+    rows = await attach_listing_fields_to_form_rows(
+        _CatalogEzofis(),
+        spec,
+        [form_row],
+        tenant_id="tenant-1",
+        workflow_name="Accounts Payable",
+    )
+    spec, rows, _cols = _keep_valued_columns(spec, rows)
+    rows = await resolve_user_names(_CatalogEzofis(), rows, tenant_id="tenant-1")
+    row = rows[0]
+    assert row.get("startedBy") == "RAJA"
+    assert row.get("actedBy") == "RAJA"
+    assert row.get("startedById") == user_id
+    assert row.get("actedById") == user_id
+    assert not _is_guid_like(row.get("startedBy"))
+    assert not _is_guid_like(row.get("actedBy"))
+
+
+@pytest.mark.asyncio
 async def test_form_sql_user_guids_do_not_block_acted_by_name():
     from app.models.report_agent import ReportSpec, ReportSpecColumn
     from app.report_agent.catalog_execute import attach_listing_fields_to_form_rows
