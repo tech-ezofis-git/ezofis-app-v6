@@ -909,7 +909,7 @@ interface GridRowItemProps {
   onRowClick: (item: any, tab: string) => void
 }
 
-const GridRowItem = memo(
+export const GridRowItem = memo(
   ({
     activeTab,
     hasSelectionActive,
