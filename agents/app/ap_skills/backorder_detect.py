@@ -7,8 +7,8 @@ from app.ap_skills.types import (
     ApSkillError,
     ApSkillResult,
     field_number,
-    field_text,
     invoice_from,
+    line_description,
     match_lines_by_description,
 )
 
@@ -21,7 +21,7 @@ def _qty(line: dict) -> float:
 
 
 def _description(line: dict) -> str:
-    return field_text(line, "description", "item", "name", "Description")
+    return line_description(line)
 
 
 async def run(ctx: ApContext) -> ApSkillResult:

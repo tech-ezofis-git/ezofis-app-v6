@@ -55,6 +55,30 @@ async def test_short_shipped_line_is_flagged_with_correct_pairing():
     assert entry["missing_line"] is False
 
 
+async def test_material_description_pairs_when_description_is_only_a_code():
+    po = {
+        "lines": [
+            {
+                "description": "MTR-CTRL-30",
+                "Material Description": "Motor Control Starter",
+                "qty": 3,
+            },
+            {
+                "item": "FUSE-KIT-40",
+                "materialDescription": "Industrial Fuse Kit",
+                "qty": 5,
+            },
+        ]
+    }
+    invoice_lines = [
+        {"description": "Motor Control Starter", "qty": 3},
+        {"description": "Industrial Fuse Kit", "qty": 5},
+    ]
+    result = await backorder_run(_ctx(invoice_lines=invoice_lines, po=po))
+    assert result.data["detected"] is False
+    assert result.data["missing_qty_by_item"] == []
+
+
 async def test_po_line_with_no_matching_invoice_line_is_flagged_distinctly():
     invoice_lines = [{"description": "Widget A", "qty": 10}]  # Widget B never invoiced at all
     result = await backorder_run(_ctx(invoice_lines=invoice_lines))

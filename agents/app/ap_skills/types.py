@@ -153,6 +153,24 @@ _PLACEHOLDER_VALUES = frozenset(
 )
 
 
+def line_description(line: dict[str, Any]) -> str:
+    """Product name used to pair PO and invoice lines.
+
+    The material description is the name shown on the line table. A part
+    code in ``description`` or ``item`` is used only when that name is absent.
+    """
+    return field_text(
+        line,
+        "materialDescription",
+        "material_description",
+        "Material Description",
+        "description",
+        "Description",
+        "name",
+        "item",
+    )
+
+
 def field_text(data: dict[str, Any], *keys: str) -> str:
     for key in keys:
         value = data.get(key)

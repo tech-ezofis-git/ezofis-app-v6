@@ -377,7 +377,14 @@ def _po_line_mapped(po: dict[str, Any]) -> list[dict[str, Any]]:
             if text:
                 item[label] = text
 
-        description = field_text(row, "description", "Description", "materialDescription", "material_description")
+        description = field_text(
+            row,
+            "materialDescription",
+            "material_description",
+            "Material Description",
+            "description",
+            "Description",
+        )
         if description and "Description" not in item:
             item["Description"] = description
         if description and "Material Description" not in item:

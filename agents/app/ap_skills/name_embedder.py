@@ -70,17 +70,23 @@ class NameEmbedder:
                 self._vectors[text] = [float(v) for v in vector]
 
     def score(self, left: str, right: str) -> float:
-        """0..1. Exact normalized names are 1. Otherwise cosine, else letters."""
+        """0..1. Exact names are 1. A contained name stays at least 0.85."""
         a = str(left or "").strip()
         b = str(right or "").strip()
         if not a or not b:
             return 0.0
-        if normalize_name(a) == normalize_name(b):
+        na = normalize_name(a)
+        nb = normalize_name(b)
+        if na == nb:
             return 1.0
         left_vec = self._vectors.get(a)
         right_vec = self._vectors.get(b)
         if left_vec and right_vec:
-            return _cosine(left_vec, right_vec)
+            cosine = _cosine(left_vec, right_vec)
+            # An extra product code must not drop a contained name below the pair floor.
+            if na and nb and (na in nb or nb in na):
+                return max(cosine, 0.85)
+            return cosine
         return name_similarity(a, b)
 
 

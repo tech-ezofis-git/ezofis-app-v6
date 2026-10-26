@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from app.ap_skills.types import field_number, field_text, match_lines_by_description
+from app.ap_skills.types import field_number, field_text, line_description, match_lines_by_description
 
 
 def resolve_source_type(artifacts: dict[str, Any], document_job: Optional[dict[str, Any]] = None) -> str:
@@ -212,7 +212,7 @@ def _line_match_summary(invoice: dict[str, Any], po: dict[str, Any]) -> str:
         return ""
 
     def _desc(row: dict[str, Any]) -> str:
-        return field_text(row, "description", "Description") or ""
+        return line_description(row)
 
     inv_dicts = [r for r in inv_lines if isinstance(r, dict)]
     po_dicts = [r for r in po_lines if isinstance(r, dict)]
