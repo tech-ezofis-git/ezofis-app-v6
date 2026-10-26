@@ -57,6 +57,20 @@ const permissionIdentity = (item: SessionPermission | string): string[] => {
   )
 }
 
+const normalizeRole = (role?: string | null) =>
+  String(role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+
+/** Tenant admins get every option and folder action, whatever their keys. */
+export const isTenantAdminRole = (role?: string | null) =>
+  normalizeRole(role) === 'tenantadmin'
+
+/** Admin or tenant admin: sees every Settings option. */
+export const isAdminRole = (role?: string | null) =>
+  normalizeRole(role) === 'admin' || isTenantAdminRole(role)
+
 export const isPermissionVisible = (
   permissionKey?: string,
   sessionPermissions?: Array<SessionPermission | string> | null,

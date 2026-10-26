@@ -1,5 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
+import dayjs from 'dayjs'
 import { useCallback, useMemo, useState } from 'react'
 import type { ReportSpec } from '@/api/v6/reportAgent'
 import type { Row } from '@/components/base/data-table/types'
@@ -9,6 +10,7 @@ import type {
 } from '@/components/common/CustomFilter'
 import type { Report } from '@/pages/report-builder/types'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
@@ -33,6 +35,7 @@ import {
   matchesDateRangeValue,
   parseFilterValues,
 } from '@/utils/filterUtils'
+import { parseUtcDate } from '@/utils/utcDate'
 import StatusPill from './StatusPill'
 
 interface OverviewColumn {
@@ -76,6 +79,23 @@ const toTableRow = (row: Record<string, string>, index: number) => ({
   name: '',
 })
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+/** UTC timestamps shown in local time, e.g. 21-10-2026 12:54 PM. */
+const formatDateCell = (value: string) => {
+  const date = parseUtcDate(value)
+  if (!date) return value
+  return dayjs(date).format(
+    DATE_ONLY_PATTERN.test(value.trim()) ? 'DD-MM-YYYY' : 'DD-MM-YYYY hh:mm A',
+  )
+}
+
+/** The local calendar day of a UTC timestamp, so date filters match what is shown. */
+const toLocalDay = (value: string) => {
+  const date = parseUtcDate(value)
+  return date ? dayjs(date).format('YYYY-MM-DD') : value
+}
+
 const OverviewTab = ({ report }: Props) => {
   const { t } = useLingui()
   const navigate = useNavigate()
@@ -90,8 +110,13 @@ const OverviewTab = ({ report }: Props) => {
   const agentQuery = useReportAgentDataQuery(report)
   const runResult = isAgentReport ? agentQuery.data?.result : legacyQuery.data
   const isLoading = isAgentReport ? agentQuery.isLoading : legacyQuery.isLoading
+  const isFetching = isAgentReport
+    ? agentQuery.isFetching
+    : legacyQuery.isFetching
   const agentError = isAgentReport ? agentQuery.error?.message : undefined
-  const agentWarnings = agentQuery.data?.warnings ?? []
+
+  const refresh = () =>
+    void (isAgentReport ? agentQuery.refetch() : legacyQuery.refetch())
 
   // Highlights sent on the run response win over the ones saved with the report.
   const fieldSettings = useMemo(
@@ -192,12 +217,35 @@ const OverviewTab = ({ report }: Props) => {
     [fieldSettings],
   )
 
+  // Detected once per column; drives date formatting and filtering.
+  const columnTypes = useMemo(() => {
+    const types: Record<string, string> = {}
+    previewColumns.forEach((col) => {
+      types[col.id] =
+        fieldSettings[col.id]?.colType === 'status'
+          ? 'category'
+          : detectFieldType(sourceRows, col.id, (r) => valueForColumn(col, r))
+    })
+    return types
+  }, [previewColumns, fieldSettings, sourceRows, valueForColumn])
+
+  const displayValueForColumn = useCallback(
+    (col: OverviewColumn, row: Record<string, string>) => {
+      const value = valueForColumn(col, row)
+      return value && isDateColumnType(columnTypes[col.id])
+        ? formatDateCell(value)
+        : value
+    },
+    [valueForColumn, columnTypes],
+  )
+
   // Columns formatted for TanStack Table and TableSearch
   const columns = useMemo(
     () =>
       previewColumns.map((col) => {
         const setting = fieldSettings[col.id]
         const key = cellKey(col.id)
+        const isDate = isDateColumnType(columnTypes[col.id])
         return {
           id: col.id,
           label: col.label,
@@ -231,11 +279,13 @@ const OverviewTab = ({ report }: Props) => {
                 (row[key] as string) || '-'
               )
             }
-            return (row[key] as string) ?? '-'
+            const value = row[key] as string
+            if (isDate && value) return formatDateCell(value)
+            return value ?? '-'
           },
         }
       }),
-    [previewColumns, fieldSettings, openRequest],
+    [previewColumns, fieldSettings, columnTypes, openRequest],
   )
 
   const { searchState, ...restState } = useDataTableState({
@@ -287,11 +337,7 @@ const OverviewTab = ({ report }: Props) => {
   // Column-wise filter definitions
   const allFilterDefinitions: FilterDefinition[] = useMemo(() => {
     return previewColumns.map((col) => {
-      const setting = fieldSettings[col.id]
-      const isStatus = setting?.colType === 'status'
-      const detectedType = isStatus
-        ? 'category'
-        : detectFieldType(sourceRows, col.id, (r) => valueForColumn(col, r))
+      const detectedType = columnTypes[col.id]
 
       let options: { count?: number; label: string; value: string }[] = []
 
@@ -323,7 +369,7 @@ const OverviewTab = ({ report }: Props) => {
         searchPlaceholder: t`Search ${col.label}...`,
       }
     })
-  }, [previewColumns, fieldSettings, sourceRows, valueForColumn, t])
+  }, [previewColumns, columnTypes, sourceRows, valueForColumn, t])
 
   // Manual reports have no default/other split, so all their filters stay inline.
   const isInlineFilter = useCallback(
@@ -372,12 +418,14 @@ const OverviewTab = ({ report }: Props) => {
         if (selectedColumnId) {
           const col = previewColumns.find((c) => c.id === selectedColumnId)
           if (col) {
-            const val = String(valueForColumn(col, row) ?? '').toLowerCase()
+            const val = String(
+              displayValueForColumn(col, row) ?? '',
+            ).toLowerCase()
             if (!val.includes(query)) return false
           }
         } else {
           const matches = previewColumns.some((col) =>
-            String(valueForColumn(col, row) ?? '')
+            String(displayValueForColumn(col, row) ?? '')
               .toLowerCase()
               .includes(query),
           )
@@ -391,14 +439,11 @@ const OverviewTab = ({ report }: Props) => {
         if (!rawFilterValue) continue
 
         const rowVal = valueForColumn(col, row)
-        const setting = fieldSettings[col.id]
-        const isStatus = setting?.colType === 'status'
-        const detectedType = isStatus
-          ? 'category'
-          : detectFieldType(sourceRows, col.id, (r) => valueForColumn(col, r))
+        const detectedType = columnTypes[col.id]
 
         if (isDateColumnType(detectedType)) {
-          if (!matchesDateRangeValue(rowVal, rawFilterValue)) return false
+          if (!matchesDateRangeValue(toLocalDay(rowVal), rawFilterValue))
+            return false
         } else if (isNumberColumnType(detectedType)) {
           const selectedVals = parseFilterValues(rawFilterValue)
           const isMatch = selectedVals.some((sel) => {
@@ -427,7 +472,8 @@ const OverviewTab = ({ report }: Props) => {
     activeFilters,
     previewColumns,
     valueForColumn,
-    fieldSettings,
+    displayValueForColumn,
+    columnTypes,
   ])
 
   const paginatedRows = useMemo(() => {
@@ -489,21 +535,26 @@ const OverviewTab = ({ report }: Props) => {
 
   return (
     <div className='flex min-h-0 flex-1 flex-col gap-3'>
-      {agentWarnings.length > 0 && (
-        <div className='flex flex-col gap-1 rounded-lg border border-yellow-6 bg-yellow-2 px-3 py-2'>
-          {agentWarnings.map((warning) => (
-            <p className='text-12 text-yellow-11' key={warning}>
-              {warning}
-            </p>
-          ))}
-        </div>
-      )}
       <CustomFilter
         activeFilters={activeFilters}
-        customSearchComponent={<TableSearch table={table as any} />}
         filters={filterDefinitions}
         moreFilters={moreFilterGroups}
         moreFiltersLabel={t`Add filter`}
+        customSearchComponent={
+          <>
+            <TableSearch table={table as any} />
+            <IconButton
+              ariaLabel={t`Refresh`}
+              color='gray'
+              disabled={isFetching}
+              icon='lucide:refresh-cw'
+              loading={isFetching}
+              tooltip={t`Refresh`}
+              variant='outline'
+              onClick={refresh}
+            />
+          </>
+        }
         showReset={Boolean(
           search ||
           selectedColumnId ||

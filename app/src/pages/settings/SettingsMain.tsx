@@ -14,6 +14,7 @@ import {
   Palette,
   Shield,
   UserRoundCheck,
+  UserRoundCog,
   Users,
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
@@ -21,9 +22,14 @@ import { refreshUserSession } from '@/api/v6/auth'
 import ColorPreference from '@/pages/my-account/components/color-preference/ColorPreference'
 import ReportBuilderSettingsPage from '@/pages/report-builder/components/ReportBuilderSettingsPage'
 import authUserStore from '@/stores/authUserStore'
-import { isAnyPermissionVisible } from '@/utils/sessionPermissions'
+import {
+  isAdminRole,
+  isAnyPermissionVisible,
+  isTenantAdminRole,
+} from '@/utils/sessionPermissions'
 import AuditMonitoring from './components/AuditMonitoring'
 import Credits from './components/credits/Credits'
+import DelegationSettings from './components/delegation/DelegationSettings'
 import DmsSettings from './components/Folders/DmsSettings'
 import FormConfiguration from './components/FormConfiguration'
 import GroupManagement from './components/GroupManagement'
@@ -53,6 +59,7 @@ const SETTINGS_PAGES = new Set([
   'audit-monitoring',
   'branding',
   'credit',
+  'delegation',
   'folder-configuration',
   'form-configuration',
   'group-management',
@@ -72,6 +79,7 @@ const CONFIGURATION_SETTINGS_KEYS = [
   'workflow-configuration',
   'portal-configuration',
   'report-builder',
+  'delegation',
 ]
 
 const ACCESS_SETTINGS_KEYS = [
@@ -103,9 +111,11 @@ const pickSettingsItems = (items: SettingsItem[], keys: string[]) =>
 
 export default function SettingsMain() {
   const session = authUserStore((state) => state.session)
-  const isAdmin = session?.role?.toLowerCase() === 'admin'
+  const isAdmin = isAdminRole(session?.role)
+  const isTenantAdmin = isTenantAdminRole(session?.role)
   const sessionPermissions = session?.permissionKeys
   const canOpenSettingsPage = (page: string) =>
+    isTenantAdmin ||
     isAnyPermissionVisible(
       SETTINGS_PAGE_PERMISSIONS[page] || [],
       sessionPermissions,
@@ -226,6 +236,14 @@ export default function SettingsMain() {
     )
   }
 
+  if (activePage === 'delegation') {
+    return (
+      <SettingsDetailShell>
+        <DelegationSettings onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
+  }
+
   if (activePage === 'branding') {
     if (!isAdmin) {
       return <SettingsLanding onOpenPage={setActivePage} />
@@ -277,9 +295,9 @@ function SettingsLanding({
 }) {
   const { i18n, t } = useLingui()
   const navigate = useNavigate()
-  const isAdmin = authUserStore(
-    (state) => state.session?.role?.toLowerCase() === 'admin',
-  )
+  const role = authUserStore((state) => state.session?.role)
+  const isAdmin = isAdminRole(role)
+  const isTenantAdmin = isTenantAdminRole(role)
   const sessionPermissions = authUserStore(
     (state) => state.session?.permissionKeys,
   )
@@ -326,6 +344,12 @@ function SettingsLanding({
         key: 'report-builder',
         permissionKeys: ['report-builder'],
         title: t`Report Builder`,
+      },
+      {
+        description: t`Choose backup users so workflow requests keep moving while someone is on leave.`,
+        icon: UserRoundCog,
+        key: 'delegation',
+        title: t`Delegation`,
       },
       {
         description: t`Add, edit, and manage platform users. Configure authentication and assign roles.`,
@@ -387,10 +411,11 @@ function SettingsLanding({
       ) {
         return false
       }
-      if (!item.permissionKeys?.length) return true
+      // Tenant admins see every option, whatever their permission keys.
+      if (isTenantAdmin || !item.permissionKeys?.length) return true
       return isAnyPermissionVisible(item.permissionKeys, sessionPermissions)
     })
-  }, [i18n.locale, isAdmin, sessionPermissions, t])
+  }, [i18n.locale, isAdmin, isTenantAdmin, sessionPermissions, t])
 
   const configurationItems = useMemo(
     () => pickSettingsItems(settingsItems, CONFIGURATION_SETTINGS_KEYS),

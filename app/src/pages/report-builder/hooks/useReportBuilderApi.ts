@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import type {
   ReportBuilderPayloadSource,
   ReportRunResult,
@@ -24,6 +29,7 @@ import {
   agentRunToReportRunResult,
   aiListItemToReport,
   aiRecordToReport,
+  hasGenericAiDomain,
   runResultFieldSettings,
 } from '../utils/agentReport'
 
@@ -78,6 +84,35 @@ export const useReportBuilderByIdQuery = (id: string | null | undefined) =>
       return data
     },
   })
+
+// Module-level so useQueries can memoize the combined result.
+const toSourceNames = (results: { data?: Report | null }[]) => {
+  const names: Record<string, string> = {}
+  results.forEach((result) => {
+    if (result.data?.domain) names[result.data.id] = result.data.domain
+  })
+  return names
+}
+
+/**
+ * Workflow/folder names for AI reports whose list row only carries a scope
+ * label ("Workflow"/"Folder"), keyed by report id. Loads each report's detail
+ * (shared with the report page's cache).
+ */
+export const useAiReportSourceNames = (reports: Report[]) => {
+  const pending = reports.filter(hasGenericAiDomain)
+  return useQueries({
+    combine: toSourceNames,
+    queries: pending.map((report) => ({
+      queryFn: async () => {
+        const { data } = await getReportAiReport(report.id)
+        return data ? aiRecordToReport(data) : null
+      },
+      queryKey: reportBuilderKeys.detail(report.id),
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+}
 
 export const useReportBuilderDataQuery = (id: string | null | undefined) =>
   useQuery({
