@@ -7,7 +7,7 @@ from typing import Any, Callable, Optional
 from app.ap_pipeline.policy import review_label
 from app.ap_skills.agent_validation_text import enrichment_for_finalize, resolve_source_type
 from app.ap_skills.payment_terms import due_date_from_terms, normalize_payment_terms
-from app.ap_skills.types import field_number, field_text, match_lines_by_description, name_similarity
+from app.ap_skills.types import field_number, field_text, line_description, match_lines_by_description, name_similarity
 
 
 def build_aiagent_response(
@@ -184,7 +184,7 @@ def _line_matching(
         return []
 
     def _desc(row: dict[str, Any]) -> str:
-        return field_text(row, "description", "Description", "item", "name")
+        return line_description(row)
 
     paired = match_lines_by_description(
         inv_lines, po_lines, describe=_desc, score_fn=pair_score or text_score
@@ -193,8 +193,8 @@ def _line_matching(
     for inv_i, po_i in enumerate(paired):
         inv = inv_lines[inv_i]
         po_line = po_lines[po_i] if po_i is not None else {}
-        inv_desc = field_text(inv, "description", "Description")
-        po_desc = field_text(po_line, "description", "Description") if po_line else ""
+        inv_desc = line_description(inv)
+        po_desc = line_description(po_line) if po_line else ""
         inv_qty = field_number(inv, "qty", "quantity", "Quantity")
         po_qty = (
             field_number(po_line, "qty", "quantity", "Quantity", "orderQuantity") if po_line else None

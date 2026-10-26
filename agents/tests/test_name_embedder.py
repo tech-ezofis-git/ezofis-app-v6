@@ -33,6 +33,31 @@ async def test_different_product_stays_low():
     assert score < 0.5
 
 
+class _OrthogonalEmbed:
+    async def embed(self, texts):
+        return [[1.0, 0.0] if i % 2 == 0 else [0.0, 1.0] for i, _ in enumerate(texts)]
+
+
+@pytest.mark.asyncio
+async def test_contained_name_stays_paired_when_cosine_is_low():
+    embedder = NameEmbedder(_OrthogonalEmbed())
+    await embedder.warm(["NET-RTR-220 Network Edge Router", "Network Edge Router"])
+    score = embedder.score("NET-RTR-220 Network Edge Router", "Network Edge Router")
+    assert score >= 0.85
+
+
+@pytest.mark.asyncio
+async def test_different_company_names_are_not_saved_by_containment():
+    embedder = NameEmbedder(_OrthogonalEmbed())
+    await embedder.warm(
+        ["Pioneer Industrial Technologies Ltd", "Pioneer Network Services Ltd"]
+    )
+    score = embedder.score(
+        "Pioneer Industrial Technologies Ltd", "Pioneer Network Services Ltd"
+    )
+    assert score < 0.5
+
+
 def test_exact_name_skips_vectors():
     embedder = NameEmbedder(None)
     assert embedder.score("Sterling Industrial Ltd.", "sterling industrial ltd") == 1.0
