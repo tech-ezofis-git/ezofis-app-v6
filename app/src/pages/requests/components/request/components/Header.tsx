@@ -433,6 +433,11 @@ const Header: React.FC<HeaderProps> = ({
     duplicateStatus === 'DUPLICATED' ||
     duplicateStatus === 'DETECTED'
 
+  // The status can itself read "Duplicate"; the duplicate badge already says
+  // so, so the status badge is skipped to avoid showing it twice.
+  const statusRepeatsDuplicate =
+    isDuplicate && /^duplicate/i.test(String(status || '').trim())
+
   const duplicateMessage =
     agentData?.duplicate_check?.message ||
     agentData?.duplicateCheck?.message ||
@@ -1269,6 +1274,7 @@ const Header: React.FC<HeaderProps> = ({
               </span>
             )}
             {status &&
+              !statusRepeatsDuplicate &&
               (isProcessing && percent !== undefined
                 ? (() => {
                     const styles = getProgressStyles(percent)
