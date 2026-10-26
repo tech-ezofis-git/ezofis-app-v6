@@ -50,6 +50,7 @@ from app.report_agent.pack import report_system_prompt
 from app.report_agent.highlight import (
     HIGHLIGHT_PROMPT_SNIPPET,
     apply_recipe_highlights,
+    bind_highlights_to_rows,
     column_outs,
     column_outs_from_locked,
     merge_column_highlights,
@@ -922,7 +923,7 @@ class ReportAgentService:
         return RunReportResponse(
             title=spec.title or "Report",
             report_type=report_type or spec.report_type,
-            columns=columns,
+            columns=bind_highlights_to_rows(columns, rows),
             rows=rows,
             total_count=total,
             page=request.page,
@@ -1353,6 +1354,7 @@ class ReportAgentService:
                 except Exception:
                     pass
 
+        columns_out = bind_highlights_to_rows(columns_out, rows)
         logger.info(
             "report_agent_run_completed",
             extra={

@@ -2116,6 +2116,71 @@ async def test_form_rows_receive_request_no_and_stage_from_instances():
     assert rows[0].get("Invoice_Amount") == 45.5
 
 
+@pytest.mark.asyncio
+async def test_form_sql_user_guids_do_not_block_acted_by_name():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.catalog_execute import attach_listing_fields_to_form_rows
+
+    item_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    user_id = "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd"
+
+    class _CatalogEzofis:
+        async def list_workflows(self, tenant_id):
+            return [{"id": "wf-ap", "name": "Accounts Payable"}]
+
+        async def list_workflow_instances(self, *, tenant_id, workflow_id, limit=200):
+            return [
+                {
+                    "id": "98c7b53b-dd08-4e04-8a59-0c43a315e2d6",
+                    "itemId": item_id,
+                    "workflowName": "Accounts Payable",
+                    "status": 1,
+                    "requestNo": "REQ-137",
+                    "startedBy": user_id,
+                    "updatedBy": user_id,
+                    "createdAtUtc": "2026-09-11T04:33:00Z",
+                    "completedAtUtc": None,
+                }
+            ]
+
+        async def get_user(self, *, tenant_id, user_id):
+            return {"id": user_id, "displayName": "RAJA"}
+
+    spec = ReportSpec(
+        title="Duplicate Invoice Report",
+        report_type="specific_workflow",
+        columns=[
+            ReportSpecColumn(key="startedBy", label="Started by", kind="default", selected=True),
+            ReportSpecColumn(key="startedById", label="Started by Id", kind="default", selected=True),
+            ReportSpecColumn(key="actedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="actedById", label="Acted by Id", kind="default", selected=True),
+            ReportSpecColumn(key="Invoice_No", label="Invoice No", kind="userdefined", selected=True),
+        ],
+    )
+    rows = await attach_listing_fields_to_form_rows(
+        _CatalogEzofis(),
+        spec,
+        [
+            {
+                "item_id": item_id,
+                "Invoice_No": "INV-1",
+                "startedBy": user_id,
+                "actedBy": user_id,
+                "created_by": user_id,
+                "modified_by": user_id,
+            }
+        ],
+        tenant_id="tenant-1",
+        workflow_name="Accounts Payable",
+    )
+    assert rows[0].get("startedBy") == "RAJA"
+    assert rows[0].get("actedBy") == "RAJA"
+    assert rows[0].get("startedById") == user_id
+    assert rows[0].get("actedById") == user_id
+    assert not _is_guid_like(rows[0].get("startedBy"))
+    assert not _is_guid_like(rows[0].get("actedBy"))
+
+
 def test_ensure_identity_columns_adds_item_id():
     from app.report_agent.definition_lock import ensure_identity_columns
 
@@ -2184,6 +2249,8 @@ async def test_run_mixed_form_report_fills_request_no_from_instances(monkeypatch
                     "Invoice_Amount": 45.5,
                     "item_id": item_id,
                     "created_at": "2026-10-23T10:24:31.412Z",
+                    "startedBy": "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd",
+                    "actedBy": "e1eb37d9-0a3b-400d-9eef-21aa92f1b3fd",
                 }
             ]
 
@@ -2338,6 +2405,35 @@ async def test_run_report_returns_repository_item_id_values():
     assert resp.rows[0].get("itemId") == "65BA76B0-11B8-4CA2-BE18-40BA6FDC871C"
 
 
+def test_bind_highlights_uses_row_values_not_canned_status():
+    from app.models.report_agent import ReportColumnOut, ReportSpecHighlight, ReportSpecHighlightRule
+    from app.report_agent.highlight import bind_highlights_to_rows
+
+    columns = [
+        ReportColumnOut(
+            key="status",
+            label="Status",
+            highlight=ReportSpecHighlight(
+                default="gray",
+                rules=[
+                    ReportSpecHighlightRule(op="eq", value="Approved", color="green"),
+                    ReportSpecHighlightRule(op="eq", value="Open", color="blue"),
+                ],
+            ),
+        )
+    ]
+    bound = bind_highlights_to_rows(
+        columns,
+        [{"status": "Running"}, {"status": "In Progress"}, {"status": "Running"}],
+    )
+    values = [rule.value for rule in bound[0].highlight.rules if rule.op == "eq"]
+    assert values == ["Running", "In Progress"]
+    assert "Approved" not in values
+    by_value = {rule.value: rule.color for rule in bound[0].highlight.rules if rule.op == "eq"}
+    assert by_value["Running"] == "blue"
+    assert by_value["In Progress"] == "blue"
+
+
 def test_column_highlight_parses_and_stays_off_palettes():
     from app.models.report_agent import ReportSpec, ReportSpecColumn, SchemaColumnSlice, SchemaTableSlice
     from app.report_agent.highlight import apply_recipe_highlights
@@ -2472,5 +2568,7 @@ async def test_run_echoes_highlight_on_columns():
     )
     by_key = {c.key: c for c in resp.columns}
     assert by_key["Aging_Bucket"].highlight is not None
-    assert by_key["Aging_Bucket"].highlight.rules[0].value == "0-5"
-    assert by_key["Aging_Bucket"].highlight.rules[0].color == "green"
+    aging_values = [rule.value for rule in by_key["Aging_Bucket"].highlight.rules if rule.op == "eq"]
+    row_bucket = resp.rows[0].get("Aging_Bucket")
+    assert row_bucket in aging_values
+    assert "Approved" not in aging_values

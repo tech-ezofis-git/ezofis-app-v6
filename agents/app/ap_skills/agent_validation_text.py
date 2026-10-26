@@ -110,6 +110,10 @@ def build_ai_insight(
         return "Partial PO match — send to verifier before posting"
     if decision_u in {"NOT_MATCHED", "DUPLICATE"}:
         if decision_u == "DUPLICATE":
+            underlying = str(po_match.get("decision") or "").strip().upper()
+            vendor_status = str(vendor.get("status") or "").strip().upper()
+            if underlying == "NOT_MATCHED" or vendor_status == "MISMATCH":
+                return "Duplicate invoice and not matched — do not post until cleared"
             return "Possible duplicate invoice — do not post until cleared"
         if hana_down:
             return "HANA Cloud is unavailable — restart the HANA instance and re-run AP"

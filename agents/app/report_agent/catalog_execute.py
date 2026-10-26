@@ -154,6 +154,14 @@ _USER_NAME_KEYS = (
     "username",
     "email",
 )
+_USER_NAME_ID_PAIRS = (
+    ("startedBy", "startedById"),
+    ("actedBy", "actedById"),
+    ("CreatedBy", "CreatedById"),
+    ("createdBy", "createdById"),
+)
+_USER_NAME_COMPACT = frozenset({"startedby", "actedby", "createdby"})
+_USER_ID_COMPACT = frozenset({"startedbyid", "actedbyid", "createdbyid"})
 _HYDRATE_USER_CONCURRENCY = 8
 _WF_STATUS_LABELS = {
     0: "Not Started",
@@ -222,8 +230,45 @@ def _split_user_ref(value: Any) -> tuple[str, str]:
     if not text:
         return "", ""
     if _looks_like_user_id(text):
-        return str(value).strip(), ""
+        return text, ""
     return "", text
+
+
+def _id_key_for_name(compact: str) -> str:
+    return {
+        "startedby": "startedById",
+        "actedby": "actedById",
+        "createdby": "CreatedById",
+    }.get(compact, "")
+
+
+def _split_user_fields_on_row(row: dict[str, Any]) -> None:
+    """Move GUIDs out of *By name columns onto *ById so overlay/resolve can fill names."""
+    if not isinstance(row, dict):
+        return
+    if not row.get("startedBy") and not row.get("startedById"):
+        uid, name = _split_user_ref(_pick(row, "created_by", "createdBy"))
+        if uid:
+            row["startedById"] = uid
+        if name:
+            row["startedBy"] = name
+    if not row.get("actedBy") and not row.get("actedById"):
+        uid, name = _split_user_ref(
+            _pick(row, "modified_by", "modifiedBy", "updated_by", "updatedBy")
+        )
+        if uid:
+            row["actedById"] = uid
+        if name:
+            row["actedBy"] = name
+    for name_key, id_key in _USER_NAME_ID_PAIRS:
+        uid, name = _split_user_ref(row.get(name_key))
+        if uid and not row.get(id_key):
+            row[id_key] = uid
+        if uid and not name:
+            row[name_key] = ""
+        id_uid, _ = _split_user_ref(row.get(id_key))
+        if id_uid:
+            row[id_key] = id_uid
 
 
 def _user_display_name(row: dict[str, Any]) -> str:
@@ -478,16 +523,22 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
             elif compact == "stage":
                 item["Stage"] = item[key]
                 item["stage"] = item[key]
-            elif compact == "actedby":
-                item["actedBy"] = item[key]
+            elif compact in _USER_NAME_COMPACT:
+                uid, name = _split_user_ref(value)
+                id_key = _id_key_for_name(compact)
+                if uid and id_key and not item.get(id_key):
+                    item[id_key] = uid
+                item[key] = _cell(name)
+                if compact == "actedby":
+                    item["actedBy"] = item[key]
+                elif compact == "startedby":
+                    item["startedBy"] = item[key]
+                else:
+                    item["CreatedBy"] = item[key]
             elif compact == "actedbyid":
                 item["actedById"] = item[key]
-            elif compact == "startedby":
-                item["startedBy"] = item[key]
             elif compact == "startedbyid":
                 item["startedById"] = item[key]
-            elif compact == "createdby":
-                item["CreatedBy"] = item[key]
             elif compact == "createdbyid":
                 item["CreatedById"] = item[key]
         shaped.append(item)
@@ -975,7 +1026,12 @@ async def resolve_user_names(
     """Fill *By name columns from EZOFIS /Users (or tenant SQL); keep GUIDs on *ById."""
     if not rows:
         return rows
-    want = _collect_user_ids(rows)
+    prepared: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        _split_user_fields_on_row(item)
+        prepared.append(item)
+    want = _collect_user_ids(prepared)
     names: dict[str, str] = {}
     lister = getattr(ezofis, "list_users", None) if ezofis is not None else None
     if callable(lister) and want:
@@ -1013,17 +1069,10 @@ async def resolve_user_names(
         except Exception:
             pass
     if not names:
-        return rows
+        return prepared
     out: list[dict[str, Any]] = []
-    for row in rows:
-        item = dict(row)
-        pairs = (
-            ("startedBy", "startedById"),
-            ("actedBy", "actedById"),
-            ("CreatedBy", "CreatedById"),
-            ("createdBy", "createdById"),
-        )
-        for name_key, id_key in pairs:
+    for item in prepared:
+        for name_key, id_key in _USER_NAME_ID_PAIRS:
             raw_id = item.get(id_key) or item.get(name_key)
             uid, already = _split_user_ref(raw_id)
             if uid and not item.get(id_key):
@@ -1135,7 +1184,35 @@ def _index_instances(
     return by_item, by_inst
 
 
+def _assign_listing_value(row: dict[str, Any], key: str, value: Any) -> bool:
+    """Copy a listing field onto a form row. Names overwrite GUIDs left by form SQL."""
+    if value in (None, ""):
+        return False
+    compact = _listing_compact(key)
+    existing = row.get(key)
+    if compact in _USER_NAME_COMPACT:
+        if _looks_like_user_id(value):
+            id_key = _id_key_for_name(compact)
+            if id_key and row.get(id_key) in (None, ""):
+                row[id_key] = _cell(value)
+            return False
+        if existing not in (None, "") and not _looks_like_user_id(existing):
+            return False
+        row[key] = _cell(value)
+        return True
+    if compact in _USER_ID_COMPACT:
+        if existing not in (None, "") and _looks_like_user_id(existing):
+            return False
+        row[key] = _cell(value)
+        return True
+    if existing not in (None, ""):
+        return False
+    row[key] = _cell(value)
+    return True
+
+
 def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: ReportSpec) -> None:
+    _split_user_fields_on_row(row)
     payload = {
         "RequestNo": inst.get("RequestNo") or inst.get("requestNo"),
         "requestNo": inst.get("requestNo") or inst.get("RequestNo"),
@@ -1153,23 +1230,18 @@ def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: Report
         "createdAtUtc": inst.get("createdAtUtc"),
     }
     for key, value in payload.items():
-        if value in (None, ""):
-            continue
-        if row.get(key) not in (None, ""):
-            continue
-        row[key] = _cell(value)
+        _assign_listing_value(row, key, value)
     for col in spec.columns or []:
         key = col.key
-        if str(row.get(key) or "").strip():
+        if str(row.get(key) or "").strip() and not _looks_like_user_id(row.get(key)):
             continue
         value = _pick(inst, key)
         if value in (None, "") and _listing_compact(key) == "requestno":
             value = inst.get("RequestNo") or inst.get("requestNo")
         elif value in (None, "") and _listing_compact(key) == "stage":
             value = inst.get("Stage") or inst.get("stage")
-        if value in (None, ""):
+        if not _assign_listing_value(row, key, value):
             continue
-        row[key] = _cell(value)
         if _listing_compact(key) == "requestno":
             row["RequestNo"] = row[key]
             row["requestNo"] = row[key]
@@ -1214,6 +1286,7 @@ async def attach_listing_fields_to_form_rows(
     out: list[dict[str, Any]] = []
     for row in rows:
         item = dict(row)
+        _split_user_fields_on_row(item)
         inst = None
         for cid in _form_row_ids(item):
             inst = by_item.get(cid) or by_inst.get(cid)
