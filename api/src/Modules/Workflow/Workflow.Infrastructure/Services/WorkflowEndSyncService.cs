@@ -111,11 +111,15 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
             // still needs the key on insert, otherwise a new row is created without the id
             // and the existing master row never changes.
             var fields = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+            var skipped = new List<string>();
             foreach (var mapping in config.FieldMappings)
             {
                 if (!TryGetMappedValue(values, mapping.WorkflowFieldId, out var value)
                     || string.IsNullOrWhiteSpace(value))
+                {
+                    skipped.Add($"{mapping.WorkflowFieldId}->{mapping.MasterFieldId}");
                     continue;
+                }
 
                 fields[mapping.MasterFieldId] = JsonSerializer.SerializeToElement(value);
             }
@@ -123,9 +127,10 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
             if (fields.Count == 0)
             {
                 _logger.LogInformation(
-                    "End-sync: no mapped field values resolved for workflow {WorkflowId} instance {InstanceId}; skipped.",
+                    "End-sync: no mapped field values resolved for workflow {WorkflowId} instance {InstanceId}; skipped mappings: {Skipped}.",
                     workflowId,
-                    instanceId);
+                    instanceId,
+                    string.Join(", ", skipped));
                 return;
             }
 
@@ -134,6 +139,12 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 MatchColumn: null,
                 MatchColumnId: mainMapping.MasterFieldId,
                 MatchValue: matchValue);
+
+            _logger.LogInformation(
+                "End-sync upsert payload for workflow {WorkflowId} instance {InstanceId}: {Payload}",
+                workflowId,
+                instanceId,
+                SerializeUpsertPayload(config.MasterFormId, request, skipped));
 
             var result = await _formEntryService.UpsertEntryByColumnsAsync(
                 config.MasterFormId,
@@ -235,6 +246,28 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
 
     private static string Compact(string value) =>
         new string(value.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+
+    private static string SerializeUpsertPayload(
+        string? masterFormId,
+        FormEntryUpsertByColumnsRequest request,
+        IReadOnlyList<string> skipped)
+    {
+        var fields = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        if (request.Fields != null)
+        {
+            foreach (var (key, value) in request.Fields)
+                fields[key] = FlattenJsonValue(value);
+        }
+
+        return JsonSerializer.Serialize(new
+        {
+            masterFormId,
+            matchColumnId = request.MatchColumnId,
+            matchValue = request.MatchValue,
+            fields,
+            skipped
+        });
+    }
 
     private static void MergeLineItems(Dictionary<string, string> values, string? json)
     {
