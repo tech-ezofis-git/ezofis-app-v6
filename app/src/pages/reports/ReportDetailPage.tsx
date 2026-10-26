@@ -1,7 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
-import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import { AnimateFadeIn } from '@/components/common/animations'
 import { useReportBuilderByIdQuery } from '@/pages/report-builder/hooks/useReportBuilderApi'
@@ -47,30 +46,19 @@ const ReportDetailPage = ({ reportId }: Props) => {
   }
 
   return (
+    // The report name lives in the top bar breadcrumb (PageTitle), leaving
+    // this page's height to the table / opened request or file.
     <AnimateFadeIn className='flex h-full min-h-0 flex-col overflow-hidden'>
-      <div className='flex h-14 shrink-0 items-center justify-between gap-4 border-b border-gray-3 px-4'>
-        <div className='flex min-w-0 items-center gap-2.5'>
-          <IconButton
-            color='gray'
-            icon='lucide:arrow-left'
-            size='sm'
-            variant='ghost'
-            onClick={() => navigate({ to: '/reports' })}
-          />
-          <h1 className='truncate text-15 font-semibold text-gray-13'>
-            {report.name}
-          </h1>
-          <span className='hidden items-center gap-1 text-12 text-gray-9 sm:inline-flex'>
-            <Icon className='size-3.5' name='lucide:database' />
-            {report.domain}
-          </span>
-        </div>
-        {!report.isAiReport && <ReportShareButton reportId={report.id} />}
-      </div>
-
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         {/* <ReportKpiCards report={report} /> */}
-        <OverviewTab report={report} />
+        <OverviewTab
+          report={report}
+          toolbarActions={
+            report.isAiReport ? undefined : (
+              <ReportShareButton reportId={report.id} />
+            )
+          }
+        />
       </div>
     </AnimateFadeIn>
   )

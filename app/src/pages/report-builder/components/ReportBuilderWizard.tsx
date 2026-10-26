@@ -172,7 +172,12 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
           agent: buildAgentConfigFromDraft(draft.agent, draft),
           description: draft.description,
           name: draft.name || t`Untitled Report`,
+          sharedGroups:
+            draft.visibility === 'Selected Groups' ? draft.sharedGroups : [],
+          sharedUsers:
+            draft.visibility === 'Selected Users' ? draft.sharedUsers : [],
           status,
+          visibility: draft.visibility,
         })
       } else {
         const saved = await saveReportMutation.mutateAsync(

@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCallback, useMemo, useState } from 'react'
 import type { ReportSpec } from '@/api/v6/reportAgent'
@@ -9,6 +9,7 @@ import type {
   FilterGroup,
 } from '@/components/common/CustomFilter'
 import type { Report } from '@/pages/report-builder/types'
+import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import TableExport from '@/components/base/data-table/actions/TableExport'
@@ -21,11 +22,12 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
+import { DocumentDetailsView } from '@/pages/folders/components/DocumentDetailsView'
 import {
   useReportAgentDataQuery,
   useReportBuilderDataQuery,
 } from '@/pages/report-builder/hooks/useReportBuilderApi'
-import { isIdColumn } from '@/pages/report-builder/utils/hiddenColumns'
+import { isHiddenReportColumn } from '@/pages/report-builder/utils/hiddenColumns'
 import { resolveFieldStatus } from '@/pages/report-builder/utils/resolveFieldStatus'
 import Request from '@/pages/requests/components/request/Request'
 import useInlineRequestOverview from '@/pages/requests/hooks/useInlineRequestOverview'
@@ -42,6 +44,10 @@ import {
   parseFilterValues,
 } from '@/utils/filterUtils'
 import { formatReportDate, parseUtcDate } from '@/utils/utcDate'
+import JsonValueTable, {
+  JsonCellButton,
+  parseJsonValue,
+} from './JsonValueTable'
 import StatusPill from './StatusPill'
 
 interface OverviewColumn {
@@ -51,6 +57,8 @@ interface OverviewColumn {
 
 interface Props {
   report: Report
+  /** Extra buttons at the end of the filter bar (e.g. Share). */
+  toolbarActions?: React.ReactNode
 }
 
 const PAGE_SIZE = 200
@@ -63,8 +71,44 @@ const INSTANCE_ID_KEY = '__instanceId'
 const WORKFLOW_ID_NAMES = ['workflowid', 'wfid']
 const INSTANCE_ID_NAMES = ['instanceid', 'workflowinstanceid', 'processid']
 
+// Row fields carrying the ids a folder report's file-name link opens.
+const FILE_ITEM_ID_KEY = '__fileItemId'
+const FILE_REPOSITORY_ID_KEY = '__fileRepositoryId'
+
+const ITEM_ID_NAMES = ['itemid', 'fileid', 'documentid', 'docid']
+const REPOSITORY_ID_NAMES = ['repositoryid', 'repoid']
+const FILE_NAME_NAMES = [
+  'document',
+  'documentname',
+  'file',
+  'filename',
+  'itemname',
+  'name',
+  'title',
+]
+
 const normalizeName = (value: string | undefined) =>
   (value ?? '').toLowerCase().replace(/[\s_\-.#]/g, '')
+
+// View, download and print only; editing and workflow actions stay on the
+// Folders page.
+const READ_ONLY_FILE_PERMISSIONS = {
+  checkIn: false,
+  checkOut: false,
+  delete: false,
+  download: true,
+  editDocument: false,
+  editMetadata: false,
+  piiRedaction: false,
+  print: true,
+  sendForSignature: false,
+  upload: false,
+  view: true,
+}
+
+const isFileNameColumn = (col: OverviewColumn) =>
+  FILE_NAME_NAMES.includes(normalizeName(col.id)) ||
+  FILE_NAME_NAMES.includes(normalizeName(col.label))
 
 /** The request-number column: key `id` (labelled "Req No") or a Req/Request No label. */
 const isRequestNumberColumn = (col: OverviewColumn) =>
@@ -91,13 +135,14 @@ const toLocalDay = (value: string) => {
   return date ? dayjs(date).format('YYYY-MM-DD') : value
 }
 
-const OverviewTab = ({ report }: Props) => {
+const OverviewTab = ({ report, toolbarActions }: Props) => {
   const { t } = useLingui()
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
   const isAgentReport = Boolean(report.agentConfig)
+  const isFolderReport = report.sourceType === 'Folder'
   const legacyQuery = useReportBuilderDataQuery(
     isAgentReport ? null : report.id,
   )
@@ -123,7 +168,7 @@ const OverviewTab = ({ report }: Props) => {
     return (
       columns
         // Internal identifier columns are fetched but never displayed.
-        .filter((col) => !isIdColumn(col.key, col.label))
+        .filter((col) => !isHiddenReportColumn(col.key, col.label))
         .map((col) => {
           const fieldId = isAgentReport
             ? col.key
@@ -147,9 +192,28 @@ const OverviewTab = ({ report }: Props) => {
       )
     return {
       instance: find(INSTANCE_ID_NAMES),
+      item: find(isFolderReport ? [...ITEM_ID_NAMES, 'id'] : ITEM_ID_NAMES),
+      repository: find(REPOSITORY_ID_NAMES),
       workflow: find(WORKFLOW_ID_NAMES),
     }
-  }, [runResult])
+  }, [runResult, isFolderReport])
+
+  // Single-folder reports may not return a repository id per row; resolve the
+  // report's folder by name instead.
+  const repositoriesQuery = useQuery({
+    ...getRepositoriesQueryOptions(),
+    enabled: isFolderReport,
+  })
+  const reportRepositoryId = useMemo(() => {
+    const name = normalizeName(
+      report.agentConfig?.repositoryName || report.domain,
+    )
+    const match = (repositoriesQuery.data ?? []).find(
+      (repo: { id: unknown; name: unknown }) =>
+        normalizeName(String(repo.name)) === name,
+    )
+    return match ? String(match.id) : ''
+  }, [repositoriesQuery.data, report.agentConfig, report.domain])
 
   const sourceRows: Record<string, string>[] = useMemo(() => {
     const rows = runResult?.rows ?? []
@@ -182,9 +246,35 @@ const OverviewTab = ({ report }: Props) => {
         WORKFLOW_ID_NAMES,
         linkColumns.workflow,
       )
+      if (isFolderReport) {
+        mapped[FILE_ITEM_ID_KEY] = read(row, ITEM_ID_NAMES, linkColumns.item)
+        mapped[FILE_REPOSITORY_ID_KEY] =
+          read(row, REPOSITORY_ID_NAMES, linkColumns.repository) ||
+          reportRepositoryId
+      }
       return mapped
     })
-  }, [runResult, previewColumns, linkColumns])
+  }, [
+    runResult,
+    previewColumns,
+    linkColumns,
+    isFolderReport,
+    reportRepositoryId,
+  ])
+
+  // A folder report's file opens in place of the table, in the same details
+  // view the Folders page uses.
+  // A JSON cell's data, shown as a table in place of the report table.
+  const [jsonView, setJsonView] = useState<{
+    label: string
+    value: NonNullable<ReturnType<typeof parseJsonValue>>
+  } | null>(null)
+
+  const [openFile, setOpenFile] = useState<{
+    fileName: string
+    id: string
+    repositoryId: string
+  } | null>(null)
 
   // A row's request opens in place of the table; the table stays mounted
   // (hidden) so its filters, page and scroll survive the round trip.
@@ -259,6 +349,29 @@ const OverviewTab = ({ report }: Props) => {
           accessorFn: (row: Row) => row[key],
           renderCell: (row: Row) => {
             if (
+              isFolderReport &&
+              isFileNameColumn(col) &&
+              row[FILE_ITEM_ID_KEY] &&
+              row[FILE_REPOSITORY_ID_KEY]
+            ) {
+              return (
+                <button
+                  className='cursor-pointer truncate font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70'
+                  type='button'
+                  onClick={() =>
+                    setOpenFile({
+                      fileName: String(row[key] ?? ''),
+                      id: String(row[FILE_ITEM_ID_KEY]),
+                      repositoryId: String(row[FILE_REPOSITORY_ID_KEY]),
+                    })
+                  }
+                >
+                  {(row[key] as string) || '-'}
+                </button>
+              )
+            }
+            if (
+              !isFolderReport &&
               isRequestNumberColumn(col) &&
               row[WORKFLOW_ID_KEY] &&
               row[INSTANCE_ID_KEY]
@@ -282,6 +395,15 @@ const OverviewTab = ({ report }: Props) => {
                 </button>
               )
             }
+            const json = parseJsonValue(row[key])
+            if (json) {
+              return (
+                <JsonCellButton
+                  value={json}
+                  onClick={() => setJsonView({ label: col.label, value: json })}
+                />
+              )
+            }
             if (setting?.colType === 'status') {
               const status = resolveFieldStatus(
                 setting,
@@ -301,9 +423,11 @@ const OverviewTab = ({ report }: Props) => {
       }),
     [
       previewColumns,
-      fieldSettings, columnTypes,
+      fieldSettings,
+      columnTypes,
       openRequest,
       requestOverview.loadingInstanceId,
+      isFolderReport,
     ],
   )
 
@@ -558,18 +682,53 @@ const OverviewTab = ({ report }: Props) => {
         <AnimateFadeIn className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface'>
           {/* Read-only here: reviewing happens on the Requests page. */}
           <Request
-            hideActions
             item={requestOverview.item}
             key={requestOverview.item?.processId || requestOverview.item?.id}
             workflowId={requestOverview.workflowId ?? undefined}
+            hideActions
             onBack={requestOverview.close}
           />
+        </AnimateFadeIn>
+      )}
+      {openFile && (
+        <AnimateFadeIn className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface'>
+          {/* Read-only here, like a request opened from a report. */}
+          <DocumentDetailsView
+            fileName={openFile.fileName}
+            id={openFile.id}
+            key={`${openFile.repositoryId}:${openFile.id}`}
+            permissions={READ_ONLY_FILE_PERMISSIONS}
+            repositoryId={openFile.repositoryId}
+            compactActions
+            onBack={() => setOpenFile(null)}
+          />
+        </AnimateFadeIn>
+      )}
+      {jsonView && (
+        <AnimateFadeIn className='flex min-h-0 flex-1 flex-col gap-3 overflow-hidden'>
+          <div className='flex shrink-0 items-center gap-2'>
+            <IconButton
+              ariaLabel={t`Back to report`}
+              color='gray'
+              icon='lucide:arrow-left'
+              size='sm'
+              variant='ghost'
+              onClick={() => setJsonView(null)}
+            />
+            <Icon className='size-4 text-primary-10' name='lucide:table-2' />
+            <p className='truncate text-14 font-semibold text-gray-13'>
+              {jsonView.label}
+            </p>
+          </div>
+          <div className='ez-scrollbar min-h-0 flex-1 overflow-auto'>
+            <JsonValueTable value={jsonView.value} />
+          </div>
         </AnimateFadeIn>
       )}
       <div
         className={cn(
           'flex min-h-0 flex-1 flex-col gap-3',
-          requestOverview.isOpen && 'hidden',
+          (requestOverview.isOpen || openFile || jsonView) && 'hidden',
         )}
       >
         <CustomFilter
@@ -584,10 +743,23 @@ const OverviewTab = ({ report }: Props) => {
             Object.values(activeFilters).some(Boolean),
           )}
           trailingActions={
-            <TableExport
-              fileName={report.name || 'report'}
-              table={renderTable as any}
-            />
+            <div className='flex items-center gap-2'>
+              <IconButton
+                ariaLabel={t`Refresh`}
+                color='gray'
+                disabled={isFetching}
+                icon='lucide:refresh-cw'
+                iconClass={cn(isFetching && 'animate-spin')}
+                tooltip={t`Run the report again`}
+                variant='outline'
+                onClick={refresh}
+              />
+              <TableExport
+                fileName={report.name || 'report'}
+                table={renderTable as any}
+              />
+              {toolbarActions}
+            </div>
           }
           onFilterChange={(id, value) => {
             setActiveFilters((prev) => ({ ...prev, [id]: value }))

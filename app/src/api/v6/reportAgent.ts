@@ -1,6 +1,7 @@
 import type {
   ReportAgentType,
   ReportHighlightOperator,
+  ReportVisibility,
 } from '@/pages/report-builder/types'
 import authUserStore from '@/stores/authUserStore'
 import { axiosV6 } from '../axios'
@@ -121,7 +122,10 @@ export interface ReportAiUpdateRequest {
   name?: string
   reportPrompt?: string
   reportSpec?: Record<string, unknown>
+  sharedGroups?: string[]
+  sharedUsers?: string[]
   status?: 'Draft' | 'Published'
+  visibility?: ReportVisibility
 }
 
 /** Summary row from GET /report-ai-builder. */
@@ -136,6 +140,9 @@ export interface ReportAiListItem {
   status: string
   /** Specific-scope source names; the list endpoint may omit them. */
   repositoryName?: string | null
+  sharedGroups?: string[] | null
+  sharedUsers?: string[] | null
+  visibility?: string | null
   workflowName?: string | null
 }
 
