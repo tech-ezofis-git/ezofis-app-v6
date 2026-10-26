@@ -1734,10 +1734,11 @@ const getBaseColumns = (
               </span>
             )
           }
-          const { currentLabel, isTerminal, previousLabel } =
+          const { color, currentLabel, isTerminal, previousLabel } =
             getGenericStageInfo(workflow, row)
           return (
             <GenericStagePill
+              color={color}
               currentLabel={currentLabel}
               isTerminal={isTerminal}
               previousLabel={previousLabel}

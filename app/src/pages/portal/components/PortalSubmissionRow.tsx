@@ -152,10 +152,8 @@ export default function PortalSubmissionRow({
 
   const lastActionLabel = getLastActionLabel(submission.raw)
 
-  const { currentLabel, isTerminal, previousLabel } = getGenericStageInfo(
-    workflow,
-    row,
-  )
+  const { color, currentLabel, isTerminal, previousLabel } =
+    getGenericStageInfo(workflow, row)
 
   const startedLabel = startedAt
     ? dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')
@@ -221,6 +219,7 @@ export default function PortalSubmissionRow({
           <div className='flex items-start justify-between gap-2'>
             <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
               <GenericStagePill
+                color={color}
                 currentLabel={currentLabel}
                 isTerminal={isTerminal}
                 previousLabel={previousLabel}
@@ -277,6 +276,7 @@ export default function PortalSubmissionRow({
               {requestNo}
             </span>
             <GenericStagePill
+              color={color}
               currentLabel={currentLabel}
               isTerminal={isTerminal}
               previousLabel={previousLabel}

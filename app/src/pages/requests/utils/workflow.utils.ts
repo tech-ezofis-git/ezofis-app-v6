@@ -817,6 +817,12 @@ export const listWorkflowStages = (
   })
 
 export interface GenericStageInfo {
+  /**
+   * Button color of the connection into the current stage (green / red /
+   * orange / primary / secondary), as the header stage trail colors it;
+   * undefined when not set or when incoming connections disagree.
+   */
+  color?: string
   currentLabel: string
   isTerminal: boolean
   previousLabel: string | null
@@ -925,5 +931,19 @@ export const getGenericStageInfo = (
     currentBlockType === 'END' ||
     row?.stageType === 'ACTION'
 
-  return { currentLabel, isTerminal, previousLabel }
+  const incomingColors = Array.from(
+    new Set(
+      rules
+        .filter(
+          (r: any) =>
+            String(r.toBlockId || r.to || r.target || '') ===
+            String(activityId ?? ''),
+        )
+        .map((r: any) => String(r.buttonColor || '').trim())
+        .filter(Boolean),
+    ),
+  )
+  const color = incomingColors.length === 1 ? incomingColors[0] : undefined
+
+  return { color, currentLabel, isTerminal, previousLabel }
 }
