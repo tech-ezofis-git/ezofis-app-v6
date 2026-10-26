@@ -22,7 +22,7 @@ import {
 import { transformProcess } from '../hooks/useInboxData'
 import { loadOverviewWorkflow } from '../utils/requestOverviewLoader'
 import { workflowDotClass } from '../utils/workflowColors'
-import GenericGridCard from './GenericGridCard'
+import { GridRowItem } from './GridView'
 import WorkflowSwitcher from './WorkflowSwitcher'
 
 type AllWorkflowsInboxProps = {
@@ -36,6 +36,8 @@ type AllWorkflowsInboxProps = {
   onOpenRequest: (workflowId: string, row: Record<string, any>) => void
   onOpenWorkflow: (workflow: Option) => void
 }
+
+const noop = () => undefined
 
 /** When the row landed in the user's inbox. */
 const receivedAt = (row: Record<string, any>) =>
@@ -194,58 +196,11 @@ export default function AllWorkflowsInbox({
       <div className='flex flex-wrap items-center justify-between gap-4 border-b border-gray-3 px-4'>
         <div className='-mb-px flex items-center gap-6'>
           <span className='border-b-2 border-primary-9 py-3.5 text-14 font-medium text-gray-13'>
-            {inbox.isLoading ? t`Inbox` : t`Inbox (${totalCount})`}
+            {inbox.isLoading ? t`All Inbox` : t`All Inbox (${totalCount})`}
           </span>
         </div>
         <div className='flex items-center gap-2 py-2'>
-          <WorkflowSwitcher
-            value={null}
-            workflows={workflows}
-            isAllWorkflows
-            onSelect={onOpenWorkflow}
-            onSelectAll={() => undefined}
-          />
-          <Menu
-            position='bottom-end'
-            width={260}
-            withinPortal
-            target={
-              <Button
-                disabled={!workflows.length}
-                icon='tabler:plus'
-                label={t`New`}
-                size='lg'
-              />
-            }
-          >
-            <p className='px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider text-gray-9 uppercase'>
-              {t`New request in`}
-            </p>
-            {workflows.map((workflow) => (
-              <MenuItem
-                key={workflow.id}
-                label={String(workflow.name || '')}
-                leftSection={
-                  <span
-                    className={cn(
-                      'size-2 rounded-full',
-                      workflowDotClass(workflow.id),
-                    )}
-                  />
-                }
-                onClick={() => onNewRequest(workflow)}
-              />
-            ))}
-          </Menu>
-        </div>
-      </div>
-
-      <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-10'>
-        {/* Search + refresh */}
-        <div className='mb-4 flex items-center justify-end gap-2 rounded-xl border border-gray-3 bg-surface p-3'>
-          <p className='mr-auto text-13 text-gray-10'>
-            {/* {t`Everything waiting on you, grouped by workflow.`} */}
-          </p>
+          {/* Search + refresh, before the workflow switcher */}
           <AnimatePresence initial={false}>
             {searchOpen || query ? (
               <motion.label
@@ -314,8 +269,49 @@ export default function AllWorkflowsInbox({
               />
             </button>
           </Tooltip>
+          <WorkflowSwitcher
+            value={null}
+            workflows={workflows}
+            isAllWorkflows
+            onSelect={onOpenWorkflow}
+            onSelectAll={() => undefined}
+          />
+          <Menu
+            position='bottom-end'
+            width={260}
+            withinPortal
+            target={
+              <Button
+                disabled={!workflows.length}
+                icon='tabler:plus'
+                label={t`New`}
+                size='lg'
+              />
+            }
+          >
+            <p className='px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider text-gray-9 uppercase'>
+              {t`New request in`}
+            </p>
+            {workflows.map((workflow) => (
+              <MenuItem
+                key={workflow.id}
+                label={String(workflow.name || '')}
+                leftSection={
+                  <span
+                    className={cn(
+                      'size-2 rounded-full',
+                      workflowDotClass(workflow.id),
+                    )}
+                  />
+                }
+                onClick={() => onNewRequest(workflow)}
+              />
+            ))}
+          </Menu>
         </div>
+      </div>
 
+      <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-10'>
         {inbox.isLoading ? (
           <div aria-busy='true' className='flex flex-col gap-4'>
             {[0, 1, 2].map((index) => (
@@ -382,6 +378,8 @@ export default function AllWorkflowsInbox({
                 return Boolean(date && dayjs(date).isSame(dayjs(), 'day'))
               })
               const earlier = cards.filter((card) => !today.includes(card))
+              const rowIndexOf = (raw: Record<string, any>) =>
+                group.items.indexOf(raw)
               return (
                 <motion.section
                   animate={{ opacity: 1, y: 0 }}
@@ -463,8 +461,13 @@ export default function AllWorkflowsInbox({
                             </p>
                             <div className='flex flex-col gap-2'>
                               {(list as typeof cards).map(({ raw, row }) => (
-                                <GenericGridCard
+                                <GridRowItem
+                                  activeTab='Inbox'
+                                  hasSelectionActive={false}
+                                  index={rowIndexOf(raw)}
+                                  isSelected={false}
                                   row={row}
+                                  toggleRowSelection={noop}
                                   workflow={detail}
                                   key={String(
                                     raw.transactionId ||

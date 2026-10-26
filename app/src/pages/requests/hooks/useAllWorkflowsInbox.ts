@@ -3,7 +3,6 @@ import {
   type AllWorkflowsInboxGroup,
   getAllWorkflowsInbox,
 } from '@/api/v6/workflows'
-import { isInboxRowOverdue } from '../utils/inboxItemDisplay'
 
 export const ALL_WORKFLOWS_INBOX_KEY = ['all-workflows-inbox']
 
@@ -25,9 +24,10 @@ export const useAllWorkflowsInbox = (enabled = true) =>
   })
 
 /**
- * Overdue requests in a group: the API's earlierCount (open requests that
- * reached the inbox before today and are still not actioned), or, when a
- * row's due date is already past, at least that many.
+ * Overdue requests in a group: open requests that reached the inbox before
+ * today and are still not actioned. The API's earlierCount only covers the
+ * fetched items (itemsPerWorkflow), so it is taken as totalCount minus
+ * today's new ones (rows come newest first, so today's are all fetched).
  */
 export const countOverdue = (group: AllWorkflowsInboxGroup) =>
-  Math.max(group.earlierCount, group.items.filter(isInboxRowOverdue).length)
+  Math.max(group.earlierCount, group.totalCount - group.newTodayCount, 0)

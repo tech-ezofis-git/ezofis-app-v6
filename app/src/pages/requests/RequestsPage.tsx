@@ -30,6 +30,7 @@ import InboxList from './components/InboxList'
 import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
 import Request from './components/request/Request'
 import { transformProcess, useInboxData } from './hooks/useInboxData'
+import useInlineRequestOverview from './hooks/useInlineRequestOverview'
 import { useStableRequestKey } from './hooks/useStableRequestKey'
 import requestStore from './stores/useRequestStore'
 import {
@@ -588,26 +589,26 @@ const RequestsPage = () => {
     [handleWorkflowSelect],
   )
 
+  // A request from All Inbox opens straight away (its own workflow is loaded
+  // into the store for it); Back returns to All Inbox and the store's
+  // previous workflow is put back.
+  const inlineOverview = useInlineRequestOverview({
+    onError: () =>
+      showToast({
+        message: t`Couldn't open this request. Try again.`,
+        variant: 'error',
+      }),
+  })
+  const { open: openInlineOverview } = inlineOverview
   const openFromAllWorkflows = useCallback(
     (workflowId: string, row: Record<string, any>) => {
-      const option = allWorkflow?.find(
-        (opt) => String(opt.id) === String(workflowId),
+      const instanceId = String(
+        row.workflowInstanceId || row.processId || row.id || '',
       )
-      setShowAllWorkflows(false)
-      if (option) handleWorkflowSelect(option)
-      // The deep-link flow switches to the workflow and opens the request.
-      requestStore.getState().setPendingDeepLink({
-        processId: String(
-          row.workflowInstanceId || row.processId || row.id || '',
-        ),
-        tab: 'Details',
-        transactionId: row.transactionId
-          ? String(row.transactionId)
-          : undefined,
-        workflowId: String(workflowId),
-      })
+      if (!workflowId || !instanceId) return
+      void openInlineOverview({ instanceId, workflowId: String(workflowId) })
     },
-    [allWorkflow, handleWorkflowSelect],
+    [openInlineOverview],
   )
 
   const loadWorkflowList = useCallback(async () => {
@@ -2015,19 +2016,27 @@ const RequestsPage = () => {
     <>
       <div className='flex h-full min-h-0 w-full overflow-hidden'>
         <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
-          {!selectedItem && showAllWorkflows ? (
-            <AllWorkflowsInbox
-              redirectWhenEmpty={!allWorkflowsChosen}
-              workflows={(allWorkflow || []).filter(
-                (opt) => String(opt.id).toLowerCase() !== 'procurement',
-              )}
-              onNewRequest={(opt) => {
-                setPendingNewWorkflowId(String(opt.id))
-                selectWorkflowFromSwitcher(opt)
-              }}
-              onOpenRequest={openFromAllWorkflows}
-              onOpenWorkflow={(opt) => selectWorkflowFromSwitcher(opt)}
-            />
+          {/* Kept mounted (hidden) while a request is open, so Back returns
+              to the same open sections and scroll position. */}
+          {showAllWorkflows ? (
+            <div
+              className={
+                selectedItem ? 'hidden' : 'flex min-h-0 flex-1 flex-col'
+              }
+            >
+              <AllWorkflowsInbox
+                redirectWhenEmpty={!allWorkflowsChosen}
+                workflows={(allWorkflow || []).filter(
+                  (opt) => String(opt.id).toLowerCase() !== 'procurement',
+                )}
+                onNewRequest={(opt) => {
+                  setPendingNewWorkflowId(String(opt.id))
+                  selectWorkflowFromSwitcher(opt)
+                }}
+                onOpenRequest={openFromAllWorkflows}
+                onOpenWorkflow={(opt) => selectWorkflowFromSwitcher(opt)}
+              />
+            </div>
           ) : null}
           {!selectedItem && !showAllWorkflows && (
             <Header
@@ -2070,8 +2079,8 @@ const RequestsPage = () => {
               key={selectedRequestKey}
               workflowId={selectedWorkflow?.id}
               onBack={closeRequest}
-              onNext={hasNext ? onNext : undefined}
-              onPrev={hasPrev ? onPrev : undefined}
+              onNext={hasNext && !showAllWorkflows ? onNext : undefined}
+              onPrev={hasPrev && !showAllWorkflows ? onPrev : undefined}
             />
           )}
           {!selectedItem &&
