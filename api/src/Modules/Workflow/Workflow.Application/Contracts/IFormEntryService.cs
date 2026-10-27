@@ -23,6 +23,15 @@ public interface IFormEntryService
         JsonElement body,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Soft-delete an ezfb form entry (<c>is_deleted = true</c>). The row stays so history and
+    /// workflow links still resolve; get/list/by-column omit it.
+    /// </summary>
+    Task<FormEntryDeleteResult> DeleteEntryAsync(
+        string formId,
+        Guid entryId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Get one or more entries by itemId (comma-separated supported like v5).</summary>
     Task<FormEntryGetResult> GetEntriesAsync(
         string formId,

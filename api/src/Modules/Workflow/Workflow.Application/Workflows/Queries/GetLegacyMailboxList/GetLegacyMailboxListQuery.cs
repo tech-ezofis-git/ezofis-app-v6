@@ -10,4 +10,6 @@ public sealed record GetLegacyMailboxListQuery(
     string? TransactionId = null,
     int PageNumber = 1,
     int PageSize = 20,
-    bool SkipTotal = false) : IRequest<LegacyMailboxListResult>;
+    bool SkipTotal = false,
+    /// <summary>Skip the "assigned to current user" filter -- find this ticket in this mailbox regardless of who it's assigned to.</summary>
+    bool IgnoreUserFilter = false) : IRequest<LegacyMailboxListResult>;

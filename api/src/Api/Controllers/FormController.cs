@@ -286,6 +286,33 @@ public sealed class FormController : ControllerBase
     }
 
     /// <summary>
+    /// Soft-delete a form entry (<c>is_deleted = true</c>). The row is kept; get/list omit it.
+    /// </summary>
+    [HttpDelete("{id}/entry/{entryId:guid}")]
+    [ProducesResponseType(typeof(FormEntryDeleteResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteEntry(string id, Guid entryId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(id) || entryId == Guid.Empty)
+            return NotFound();
+
+        try
+        {
+            var result = await _formEntryService.DeleteEntryAsync(id, entryId, cancellationToken);
+            return result.Status switch
+            {
+                FormEntryDeleteStatus.Deleted => Ok(result),
+                _ => NotFound(new { error = result.Message })
+            };
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Form entry schema: all wFormControl rows for this formId (jsonId, name, type, parentId, etc.).
     /// </summary>
     [HttpGet("{id}/entry/controls")]

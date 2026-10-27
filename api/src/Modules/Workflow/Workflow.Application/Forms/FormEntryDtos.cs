@@ -25,6 +25,18 @@ public enum FormEntryGetStatus
     NotFound = 0
 }
 
+public enum FormEntryDeleteStatus
+{
+    Deleted = 1,
+    NotFound = 0
+}
+
+/// <summary>DELETE /api/form/{id}/entry/{entryId} — soft delete (<c>is_deleted = true</c>).</summary>
+public sealed record FormEntryDeleteResult(
+    FormEntryDeleteStatus Status,
+    string? EntryId,
+    string? Message);
+
 public sealed record FormEntryGetResult(
     FormEntryGetStatus Status,
     IReadOnlyList<Dictionary<string, object?>>? Entries);

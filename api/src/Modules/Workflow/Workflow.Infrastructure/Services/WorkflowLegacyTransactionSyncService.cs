@@ -104,17 +104,10 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         // Workflow delegation: when the resolved assignee is away and has an active delegation
         // covering this workflow/stage with "redirect new requests" on, route to the delegate
         // instead. Caller-supplied activityUserId (explicit reassignment) is never overridden.
-        if (activityUserId is null && _tenantContext.TenantId is { } delegationTenantId)
+        if (activityUserId is null)
         {
-            var resolvedDelegate = await _delegations.ResolveDelegateAsync(
-                delegationTenantId,
-                workflowId,
-                txActivityId,
-                resolvedActivityUserId,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                cancellationToken);
-            if (resolvedDelegate is { } delegateUserId)
-                resolvedActivityUserId = delegateUserId;
+            resolvedActivityUserId = await RedirectToDelegateAsync(
+                workflowId, txActivityId, resolvedActivityUserId, cancellationToken);
         }
 
         await _tableCreator.EnsureLegacyTransactionTableAsync(workflowId, connectionString, cancellationToken);
@@ -319,6 +312,11 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
                         userId,
                         mailboxForm,
                         cancellationToken);
+
+                    // The next step's own assignee may be away: route it to their active delegate.
+                    // (The check above only covers the current step's assignee.)
+                    nextActivityUserId = await RedirectToDelegateAsync(
+                        workflowId, nextTxActivityId, nextActivityUserId, cancellationToken);
 
                     (nextTransactionId, nextTransactionGuid) = await InsertOpenTransactionForDefinitionStepAsync(
                         connection,
@@ -642,6 +640,38 @@ WHERE id = @WorkflowInstanceId;";
         cmd.Parameters.AddWithValue("@Status", (int)WorkflowInstanceStatus.Completed);
         cmd.Parameters.AddWithValue("@WorkflowInstanceId", workflowInstanceId);
         await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Returns the assignee's active delegate for this workflow/stage (dated, non-draft,
+    /// "redirect new requests" on), or the assignee unchanged when there is none.
+    /// </summary>
+    private async Task<Guid> RedirectToDelegateAsync(
+        Guid workflowId,
+        string activityId,
+        Guid assigneeUserId,
+        CancellationToken cancellationToken)
+    {
+        if (_tenantContext.TenantId is not { } tenantId)
+            return assigneeUserId;
+
+        var delegateUserId = await _delegations.ResolveDelegateAsync(
+            tenantId,
+            workflowId,
+            activityId,
+            assigneeUserId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            cancellationToken);
+        if (delegateUserId is not { } delegateId || delegateId == assigneeUserId)
+            return assigneeUserId;
+
+        _logger.LogInformation(
+            "Delegation: routing workflow {WorkflowId} activity {ActivityId} from {AssigneeUserId} to delegate {DelegateUserId}",
+            workflowId,
+            activityId,
+            assigneeUserId,
+            delegateId);
+        return delegateId;
     }
 
     /// <summary>

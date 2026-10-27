@@ -1643,14 +1643,16 @@ public sealed class WorkflowsController : ControllerBase
                  })
         {
             var result = await _mediator.Send(
-                new GetLegacyMailboxListQuery(kind, workflowId, instanceId, TransactionId: null, PageNumber: 1, PageSize: 1, SkipTotal: true),
+                new GetLegacyMailboxListQuery(
+                    kind, workflowId, instanceId, TransactionId: null,
+                    PageNumber: 1, PageSize: 1, SkipTotal: true, IgnoreUserFilter: true),
                 cancellationToken);
             var row = result.Items.FirstOrDefault();
             if (row != null)
                 return Ok(row with { Mailbox = kind.ToString().ToLowerInvariant() });
         }
 
-        return NotFound(new { error = "Ticket not found in inbox, sent, or completed for the current user." });
+        return NotFound(new { error = "Ticket not found in inbox, sent, or completed." });
     }
 
     /// <summary>Set SLA policy for a workflow. Admin only.</summary>

@@ -137,6 +137,44 @@ public sealed class FormEntryService : IFormEntryService
             "updated form entry");
     }
 
+    public async Task<FormEntryDeleteResult> DeleteEntryAsync(
+        string formId,
+        Guid entryId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(formId) || entryId == Guid.Empty)
+            return new FormEntryDeleteResult(FormEntryDeleteStatus.NotFound, null, "form entry not found");
+
+        var normalizedFormId = FormIdNaming.NormalizeFormId(formId);
+        var connectionString = _tenantContext.ConnectionString
+            ?? throw new InvalidOperationException("Tenant connection string not resolved.");
+        var userId = _currentUserProvider.GetUserId()
+            ?? throw new InvalidOperationException("Authenticated user is required.");
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        var tableSuffix = FormIdNaming.GetEzfbTableSuffix(normalizedFormId);
+        var tableName = $"ezfb_{tableSuffix}_items";
+        if (!await EzfbTableExistsAsync(connection, tableName, cancellationToken))
+            return new FormEntryDeleteResult(FormEntryDeleteStatus.NotFound, null, "form entry table not found");
+
+        var ezfbColumns = await LoadTableColumnsAsync(connection, tableName, cancellationToken);
+        var now = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
+        var deleted = await SoftDeleteEntryAsync(
+            connection,
+            tableName,
+            entryId,
+            now,
+            userId.ToString("D"),
+            ezfbColumns,
+            cancellationToken);
+
+        return deleted
+            ? new FormEntryDeleteResult(FormEntryDeleteStatus.Deleted, entryId.ToString("D"), "deleted form entry")
+            : new FormEntryDeleteResult(FormEntryDeleteStatus.NotFound, null, "form entry not found");
+    }
+
     public async Task<FormEntryGetResult> GetEntriesAsync(
         string formId,
         string entryIds,
@@ -1447,6 +1485,39 @@ public sealed class FormEntryService : IFormEntryService
         await using var cmd = new NpgsqlCommand(sql, connection);
         for (var i = 0; i < resolvedFields.Count; i++)
             cmd.Parameters.AddWithValue($"@V{i}", (object?)resolvedFields[i].Value ?? DBNull.Value);
+        if (hasModifiedAt)
+            cmd.Parameters.AddWithValue("@ModifiedAt", modifiedAt);
+        if (hasModifiedBy)
+            cmd.Parameters.AddWithValue("@ModifiedBy", modifiedBy);
+        cmd.Parameters.AddWithValue("@ItemId", entryId);
+
+        return await cmd.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
+    private static async Task<bool> SoftDeleteEntryAsync(
+        NpgsqlConnection connection,
+        string tableName,
+        Guid entryId,
+        string modifiedAt,
+        string modifiedBy,
+        IReadOnlySet<string> ezfbColumns,
+        CancellationToken cancellationToken)
+    {
+        var sets = new List<string> { "is_deleted = true" };
+        var hasModifiedAt = ezfbColumns.Contains("modified_at");
+        var hasModifiedBy = ezfbColumns.Contains("modified_by");
+        if (hasModifiedAt)
+            sets.Add("modified_at = @ModifiedAt");
+        if (hasModifiedBy)
+            sets.Add("modified_by = @ModifiedBy");
+
+        var sql = $"""
+            UPDATE dbo.{tableName}
+            SET {string.Join(", ", sets)}
+            WHERE item_id = @ItemId AND (is_deleted = false OR is_deleted IS NULL)
+            """;
+
+        await using var cmd = new NpgsqlCommand(sql, connection);
         if (hasModifiedAt)
             cmd.Parameters.AddWithValue("@ModifiedAt", modifiedAt);
         if (hasModifiedBy)

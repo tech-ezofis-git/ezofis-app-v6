@@ -734,7 +734,8 @@ EXISTS (
             transactionTableExists,
             request.InstanceId,
             request.TransactionId,
-            keepStageRows);
+            keepStageRows,
+            request.IgnoreUserFilter);
 
     private static bool KeepMjbStageRows(Guid workflowId) =>
         workflowId == MjbUsAgent.WorkflowId;
@@ -746,7 +747,8 @@ EXISTS (
         bool transactionTableExists,
         Guid? instanceId,
         string? transactionId,
-        bool keepStageRows = false)
+        bool keepStageRows = false,
+        bool ignoreUserFilter = false)
     {
         var userId = currentUserId.ToString("D");
         var whereParts = new List<string>();
@@ -760,16 +762,19 @@ EXISTS (
         {
             if (transactionTableExists)
             {
-                // Inbox is only the current assignee (not the starter/CreatedBy of the next step).
-                whereParts.Add(BuildInboxMailboxUserMatchSql("m"));
+                // Inbox is only the current assignee (not the starter/CreatedBy of the next step),
+                // unless the caller explicitly asked to skip that (e.g. locate-by-instance).
+                if (!ignoreUserFilter)
+                    whereParts.Add(BuildInboxMailboxUserMatchSql("m"));
                 whereParts.AddRange(BuildInboxOpenTransactionFilter(transactionTable));
             }
-            else
+            else if (!ignoreUserFilter)
                 whereParts.Add(BuildInboxMailboxUserMatchSql("m"));
         }
         else
         {
-            whereParts.Add(BuildMailboxUserMatchSql("m"));
+            if (!ignoreUserFilter)
+                whereParts.Add(BuildMailboxUserMatchSql("m"));
             if (transactionTableExists)
                 whereParts.AddRange(BuildTransactionStateFilter(kind, transactionTable, keepStageRows));
         }

@@ -19,7 +19,13 @@ public sealed record LegacyMailboxListRequest(
     int PageNumber = 1,
     int PageSize = 20,
     /// <summary>When true, skips COUNT(*) for faster paging (TotalCount is -1).</summary>
-    bool SkipTotal = false);
+    bool SkipTotal = false,
+    /// <summary>
+    /// When true, skips the "assigned to CurrentUserId" predicate -- returns the row for any user
+    /// as long as it's in this mailbox for this instance. Used by locate-by-instance lookups where
+    /// the caller isn't necessarily the ticket's assignee (e.g. viewing a shared report).
+    /// </summary>
+    bool IgnoreUserFilter = false);
 
 public sealed record LegacyMailboxListResult(
     IReadOnlyList<LegacyMailboxRowDto> Items,

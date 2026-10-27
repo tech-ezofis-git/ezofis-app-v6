@@ -363,6 +363,10 @@ public sealed class WorkflowEndSyncServiceTests
             string formId, Guid entryId, JsonElement body, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
+        public Task<FormEntryDeleteResult> DeleteEntryAsync(
+            string formId, Guid entryId, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
         public Task<FormEntryGetResult> GetEntriesAsync(
             string formId, string entryIds, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();

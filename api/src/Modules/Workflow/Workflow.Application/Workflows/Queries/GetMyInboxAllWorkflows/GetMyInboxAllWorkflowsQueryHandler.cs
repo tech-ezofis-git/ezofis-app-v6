@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using SaaSApp.Workflow.Application.Contracts;
 using SaaSApp.Workflow.Domain.Enums;
 
@@ -11,17 +12,20 @@ public sealed class GetMyInboxAllWorkflowsQueryHandler
     private readonly IWorkflowSecurityService _security;
     private readonly IWorkflowLegacyMailboxQueryService _mailboxQuery;
     private readonly ICurrentUserProvider _currentUserProvider;
+    private readonly ILogger<GetMyInboxAllWorkflowsQueryHandler> _logger;
 
     public GetMyInboxAllWorkflowsQueryHandler(
         IWorkflowRepository repository,
         IWorkflowSecurityService security,
         IWorkflowLegacyMailboxQueryService mailboxQuery,
-        ICurrentUserProvider currentUserProvider)
+        ICurrentUserProvider currentUserProvider,
+        ILogger<GetMyInboxAllWorkflowsQueryHandler> logger)
     {
         _repository = repository;
         _security = security;
         _mailboxQuery = mailboxQuery;
         _currentUserProvider = currentUserProvider;
+        _logger = logger;
     }
 
     public async Task<GetMyInboxAllWorkflowsResult> Handle(
@@ -47,16 +51,27 @@ public sealed class GetMyInboxAllWorkflowsQueryHandler
         {
             // Same query the single-workflow GET /inbox endpoint uses -- this endpoint is purely
             // "run it once per accessible workflow and group the results," no new ticket logic.
-            var result = await _mailboxQuery.ListAsync(
-                new LegacyMailboxListRequest(
-                    LegacyMailboxTableKind.Inbox,
-                    workflow.Id,
-                    InstanceId: null,
-                    TransactionId: null,
-                    userId,
-                    PageNumber: 1,
-                    PageSize: pageSize),
-                cancellationToken);
+            // One workflow's query failing (e.g. a table in an inconsistent state after a manual
+            // data clear) must not take down the aggregated response for every other workflow.
+            LegacyMailboxListResult result;
+            try
+            {
+                result = await _mailboxQuery.ListAsync(
+                    new LegacyMailboxListRequest(
+                        LegacyMailboxTableKind.Inbox,
+                        workflow.Id,
+                        InstanceId: null,
+                        TransactionId: null,
+                        userId,
+                        PageNumber: 1,
+                        PageSize: pageSize),
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load inbox for workflow {WorkflowId} ({WorkflowName}) while building all-workflows inbox.", workflow.Id, workflow.Name);
+                continue;
+            }
 
             if (!result.TableExists || result.TotalCount == 0)
                 continue;

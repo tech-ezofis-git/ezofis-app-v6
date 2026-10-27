@@ -30,7 +30,8 @@ public sealed class GetLegacyMailboxListQueryHandler : IRequestHandler<GetLegacy
                 userId,
                 request.PageNumber,
                 request.PageSize,
-                request.SkipTotal),
+                request.SkipTotal,
+                request.IgnoreUserFilter),
             cancellationToken);
     }
 }
