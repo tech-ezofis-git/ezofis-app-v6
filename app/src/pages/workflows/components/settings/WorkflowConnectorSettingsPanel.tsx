@@ -5,6 +5,7 @@ import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
 import {
   isSubWorkflowIdSet,
+  isSubWorkflowMock,
   writeConnectorSettings,
 } from '@/features/sub-workflow'
 import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
@@ -64,6 +65,13 @@ export default function WorkflowConnectorSettingsPanel({
             When a request reaches this step, a new request is started in the
             selected workflow and linked to it as a sub-process.
           </p>
+          {isSubWorkflowMock() && (
+            <p className='mt-1.5 flex items-start gap-1 text-xs leading-relaxed font-semibold text-pink-12'>
+              <Icon className='mt-0.5 size-3.5 shrink-0' name='lucide:info' />
+              Preview only: the server can't save this step yet, so a workflow
+              that contains it won't save until it's removed.
+            </p>
+          )}
         </div>
       </div>
 

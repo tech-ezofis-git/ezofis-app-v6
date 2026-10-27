@@ -53,7 +53,9 @@ Until the API is ready, all sub-workflow UI is shown only on a local dev host. `
 - Builder: the "Workflow Connector" palette entry (`AddNodeMenu.tsx`), the connector settings panel (`PropertiesPanel.tsx`), the Manual User "Sub Workflow" section (`ManualUserSettingsPanel.tsx`), the connector/initiator publish checks (`BuilderHeader.tsx`), and writing initiator keys on export (`exportWorkflow.ts`), so workflows saved on cloud stay exactly as before.
 - Requests: the "Initiate - &lt;child&gt;" button, the Sub Process tab and its queries, and the parent link (`Request.tsx`); the Initiate button on new requests (`WorkflowRequest.tsx`).
 
-Import still reads the keys (it changes nothing that's saved). **To go live:** delete `featureFlag.ts` and every `isSubWorkflowEnabled()` check (grep for it), and drop the `location` stubs in the two test files.
+Import still reads the keys (it changes nothing that's saved).
+
+**Connector save block:** the V6 save API rejects the `WORKFLOW_CONNECTOR` block type (reported 2026-10-27), so while the API is mocked (`isSubWorkflowMock()`) the builder refuses to save any workflow containing a Connector step. It shows an error toast and sends nothing (`getConnectorSaveBlock` in `utils/workflowConnector.ts`, called from `BuilderHeader.tsx`). The Connector panel tells the user it's preview-only. Setting `VITE_SUB_WORKFLOW_API=live` lifts both. **To go live:** delete `featureFlag.ts` and every `isSubWorkflowEnabled()` check (grep for it), and drop the `location` stubs in the two test files.
 
 ## 4. Questions for the backend (Phase 0, runs alongside the other phases)
 
@@ -172,9 +174,17 @@ Each phase ends with: the code done, a targeted type-check of the changed files,
 
 ### Phase 7 — Other surfaces, mobile, polish
 
-- Mobile request screens (`src/pages/mobile/**`): Sub Process list + parent link (read-only first).
-- Embed / portal / dashboard variants where V5 showed them.
-- `lingui extract/compile`, remove dead code, final pass on every phase's acceptance check.
+**Code done; mobile browser check pending (the pane was signed out).**
+
+- **Mobile** (`pages/mobile/features/invoice-detail/`): `InvoiceDetailScreen.tsx` gets a "Sub process · N" tab (read-only list: status icon, request number, status, workflow · stage · date) and a "Sub-process of &lt;parent&gt;" strip at the top when the request is a child. Both live in `SubProcessSection.tsx`, use the mobile primitives, and are behind the localhost switch.
+  - Not done on mobile: initiating a child, tapping to open a child or parent, and the inbox list cards.
+- **Accounts Payable request header**: the "Initiate - &lt;child&gt;" button now also shows in the AP header layout (`Header.tsx` non-simple branch, `extraActions`). The child form is pre-filled from the AP request's form panels.
+  - The Sub Process tab and parent link stay on generic workflows only, because the AP overview has a different right-panel.
+- **Other surfaces**:
+  - Reports (`OverviewTab`) and embed (`/embed/requests`) reuse `Request` / `RequestsPage`, so they already have everything.
+  - The portal and dashboard don't render request screens, so there was nothing to wire there.
+- `lingui extract/compile` runs as part of `npm run build`. No dead code was left behind; the only temporary code is the localhost switch (§3a).
+- Final checks: 27 sub-workflow tests pass; type-check and lint are clean on the changed files.
 
 ## 6. Progress
 
@@ -185,4 +195,4 @@ Each phase ends with: the code done, a targeted type-check of the changed files,
 - [x] Phase 4 — initiate + create + link
 - [x] Phase 5 — Sub Process tab + parent link
 - [x] Phase 6 — lists & history (grid view + history; table/kanban views not covered)
-- [ ] Phase 7 — mobile, other surfaces, polish
+- [~] Phase 7 — mobile, other surfaces, polish (code done; mobile browser check pending)

@@ -7,6 +7,7 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import showToast from '@/components/base/toast/showToast'
+import { isSubWorkflowMock } from '@/features/sub-workflow/api/subWorkflowApi'
 import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import useWorkflowStore from '../../stores/useWorkflowStore'
@@ -18,6 +19,7 @@ import {
 } from '../../utils/nodeToolTypes'
 import { validateWorkflowSettings } from '../../utils/validateWorkflowSettings'
 import {
+  getConnectorSaveBlock,
   getWorkflowConnectorErrors,
   getWorkflowInitiatorErrors,
 } from '../../utils/workflowConnector'
@@ -98,6 +100,21 @@ const BuilderHeader = () => {
         })
         return
       }
+    }
+
+    // The save API rejects WORKFLOW_CONNECTOR blocks until the sub-workflow
+    // backend is live, so don't send them (applies to drafts too).
+    const connectorBlock = getConnectorSaveBlock(
+      getNodes(),
+      !isSubWorkflowMock(),
+    )
+    if (connectorBlock) {
+      showToast({
+        message: connectorBlock,
+        toastTitle: 'Workflow Connector',
+        variant: 'error',
+      })
+      return
     }
 
     state.setWorkflowStatus(isPublished ? 'published' : 'draft')
