@@ -9,6 +9,7 @@ import { apiErrorMessage } from '../api.js';
 import { LiveCard, Skeleton, ErrorNote } from './LiveWorkflow.jsx';
 import { AskAiCard, AskAiSheet, useAskAiNew } from './AskAi.jsx';
 import { SUGGESTIONS } from '../assistant.js';
+import { ToSignCard, usePendingSigns } from './DocActions.jsx';
 
 const AI_HINTS = {
   'What needs my approval today?': ['approv', 'today', 'pending', 'waiting', 'how many', 'inbox', 'open'],
@@ -140,6 +141,7 @@ function LiveHome() {
   const [wf, setWf] = useState('');
   const [wfOpen, setWfOpen] = useState(false);
   const [aiNew, aiSeen] = useAskAiNew();
+  const toSign = usePendingSigns(reload);
   // Ask AI opens the full chat on the Repository Assistant API (screens/AskAiChat.jsx).
   const openAi = (q) => { aiSeen(); nav('/app/ask' + (q ? '?q=' + encodeURIComponent(q) : '')); };
   useEffect(() => {
@@ -192,6 +194,7 @@ function LiveHome() {
               ) : !data.failed ? (
                 <div className="update-card"><UpdHead arrow={false} /><span style={{ fontSize: 17, fontWeight: 600 }}>You're all caught up</span><span style={{ fontSize: 13, opacity: 0.92 }}>{counts ? `${counts.completedCount} completed · ${counts.sentCount} in progress` : 'Nothing is waiting for you'}</span></div>
               ) : null}
+              <ToSignCard list={toSign} onOpen={() => nav('/app/sign')} />
               <h2 className="sec-title">Quick actions</h2>
               <div className="qa-grid">
                 <button type="button" className="qa" onClick={() => nav('/app/upload?source=scan')}><span className="c solid"><Icon name="camera" size={24} /></span>Scan</button>

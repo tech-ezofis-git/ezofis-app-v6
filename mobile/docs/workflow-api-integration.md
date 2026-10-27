@@ -42,6 +42,31 @@ Source: WORKFLOW_API_FULL_REFERENCE_1 (26 Oct 2026, 8 pages; adds §5.7 file vie
 - **Phone notifications:** Capacitor LocalNotifications in the release build; a native prompt bridge in the test APK; the Web Notification API in browsers.
 - **Backend needed for notifications when the app is closed:** a device-token registration endpoint plus an FCM/APNs push when an inbox item is created. Without these, notifications only appear while the app process is alive.
 
+## v0.4.6 — Folders (repository API)
+Source: FORM_AND_REPOSITORY_FUNCTIONS_API (Oct 2026). Client: `src/repo.js`. Screens: `src/screens/LiveFolders.jsx`.
+- **Repositories:** GET /api/repositories. The PDF has no list endpoint; this is the one the web Folders page uses, and it is filtered to repositories the user may view.
+- **Tree:** browse/structure gives `folderFields` and `browsePaths`. browse/children (`pathId`, `parentFilters` JSON keyed by sqlColumnName) returns `groups` (PagedResult `{ data, totalCount }`) and `isLeafLevel`. Tapping a group at the leaf level lists its files with items/query `filters = parentFilters`.
+- **Files:** POST items/query `{ filters, search, sortBy: documentDate, sortOrder: desc, page, pageSize: 30 }`. Rows show fileName, documentType / supplier / invoice or PO number (or the repo's own `fields`), amount + currency, document date.
+- **File view:** items/{itemId}/file + items/{itemId} (metadata, `OcrPercent` shown as OCR confidence) + ai-summary on request. Edit details: PATCH items/{itemId}/metadata with the changed keys only. Delete: DELETE items/{itemId} (soft).
+- **Upload:** POST uploadAndIndex/bulkUpload (multipart `files` × n, `repositoryId`; 20 MB per file in the app) → `{ jobId, files[] }`. The app tracks the job on the device and polls bulkUpload/jobs/{jobId} every 4 s until no file is `PendingOcr` (phases: PendingOcr, OcrCompleted, OcrFailed, Indexed, Missing).
+- **To review:** POST uploadAndIndex/index/all `{ repositoryId, currentPage, itemsPerPage, mode: browse }` → `data[].value[]`.
+- **Review:** the field list is the repository's filter-fields (folder fields first, required), plus any other names OCR returned. View: GET uploadAndIndex/files/{fileId}. Save for later: PUT index/{fileId}/fields. Export: PUT index/{fileId} `{ repositoryId, itemId: null, status: Indexed, fields }`. Delete: POST index/deleteFiles `{ fileIds, repositoryId }`.
+- **Forms (sections 1–3):** New request already uses uploadForOcr → uploadWithOcr (now also sending `metadata`), GET /form/{id} and GET /form/{id}/entry/all. Form designer and entry writes are not exposed in the mobile app.
+
+## v0.4.7 — intelligent upload, AI summary, share, sign (MOBILE_APP_REPOSITORY_API)
+Client: `docApi` in `src/repo.js`. Screens: `src/screens/DocActions.jsx` (+ Upload in `LiveFolders.jsx`, AI summary in `FileViewer.jsx`).
+- **Intelligent upload (one file at a time):**
+  - 1a POST /repositories/document-intelligent-agent/upload (`file`, `pageno=1`, `include_repository_catalog=true`; no tenantId). Response `document_intelligent_result`: `repository_id`, `repository_name`, `confidence_score` (0–100), `rationale`, `candidates[]` (from `api/docs/DOCUMENT_INTELLIGENT_AGENT.md`). The suggestion is preselected when it matches a repository the user can see; 502/504 → the user picks the folder.
+  - 1b uploadForOcr (`file`, `repositoryId`) → editable `ocrFieldList`.
+  - 1c uploadWithOcr (`metadata` JSON of the reviewed values, `ocrJson`, `ocrText`) → `fileId`.
+  - 1d PUT index/{fileId} `{ repositoryId, status: Indexed, fields }` → `itemId` (Open).
+- **AI summary:** POST .../ai-summary, timeout 5 min. `output` is JSON → `summary_result` (`document_title`, `document_type`, `document_summary`, `key_facts_extracted[]`, `confidence_score`). Only `<b><u>` highlights are kept (as bold); other markup is dropped and nothing is rendered as HTML. A non-JSON `output` is shown as text.
+- **Share:** one POST .../share per email `{ email, message?, action }`. The 201 `shareId` / `shareUrl` let the user copy the link or remove access (DELETE /repositories/share/{shareId}). There is no list of a document's shares.
+- **Shared with me:** GET /repositories/shared-with-me. Files open with `shareToken` on GET .../file and GET .../items/{itemId}; AI summary and actions are hidden for shared files.
+- **Sign request:** POST .../sign-requests `{ signingMode: sequential|parallel, signers: [{ email, name?, order }], message?, expiresInDays: 7|14|30 }`. Status: GET .../sign-requests (signers Waiting / Pending ("Emailed") / Signed / Declined). Cancel: POST /sign-requests/{id}/cancel. Non-PDF files are blocked in the app.
+- **Signing:** GET /sign-requests/pending-for-me (`signerStatus: Waiting` → "Waiting for an earlier signer", no sign button). GET .../{id}/file is rendered with pdf.js. The signature pad gives a cropped transparent PNG. Tapping a page places it (≈160 pt wide, height from the drawing); points = pixels × (page point width ÷ rendered width), from the top-left. POST .../sign `{ pageNumber, x, y, width, height, signatureImageBase64, signedAtClientUtc }`. Decline: POST .../decline `{ reason }`.
+- **Not in the app:** the no-session flows (share link and sign invite preview / OTP / verify) — recipients use the web link.
+
 ## v0.4.5 — Ask EZOFIS AI (Repository Assistant chatbot)
 Source: REPOSITORY_CHATBOT_API_FRONTEND (Oct 2026). Client: `src/assistant.js`. Screen: `src/screens/AskAiChat.jsx` (`/app/ask`).
 - **Call:** POST /api/repositories/assistant/chatbot `{ message, sessionId, specificId? }` with Bearer + X-Tenant-Id. `actionFrom` and `token` are left out (the server defaults to "Repository" and forwards the Authorization header). Timeout 125 s, because the server waits up to 120 s.
@@ -65,5 +90,5 @@ Source: REPOSITORY_CHATBOT_API_FRONTEND (Oct 2026). Client: `src/assistant.js`. 
 
 ## Open items
 - Polling apAgentJobStatusUrl / job progress after start (not yet shown in the app).
-- Folder API: Folders are still sample data. Notifications API: none yet.
+- Notifications API: none yet.
 - Server returned intermittent 500s and timeouts on GET /Workflows/{id} during checks.

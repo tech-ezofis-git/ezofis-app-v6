@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore, actionKind } from './store.jsx';
 import markColor from './assets/mark-color.png';
@@ -147,7 +148,8 @@ export function Sheet({ open, onClose, title, children }) {
     return () => window.removeEventListener('keydown', k);
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  // Rendered on <body> so a sheet opened inside a scrolling panel (e.g. the file viewer) is never clipped.
+  return createPortal(
     <div className="sheet-wrap" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" className="sheet-backdrop" aria-label="Close" onClick={onClose} />
       <div className="sheet">
@@ -155,7 +157,8 @@ export function Sheet({ open, onClose, title, children }) {
         {title ? <div className="sheet-title">{title}</div> : null}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

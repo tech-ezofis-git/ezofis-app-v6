@@ -4,7 +4,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Icon, FileThumb, Sheet, Sparkle } from '../ui.jsx';
 import { useStore } from '../store.jsx';
-import { wfApi, isTechnicalKey } from '../wf.js';
+import { wfApi, isTechnicalKey, toGuid } from '../wf.js';
+import { docApi, parseSummary } from '../repo.js';
 import { apiErrorMessage } from '../api.js';
 import { DocxView, SheetView, PptxView, parseMsg } from './OfficeViewers.jsx';
 
@@ -26,7 +27,7 @@ const kb = (n) => (n ? (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.ma
 const extOf = (n) => (String(n || '').split('.').pop() || 'FILE').toUpperCase().slice(0, 4);
 
 let pdfjsPromise = null;
-function loadPdfjs() {
+export function loadPdfjs() {
   if (!pdfjsPromise) {
     pdfjsPromise = Promise.all([import('pdfjs-dist/legacy/build/pdf.js'), import('pdfjs-dist/legacy/build/pdf.worker.js')]).then(([lib, worker]) => {
       globalThis.pdfjsWorker = worker; // run pdf.js on the main thread (no separate worker file to ship)
@@ -196,15 +197,22 @@ export function MetaList({ rows, empty: emptyText }) {
   return <div className="fv-kv">{rows.map(([l, v, c]) => <div key={l} className={'field-card' + (c === 0 ? ' warn' : '')}><div className="l">{l}{c ? <span className="conf">{c}%</span> : null}</div><div className="v">{v || '—'}</div></div>)}</div>;
 }
 
+// <b><u>highlight</u></b> from the summary agent → bold text; any other markup is dropped (never rendered as HTML).
+function Marked({ text }) {
+  const parts = String(text || '').replace(/<(?!\/?(b|u)>)[^>]*>/gi, '').split(/(<b><u>[\s\S]*?<\/u><\/b>|<b>[\s\S]*?<\/b>)/i);
+  return parts.map((p, i) => { const m = /^<b>(?:<u>)?([\s\S]*?)(?:<\/u>)?<\/b>$/i.exec(p); return m ? <b key={i} className="hl">{m[1]}</b> : p.replace(/<\/?[bu]>/gi, ''); });
+}
+
 const summaryCache = new Map();
 function AiSummaryBody({ file }) {
   const key = file.repositoryId && file.itemId ? `${file.repositoryId}:${file.itemId}` : '';
-  const [state, setState] = useState(() => (key && summaryCache.has(key) ? { output: summaryCache.get(key) } : null));
+  const [state, setState] = useState(() => (key && summaryCache.has(key) ? summaryCache.get(key) : null));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  // POST .../ai-summary: the first call generates and saves the summary (1 credit); later calls return it free.
   const run = async () => {
     setBusy(true); setErr('');
-    try { const r = await wfApi.aiSummary(file.repositoryId, file.itemId); summaryCache.set(key, r.output); setState({ output: r.output }); } catch (e) { setErr(apiErrorMessage(e, 'the AI summary')); } finally { setBusy(false); }
+    try { const s = parseSummary(await docApi.summary(file.repositoryId, toGuid(file.itemId))); summaryCache.set(key, s); setState(s); } catch (e) { setErr(e && e.status === 400 ? "This document has no readable text to summarise." : e && (e.status === 502 || e.status === 504) ? 'The AI service is busy. Try again in a moment.' : apiErrorMessage(e, 'the AI summary')); } finally { setBusy(false); }
   };
   const a = file.ai;
   return (
@@ -216,12 +224,20 @@ function AiSummaryBody({ file }) {
           {a.reason ? <div className="r">{a.reason}</div> : null}
         </div>
       ) : null}
-      {state && state.output ? <div className="card t" style={{ whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.5 }}><div className="ct" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}><Sparkle size={16} />Document summary</div>{state.output}</div> : null}
-      {err ? <div className="notice bad" role="alert"><span className="grow">{err}</span></div> : null}
-      {key && !(state && state.output) ? (
-        <button type="button" className="btn primary" disabled={busy} onClick={run}>{busy ? <><span className="spinner" />Summarising…</> : <><Sparkle size={16} color="#fff" />Generate AI summary</>}</button>
+      {state && (state.text || state.facts.length) ? (
+        <div className="sum-card">
+          <div className="row-between" style={{ alignItems: 'center' }}><span className="sum-h"><Sparkle size={16} />Document summary</span>{state.score != null ? <span className="pill solid t">{state.score}%</span> : null}</div>
+          {state.title || state.type ? <div className="sum-t">{state.title}{state.type ? <span className="pill solid neu" style={{ marginLeft: 8 }}>{state.type}</span> : null}</div> : null}
+          {state.text ? <p className="sum-p"><Marked text={state.text} /></p> : null}
+          {state.facts.length ? <><div className="sec-label" style={{ margin: 0 }}>Key facts</div><ul className="sum-facts">{state.facts.map((f, i) => <li key={i}><Marked text={f} /></li>)}</ul></> : null}
+          <p className="muted" style={{ margin: 0, fontSize: 11 }}>{state.credit ? 'Generated now · 1 AI credit used. ' : ''}AI summaries can be wrong. Check the document before you act.</p>
+        </div>
       ) : null}
-      {key && !(state && state.output) ? <p className="muted" style={{ margin: 0, fontSize: 12 }}>Generating a summary uses your organization's AI credits.</p> : null}
+      {err ? <div className="notice bad" role="alert"><span className="grow">{err}</span></div> : null}
+      {key && !(state && (state.text || state.facts.length)) ? (
+        <button type="button" className="btn primary" disabled={busy} onClick={run}>{busy ? <><span className="spinner" />Reading the document… this can take a minute</> : <><Sparkle size={16} color="#fff" />Summarise this document</>}</button>
+      ) : null}
+      {key && !(state && (state.text || state.facts.length)) ? <p className="muted" style={{ margin: 0, fontSize: 12 }}>The first summary uses 1 AI credit and is saved on the document; opening it again is free.</p> : null}
       {!key && !a ? <p className="muted" style={{ margin: 0, fontSize: 13 }}>AI summary is available for files stored in EZOFIS.</p> : null}
     </div>
   );
@@ -237,7 +253,8 @@ function fmtMeta(k, v) {
 const prettyKey = (k) => k.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\s+(At\s+)?Utc$/i, '').replace(/\s+/g, ' ').trim();
 
 // `file` is either a repository file { fileName, contentType, fileSize, repositoryId, itemId, uploadedBy?, createdAtUtc?, ai? } or an in-memory one { fileName, blob }.
-export default function FileViewer({ file, onClose }) {
+// `actions(item, reloadMeta)` adds buttons under the file details (Folders: edit details, delete).
+export default function FileViewer({ file, onClose, actions }) {
   const { showToast } = useStore();
   const [blob, setBlob] = useState(null);
   const [url, setUrl] = useState('');
@@ -245,6 +262,7 @@ export default function FileViewer({ file, onClose }) {
   const [tick, setTick] = useState(0);
   const [child, setChild] = useState(null);
   const [item, setItem] = useState(undefined);
+  const [metaTick, setMetaTick] = useState(0);
 
   useEffect(() => {
     if (!file) return undefined;
@@ -253,7 +271,7 @@ export default function FileViewer({ file, onClose }) {
     const done = (b) => { if (off) return; u = URL.createObjectURL(b); setBlob(b); setUrl(u); };
     if (file.blob) done(file.blob);
     else if (!file.repositoryId || !file.itemId) setErr("This file isn't linked to a repository item, so it can't be opened here.");
-    else wfApi.file(file.repositoryId, file.itemId).then(done).catch((e) => { if (!off) setErr(apiErrorMessage(e, 'this file')); });
+    else wfApi.file(file.repositoryId, file.itemId, 'inline', file.shareToken).then(done).catch((e) => { if (!off) setErr(apiErrorMessage(e, 'this file')); });
     return () => { off = true; if (u) URL.revokeObjectURL(u); };
   }, [file, tick]);
 
@@ -261,10 +279,10 @@ export default function FileViewer({ file, onClose }) {
   useEffect(() => {
     let off = false;
     setItem(undefined);
-    if (file && file.repositoryId && file.itemId) wfApi.item(file.repositoryId, file.itemId).then((d) => { if (!off) setItem(d && d.fields ? d : null); }).catch(() => { if (!off) setItem(null); });
+    if (file && file.repositoryId && file.itemId) wfApi.item(file.repositoryId, file.itemId, file.shareToken).then((d) => { if (!off) setItem(d && d.fields ? d : null); }).catch(() => { if (!off) setItem(null); });
     else setItem(null);
     return () => { off = true; };
-  }, [file]);
+  }, [file, metaTick]);
 
   useEffect(() => {
     if (child) return undefined;
@@ -285,7 +303,8 @@ export default function FileViewer({ file, onClose }) {
   const kind = kindOf(file.fileName, file.contentType);
   const typeLabel = { email: 'Email', msg: 'Outlook email', pdf: 'PDF', image: 'Image', docx: 'Word document', sheet: 'Spreadsheet', pptx: 'Presentation' }[kind] || file.contentType;
   const fields = item && item.fields ? Object.entries(item.fields).filter(([k, v]) => !isTechnicalKey(k) && fmtMeta(k, v)).map(([k, v]) => [prettyKey(k), fmtMeta(k, v)]) : [];
-  const info = [['File name', file.fileName], ['Type', typeLabel], ['Size', kb(file.fileSize || (blob && blob.size) || (item && item.fileSize))], file.uploadedBy ? ['Uploaded by', file.uploadedBy] : null, file.createdAtUtc ? ['Uploaded', new Date(file.createdAtUtc).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })] : null, item && item.fields && item.fields.FileVersion ? ['Version', String(item.fields.FileVersion)] : null].filter((r) => r && r[1]);
+  const info = [['File name', file.fileName], ['Type', typeLabel], ['Size', kb(file.fileSize || (blob && blob.size) || (item && item.fileSize))], file.uploadedBy ? ['Uploaded by', file.uploadedBy] : null, file.createdAtUtc ? ['Uploaded', new Date(file.createdAtUtc).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })] : null, item && item.fields && item.fields.FileVersion ? ['Version', String(item.fields.FileVersion)] : null,
+    item && item.fields && item.fields.OcrPercent != null && item.fields.OcrPercent !== '' ? ['OCR confidence', item.fields.OcrPercent + '%'] : null].filter((r) => r && r[1]);
   const preview = (
     <>
       {err ? <div className="notice bad" role="alert"><span className="grow">{err}</span><button type="button" onClick={() => setTick((x) => x + 1)}>Retry</button></div> : null}
@@ -299,13 +318,14 @@ export default function FileViewer({ file, onClose }) {
       {item === undefined ? <Spin text="Loading metadata…" /> : <MetaList rows={fields} empty={file.blob ? 'Files inside an email have no EZOFIS metadata.' : 'No metadata was captured for this file.'} />}
       <div className="fv-h" style={{ marginTop: 8 }}><span>File details</span></div>
       <div className="fv-info">{info.map(([l, v]) => <div key={l}><span>{l}</span><b>{v}</b></div>)}</div>
+      {actions && item ? actions(item, () => setMetaTick((x) => x + 1)) : null}
     </>
   );
   return (
     <>
       <FileShell title={file.fileName} sub={[typeLabel, kb(file.fileSize || (blob && blob.size))].filter(Boolean).join(' · ')} onBack={onClose} backIcon={file.blob ? 'back' : 'close'}
         onDownload={save} canDownload={!!url} onShare={share} preview={preview} meta={meta}
-        ai={file.ai || (file.repositoryId && file.itemId) ? <AiSummaryBody file={file} /> : null} />
+        ai={file.ai || (file.repositoryId && file.itemId && !file.shareToken) ? <AiSummaryBody file={file} /> : null} />
       {child ? <FileViewer file={child} onClose={() => setChild(null)} /> : null}
     </>
   );

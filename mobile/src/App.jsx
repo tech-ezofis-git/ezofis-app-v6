@@ -10,6 +10,11 @@ import { Folders, FileView, Upload, Review, EditMeta } from './screens/Folders.j
 import { Notifications, Settings } from './screens/More.jsx';
 import NewRequest from './screens/NewRequest.jsx';
 import AskAiChat from './screens/AskAiChat.jsx';
+import { LiveFolders, LiveRepo, LiveUpload, LiveReview } from './screens/LiveFolders.jsx';
+import { ToSign, SignDoc } from './screens/DocActions.jsx';
+
+// Signed in → EZOFIS repository API screens; "Explore" → sample-data screens.
+function ByMode({ live: Live, sample: Sample }) { const { live } = useStore(); return live ? <Live /> : <Sample />; }
 import LiveWatcher from './LiveWatcher.jsx';
 
 const ROOTS = ['/app/home', '/app/inbox', '/app/folders', '/app/settings'];
@@ -52,10 +57,13 @@ function AppRoutes() {
         <Route path="new" element={<NewRequest />} />
         <Route path="new/:wfId" element={<NewRequest />} />
         <Route path="ask" element={<AskAiChat />} />
-        <Route path="folders" element={<Folders />} />
+        <Route path="folders" element={<ByMode live={LiveFolders} sample={Folders} />} />
+        <Route path="folders/r/:repoId" element={<LiveRepo />} />
+        <Route path="sign" element={<ToSign />} />
+        <Route path="sign/:id" element={<SignDoc />} />
         <Route path="folders/file/:id" element={<FileView />} />
-        <Route path="upload" element={<Upload />} />
-        <Route path="review" element={<Review />} />
+        <Route path="upload" element={<ByMode live={LiveUpload} sample={Upload} />} />
+        <Route path="review" element={<ByMode live={LiveReview} sample={Review} />} />
         <Route path="review/edit" element={<EditMeta />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="settings" element={<Settings />} />
