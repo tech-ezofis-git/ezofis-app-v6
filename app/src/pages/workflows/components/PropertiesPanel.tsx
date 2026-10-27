@@ -48,8 +48,12 @@ const OneDriveNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
 const ConditionNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/ConditionSettingsPanel'),
 )
+const WorkflowConnectorSettings = lazy<React.ComponentType<{ node: Node }>>(
+  () => import('./settings/WorkflowConnectorSettingsPanel'),
+)
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
+import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import { parseOAuthConnectionSuccess } from '@/pages/workflows/utils/oauthAuthorize'
 import cn from '@/utils/cn'
 import useWorkflowStore from '../stores/useWorkflowStore'
@@ -606,6 +610,28 @@ function PropertiesPanel({
             }
           >
             <ConditionNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render Workflow Connector node settings panel
+  if (
+    toolType === NODE_TOOL_TYPE.WORKFLOW_CONNECTOR &&
+    isSubWorkflowEnabled()
+  ) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <WorkflowConnectorSettings node={node} />
           </Suspense>
         </div>
         {CommonFooter}

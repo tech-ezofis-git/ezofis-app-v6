@@ -53,6 +53,7 @@ import {
   toUploadMetadata,
 } from '@/pages/requests/utils/repoFolderMetadata'
 import {
+  getStageEditableFieldIds,
   getStageHiddenFieldIds,
   getStageReadOnlyFieldIds,
 } from '@/pages/requests/utils/stageFormAccess'
@@ -64,6 +65,7 @@ import {
 import { useHistory } from '@/pages/requests/hooks/useHistory'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import SubProcessPanel from '../../../sub-workflow/SubProcessPanel'
 import Attachments from '../sections/attachment/Attachments'
 import Comments from '../sections/comment/Comments'
 import History from '../sections/history/History'
@@ -130,7 +132,7 @@ interface Props {
   attachmentsLoading?: boolean
   formModel: Record<string, any>
   rawWorkflowData: any
-  rightView: 'overview' | 'history' | 'attachments' | 'comments'
+  rightView: 'overview' | 'history' | 'attachments' | 'comments' | 'subProcess'
   selectedItem: any
   // Manual User (INTERNAL_ACTOR) task requirements for the current stage,
   // owned/gated by Request.tsx before it lets the action buttons submit.
@@ -145,7 +147,7 @@ interface Props {
   // Sent/Closed (or not assigned) — the form is display-only.
   viewOnly?: boolean
   setRightView: (
-    view: 'overview' | 'history' | 'attachments' | 'comments',
+    view: 'overview' | 'history' | 'attachments' | 'comments' | 'subProcess',
   ) => void
   onAttachmentsChanged?: () => void
   onChecklistToggle?: (id: string, checked: boolean) => void
@@ -1122,6 +1124,15 @@ const GenericRequestOverview = ({
     [blockSettings, allFieldIds, currentUserId],
   )
 
+  // Fields this stage explicitly opens for editing — they override a form
+  // read-only setting/rule. Request-number fields stay locked regardless.
+  const stageEditableFieldIds = useMemo(() => {
+    const ids = getStageEditableFieldIds(blockSettings, currentUserId)
+    if (!ids) return undefined
+    requestNumberFieldIds.forEach((id) => ids.delete(id))
+    return ids
+  }, [blockSettings, currentUserId, requestNumberFieldIds])
+
   const summaryHiddenFieldIds = useMemo(() => {
     const ids = new Set(hiddenFieldIds || [])
     allFieldIds.forEach((id) => {
@@ -1493,6 +1504,7 @@ const GenericRequestOverview = ({
                 preparingFieldId={preparingFieldId}
                 readOnlyFieldIds={readOnlyFieldIds}
                 repositoryId={repositoryId}
+                stageEditableFieldIds={stageEditableFieldIds}
                 viewOnly={viewOnly}
                 missingMandatoryFieldIds={
                   missingMandatoryFieldIds.size > 0
@@ -1572,6 +1584,7 @@ const GenericRequestOverview = ({
                 presentation='extracted'
                 readOnlyFieldIds={readOnlyFieldIds}
                 repositoryId={repositoryId}
+                stageEditableFieldIds={stageEditableFieldIds}
                 viewOnly={viewOnly}
                 missingMandatoryFieldIds={
                   missingMandatoryFieldIds.size > 0
@@ -1617,6 +1630,7 @@ const GenericRequestOverview = ({
                   preparingFieldId={preparingFieldId}
                   readOnlyFieldIds={readOnlyFieldIds}
                   repositoryId={repositoryId}
+                  stageEditableFieldIds={stageEditableFieldIds}
                   viewOnly={viewOnly}
                   missingMandatoryFieldIds={
                     missingMandatoryFieldIds.size > 0
@@ -1717,6 +1731,7 @@ const GenericRequestOverview = ({
                     preparingFieldId={preparingFieldId}
                     readOnlyFieldIds={readOnlyFieldIds}
                     repositoryId={repositoryId}
+                    stageEditableFieldIds={stageEditableFieldIds}
                     viewOnly={viewOnly}
                     missingMandatoryFieldIds={
                       missingMandatoryFieldIds.size > 0
@@ -1792,6 +1807,13 @@ const GenericRequestOverview = ({
                   onSelect={setOpenedAttachment}
                 />
               ))}
+            {rightView === 'subProcess' && (
+              <SubProcessPanel
+                processId={instanceId}
+                workflowId={workflowId}
+                onClose={() => setRightView('overview')}
+              />
+            )}
             {rightView === 'comments' && (
               <Comments
                 comments={comments}

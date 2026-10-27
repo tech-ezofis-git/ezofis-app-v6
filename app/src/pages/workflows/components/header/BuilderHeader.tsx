@@ -7,6 +7,7 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import showToast from '@/components/base/toast/showToast'
+import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import { validateDataSync } from '../../utils/dataIntegrationMapping'
@@ -16,6 +17,10 @@ import {
   NODE_TOOL_TYPE,
 } from '../../utils/nodeToolTypes'
 import { validateWorkflowSettings } from '../../utils/validateWorkflowSettings'
+import {
+  getWorkflowConnectorErrors,
+  getWorkflowInitiatorErrors,
+} from '../../utils/workflowConnector'
 
 const BuilderHeader = () => {
   const navigate = useNavigate()
@@ -76,6 +81,24 @@ const BuilderHeader = () => {
     }
 
     const isPublished = String(currentStatus).toLowerCase() === 'published'
+
+    // Published Workflow Connector / Initiator steps must point at another
+    // workflow.
+    if (isPublished && isSubWorkflowEnabled()) {
+      const selfId = workflowId === 'new' ? state.workflowId : workflowId
+      const connectorErrors = getWorkflowConnectorErrors(getNodes(), selfId)
+      const initiatorErrors = getWorkflowInitiatorErrors(getNodes(), selfId)
+      if (connectorErrors.length > 0 || initiatorErrors.length > 0) {
+        showToast({
+          message: connectorErrors[0] ?? initiatorErrors[0],
+          toastTitle: connectorErrors.length
+            ? 'Workflow Connector'
+            : 'Workflow Initiator',
+          variant: 'default',
+        })
+        return
+      }
+    }
 
     state.setWorkflowStatus(isPublished ? 'published' : 'draft')
 

@@ -6,6 +6,15 @@ import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import showToast from '@/components/base/toast/showToast'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
+import {
+  applySubWorkflowPrefill,
+  buildSubWorkflowPrefill,
+  flattenFormFields,
+  isSubWorkflowEnabled,
+  toLinkedProcessSummary,
+  useLinkSubProcess,
+} from '@/features/sub-workflow'
+import useSubWorkflowInitiator from '@/features/sub-workflow/hooks/useSubWorkflowInitiator'
 import { useRequestDetail } from '@/pages/requests/hooks/useRequestDetails'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import {
@@ -29,6 +38,8 @@ import AgentSummaryBoxes, {
 } from '../request/components/generic-overview/AgentSummaryBoxes'
 import DocumentFormUpload from '../request/components/newrequest/DocumentFormUpload'
 import Header from '../request/components/newrequest/Header'
+import InitiateSubWorkflowButton from '../sub-workflow/InitiateSubWorkflowButton'
+import SubWorkflowRequest from '../sub-workflow/SubWorkflowRequest'
 import AttachmentsPanel from './components/AttachmentsPanel'
 import CommentsPanel from './components/CommentsPanel'
 import RepoFieldsPanel from './components/RepoFieldsPanel'
@@ -53,9 +64,29 @@ import {
 import { getSharedObjectUrl } from '@/pages/requests/utils/sharedObjectUrl'
 import WorkflowRequestSidebar from './WorkflowRequestSidebar'
 
+export interface WorkflowRequestSubmitted {
+  data: any
+  processId: string | null
+  requestNo: string | null
+}
+
+interface PendingSubProcess {
+  processId: string
+  requestNo: string | null
+  subWorkflowId: number | string
+  subWorkflowName: string
+}
+
 interface Props {
   workflow: any
+  /** Start a request in another workflow from here (Workflow Initiator). */
+  allowSubWorkflow?: boolean
+  /** Parent form + values; same-label fields are copied in once on load. */
+  prefill?: { fields: any[]; model: Record<string, unknown> }
+  title?: string
   onClose: () => void
+  /** Runs after a successful submit, before the form closes. */
+  onSubmitted?: (result: WorkflowRequestSubmitted) => Promise<void> | void
 }
 
 type SidePanel = 'attachments' | 'comments'
@@ -64,7 +95,14 @@ type SidePanel = 'attachments' | 'comments'
 // Accounts Payable: resolves the workflow's form (via workflow.formId),
 // renders it with the app's existing form-control components, and submits
 // it to start a new workflow instance.
-const WorkflowRequest = ({ workflow, onClose }: Props) => {
+const WorkflowRequest = ({
+  allowSubWorkflow = true,
+  prefill,
+  title,
+  workflow,
+  onClose,
+  onSubmitted,
+}: Props) => {
   const { t } = useLingui()
 
   useEffect(() => {
@@ -417,6 +455,38 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     setFieldValue,
   } = useWorkflowForm(workflow)
 
+  // Sub-workflow pre-fill: once the form has loaded, copy parent values into
+  // fields with the same label, leaving anything already filled alone.
+  const prefillAppliedRef = useRef(false)
+  useEffect(() => {
+    if (!prefill || prefillAppliedRef.current) return
+    if (isLoadingForm || loadError || panels.length === 0) return
+    prefillAppliedRef.current = true
+    const copies = buildSubWorkflowPrefill(
+      flattenFormFields(prefill.fields),
+      prefill.model,
+      flattenFormFields(panels),
+    )
+    const next = applySubWorkflowPrefill(formModel, copies)
+    for (const { targetId } of copies) {
+      if (next[targetId] !== formModel[targetId])
+        setFieldValue(targetId, next[targetId])
+    }
+  }, [prefill, isLoadingForm, loadError, panels, formModel, setFieldValue])
+
+  // New request whose START step has a Workflow Initiator: children are
+  // created first and linked once this request is submitted (V5
+  // AddNewRequest behaviour).
+  const subWorkflow = useSubWorkflowInitiator(workflow, null, {
+    // Sub-workflow UI is localhost-only until its API is ready.
+    enabled: allowSubWorkflow && isSubWorkflowEnabled(),
+  })
+  const linkSubProcess = useLinkSubProcess()
+  const [isInitiatingSubWorkflow, setIsInitiatingSubWorkflow] = useState(false)
+  const [pendingSubProcesses, setPendingSubProcesses] = useState<
+    PendingSubProcess[]
+  >([])
+
   const stageHiddenFieldIds = useMemo(
     () =>
       getStartStageHiddenFieldIds(
@@ -585,6 +655,53 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
       })
     }
 
+    const createdProcessId = processId ? String(processId) : null
+    if (createdProcessId && pendingSubProcesses.length > 0) {
+      try {
+        await Promise.all(
+          pendingSubProcesses.map((child) =>
+            linkSubProcess.mutateAsync([
+              {
+                mainProcessId: createdProcessId,
+                mainWorkflowId: workflow?.id,
+                subProcessId: child.processId,
+                subWorkflowId: child.subWorkflowId,
+              },
+              {
+                child: toLinkedProcessSummary({
+                  processId: child.processId,
+                  requestNo: child.requestNo,
+                  workflowId: child.subWorkflowId,
+                  workflowName: child.subWorkflowName,
+                }),
+                parent: toLinkedProcessSummary({
+                  processId: createdProcessId,
+                  requestNo,
+                  workflowId: workflow?.id,
+                  workflowName: workflow?.name,
+                }),
+              },
+            ]),
+          ),
+        )
+      } catch {
+        showToast({
+          message: t`The request was created, but its sub-process could not be linked.`,
+          variant: 'error',
+        })
+      }
+    }
+
+    try {
+      await onSubmitted?.({
+        data: responseData,
+        processId: createdProcessId,
+        requestNo: requestNo || null,
+      })
+    } catch (e) {
+      console.error(e)
+    }
+
     workflowRefresh()
     onClose()
   }
@@ -677,6 +794,55 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     }
   }
 
+  if (isInitiatingSubWorkflow && subWorkflow.childWorkflow) {
+    return (
+      <SubWorkflowRequest
+        childWorkflow={subWorkflow.childWorkflow}
+        parent={{
+          fields: panels,
+          model: formModel,
+          workflowName: String(workflow?.name || ''),
+        }}
+        onClose={() => setIsInitiatingSubWorkflow(false)}
+        onCreated={({ processId, requestNo }) => {
+          if (!processId) return
+          setPendingSubProcesses((prev) => [
+            ...prev,
+            {
+              processId,
+              requestNo,
+              subWorkflowId: subWorkflow.subWorkflowId,
+              subWorkflowName: subWorkflow.childName,
+            },
+          ])
+        }}
+      />
+    )
+  }
+
+  const subWorkflowActions =
+    subWorkflow.canInitiate || pendingSubProcesses.length > 0 ? (
+      <div className='flex items-center gap-1.5'>
+        {pendingSubProcesses.map((child) => (
+          <span
+            className='animate-in fade-in zoom-in-95 inline-flex h-7 items-center gap-1 rounded-full bg-primary-2 px-2.5 text-12 font-semibold text-primary-11 duration-200'
+            key={child.processId}
+            title={t`Will be linked as a sub-process when you submit`}
+          >
+            <Icon className='size-3.5' name='lucide:link-2' />
+            {child.requestNo || child.subWorkflowName}
+          </span>
+        ))}
+        {subWorkflow.canInitiate && (
+          <InitiateSubWorkflowButton
+            childName={subWorkflow.childName}
+            disabled={isLoadingForm || !!loadError || isSubmitting}
+            onClick={() => setIsInitiatingSubWorkflow(true)}
+          />
+        )}
+      </div>
+    ) : null
+
   return (
     <WorkflowNameContext.Provider value={String(workflow?.name || '')}>
       <WorkflowRepositoryIdContext.Provider value={workflowRepositoryId}>
@@ -687,12 +853,13 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
           attachmentCount={attachments.length}
           budget={headerBudget}
           commentCount={comments.length}
+          extraActions={subWorkflowActions}
           isSubmitDisabled={
             isLoadingForm || !!loadError || Boolean(activeTableUpload)
           }
           isSubmitting={isSubmitting}
           stageTrail={stageTrail}
-          title={t`New Request`}
+          title={title ?? t`New Request`}
           onClose={onClose}
           onTogglePanel={
             isFormInitiated

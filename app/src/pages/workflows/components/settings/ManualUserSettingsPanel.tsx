@@ -11,6 +11,7 @@ import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import {
   getNodeToolType,
   NODE_TOOL_TYPE,
@@ -22,6 +23,7 @@ import SettingsSection from './common/SettingsSection'
 import ChecklistTab from './manual-user/ChecklistTab'
 import GeneralTab from './manual-user/GeneralTab'
 import SecurityTab from './manual-user/SecurityTab'
+import WorkflowInitiatorTab from './manual-user/WorkflowInitiatorTab'
 
 const PDF_TEMPLATE_PLACEHOLDER = `{
   "name": "",
@@ -350,6 +352,30 @@ export default function ManualUserSettingsPanel({
         >
           <ChecklistTab nodeData={nodeData} updateNodeData={updateNodeData} />
         </SettingsSection>
+
+        {isSubWorkflowEnabled() && (
+          <SettingsSection
+            icon='lucide:git-branch-plus'
+            title='Sub Workflow'
+            variant='premium'
+            isOpen={
+              openSections.subWorkflow ?? Boolean(nodeData.workflowInitiator)
+            }
+            onToggle={() =>
+              setOpenSections((prev) => ({
+                ...prev,
+                subWorkflow: !(
+                  prev.subWorkflow ?? Boolean(nodeData.workflowInitiator)
+                ),
+              }))
+            }
+          >
+            <WorkflowInitiatorTab
+              nodeData={nodeData}
+              updateNodeData={updateNodeData}
+            />
+          </SettingsSection>
+        )}
 
         {getNodeToolType(nodeData) === NODE_TOOL_TYPE.MANUAL_USER && (
           <SettingsSection
