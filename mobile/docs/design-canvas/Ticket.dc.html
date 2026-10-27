@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Request detail with workflow form and actions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8300E6}a:hover{color:#643094}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Poppins, system-ui, sans-serif; color: #14101F">
+
+  <div style="background: #FFFFFF; padding: 50px 20px 0; border-bottom: 1px solid #ECE7F4; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="Inbox.dc.html" aria-label="Back to inbox" style="flex: none; width: 44px; height: 44px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 2px 10px rgba(40,10,80,.1); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+      <div style="min-width: 0">
+        <div style="font-size: 19px; font-weight: 600; line-height: 1.2">EXP-REQ-75</div>
+        <div style="font-size: 13px; color: #5E5873">Expense Reimbursement</div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 600; color: #643094">Claim Approval</span><span style="font-size: 12px; color: #5E5873">Step 2 of 3</span></div>
+      <div role="img" aria-label="Step 2 of 3: Receipt Upload done, Approver in progress, Completed pending" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px"><span style="height: 4px; border-radius: 999px; background: #0E8A5F"></span><span style="height: 4px; border-radius: 999px; background: #8300E6"></span><span style="height: 4px; border-radius: 999px; background: #E2DCEC"></span></div>
+      <div style="font-size: 12px; color: #5E5873">Waiting on Approver · 2h</div>
+    </div>
+
+    <div role="tablist" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr))">
+      <button type="button" role="tab" onClick="{{ goForm }}" style="height: 46px; border: 0; border-bottom: 2.5px solid {{ t.form.line }}; background: transparent; color: {{ t.form.fg }}; display: flex; align-items: center; justify-content: center; gap: 6px; font: 600 13px Poppins, sans-serif"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ t.form.fg }}" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>Form</button>
+      <button type="button" role="tab" onClick="{{ goFiles }}" style="height: 46px; border: 0; border-bottom: 2.5px solid {{ t.files.line }}; background: transparent; color: {{ t.files.fg }}; display: flex; align-items: center; justify-content: center; gap: 6px; font: 600 13px Poppins, sans-serif"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ t.files.fg }}" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 01-7.1-7.1l8.6-8.6a3.3 3.3 0 014.7 4.7l-8.6 8.6a1.7 1.7 0 01-2.4-2.4l7.9-7.9"></path></svg>Files 1</button>
+      <button type="button" role="tab" onClick="{{ goComments }}" aria-label="Comments" style="height: 46px; border: 0; border-bottom: 2.5px solid {{ t.comments.line }}; background: transparent; color: {{ t.comments.fg }}; display: flex; align-items: center; justify-content: center; gap: 6px; font: 600 13px Poppins, sans-serif"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ t.comments.fg }}" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg>Chat</button>
+      <button type="button" role="tab" onClick="{{ goHistory }}" style="height: 46px; border: 0; border-bottom: 2.5px solid {{ t.history.line }}; background: transparent; color: {{ t.history.fg }}; display: flex; align-items: center; justify-content: center; gap: 6px; font: 600 13px Poppins, sans-serif"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ t.history.fg }}" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 103-6.7L3 8"></path><path d="M3 3v5h5M12 7v5l3 2"></path></svg>History</button>
+    </div>
+  </div>
+
+  <div style="padding: 16px 20px 120px; display: flex; flex-direction: column; gap: 10px">
+    <sc-if value="{{ isForm }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 16px; font-weight: 600">Claim form</span><a href="TicketEdit.dc.html" aria-label="Edit form" style="width: 40px; height: 40px; border-radius: 999px; background: #F6F3FB; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="#643094" aria-hidden="true"><path d="M4 17.3V20h2.7l8-8-2.7-2.7zM18.7 7.3a1 1 0 000-1.4l-1.6-1.6a1 1 0 00-1.4 0l-1.3 1.3 2.7 2.7z"></path></svg></a></div>
+      <sc-for list="{{ fields }}" as="f" hint-placeholder-count="5">
+        <div style="border-radius: 14px; background: #F8F3FF; padding: 10px 14px"><div style="font-size: 12px; font-weight: 600; color: #643094">{{ f.label }}</div><div style="font-size: 15px; color: #14101F; margin-top: 2px">{{ f.value }}</div></div>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isFiles }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size: 16px; font-weight: 600">Attachments · 1</div>
+      <div style="border-radius: 16px; background: #EFFCFD; padding: 12px 14px; display: flex; gap: 12px; align-items: center">
+        <span style="flex: none; width: 44px; height: 52px; border-radius: 8px; background: #FFFFFF; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; box-sizing: border-box; font-size: 10px; font-weight: 700; color: #643094">JPG</span>
+        <span style="flex: 1; min-width: 0"><span style="display: block; font-size: 15px; font-weight: 600; color: #0A6E7A">Receipt_taxi_oct.jpg</span><span style="display: block; font-size: 12px; color: #3B364A; margin-top: 2px">Receipt Upload · 412 KB · 2h ago</span></span>
+        <button type="button" aria-label="Download attachment" style="width: 40px; height: 40px; border: 0; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0A7C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"></path></svg></button>
+      </div>
+      <button type="button" style="height: 52px; border: 1.5px dashed #C9B6EE; border-radius: 14px; background: #FFFFFF; color: #643094; font: 600 14px Poppins, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#643094" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add attachment</button>
+    </sc-if>
+
+    <sc-if value="{{ isComments }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size: 16px; font-weight: 600">Comments</div>
+      <div style="display: flex; gap: 10px"><span style="flex: none; width: 34px; height: 34px; border-radius: 999px; background: #DDF6F9; color: #0A6E7A; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center">PR</span><div style="border-radius: 4px 16px 16px 16px; background: #F6F3FB; padding: 10px 12px; font-size: 14px; line-height: 1.45"><span style="display: block; font-size: 12px; color: #5E5873; margin-bottom: 2px">Requester · 2h ago</span>Taxi to the client site, receipt attached.</div></div>
+      <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px"><input aria-label="Add a comment" placeholder="Add a comment…" style="flex: 1; height: 48px; border: 1.5px solid #CFC8DC; border-radius: 12px; padding: 0 14px; font: 400 14px Poppins, sans-serif; min-width: 0"><button type="button" aria-label="Send comment" style="width: 48px; height: 48px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #8300E6, #643094); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-2-6z"></path></svg></button></div>
+    </sc-if>
+
+    <sc-if value="{{ isHistory }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size: 16px; font-weight: 600">History</div>
+      <sc-for list="{{ history }}" as="h" hint-placeholder-count="3">
+        <div style="display: flex; gap: 12px"><span style="flex: none; display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: {{ h.dot }}; margin-top: 4px"></span><span style="width: 2px; flex: 1; background: #ECE7F4; margin-top: 4px"></span></span><span style="padding-bottom: 14px"><span style="display: block; font-size: 14px; font-weight: 600">{{ h.title }}</span><span style="display: block; font-size: 12px; color: #5E5873">{{ h.meta }}</span></span></div>
+      </sc-for>
+    </sc-if>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: #FFFFFF; border-radius: 24px 24px 0 0; box-shadow: 0 -6px 24px rgba(40,10,80,.08); padding: 14px 16px 30px; display: grid; grid-template-columns: {{ cols }}; gap: 10px">
+    <sc-if value="{{ hasMore }}" hint-placeholder-val="{{ true }}">
+      <button type="button" onClick="{{ openMore }}" aria-label="More actions" style="height: 54px; border: 1.5px solid #CFC8DC; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="#14101F" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button>
+    </sc-if>
+    <sc-for list="{{ visible }}" as="a" hint-placeholder-count="2">
+      <sc-if value="{{ a.isPrimary }}" hint-placeholder-val="{{ false }}">
+        <a href="ActionDone.dc.html" style="height: 54px; box-sizing: border-box; border-radius: 14px; border: {{ a.border }}; background: {{ a.bg }}; color: {{ a.fg }}; box-shadow: {{ a.shadow }}; font: 600 15px Poppins, sans-serif; display: flex; align-items: center; justify-content: center; text-decoration: none; white-space: nowrap; overflow: hidden; padding: 0 8px">{{ a.label }}</a>
+      </sc-if>
+      <sc-if value="{{ a.notPrimary }}" hint-placeholder-val="{{ true }}">
+        <button type="button" style="height: 54px; border-radius: 14px; border: {{ a.border }}; background: {{ a.bg }}; color: {{ a.fg }}; box-shadow: {{ a.shadow }}; font: 600 15px Poppins, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 8px">{{ a.label }}</button>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ moreOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(20,16,31,.45); display: flex; flex-direction: column; justify-content: flex-end">
+      <button type="button" aria-label="Close" onClick="{{ closeMore }}" style="flex: 1; border: 0; background: transparent"></button>
+      <div style="background: #FFFFFF; border-radius: 24px 24px 0 0; padding: 10px 16px 32px; display: flex; flex-direction: column; gap: 10px">
+        <span style="align-self: center; width: 40px; height: 5px; border-radius: 999px; background: #DCD6E6"></span>
+        <span style="font-size: 16px; font-weight: 600; margin: 4px 4px 2px">More actions</span>
+        <sc-for list="{{ overflow }}" as="o" hint-placeholder-count="1">
+          <button type="button" onClick="{{ closeMore }}" style="height: 52px; border-radius: 14px; border: {{ o.border }}; background: {{ o.bg }}; color: {{ o.fg }}; font: 600 15px Poppins, sans-serif">{{ o.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"actions":{"editor":"text","default":"Force Close, Reject, Approve","section":"Workflow API"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: 'form', more: false }; }
+  renderVals() {
+    const tab = this.state.tab;
+    const on = { fg: '#8300E6', line: '#8300E6' }, off = { fg: '#5E5873', line: 'transparent' };
+    const t = { form: tab === 'form' ? on : off, files: tab === 'files' ? on : off, comments: tab === 'comments' ? on : off, history: tab === 'history' ? on : off };
+
+    const raw = String(this.props.actions ?? 'Force Close, Reject, Approve').split(',').map(s => s.trim()).filter(Boolean);
+    const kindOf = (l) => /reject|decline|cancel/i.test(l) ? 'danger' : (/approve|submit|complete|accept|verify/i.test(l) ? 'primary' : 'neutral');
+    let acts = raw.map(l => ({ label: l, kind: kindOf(l) }));
+    if (acts.length && !acts.some(a => a.kind === 'primary')) acts[acts.length - 1].kind = 'primary';
+    const look = {
+      primary: { bg: 'linear-gradient(90deg, #8300E6, #643094)', fg: '#FFFFFF', border: '0', shadow: '0 8px 20px rgba(100,48,148,.3)' },
+      danger: { bg: '#FFFFFF', fg: '#C2264B', border: '1.5px solid #C2264B', shadow: 'none' },
+      neutral: { bg: '#FFFFFF', fg: '#643094', border: '1.5px solid #643094', shadow: 'none' }
+    };
+    acts = acts.map(a => ({ ...a, ...look[a.kind], isPrimary: a.kind === 'primary', notPrimary: a.kind !== 'primary' }));
+    let visible = acts, overflow = [];
+    if (acts.length > 2) {
+      const prim = acts.filter(a => a.kind === 'primary').slice(-1)[0];
+      const second = acts.find(a => a.kind === 'danger' && a !== prim) || acts.find(a => a !== prim);
+      visible = [second, prim];
+      overflow = acts.filter(a => a !== prim && a !== second);
+    } else {
+      visible = [...acts].sort((a, b) => (a.kind === 'primary') - (b.kind === 'primary'));
+    }
+    const hasMore = overflow.length > 0;
+    const cols = (hasMore ? '54px ' : '') + 'repeat(' + Math.max(visible.length, 1) + ', minmax(0, 1fr))';
+
+    return {
+      t, cols, hasMore, visible, overflow,
+      isForm: tab === 'form', isFiles: tab === 'files', isComments: tab === 'comments', isHistory: tab === 'history',
+      moreOpen: this.state.more && hasMore,
+      goForm: () => this.setState({ tab: 'form' }),
+      goFiles: () => this.setState({ tab: 'files' }),
+      goComments: () => this.setState({ tab: 'comments' }),
+      goHistory: () => this.setState({ tab: 'history' }),
+      openMore: () => this.setState({ more: true }),
+      closeMore: () => this.setState({ more: false }),
+      fields: [
+        { label: 'Budget', value: '$ 0.00' },
+        { label: 'Employee', value: 'Arun E.' },
+        { label: 'Claim type', value: 'Local travel' },
+        { label: 'Expense date', value: '24-Oct-2026' },
+        { label: 'Purpose', value: 'Client site visit' }
+      ],
+      history: [
+        { title: 'Moved to Approver', meta: 'Workflow · 2h ago', dot: '#8300E6' },
+        { title: 'Receipt Upload completed', meta: 'Requester · 2h ago', dot: '#0E8A5F' },
+        { title: 'Request EXP-REQ-75 raised', meta: 'Requester · 2h ago', dot: '#0A7C89' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

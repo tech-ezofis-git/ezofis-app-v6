@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Large file results with paging</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8300E6}a:hover{color:#643094}
+@keyframes shimmer{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Poppins, system-ui, sans-serif; color: #14101F">
+  <div style="background: #FBFAFE; padding: 50px 20px 12px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid #ECE7F4">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="FolderList.dc.html" aria-label="Back" style="flex: none; width: 44px; height: 44px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 2px 10px rgba(40,10,80,.1); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+      <div style="flex: 1"><div style="font-size: 18px; font-weight: 600; line-height: 1.2">Accounts Payable</div><div style="font-size: 12px; color: #5E5873">1,248 files</div></div>
+      <button type="button" aria-label="Sort" style="width: 44px; height: 44px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"></path></svg></button>
+    </div>
+    <div style="display: flex; gap: 8px; overflow: hidden">
+      <a href="SupplierPicker.dc.html" style="flex: none; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; background: #8300E6; color: #FFFFFF; font-size: 13px; font-weight: 500; text-decoration: none">Supplier: Nexus +2<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></a>
+      <a href="POGroups.dc.html" style="flex: none; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; background: #8300E6; color: #FFFFFF; font-size: 13px; font-weight: 500; text-decoration: none">PO: 31000–31999<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></a>
+      <span style="flex: none; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; border-radius: 999px; background: #F1EBFA; color: #643094; font-size: 13px; font-weight: 500">Currency</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: #3B364A"><b style="color: #14101F">214</b> files match · newest first</span><button type="button" style="border: 0; background: transparent; padding: 0; color: #8300E6; font: 600 12px Poppins, sans-serif">Clear all</button></div>
+  </div>
+
+  <div style="padding: 0 20px 40px; display: flex; flex-direction: column">
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.1px; color: #5E5873; padding: 12px 0 4px">TODAY</div>
+    <sc-for list="{{ today }}" as="f" hint-placeholder-count="2">
+      <div style="min-height: 64px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F0ECF6">
+        <span style="flex: none; width: 34px; height: 40px; border-radius: 6px; background: {{ f.tint }}; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; box-sizing: border-box; font-size: 9px; font-weight: 700; color: {{ f.ec }}">{{ f.ext }}</span>
+        <span style="flex: 1; min-width: 0"><span style="display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ f.name }}</span><span style="display: block; font-size: 12px; color: #5E5873; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ f.meta }}</span></span>
+        <span style="font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums">{{ f.amt }}</span>
+      </div>
+    </sc-for>
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.1px; color: #5E5873; padding: 12px 0 4px">THIS WEEK</div>
+    <sc-for list="{{ week }}" as="f" hint-placeholder-count="4">
+      <div style="min-height: 64px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F0ECF6">
+        <span style="flex: none; width: 34px; height: 40px; border-radius: 6px; background: {{ f.tint }}; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; box-sizing: border-box; font-size: 9px; font-weight: 700; color: {{ f.ec }}">{{ f.ext }}</span>
+        <span style="flex: 1; min-width: 0"><span style="display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ f.name }}</span><span style="display: block; font-size: 12px; color: #5E5873; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ f.meta }}</span></span>
+        <span style="font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums">{{ f.amt }}</span>
+      </div>
+    </sc-for>
+    <sc-for list="{{ skel }}" as="s" hint-placeholder-count="3">
+      <div style="min-height: 64px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F0ECF6; animation: shimmer 1.4s infinite">
+        <span style="width: 34px; height: 40px; border-radius: 6px; background: #ECE7F4"></span>
+        <span style="flex: 1; display: flex; flex-direction: column; gap: 8px"><span style="height: 10px; width: {{ s.w }}; border-radius: 6px; background: #ECE7F4"></span><span style="height: 8px; width: 50%; border-radius: 6px; background: #F1EDF7"></span></span>
+        <span style="width: 48px; height: 10px; border-radius: 6px; background: #ECE7F4"></span>
+      </div>
+    </sc-for>
+    <div style="font-size: 12px; color: #5E5873; text-align: center; padding: 10px 0">Loading 25 more · 8 of 214 shown</div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 34px; display: flex; justify-content: center">
+    <button type="button" style="height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #14101F; color: #FFFFFF; font: 600 13px Poppins, sans-serif; display: flex; align-items: center; gap: 8px; box-shadow: 0 8px 20px rgba(20,16,31,.3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>Back to top</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pdf = { ext: 'PDF', ec: '#A61E3F', tint: '#FDF1F4' }, jpg = { ext: 'JPG', ec: '#643094', tint: '#F8F3FF' };
+    return {
+      today: [
+        { name: 'Nexus_Invoice_Oct.pdf', meta: 'Nexus Industrial · PO-31001 · Indexed', amt: 'CAD 1,582', ...pdf },
+        { name: 'Scan_26-Oct_1142.jpg', meta: 'Delta Office Supplies · PO-31007', amt: 'CAD 318', ...jpg }
+      ],
+      week: [
+        { name: 'INV-2026-3101.pdf', meta: 'Nexus Industrial · PO-31001', amt: 'CAD 1,582', ...pdf },
+        { name: 'INV-2026-3096.pdf', meta: 'Apex Safety Gear · PO-31004', amt: 'CAD 2,310', ...pdf },
+        { name: 'Delivery_note_4471.pdf', meta: 'Nexus Industrial · PO-31001 · Staged', amt: '—', ...pdf },
+        { name: 'INV-2026-3088.pdf', meta: 'Delta Office Supplies · PO-31002', amt: 'CAD 4,120', ...pdf }
+      ],
+      skel: [{ w: '70%' }, { w: '60%' }, { w: '75%' }]
+    };
+  }
+}
+</script>
+</body>
+</html>
