@@ -4,6 +4,7 @@ import { useMatches, useNavigate, useParams } from '@tanstack/react-router'
 import formApi from '@/api/form/form'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
+import useIsGuestShare from '@/hooks/useIsGuestShare'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import useDmsSetupStore from '@/pages/dashboard/workflows/document-repository/stores/useDmsSetupStore'
 import {
@@ -21,6 +22,7 @@ import cn from '@/utils/cn'
 const PageTitle = () => {
   const { t } = useLingui()
   const navigate = useNavigate()
+  const isGuestShare = useIsGuestShare()
   const matches = useMatches()
   const { closeRequest, isRequestOpen, selectedWorkflow } = requestStore(
     (state) => state,
@@ -202,7 +204,8 @@ const PageTitle = () => {
       return (
         <SettingsBreadcrumbs
           items={foldersBreadcrumbs}
-          onNavigate={foldersNavigate}
+          // Shared-link sessions: plain text, no navigation.
+          onNavigate={isGuestShare ? undefined : foldersNavigate}
         />
       )
     }
