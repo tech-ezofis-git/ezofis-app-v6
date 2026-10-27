@@ -435,12 +435,12 @@ export const getRepositoryItemFilterFields = async (repositoryId: string) => {
     const payload = unwrap(data) as RepositoryItemFilterFieldsResponse
     const fields = Array.isArray(payload?.fields)
       ? payload.fields.filter(
-        (field) =>
-          Boolean(field?.sqlColumnName || field?.name) &&
-          !EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES.has(
-            String(field?.dataType || '').toUpperCase(),
-          ),
-      )
+          (field) =>
+            Boolean(field?.sqlColumnName || field?.name) &&
+            !EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES.has(
+              String(field?.dataType || '').toUpperCase(),
+            ),
+        )
       : []
 
     response.data = { fields }
@@ -860,9 +860,31 @@ export const deleteRepositoryItem = async (
   return response
 }
 
+/** One field changed by a metadata save (also used by the timeline). */
+export type RepositoryMetadataChange = {
+  column: string
+  field: string
+  newValue: string | null
+  oldValue: string | null
+}
+
+/** PATCH …/metadata response. */
+export type RepositoryMetadataUpdateResult = {
+  changeId: string | null
+  /** Only the fields whose value actually changed; empty = nothing changed. */
+  changes: RepositoryMetadataChange[]
+  /** The item after save — use it to refresh the panel. */
+  item: Record<string, unknown> | null
+  itemId: string
+  updatedFieldCount: number
+}
+
 /**
- * Update metadata on an existing item. Body keys match upload metadata
- * (repository field sqlColumnName).
+ * Save edited metadata on an existing item
+ * (PATCH /repositories/{repoId}/items/{itemId}/metadata). Keys are the field
+ * display name or column name, case-insensitive. The API ignores blank values
+ * and read-only columns, and keeps only real changes as history (shown on
+ * the item's Timeline).
  */
 export const updateRepositoryItemMetadata = async (payload: {
   itemId: string
@@ -870,14 +892,17 @@ export const updateRepositoryItemMetadata = async (payload: {
   repositoryId: string
   tenantId?: string
 }) => {
-  const response: { data: unknown; error: string } = {
+  const response: {
+    data: RepositoryMetadataUpdateResult | null
+    error: string
+  } = {
     data: null,
     error: '',
   }
 
   try {
     const { data, status } = await axiosV6({
-      data: payload.metadata,
+      data: { metadata: payload.metadata },
       headers: getFolderTenantHeaders(payload.tenantId),
       method: 'PATCH',
       skipCancellation: true,
@@ -885,7 +910,7 @@ export const updateRepositoryItemMetadata = async (payload: {
     } as any)
 
     if (status < 200 || status >= 300) throw 'invalid status code'
-    response.data = data
+    response.data = data as RepositoryMetadataUpdateResult
   } catch (e: any) {
     console.error(e)
     const body = e?.response?.data
@@ -901,14 +926,14 @@ export const updateRepositoryItemMetadata = async (payload: {
   return response
 }
 
-  // Keep the API object extensible for existing imports.
-  ; (authApiV6 as any).getRepositoryItems = getRepositoryItems
-  ; (authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
-  ; (authApiV6 as any).shareRepositoryItem = shareRepositoryItem
-  ; (authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
-  ; (authApiV6 as any).getSharedWithMe = getSharedWithMe
-  ; (authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
-  ; (authApiV6 as any).deleteRepositoryItem = deleteRepositoryItem
+// Keep the API object extensible for existing imports.
+;(authApiV6 as any).getRepositoryItems = getRepositoryItems
+;(authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
+;(authApiV6 as any).shareRepositoryItem = shareRepositoryItem
+;(authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
+;(authApiV6 as any).getSharedWithMe = getSharedWithMe
+;(authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
+;(authApiV6 as any).deleteRepositoryItem = deleteRepositoryItem
 
 export interface RepositoryItemCommentsDto {
   comments?: Array<Record<string, any>>
@@ -1456,8 +1481,8 @@ const fetchRepositoryItemAiSummary = async (payload: {
     const { data, status } = await axiosV6({
       headers: language
         ? {
-          'Accept-Language': language,
-        }
+            'Accept-Language': language,
+          }
         : undefined,
       method: 'POST',
       // Long-running; do not abort when React Strict Mode remounts.
@@ -1549,14 +1574,14 @@ export const getRepositoryItemAiSummary = async (payload: {
   inflightAiSummaryRequests.set(key, request)
   return request
 }
-  ; (authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
-  ; (authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
-  ; (authApiV6 as any).getRepositoryItemRelatedSaved =
-    getRepositoryItemRelatedSaved
-  ; (authApiV6 as any).saveRepositoryItemRelated = saveRepositoryItemRelated
-  ; (authApiV6 as any).deleteRepositoryItemRelatedSaved =
-    deleteRepositoryItemRelatedSaved
-  ; (authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
-  ; (authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
-  ; (authApiV6 as any).uploadForOcr = uploadForOcr
-  ; (authApiV6 as any).UploadFiles = UploadFiles
+;(authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
+;(authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
+;(authApiV6 as any).getRepositoryItemRelatedSaved =
+  getRepositoryItemRelatedSaved
+;(authApiV6 as any).saveRepositoryItemRelated = saveRepositoryItemRelated
+;(authApiV6 as any).deleteRepositoryItemRelatedSaved =
+  deleteRepositoryItemRelatedSaved
+;(authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
+;(authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
+;(authApiV6 as any).uploadForOcr = uploadForOcr
+;(authApiV6 as any).UploadFiles = UploadFiles
