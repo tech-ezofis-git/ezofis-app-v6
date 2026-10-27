@@ -53,6 +53,7 @@ const WorkflowConnectorSettings = lazy<React.ComponentType<{ node: Node }>>(
 )
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
+import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import { parseOAuthConnectionSuccess } from '@/pages/workflows/utils/oauthAuthorize'
 import cn from '@/utils/cn'
 import useWorkflowStore from '../stores/useWorkflowStore'
@@ -617,7 +618,10 @@ function PropertiesPanel({
   }
 
   // Render Workflow Connector node settings panel
-  if (toolType === NODE_TOOL_TYPE.WORKFLOW_CONNECTOR) {
+  if (
+    toolType === NODE_TOOL_TYPE.WORKFLOW_CONNECTOR &&
+    isSubWorkflowEnabled()
+  ) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
         {NodeHeader}

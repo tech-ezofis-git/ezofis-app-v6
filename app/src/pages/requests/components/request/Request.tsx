@@ -10,6 +10,7 @@ import Tooltip from '@/components/base/Tooltip'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
 import {
+  isSubWorkflowEnabled,
   toLinkedProcessSummary,
   useLinkSubProcess,
   useMainProcess,
@@ -2080,15 +2081,24 @@ const Request = ({
 
   // Workflow Initiator on the current step: "Initiate - <child>" opens the
   // child's new-request form in place of this request and links the result.
+  // Sub-workflow UI is localhost-only until its API is ready.
+  const subWorkflowEnabled = isSubWorkflowEnabled()
   const subWorkflow = useSubWorkflowInitiator(
     overviewWorkflowData || rawWorkflowData,
     currentActivityId,
-    { enabled: !hideActions && canActOnRequest && !!currentActivityId },
+    {
+      enabled:
+        subWorkflowEnabled &&
+        !hideActions &&
+        canActOnRequest &&
+        !!currentActivityId,
+    },
   )
   const linkSubProcess = useLinkSubProcess()
   const [isInitiatingSubWorkflow, setIsInitiatingSubWorkflow] = useState(false)
   // Sub Process tab count, and the parent link when this request is a child.
-  const linkedProcessId = isGenericWorkflow ? genericInstanceId : undefined
+  const showSubProcesses = subWorkflowEnabled && isGenericWorkflow
+  const linkedProcessId = showSubProcesses ? genericInstanceId : undefined
   const { data: subProcesses } = useSubProcesses(
     resolvedWorkflowId,
     linkedProcessId,
@@ -3374,7 +3384,7 @@ const Request = ({
             selectedItem?.transactionCreatedAt || request?.transactionCreatedAt
           }
           subProcessCount={
-            isGenericWorkflow ? (subProcesses?.length ?? 0) : undefined
+            showSubProcesses ? (subProcesses?.length ?? 0) : undefined
           }
           ticketUserId={
             selectedItem?.userId ||

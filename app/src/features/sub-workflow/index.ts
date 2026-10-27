@@ -1,4 +1,5 @@
 export * from './api/queries'
+export { isSubWorkflowEnabled } from './featureFlag'
 export {
   isSubWorkflowMock,
   subWorkflowApi,

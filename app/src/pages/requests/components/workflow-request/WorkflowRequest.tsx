@@ -10,6 +10,7 @@ import {
   applySubWorkflowPrefill,
   buildSubWorkflowPrefill,
   flattenFormFields,
+  isSubWorkflowEnabled,
   toLinkedProcessSummary,
   useLinkSubProcess,
 } from '@/features/sub-workflow'
@@ -477,7 +478,8 @@ const WorkflowRequest = ({
   // created first and linked once this request is submitted (V5
   // AddNewRequest behaviour).
   const subWorkflow = useSubWorkflowInitiator(workflow, null, {
-    enabled: allowSubWorkflow,
+    // Sub-workflow UI is localhost-only until its API is ready.
+    enabled: allowSubWorkflow && isSubWorkflowEnabled(),
   })
   const linkSubProcess = useLinkSubProcess()
   const [isInitiatingSubWorkflow, setIsInitiatingSubWorkflow] = useState(false)

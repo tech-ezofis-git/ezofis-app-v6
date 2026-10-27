@@ -46,6 +46,15 @@ V6 request sheet: right-side panels switch with `rightView: 'overview' | 'histor
    - **Settings live in the workflow JSON.** The connector target and initiator toggle are written into each block's `settings` in flowJson (`subWorkflowId`, `workflowInitiator`), exactly as V5 does, so saving a workflow already persists them.
    - **Runtime data comes from a local JSON mock** (`src/features/sub-workflow/api/mock/subWorkflowMock.json`, plus localStorage for links created in the UI). It's on by default; set `VITE_SUB_WORKFLOW_API=live` to switch to the real endpoints once they exist. All UI talks to `subWorkflowApi` / the hooks, never to the mock directly.
 
+## 3a. Localhost-only switch (temporary)
+
+Until the API is ready, all sub-workflow UI is shown only on a local dev host. `isSubWorkflowEnabled()` (`src/features/sub-workflow/featureFlag.ts`) is true for `localhost`, `127.0.0.1`, `[::1]` and `*.localhost`, and false everywhere else (e.g. `https://cloud.ezofis.com`). Gated places:
+
+- Builder: the "Workflow Connector" palette entry (`AddNodeMenu.tsx`), the connector settings panel (`PropertiesPanel.tsx`), the Manual User "Sub Workflow" section (`ManualUserSettingsPanel.tsx`), the connector/initiator publish checks (`BuilderHeader.tsx`), and writing initiator keys on export (`exportWorkflow.ts`), so workflows saved on cloud stay exactly as before.
+- Requests: the "Initiate - &lt;child&gt;" button, the Sub Process tab and its queries, and the parent link (`Request.tsx`); the Initiate button on new requests (`WorkflowRequest.tsx`).
+
+Import still reads the keys (it changes nothing that's saved). **To go live:** delete `featureFlag.ts` and every `isSubWorkflowEnabled()` check (grep for it), and drop the `location` stubs in the two test files.
+
 ## 4. Questions for the backend (Phase 0, runs alongside the other phases)
 
 1. Is `WORKFLOW_CONNECTOR` executed by the V6 engine? When does it fire, does the parent wait, what is copied, and what happens on reject or force-close? → blocks the runtime side of B.
