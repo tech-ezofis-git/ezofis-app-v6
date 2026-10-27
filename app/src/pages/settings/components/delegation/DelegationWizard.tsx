@@ -16,6 +16,7 @@ import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
+import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import { DELEGATION_GUIDES } from '@/constants/pageGuides'
 import { extractWorkflowGraph } from '@/pages/requests/utils/workflow.utils'
@@ -282,22 +283,34 @@ export default function DelegationWizard({
     setActiveStep((step) => Math.min(step + 1, STEP_MSGS.length - 1))
   }
 
-  const handleStepChange = (step: number) => {
-    if (readOnly) {
-      setActiveStep(step)
-      return
+  // Any step can be opened from the sidebar; Save checks every required
+  // field instead.
+  const handleStepChange = (step: number) => setActiveStep(step)
+
+  // What's still missing, per step, for the Save toast.
+  const missingFields = () => {
+    const missing: string[] = []
+    if (!stepValid(0)) missing.push(t`Assignee`)
+    if (!fromDate) missing.push(t`From Date`)
+    if (!toDate) missing.push(t`To Date`)
+    if (fromDate && toDate && (fromError || toError || overlapping)) {
+      missing.push(t`Valid absence dates`)
     }
-    const blocked = [0, 1, 2].find((index) => index < step && !stepValid(index))
-    if (blocked !== undefined) {
-      setActiveStep(blocked)
-      setShowErrors(true)
-      return
-    }
-    setActiveStep(step)
+    if (!rows.length) missing.push(t`At least one workflow`)
+    if (rows.some((row) => !row.workflowId)) missing.push(t`Workflow`)
+    if (rows.some((row) => !row.delegateUserId)) missing.push(t`Delegate`)
+    return missing
   }
 
   const handleSave = (isDraft: boolean) => {
     if (!isDraft && firstInvalidStep !== undefined) {
+      const missing = missingFields()
+      showToast({
+        message: missing.length
+          ? t`Please fill the required fields: ${missing.join(', ')}`
+          : t`Please complete the required fields before saving.`,
+        variant: 'error',
+      })
       setActiveStep(firstInvalidStep)
       setShowErrors(true)
       return
@@ -311,7 +324,9 @@ export default function DelegationWizard({
     )
 
   const steps: SettingsWizardStep[] = STEP_MSGS.map((step, index) => ({
+    clickable: true,
     description: i18n._(step.description),
+    disabled: false,
     guide: DELEGATION_GUIDES[step.key],
     icon: step.icon,
     id: index,
