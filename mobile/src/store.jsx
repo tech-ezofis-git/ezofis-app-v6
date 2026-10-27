@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState,
 import { REQUESTS, ACTIONED, FILES, UPLOAD_POOL, NOTIFS } from './data.js';
 import { loadSession } from './api.js';
 import { wfApi, clearWfCache } from './wf.js';
+import { repoApi } from './repo.js';
 
 const Ctx = createContext(null);
 export const useStore = () => useContext(Ctx);
@@ -50,6 +51,14 @@ export function StoreProvider({ children }) {
   const live = !!session;
   const syncSession = useCallback(() => setSession((prev) => { const n = loadSession(); if (!n || !prev || n.tenantId !== prev.tenantId || n.accessToken !== prev.accessToken) { clearWfCache(); setMe(null); setInboxCount(null); if (!!n !== !!prev) setNotifs(n ? [] : NOTIFS); } return n; }), []);
   const bumpLive = useCallback(() => setLiveTick((t) => t + 1), []);
+  // Folders the user can see (null = not known yet). With none, the Folders menu and Upload are hidden.
+  const [folderCount, setFolderCount] = useState(null);
+  useEffect(() => {
+    if (!session) { setFolderCount(null); return undefined; }
+    let off = false;
+    repoApi.list().then((l) => { if (!off) setFolderCount(l.length); }).catch(() => { /* unknown: keep the menu */ });
+    return () => { off = true; };
+  }, [session && session.tenantId, session && session.accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!session) return undefined;
     let off = false;
@@ -127,11 +136,12 @@ export function StoreProvider({ children }) {
   const markRead = useCallback((id) => setNotifs((l) => l.map((n) => (n.id === id ? { ...n, unread: false } : n))), []);
 
   const value = useMemo(() => ({
-    live, session, me, liveTick, syncSession, bumpLive, setLastResult, addNotif, inboxCount, setInboxCount,
+    live, session, me, liveTick, syncSession, bumpLive, setLastResult, addNotif, inboxCount, setInboxCount, folderCount, setFolderCount,
+    hasFolders: !live || folderCount !== 0,
     requests, actioned, files, staged, notifs, toast, lastResult, platform, platformPref,
     setPlatform, showToast, setToast, actOn, addUpload, updateRequest, updateStaged, skipStaged, exportStaged, markAllRead, markRead,
     unread: notifs.filter((n) => n.unread).length,
-  }), [live, session, me, liveTick, syncSession, bumpLive, addNotif, inboxCount, requests, actioned, files, staged, notifs, toast, lastResult, platform, platformPref, setPlatform, showToast, actOn, addUpload, updateRequest, updateStaged, skipStaged, exportStaged, markAllRead, markRead]);
+  }), [live, session, me, liveTick, syncSession, bumpLive, addNotif, inboxCount, folderCount, requests, actioned, files, staged, notifs, toast, lastResult, platform, platformPref, setPlatform, showToast, actOn, addUpload, updateRequest, updateStaged, skipStaged, exportStaged, markAllRead, markRead]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

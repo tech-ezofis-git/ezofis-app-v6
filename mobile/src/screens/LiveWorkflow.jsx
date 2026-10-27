@@ -155,9 +155,9 @@ function LiveList({ selectedKey, onOpen, onFirst }) {
 
   const metas = useMetas(state.rows.map((r) => r.workflowId));
   const cards = useMemo(() => state.rows.map((r) => toCard(r, metas[r.workflowId] && metas[r.workflowId].meta, metas[r.workflowId] && metas[r.workflowId].form)), [state.rows, metas]);
-  const stages = useMemo(() => [...new Set(cards.map((c) => c.stage).filter(Boolean))].slice(0, 6), [cards]);
+  // Quick filters: All · New today (arrived today) · Earlier (older, still waiting — not actioned yet)
   const visible = cards.filter((c) => (!search || c.search.includes(search.toLowerCase().trim()))
-    && (chip === 'All' || (chip === 'New today' ? c.isNew : chip === 'AI flagged' ? c.ai && c.ai.tone === 'bad' : c.stage === chip)));
+    && (chip === 'All' || (chip === 'New today' ? c.isNew : chip === 'Earlier' ? !c.isNew && !c.completed : true)));
   useEffect(() => { if (onFirst && visible[0]) onFirst(visible[0].key); }, [visible.length && visible[0].key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const wfName = wfId ? ((workflows || []).find((w) => w.id === wfId) || {}).name || 'Workflow' : 'All workflows';
@@ -187,7 +187,7 @@ function LiveList({ selectedKey, onOpen, onFirst }) {
       </div>
       <div className="content" style={{ maxWidth: 'none' }}>
         {!state.loading && cards.length ? (
-          <div className="chips">{['All', 'New today', ...(cards.some((c) => c.ai) ? ['AI flagged'] : []), ...stages].map((c) => <button key={c} type="button" className={'chip' + (chip === c ? ' on' : '')} onClick={() => setChip(c)}>{c}</button>)}</div>
+          <div className="chips">{[['All', cards.length], ['New today', cards.filter((c) => c.isNew).length], ['Earlier', cards.filter((c) => !c.isNew && !c.completed).length]].map(([c, n]) => <button key={c} type="button" className={'chip' + (chip === c ? ' on' : '')} onClick={() => setChip(c)}>{c}<span className="chip-n">{n}</span></button>)}</div>
         ) : null}
         {state.error ? <ErrorNote text={state.error} onRetry={() => setReload((x) => x + 1)} /> : null}
         {state.partial ? <div className="notice warn"><Icon name="warn" size={18} /><span className="grow">Some workflows didn't load. Showing what's available.</span></div> : null}

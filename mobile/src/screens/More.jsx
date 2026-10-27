@@ -5,7 +5,30 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store.jsx';
 import { Icon, Sheet, TopBar } from '../ui.jsx';
 import { USER } from '../data.js';
-import { authApi, loadSession, updateSession, clearSession, loginErrorMessage } from '../api.js';
+import { authed, loadSession, clearSession } from '../api.js';
+
+// Organization brand for Settings. GET /api/branding (tenant from X-Tenant-Id) is what the web app calls for the tenant's
+// branding; brandingJson carries `logo` (data URL or link) and `brandName`. Until the API answers, the name and a monogram show.
+const brandCache = new Map();
+function useTenantBrand(session) {
+  const id = session && session.tenantId;
+  const [brand, setBrand] = useState(() => brandCache.get(id) || {});
+  useEffect(() => {
+    if (!id || brandCache.has(id)) return undefined;
+    let off = false;
+    authed('/branding').then((d) => {
+      const rec = (d && (d.branding || d)) || {};
+      let j = rec.brandingJson || rec.json || {};
+      if (typeof j === 'string') { try { j = JSON.parse(j); } catch (e) { j = {}; } }
+      const logo = String(j.logo || j.logoUrl || '');
+      const b = { logo: /^(data:image\/|https:\/\/)/i.test(logo) ? logo : '', name: String(j.brandName || j.appTitle || '').trim() };
+      brandCache.set(id, b); if (!off) setBrand(b);
+    }).catch(() => { brandCache.set(id, {}); });
+    return () => { off = true; };
+  }, [id]);
+  return brand;
+}
+const initialsOf = (n) => { const w = String(n || '?').replace(/[^A-Za-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean); return ((w[0] || '?')[0] + (w[1] ? w[1][0] : '')).toUpperCase(); };
 
 const TONE_BG = { p: 'var(--tint-p)', t: 'var(--tint-t)', a: 'var(--tint-a)', r: 'var(--tint-r)' };
 const TONE_FG = { p: 'var(--deep)', t: 'var(--teal-dark)', a: 'var(--warn-t)', r: 'var(--bad-t)' };
@@ -73,14 +96,8 @@ export function Settings() {
   const phoneSub = perm === 'unsupported' ? 'Not available in this preview' : perm === 'denied' ? 'Blocked in phone settings' : phoneActive ? 'New requests, even when the app is closed' : 'Off · tap to allow';
   const [lang, setLang] = useState(false);
   const [language, setLanguage] = useState('English');
-  const [session, setSession] = useState(() => loadSession());
-  const [orgs, setOrgs] = useState(null);
-  const [orgErr, setOrgErr] = useState('');
-  const openOrgs = async () => {
-    setOrgs([]); setOrgErr('');
-    try { setOrgs(await authApi.meTenants(session.accessToken)); } catch (e) { setOrgErr(loginErrorMessage(e)); }
-  };
-  const switchOrg = (t) => { setSession(updateSession({ tenantId: t.tenantId, tenantName: t.name, role: t.role })); syncSession(); setOrgs(null); showToast('Switched to ' + t.name); };
+  const [session] = useState(() => loadSession());
+  const brand = useTenantBrand(session);
   const signOut = () => { clearSession(); syncSession(); try { localStorage.removeItem('ezofis.pin'); } catch (e) { /* storage unavailable */ } nav('/welcome', { replace: true }); };
   const name = me && me.displayName ? me.displayName : session ? session.email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : USER.name;
   return (
@@ -101,7 +118,14 @@ export function Settings() {
         </div>
         <div className="sec-label">Organization</div>
         {session ? (
-          <button type="button" className="setting-row" onClick={openOrgs}><span className="ic"><Icon name="building" size={20} /></span><span className="tx">{session.tenantName}<small>Tap to switch organization</small></span><Icon name="swap" size={18} color="#5E5873" /></button>
+          <div className="org-card">
+            <span className="org-logo">{brand.logo ? <img src={brand.logo} alt={brand.name || session.tenantName} /> : <b>{initialsOf(brand.name || session.tenantName)}</b>}</span>
+            <span className="grow">
+              <span className="org-n">{brand.name || session.tenantName}</span>
+              <span className="org-m">{[(me && me.role) || session.role, me && me.department].filter(Boolean).join(' · ') || 'Member'}</span>
+              <span className="org-m">{session.email}</span>
+            </span>
+          </div>
         ) : (
           <button type="button" className="setting-row" onClick={() => nav('/login')}><span className="ic"><Icon name="user" size={20} /></span><span className="tx">Sign in to your organization<small>You're exploring sample data</small></span><Icon name="chevR" size={18} color="#5E5873" /></button>
         )}
@@ -113,13 +137,8 @@ export function Settings() {
           <button type="button" className="setting-row" onClick={() => showToast('Opening help.ezofis.com')}><span className="ic"><Icon name="help" size={20} /></span><span className="tx">Help center<small>Guides for inbox, folders and uploads</small></span><Icon name="chevR" size={18} color="#5E5873" /></button>
           <button type="button" className="setting-row" onClick={signOut}><span className="ic" style={{ background: 'var(--tint-r)', color: 'var(--bad)' }}><Icon name="logout" size={20} /></span><span className="tx" style={{ color: 'var(--bad)' }}>Sign out</span></button>
         </div>
-        <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 10 }}>EZOFIS Mobile · V6 · 0.3.0</p>
+        <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 10 }}>EZOFIS Mobile · V6 · 0.4.9</p>
       </div>
-      <Sheet open={orgs !== null} onClose={() => setOrgs(null)} title="Switch organization">
-        {orgErr ? <span className="err" role="alert">{orgErr}</span> : null}
-        {orgs && !orgs.length && !orgErr ? <div className="muted" style={{ display: 'flex', gap: 10, alignItems: 'center' }}><span className="spinner" />Loading organizations…</div> : null}
-        <div className="sheet-list">{(orgs || []).map((t) => <button key={t.tenantId} type="button" className={'opt' + (session && t.tenantId === session.tenantId ? ' on' : '')} onClick={() => switchOrg(t)}><span style={{ flex: 1 }}>{t.name}</span><span className="muted" style={{ fontSize: 12 }}>{t.role}</span></button>)}</div>
-      </Sheet>
       <Sheet open={lang} onClose={() => setLang(false)} title="Language">
         <div className="sheet-list">{['English', 'Tamil', 'Hindi', 'Arabic', 'French'].map((l) => <button key={l} type="button" className={'opt' + (l === language ? ' on' : '')} onClick={() => { setLanguage(l); setLang(false); }}>{l}</button>)}</div>
       </Sheet>

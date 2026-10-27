@@ -14,7 +14,7 @@ tests/e2e/run_all.sh              # mock end-to-end checks (Playwright + Python)
 python3 apk-shell/build_apk.py dist-single/index.html apk-shell/ic_launcher.png /tmp/u.apk && \
 python3 apk-shell/sign_v2.py /tmp/u.apk EZOFIS-Mobile-test.apk apk-shell     # SDK-free test APK
 ```
-Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 23 / 0.4.8.
+Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 24 / 0.4.9.
 
 ## Code map
 - `src/api.js`: sign-in (`loggedFrom: "MOBILE"`, 2FA, tenants), session storage, `authed()` (Bearer + `X-Tenant-Id`). A 401 dispatches `SESSION_EXPIRED`, which sends the user back to login.
@@ -50,7 +50,7 @@ Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py
 - **No live writes from tooling:** never call move-next, comments, uploads or start against production (cloud.ezofis.com) from tests or scripts. Writes are tested with the mocks in `tests/e2e/wfmock.py`.
 - **Master-form rows:** these can include a plain-text `Password` column (backend issue). Keep only the columns the form references (`loadMaster`).
 - **Social login:** send only a provider-verified email, never a typed one. The backend must verify the provider token before release.
-- **Logos:** don't draw Google or Microsoft logos.
+- **Logos:** the sign-in buttons use the providers' own marks (Google "G", Microsoft four squares) in their official colours (`GoogleLogo` / `MicrosoftLogo` in `Onboarding.jsx`); don't restyle or recolour them.
 - **Uploads:** max 20 MB per file (`MAX_FILE_MB`).
 - **Hidden fields:** never show OCR text or tenant / instance / storage / repository IDs (`isTechnicalKey` / `isTechnicalLabel`).
 - **Action buttons and tabs** are data-driven from the workflow JSON: rules `proceedAction` / `buttonColor` and `requestTabs` / `nodeIds`. Don't hard-code per-workflow labels.

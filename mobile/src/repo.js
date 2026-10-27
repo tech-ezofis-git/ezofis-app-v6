@@ -33,9 +33,12 @@ export const repoApi = {
     pathId, parentFilters: parentFilters && Object.keys(parentFilters).length ? JSON.stringify(parentFilters) : undefined, page, pageSize, search,
   })).then((d) => ({ ...d, groups: paged(d && d.groups) })),
   // 5d file list (filters in the body; keys = sqlColumnName, a folder's parentFilters show the files inside it)
-  query: (id, { filters = {}, search, page = 1, pageSize = 30 } = {}) => authed(`${R}/${id}/items/query`, {
-    method: 'POST', body: { filters, search: search || null, sortBy: 'documentDate', sortOrder: 'desc', page, pageSize },
+  query: (id, { filters = {}, search, page = 1, pageSize = 30, dateFrom, dateTo, sortBy = 'documentDate', sortOrder = 'desc' } = {}) => authed(`${R}/${id}/items/query`, {
+    method: 'POST', body: { filters, search: search || null, sortBy, sortOrder, page, pageSize, ...(dateFrom ? { dateFrom } : {}), ...(dateTo ? { dateTo } : {}) },
   }).then(paged),
+  // values present in a column within a scope (the folder path / other filters) — for the filter sheet
+  facetsIn: (id, sqlColumnName, scope) => authed(`${R}/${id}/items/facets/${encodeURIComponent(sqlColumnName)}?` + q({ limit: 50, scopeFilters: scope && Object.keys(scope).length ? JSON.stringify(scope) : undefined }))
+    .then((d) => (Array.isArray(d) ? d : (d && (d.values || d.items || d.data)) || []).map((v) => (isObj(v) ? { value: String(v.value ?? v.name ?? ''), count: v.count } : { value: String(v), count: null })).filter((v) => v.value)),
   filterFields: (id) => authed(`${R}/${id}/items/filter-fields`).then((d) => (d && d.fields) || []),
   // 5f detail is wfApi.item / wfApi.file (same endpoints); 4c / 4d
   updateMetadata: (id, itemId, values) => authed(`${R}/${id}/items/${itemId}/metadata`, { method: 'PATCH', body: values }),

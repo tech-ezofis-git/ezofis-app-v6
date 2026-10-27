@@ -27,11 +27,11 @@ export function getRepos(force) {
   return repoList;
 }
 function useRepos(tick) {
-  const { session } = useStore();
+  const { session, setFolderCount } = useStore();
   const [state, setState] = useState({ list: null, error: '' });
   useEffect(() => {
     let off = false;
-    getRepos(tick > 0).then((list) => { if (!off) setState({ list, error: '' }); }).catch((e) => { if (!off) setState({ list: [], error: apiErrorMessage(e, 'your folders') }); });
+    getRepos(tick > 0).then((list) => { if (!off) { setState({ list, error: '' }); setFolderCount(list.length); } }).catch((e) => { if (!off) setState({ list: [], error: apiErrorMessage(e, 'your folders') }); });
     return () => { off = true; };
   }, [tick, session && session.tenantId]);
   return state;
@@ -130,7 +130,7 @@ export function LiveFolders() {
         <SharedWithMe list={shared} onOpen={(s) => setViewing({ fileName: s.fileName, repositoryId: s.sourceRepositoryId, itemId: s.sourceItemId, shareToken: s.shareToken })} />
       </div>
       {viewing ? <FileViewer file={viewing} onClose={() => setViewing(null)} /> : null}
-      <button type="button" className="fab" aria-label="Upload documents" onClick={() => nav('/app/upload')} style={{ position: 'fixed', right: 20, bottom: 'calc(var(--sab) + 100px)', margin: 0 }}><Icon name="upload" size={28} stroke={2.4} /></button>
+      {list && list.length ? <button type="button" className="fab" aria-label="Upload documents" onClick={() => nav('/app/upload')} style={{ position: 'fixed', right: 20, bottom: 'calc(var(--sab) + 100px)', margin: 0 }}><Icon name="upload" size={28} stroke={2.4} /></button> : null}
     </div>
   );
 }
@@ -157,20 +157,82 @@ function FileRow({ r, onOpen }) {
   );
 }
 
-function FilesList({ repoId, filters, search, reload, onOpen, emptyText }) {
+// ---------- filters (like the web browser): field values (facets), document date range, sort ----------
+const SORTS = [['documentDate:desc', 'Newest first'], ['documentDate:asc', 'Oldest first'], ['fileName:asc', 'Name A–Z'], ['fileName:desc', 'Name Z–A']];
+export const NO_FILTER = { filters: {}, dateFrom: '', dateTo: '', sort: 'documentDate:desc' };
+const SYSTEM_FILTER = /^(ocr|summary|tenant|repositoryid|storage|filepath|workflowinstanceid|aistatus|id$)/i;
+const activeCount = (f) => Object.values(f.filters).filter((v) => v && v.length).length + (f.dateFrom || f.dateTo ? 1 : 0) + (f.sort !== NO_FILTER.sort ? 1 : 0);
+
+function FilterSheet({ repoId, open, scope, value, onApply, onClose }) {
+  const [fields, setFields] = useState(null);
+  const [draft, setDraft] = useState(value);
+  const [vals, setVals] = useState({});
+  const [openField, setOpenField] = useState(null);
+  useEffect(() => { if (open) { setDraft(value); setOpenField(null); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!open || fields) return;
+    repoApi.filterFields(repoId).then((l) => setFields(l.filter((f) => f.sqlColumnName && !SYSTEM_FILTER.test(f.sqlColumnName) && !/date/i.test(f.dataType || '') && !(scope && scope[f.sqlColumnName])))).catch(() => setFields([]));
+  }, [open, repoId, fields, scope]);
+  const loadVals = (f) => { if (vals[f.sqlColumnName]) return; setVals((v) => ({ ...v, [f.sqlColumnName]: null })); repoApi.facetsIn(repoId, f.sqlColumnName, scope).then((l) => setVals((v) => ({ ...v, [f.sqlColumnName]: l }))).catch(() => setVals((v) => ({ ...v, [f.sqlColumnName]: [] }))); };
+  const toggle = (col, val) => setDraft((d) => { const cur = d.filters[col] || []; const next = cur.includes(val) ? cur.filter((x) => x !== val) : [...cur, val]; return { ...d, filters: { ...d.filters, [col]: next } }; });
+  return (
+    <Sheet open={open} onClose={onClose} title="Filter files">
+      <div className="flt">
+        <div className="flt-sec"><b>Sort by</b><div className="chips wrap">{SORTS.map(([k, l]) => <button key={k} type="button" className={'chip' + (draft.sort === k ? ' on' : '')} onClick={() => setDraft({ ...draft, sort: k })}>{l}</button>)}</div></div>
+        <div className="flt-sec"><b>Document date</b>
+          <div className="flt-dates"><label><span>From</span><input type="date" className="input" value={draft.dateFrom} onChange={(e) => setDraft({ ...draft, dateFrom: e.target.value })} aria-label="Date from" /></label><label><span>To</span><input type="date" className="input" value={draft.dateTo} onChange={(e) => setDraft({ ...draft, dateTo: e.target.value })} aria-label="Date to" /></label></div>
+        </div>
+        {fields === null ? <div className="muted" style={{ display: 'flex', gap: 10, alignItems: 'center' }}><span className="spinner" />Loading filters…</div> : null}
+        {(fields || []).map((f) => {
+          const sel = draft.filters[f.sqlColumnName] || [];
+          const isOpen = openField === f.sqlColumnName;
+          const list = vals[f.sqlColumnName];
+          return (
+            <div key={f.sqlColumnName} className="flt-field">
+              <button type="button" className="flt-h" aria-expanded={isOpen} onClick={() => { setOpenField(isOpen ? null : f.sqlColumnName); if (!isOpen) loadVals(f); }}>
+                <span className="grow"><b>{f.name}</b>{sel.length ? <small>{sel.join(', ')}</small> : <small>Any</small>}</span>{sel.length ? <span className="cnt">{sel.length}</span> : null}<Icon name="chevD" size={16} stroke={2.4} style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }} />
+              </button>
+              {isOpen ? (list === null || list === undefined ? <div className="muted" style={{ fontSize: 13, padding: '6px 2px' }}><span className="spinner tiny" /> Loading values…</div>
+                : list.length ? <div className="chips wrap">{list.map((v) => <button key={v.value} type="button" className={'chip' + (sel.includes(v.value) ? ' on' : '')} aria-pressed={sel.includes(v.value)} onClick={() => toggle(f.sqlColumnName, v.value)}>{v.value}{v.count != null ? <span className="chip-n">{v.count}</span> : null}</button>)}</div>
+                  : <div className="muted" style={{ fontSize: 13, padding: '6px 2px' }}>No values here.</div>) : null}
+            </div>
+          );
+        })}
+      </div>
+      <div className="grid2"><button type="button" className="btn outline-grey" onClick={() => setDraft(NO_FILTER)}>Clear all</button><button type="button" className="btn primary" onClick={() => { onApply(draft); onClose(); }}>Show files</button></div>
+    </Sheet>
+  );
+}
+
+function FilterBar({ value, onOpen, onChange }) {
+  const n = activeCount(value);
+  const tags = [...Object.entries(value.filters).flatMap(([col, vs]) => (vs || []).map((v) => ({ k: col + '=' + v, label: v, off: () => onChange({ ...value, filters: { ...value.filters, [col]: vs.filter((x) => x !== v) } }) }))),
+    ...(value.dateFrom || value.dateTo ? [{ k: 'date', label: `${value.dateFrom ? fmtDate(value.dateFrom) : '…'} – ${value.dateTo ? fmtDate(value.dateTo) : '…'}`, off: () => onChange({ ...value, dateFrom: '', dateTo: '' }) }] : []),
+    ...(value.sort !== NO_FILTER.sort ? [{ k: 'sort', label: (SORTS.find((s) => s[0] === value.sort) || [])[1], off: () => onChange({ ...value, sort: NO_FILTER.sort }) }] : [])];
+  return (
+    <div className="flt-bar">
+      <button type="button" className={'chip' + (n ? ' on' : '')} onClick={onOpen}><Icon name="filter" size={14} stroke={2.4} />Filter{n ? <span className="chip-n">{n}</span> : null}</button>
+      {tags.map((t) => <span key={t.k} className="flt-tag">{t.label}<button type="button" aria-label={'Remove ' + t.label} onClick={t.off}><Icon name="close" size={12} stroke={2.6} /></button></span>)}
+    </div>
+  );
+}
+
+function FilesList({ repoId, filters, search, reload, onOpen, emptyText, opts = NO_FILTER }) {
   const [state, setState] = useState({ loading: true, error: '', rows: [], total: 0, page: 1, more: false });
-  const fkey = JSON.stringify(filters || {});
+  const fkey = JSON.stringify({ ...(filters || {}), ...Object.fromEntries(Object.entries(opts.filters).filter(([, v]) => v && v.length)) });
+  const okey = [opts.dateFrom, opts.dateTo, opts.sort].join('|');
   const load = useCallback(async (page = 1) => {
     if (page === 1) setState((s) => ({ ...s, loading: true, error: '' }));
     try {
-      const d = await repoApi.query(repoId, { filters: JSON.parse(fkey), search, page, pageSize: PAGE });
+      const [sortBy, sortOrder] = okey.split('|')[2].split(':');
+      const d = await repoApi.query(repoId, { filters: JSON.parse(fkey), search, page, pageSize: PAGE, dateFrom: okey.split('|')[0], dateTo: okey.split('|')[1], sortBy, sortOrder });
       setState((s) => {
         const rows = page === 1 ? d.rows : [...s.rows, ...d.rows];
         const total = d.total >= 0 ? d.total : rows.length;
         return { loading: false, error: '', rows, total, page, more: d.total >= 0 ? rows.length < d.total : d.rows.length === PAGE };
       });
     } catch (e) { setState((s) => ({ ...s, loading: false, error: apiErrorMessage(e, 'the files') })); }
-  }, [repoId, fkey, search]);
+  }, [repoId, fkey, okey, search]);
   useEffect(() => { load(1); }, [load, reload]);
   return (
     <>
@@ -179,7 +241,7 @@ function FilesList({ repoId, filters, search, reload, onOpen, emptyText }) {
         <>
           {state.rows.length ? <div className="sec-label">{search ? 'Matching files' : 'Files'} · {state.total.toLocaleString()}</div> : null}
           <div className="files-list">{state.rows.map((r) => <FileRow key={r.id} r={r} onOpen={onOpen} />)}</div>
-          {!state.rows.length && !state.error ? <div className="empty"><Icon name="file" size={40} color="#CFC8DC" />{search ? `No files match “${search}”.` : emptyText || 'No files here yet.'}</div> : null}
+          {!state.rows.length && !state.error ? <div className="empty"><Icon name="file" size={40} color="#CFC8DC" />{search ? `No files match “${search}”.` : activeCount(opts) ? 'No files match these filters.' : emptyText || 'No files here yet.'}</div> : null}
           {state.more ? <button type="button" className="btn neutral small load-more" onClick={() => load(state.page + 1)}>Load more ({state.rows.length} of {state.total})</button> : null}
         </>
       )}
@@ -300,6 +362,9 @@ function RepoScreen() {
   const [q, setQ] = useState(null);
   const search = useDebounced((q || '').trim());
   const [pathsOpen, setPathsOpen] = useState(false);
+  const [flt, setFlt] = useState(NO_FILTER);
+  const [fltOpen, setFltOpen] = useState(false);
+  useEffect(() => { setFlt(NO_FILTER); }, [params.get('tab'), params.get('path')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let off = false;
@@ -369,7 +434,7 @@ function RepoScreen() {
               ))}
             </div>
             {!path.length && paths.length > 1 ? <button type="button" className="chip path-chip" onClick={() => setPathsOpen(true)}><Icon name="list" size={14} /><span className="crumb-v">Organized by {curPath ? curPath.label : ''}</span><Icon name="chevD" size={14} stroke={2.6} /></button> : null}
-            {atLeaf ? <FilesList repoId={repoId} filters={parentFilters} search={search} reload={reload} onOpen={open} emptyText="This folder is empty." /> : (
+            {atLeaf ? <><FilterBar value={flt} onOpen={() => setFltOpen(true)} onChange={setFlt} /><FilesList repoId={repoId} filters={parentFilters} opts={flt} search={search} reload={reload} onOpen={open} emptyText="This folder is empty." /></> : (
               <>
                 {level.error ? <ErrorNote text={level.error} onRetry={() => setReload((x) => x + 1)} /> : null}
                 {level.loading ? <Skeleton n={5} h={60} /> : (
@@ -392,7 +457,8 @@ function RepoScreen() {
             )}
           </>
         ) : null}
-        {tab === 'files' ? <FilesList repoId={repoId} filters={{}} search={search} reload={reload} onOpen={open} emptyText="No files in this folder yet. Upload some to get started." /> : null}
+        {tab === 'files' ? <><FilterBar value={flt} onOpen={() => setFltOpen(true)} onChange={setFlt} /><FilesList repoId={repoId} filters={{}} opts={flt} search={search} reload={reload} onOpen={open} emptyText="No files in this folder yet. Upload some to get started." /></> : null}
+        <FilterSheet key={tab + JSON.stringify(parentFilters)} repoId={repoId} open={fltOpen} scope={tab === 'files' ? {} : parentFilters} value={flt} onApply={setFlt} onClose={() => setFltOpen(false)} />
       </div>
       {perms && perms.upload ? <button type="button" className="fab" aria-label={'Upload to ' + ((repo && repo.name) || 'this folder')} onClick={() => nav('/app/upload?repo=' + repoId)} style={{ position: 'fixed', right: 20, bottom: 'calc(var(--sab) + 28px)', margin: 0 }}><Icon name="upload" size={28} stroke={2.4} /></button> : null}
       {viewing ? (

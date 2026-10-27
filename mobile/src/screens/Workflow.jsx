@@ -29,7 +29,7 @@ function InboxList({ selectedId, onOpen }) {
     let l = tab === 'inbox' ? requests : actioned;
     if (wf !== 'All workflows') l = l.filter((r) => r.workflow === wf);
     if (search) l = l.filter((r) => (r.id + ' ' + r.title + ' ' + r.workflow).toLowerCase().includes(search.toLowerCase()));
-    if (tab === 'inbox' && quick !== 'All') l = l.filter((r) => (quick === 'Overdue' ? r.status === 'Overdue' : quick === 'Due today' ? /today/i.test(r.due) : quick === 'Matched' ? r.status === 'Matched' : !!r.amount));
+    if (tab === 'inbox' && quick !== 'All') l = l.filter((r, i) => (quick === 'New today' ? i < 2 : i >= 2)); // sample data: the first two arrived today
     return l;
   }, [tab, requests, actioned, wf, search, quick]);
 
@@ -46,7 +46,7 @@ function InboxList({ selectedId, onOpen }) {
       </div>
       <div className="content" style={{ maxWidth: 'none' }}>
         {tab === 'inbox' ? (
-          <div className="chips">{['All', 'Overdue', 'Due today', 'Matched', 'High value'].map((c) => <button key={c} type="button" className={'chip' + (quick === c ? ' on' : '')} onClick={() => setQuick(c)}>{c}</button>)}</div>
+          <div className="chips">{['All', 'New today', 'Earlier'].map((c) => <button key={c} type="button" className={'chip' + (quick === c ? ' on' : '')} onClick={() => setQuick(c)}>{c}</button>)}</div>
         ) : null}
         {list.length ? list.map((r) => (
           <ReqCard key={r.id} r={r} selected={selectedId === r.id} onClick={() => (tab === 'inbox' ? onOpen(r.id) : nav('/app/notifications'))} />

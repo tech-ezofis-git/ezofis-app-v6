@@ -282,7 +282,7 @@ function StartForm({ workflowId }) {
                   const st = rowStats(f, r);
                   const isOpen = open[r._key] !== false;
                   return (
-                    <div key={r._key} className="nr-row">
+                    <div key={r._key} className="nr-trow">
                       <div className="nr-row-h">
                         <span className="nr-row-n">{i + 1}</span>
                         <button type="button" className="nr-row-t" aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [r._key]: !isOpen }))}>

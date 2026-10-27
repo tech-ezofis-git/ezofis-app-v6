@@ -219,7 +219,14 @@ def repos_route(method, path, qs, body):
     if rm and rm.group(1) in STRUCT and method == 'GET':
         repo = rm.group(1)
         if rm.group(2) == '/security/folder': return 200, SECURITY[repo]
-        if rm.group(3): STATE.setdefault('facets', []).append(rm.group(3)); return 200, [{'value': 'Indexed', 'count': 5}, {'value': 'Approved', 'count': 1}]
+        if rm.group(3):
+            col = rm.group(3); STATE.setdefault('facets', []).append((col, qs.get('scopeFilters')))
+            if col == 'Status': return 200, [{'value': 'Indexed', 'count': 5}, {'value': 'Approved', 'count': 1}]
+            key = COL.get(col, col[0].lower() + col[1:]); scope = json.loads(qs.get('scopeFilters') or '{}')
+            vals = {}
+            for x in live_items(repo):
+                if match(x, scope) and x.get(key): vals[x[key]] = vals.get(x[key], 0) + 1
+            return 200, [{'value': k, 'count': n} for k, n in sorted(vals.items())]
         STATE.setdefault('repoDetail', []).append(repo)
         return 200, {**next(r for r in REPOS if r['id'] == repo), 'fields': REPO_FIELDS[repo]}
     if path == '/form/mf-vendor/entry/all': STATE.setdefault('masterCalls', []).append('mf-vendor'); return 200, {'status': 'ok', 'entries': VENDORS, 'meta': {'totalItems': len(VENDORS)}}
@@ -308,6 +315,7 @@ def repos_route(method, path, qs, body):
     return None
 
 def handle(method, path, qs, body):
+    if path == '/branding': STATE['calls'].append((method, path, qs, body)); return 404, {'error': 'Not found'}  # V6 has no tenant-branding GET yet
     r = repos_route(method, path, qs, body)
     if r is not None:
         STATE['calls'].append((method, path, qs, body)); return r
