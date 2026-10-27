@@ -158,4 +158,16 @@ export const mockSubWorkflowBackend = {
         .map((l) => toRow(l, db)),
     )
   },
+
+  /** All children of every request in a workflow, keyed by parent process id. */
+  getSubProcessesForWorkflow: (workflowId: Id) => {
+    const db = readDb()
+    const byParent: Record<string, SubProcessRow[]> = {}
+    for (const link of db.links) {
+      if (!same(link.mainWorkflowId, workflowId)) continue
+      const key = String(link.mainProcessId)
+      ;(byParent[key] ??= []).push(toRow(link, db))
+    }
+    return delay(byParent)
+  },
 }

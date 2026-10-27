@@ -1,10 +1,12 @@
+import { useLingui } from '@lingui/react/macro'
 import dayjs from 'dayjs'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { WorkflowOption } from '@/pages/requests/types'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+import useRowSubProcesses from '@/features/sub-workflow/hooks/useRowSubProcesses'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { isInboxRowOverdue } from '@/pages/requests/utils/inboxItemDisplay'
@@ -21,6 +23,7 @@ import {
 } from './columns/useDynamicColumns'
 import GenericStagePill from './GenericStagePill'
 import HoverExpandableText from './HoverExpandableText'
+import SubProcessRows from './sub-workflow/SubProcessRows'
 
 // Matches the "Xh Ym ago" granularity already used in the request-detail
 // History panel, instead of dayjs's coarser "8 hours ago".
@@ -64,6 +67,10 @@ interface Props {
 // fields are shown and how they're formatted — nothing here is
 // hardcoded to a specific workflow's field names.
 const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
+  const { t } = useLingui()
+  // Child requests (sub-workflow), expandable under the card.
+  const subProcesses = useRowSubProcesses(workflow?.id, row)
+  const [showSubProcesses, setShowSubProcesses] = useState(false)
   const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
   const isSidebarOpen = isPlaygroundOpen || isAskAIOpen
@@ -290,6 +297,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
   }
 
   return (
+    <div className='flex w-full flex-col'>
     <div
       className='group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-gray-3 bg-surface p-3.5 transition-all hover:border-primary-4 hover:shadow-sm'
       onClick={() => onRowClick(row, 'Overview')}
@@ -335,6 +343,28 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
             isTerminal={isTerminal}
             previousLabel={previousLabel}
           />
+          {subProcesses.length > 0 ? (
+            <button
+              aria-expanded={showSubProcesses}
+              className='inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-primary-2 px-2 py-0.5 text-[11px] font-semibold text-primary-11 transition-all duration-200 hover:bg-primary-3 active:scale-95'
+              title={t`Show sub-processes`}
+              type='button'
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowSubProcesses((open) => !open)
+              }}
+            >
+              <Icon className='size-3' name='tabler:sitemap' />
+              {subProcesses.length}
+              <Icon
+                name='tabler:chevron-down'
+                className={cn(
+                  'size-3 transition-transform duration-200',
+                  showSubProcesses && 'rotate-180',
+                )}
+              />
+            </button>
+          ) : null}
           {/* Due date before today (same rule as the Overdue filter). */}
           {!isTerminal && isInboxRowOverdue(row) ? (
             <span className='inline-flex shrink-0 items-center gap-1 rounded-md border border-red-3 bg-red-1 px-2 py-0.5 text-[11px] font-semibold text-red-11'>
@@ -464,6 +494,8 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
         className='size-4 shrink-0 text-gray-6 transition-colors group-hover:text-gray-9'
         name='tabler:chevron-right'
       />
+    </div>
+    {showSubProcesses && <SubProcessRows rows={subProcesses} />}
     </div>
   )
 }
