@@ -2121,7 +2121,7 @@ export function DocumentDetailsView({
   if (error) {
     return (
       <div className='p-6'>
-        {onBack ? (
+        {onBack && !isGuestShare ? (
           <Button
             className='mb-4 h-8 border-transparent px-3 text-[13px] shadow-none'
             onClick={onBack}

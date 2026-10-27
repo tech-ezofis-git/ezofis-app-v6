@@ -1,5 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import LeaveGuardDialog from '@/components/common/LeaveGuardDialog'
+import useIsGuestShare from '@/hooks/useIsGuestShare'
 import authUserStore from '@/stores/authUserStore'
 import { isPermissionVisible } from '@/utils/sessionPermissions'
 import type { Menus } from '../../types'
@@ -10,6 +11,8 @@ const Sidebar = () => {
   const { t } = useLingui()
   const session = authUserStore((state) => state.session)
   const sessionPermissions = session?.permissionKeys
+  // Shared-link sessions: the logo rail only, no navigation.
+  const isGuestShare = useIsGuestShare()
 
   const menus: Menus = [
     {
@@ -73,6 +76,8 @@ const Sidebar = () => {
     sessionPermissions,
   })
 
+  if (isGuestShare) return <SidebarSmall menus={[]} logoOnly />
+
   return (
     <>
       <SidebarSmall menus={filteredMenu} />
@@ -81,7 +86,6 @@ const Sidebar = () => {
     </>
   )
 }
-
 
 Sidebar.displayName = 'Sidebar'
 export default Sidebar
