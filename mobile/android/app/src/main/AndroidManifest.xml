@@ -24,6 +24,22 @@
 
         </activity>
 
+        <!-- Microsoft sign-in (MSAL) redirect: msauth://com.ezofis.mobile/<signature hash of the signing key>.
+             The path is the base64 SHA-1 of the DEBUG key; a release key needs its own hash here and in Azure. -->
+        <activity
+            android:name="com.microsoft.identity.client.BrowserTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="msauth"
+                    android:host="com.ezofis.mobile"
+                    android:path="/NNnZgQ9Ckk0W1wpT4DQIj/Kq1Ns=" />
+            </intent-filter>
+        </activity>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

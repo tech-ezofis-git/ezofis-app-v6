@@ -44,6 +44,8 @@ dependencies {
     implementation "androidx.credentials:credentials:1.3.0"
     implementation "androidx.credentials:credentials-play-services-auth:1.3.0"
     implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
+    // Microsoft (Office 365 / Entra ID) sign-in — config in res/raw/msal_config.json
+    implementation "com.microsoft.identity.client:msal:8.6.0"
 }
 
 apply from: 'capacitor.build.gradle'

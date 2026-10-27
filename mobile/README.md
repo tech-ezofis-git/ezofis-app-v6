@@ -118,15 +118,19 @@ The server returns `Access-Control-Allow-Origin: *` but rejects the CORS preflig
 - Browser preview: calls are blocked; use "Explore with sample data", or allow the preflight on the server.
 
 ### Google and Microsoft sign-in
-Google is implemented natively for Android in `android/app/src/main/java/com/ezofis/mobile/EzofisSocialAuthPlugin.java` (Credential Manager, "Sign in with Google"), registered in `MainActivity.java`, with dependencies in `android/app/build.gradle`. The web layer calls it from `src/social.js`. Microsoft (MSAL) and iOS are not wired yet.
+Google is implemented natively for Android in `android/app/src/main/java/com/ezofis/mobile/EzofisSocialAuthPlugin.java` (Credential Manager, "Sign in with Google"), registered in `MainActivity.java`, with dependencies in `android/app/build.gradle`. The web layer calls it from `src/social.js`. Microsoft (Office 365 / Entra ID work accounts) uses MSAL 8.6 in the same plugin. iOS is not wired yet. MSAL needs Android 7.0+ (`minSdkVersion` 24 in `android/variables.gradle`).
 
-To make Google sign-in work (all in ONE Google Cloud project):
-1. **Android OAuth client** whose package name and SHA-1 match the APK you install:
-   - this project's package is `com.ezofis.mobile` (`capacitor.config.json` → `appId`, `android/app/build.gradle` → `applicationId`);
-   - SHA-1 is the fingerprint of the keystore that signs the build (`keytool -list -v -keystore <your.keystore>`); debug builds from Android Studio use `~/.android/debug.keystore`.
-   The existing client "EMP Portal Mobile APP" (project 139628703331) is for `com.ezofis.teams.hub.ezofis_mobile_hub` with SHA-1 `E3:9E:88:…:51:42`. Either add a new Android client for `com.ezofis.mobile` + your SHA-1, or change this app's package to that one and sign with that keystore (it would then replace that app on devices).
-2. **Web OAuth client** in the same project → put its id in `android/app/src/main/res/values/strings.xml` as `google_web_client_id`. (The cloud.ezofis.com web client `154003149422-…` is in a different project and won't work with the 139628703331 Android client.)
-3. Build in Android Studio and install on a device with Google Play services.
+Google sign-in (verified on a device with the debug key), all in Google Cloud project 154003149422:
+1. **Android OAuth client** for package `com.ezofis.mobile` + the SHA-1 of the signing key. Debug key (`~/.android/debug.keystore`): `34:D9:D9:81:0F:42:92:4D:16:D7:0A:53:E0:34:08:8F:F2:AA:D4:DB`.
+2. **Web OAuth client** in the same project → its id is `google_web_client_id` in `android/app/src/main/res/values/strings.xml` (the cloud.ezofis.com web client).
+3. Install on a device with Google Play services.
+
+Microsoft sign-in (verified on a device with the debug key), Azure app registration "EZOFIS APP":
+1. **Android platform** with package `com.ezofis.mobile` and signature hash `NNnZgQ9Ckk0W1wpT4DQIj/Kq1Ns=` (base64 of the debug SHA-1).
+2. Its Application (client) id and redirect URI are in `android/app/src/main/res/raw/msal_config.json` (audience: work accounts in any org). The same hash is the `BrowserTabActivity` path in `AndroidManifest.xml`.
+3. Some tenants need an admin to consent to "EZOFIS APP" on first sign-in.
+
+**Release builds** are signed with a different key: add its SHA-1 as another Android client in Google Cloud, and its signature hash as another Android platform in Azure (then update `msal_config.json` and the manifest path).
 
 **Security:** per the API doc, `POST /auth/social/login` does not yet verify a Google/Microsoft token. Do not ship social sign-in until the backend verifies the provider ID token. The app never lets a user type the email for social sign-in; it only sends the email returned by the provider SDK.
 
