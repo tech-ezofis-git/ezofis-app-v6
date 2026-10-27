@@ -29,7 +29,7 @@ npx cap sync ios       # resolves Swift packages / CocoaPods on the Mac
 npx cap open ios       # set your Team under Signing & Capabilities, then Run
 ```
 
-## Test APK (v0.4.7)
+## Test APK (v0.4.8)
 
 The test APK was assembled without the Android SDK by `apk-shell/build_apk.py`. It's a minimal WebView wrapper that loads the single-file build (`SINGLE=1 npx vite build` → `dist-single/index.html`). `apk-shell/sign_v2.py` signs it with a throwaway test key. The key is created in `apk-shell/` on the first run and is git-ignored, so it is never committed:
 

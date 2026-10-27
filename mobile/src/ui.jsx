@@ -64,7 +64,8 @@ export const useSplit = () => useMedia('(min-width: 960px)');
 
 export function TopBar({ title, sub, back, right, onBack, tone = 'surface' }) {
   const nav = useNavigate();
-  const goBack = onBack || (() => (typeof back === 'string' ? nav(back) : nav(-1)));
+  // back="/path" goes there; back (true) goes to the previous screen, or Home when the app was opened on this one
+  const goBack = onBack || (() => (typeof back === 'string' ? nav(back) : window.history.state && window.history.state.idx > 0 ? nav(-1) : nav('/app/home')));
   return (
     <header className={'topbar ' + tone}>
       {back !== false && back !== undefined ? (

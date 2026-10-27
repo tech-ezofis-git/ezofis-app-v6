@@ -14,7 +14,7 @@ tests/e2e/run_all.sh              # mock end-to-end checks (Playwright + Python)
 python3 apk-shell/build_apk.py dist-single/index.html apk-shell/ic_launcher.png /tmp/u.apk && \
 python3 apk-shell/sign_v2.py /tmp/u.apk EZOFIS-Mobile-test.apk apk-shell     # SDK-free test APK
 ```
-Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 22 / 0.4.7.
+Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 23 / 0.4.8.
 
 ## Code map
 - `src/api.js`: sign-in (`loggedFrom: "MOBILE"`, 2FA, tenants), session storage, `authed()` (Bearer + `X-Tenant-Id`). A 401 dispatches `SESSION_EXPIRED`, which sends the user back to login.
@@ -33,6 +33,7 @@ Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py
   - `NewRequest.jsx`: new request;
   - `FileViewer.jsx` + `OfficeViewers.jsx`: in-app viewers for pdf, image, eml, msg, docx, xlsx, pptx;
   - `LiveFolders.jsx`: Folders on the repository API (repositories, tree, files, upload with OCR progress, review & export); `Folders.jsx` keeps the sample screens;
+  - `MetaForm.jsx`: repository metadata form from the field definitions (GET /repositories/{id}): typed controls, predefined / unique / master options with cascades, required, read-only, tables. Used by Edit details, Review & export and Intelligent upload;
   - `DocActions.jsx`: Share sheet, Request signatures sheet, signature status, To sign list (`/app/sign`), signing screen with signature pad (`/app/sign/:id`), intelligent upload, Shared with me;
   - `AskAiChat.jsx`: Ask EZOFIS AI chat (Repository Assistant API, `src/assistant.js`); `AskAi.jsx`: the Home Ask AI card and the sample-data sheet;
   - `More.jsx`: Notifications, Settings;

@@ -85,7 +85,7 @@ export function Settings() {
   const name = me && me.displayName ? me.displayName : session ? session.email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : USER.name;
   return (
     <div className="screen">
-      <TopBar title="Settings" back={false} right={<span />} />
+      <TopBar title="Settings" back right={<span />} />
       <div className="content">
         <div className="card p" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <span style={{ flex: 'none', width: 56, height: 56, borderRadius: 999, background: 'linear-gradient(135deg, #19C1D4, #0A7C89)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontWeight: 700, fontSize: 24 }}>{name[0]}</span>

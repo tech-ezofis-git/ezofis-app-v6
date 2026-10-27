@@ -323,7 +323,7 @@ T_REF, T_STR, T_DEC, T_HEX, T_BOOL = 0x01, 0x03, 0x10, 0x11, 0x12
 
 def manifest_xml(icon_id):
     S, I, H, B, R = T_STR, T_DEC, T_HEX, T_BOOL, T_REF
-    tree = ('manifest', [(None, 'package', S, PKG), ('a', 'versionCode', I, 22), ('a', 'versionName', S, '0.4.7')], [
+    tree = ('manifest', [(None, 'package', S, PKG), ('a', 'versionCode', I, 23), ('a', 'versionName', S, '0.4.8')], [
         ('uses-sdk', [('a', 'minSdkVersion', I, 24), ('a', 'targetSdkVersion', I, 34)], []),
         ('uses-permission', [('a', 'name', S, 'android.permission.INTERNET')], []),
         ('uses-permission', [('a', 'name', S, 'android.permission.POST_NOTIFICATIONS')], []),

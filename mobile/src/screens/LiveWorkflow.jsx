@@ -175,7 +175,7 @@ function LiveList({ selectedKey, onOpen, onFirst }) {
 
   return (
     <div className="screen">
-      <TopBar title="Workflow" back={false} tone="surface" right={<span style={{ display: 'flex' }}><IconBtn name="plus" label="New request" onClick={() => nav('/app/new')} /><IconBtn name="refresh" label="Refresh" onClick={() => setReload((x) => x + 1)} /><IconBtn name="search" label="Search requests" onClick={() => setSearch(search === null ? '' : null)} /></span>} />
+      <TopBar title="Workflow" back tone="surface" right={<span style={{ display: 'flex' }}><IconBtn name="plus" label="New request" onClick={() => nav('/app/new')} /><IconBtn name="refresh" label="Refresh" onClick={() => setReload((x) => x + 1)} /><IconBtn name="search" label="Search requests" onClick={() => setSearch(search === null ? '' : null)} /></span>} />
       <div style={{ background: 'var(--surface)', padding: '0 var(--gutter) 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {search !== null ? <input className="input" autoFocus placeholder="Search number, title, stage or file" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search requests" /> : null}
         <button type="button" className="input strong" style={{ display: 'flex', alignItems: 'center', textAlign: 'left' }} onClick={() => setWfOpen(true)}><span style={{ flex: 1 }}>{wfName}</span><Icon name="chevD" size={16} stroke={2.4} /></button>
