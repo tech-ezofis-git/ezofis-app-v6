@@ -143,13 +143,17 @@ def _repo_match(schema_obj: DatabaseSchema, table: str, repository_name: str) ->
     want = _norm(repository_name)
     if not want:
         return True
+    named = False
     for key, name in schema_obj.table_to_workflow.items():
         # repository names are also stored in table_to_workflow via repo meta discovery
         if _norm(name) != want:
             continue
+        named = True
         if _norm(key) and _norm(key) in _norm(table):
             return True
-    # Folder row source is repository.items_* — not ezfb_*_items (form tables).
+    # A named folder must use its own items_* table, not another folder's.
+    if named:
+        return False
     return is_repository_items_table(table)
 
 

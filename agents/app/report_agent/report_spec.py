@@ -92,9 +92,10 @@ _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("createdbyid", "created_by_id", "created_by", "createdby"), "CreatedById", "Created By Id"),
     (("createdat", "created_at", "created_at_utc", "createdatutc"), "CreatedAt", "Created At"),
     (("itemid", "item_id", "id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
+    (("repositoryid", "repository_id"), "repositoryId", "Repository Id"),
     (("status",), "Status", "Status"),
 )
-_ALWAYS_SELECTED_DEFAULTS = frozenset({"workflowid", "itemid", "instanceid"})
+_ALWAYS_SELECTED_DEFAULTS = frozenset({"workflowid", "itemid", "instanceid", "repositoryid"})
 _LISTING_DEFAULTS = frozenset(
     {
         "requestno",
@@ -372,7 +373,7 @@ def attach_column_palettes(
         if is_repo:
             if canonical.lower() == "repository_name" and report_type != "all_repositories":
                 continue
-            if canonical.lower() == "itemid":
+            if canonical.lower() in {"itemid", "repositoryid"}:
                 pass
             elif canonical.lower() == "status" and "status" not in live_repo_keys:
                 continue

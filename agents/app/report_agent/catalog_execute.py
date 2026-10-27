@@ -61,7 +61,16 @@ def _sla_bucket(created: Optional[date], completed: Optional[date], today: Optio
 
 
 def _col_outs(spec: ReportSpec) -> list[ReportColumnOut]:
-    return column_outs(spec)
+    columns = column_outs(spec)
+    if "repositor" not in (spec.report_type or "").lower():
+        return columns
+    have = {col.key.lower() for col in columns}
+    extra: list[ReportColumnOut] = []
+    if "itemid" not in have:
+        extra.append(ReportColumnOut(key="itemId", label="Item Id"))
+    if "repositoryid" not in have:
+        extra.append(ReportColumnOut(key="repositoryId", label="Repository Id"))
+    return columns + extra
 
 
 def fill_filename_aliases(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -73,11 +82,15 @@ def fill_filename_aliases(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             row["FileName"] = current
             row["File Name"] = current
             continue
-        for key in ("file_name", "fileName", "FileName", "IFileName", "ifilename", "ifileName"):
-            val = str(row.get(key) or "").strip()
+        for key, value in row.items():
+            compact = "".join(ch for ch in str(key).lower() if ch.isalnum())
+            if compact not in {"filename", "originalfilename", "ifilename", "documentname"}:
+                continue
+            val = str(value or "").strip()
             if val:
                 row["FileName"] = val
                 row["File Name"] = val
+                row["file_name"] = val
                 break
     return rows
 
@@ -781,6 +794,11 @@ def _shape_rows(spec: ReportSpec, rows: list[dict[str, Any]]) -> list[dict[str, 
                 elif compact in {"filename"}:
                     item["FileName"] = item[key]
                     item["File Name"] = item[key]
+        if "repositor" in (spec.report_type or "").lower():
+            for key in ("itemId", "repositoryId"):
+                value = source.get(key)
+                if value not in (None, ""):
+                    item[key] = value
         _split_user_fields_on_row(item)
         shaped.append(item)
     return shaped
@@ -1202,12 +1220,35 @@ def _collect_user_ids(rows: list[dict[str, Any]]) -> list[str]:
 
 
 def _index_user_row(row: dict[str, Any], names: dict[str, str]) -> None:
-    uid = str(_pick(row, "id", "userId", "user_id") or "").strip()
+    uid = str(_pick(row, "id", "Id", "userId", "user_id", "UserId") or "").strip()
     named = _user_display_name(row)
-    if not uid or not named:
+    if not uid or not named or _looks_like_user_id(named):
         return
     names[_compact_id(uid)] = named
     names[uid.lower()] = named
+
+
+def _stamp_resolved_user_names(item: dict[str, Any], names: dict[str, str]) -> None:
+    """Put the person name on every *By column. Leave the GUID on *ById only."""
+    for key in list(item.keys()):
+        compact = _listing_compact(str(key))
+        if compact not in _USER_NAME_COMPACT:
+            continue
+        current = str(item.get(key) or "").strip()
+        if current and not _looks_like_user_id(current):
+            continue
+        id_key = _id_key_for_name(compact)
+        raw_id = item.get(id_key) or current
+        lookup = names.get(_compact_id(raw_id)) if raw_id not in (None, "") else ""
+        if lookup:
+            item[key] = lookup
+            canon = _canonical_user_name_key(compact)
+            if canon:
+                canon_now = str(item.get(canon) or "").strip()
+                if not canon_now or _looks_like_user_id(canon_now):
+                    item[canon] = lookup
+        elif _looks_like_user_id(current):
+            item[key] = ""
 
 
 async def _sql_user_names(db: Any, user_ids: list[str]) -> dict[str, str]:
@@ -1346,8 +1387,6 @@ async def resolve_user_names(
             names.update(await _sql_user_names(db, missing))
         except Exception:
             pass
-    if not names:
-        return prepared
     out: list[dict[str, Any]] = []
     for item in prepared:
         for name_key, id_key in _USER_NAME_ID_PAIRS:
@@ -1363,6 +1402,7 @@ async def resolve_user_names(
             lookup = names.get(_compact_id(item.get(id_key) or uid))
             if lookup:
                 item[name_key] = lookup
+        _stamp_resolved_user_names(item, names)
         out.append(item)
     return out
 
@@ -1545,6 +1585,7 @@ def _copy_repository_fields(row: dict[str, Any], repo_row: dict[str, Any], spec:
         "CreatedAt": repo_row.get("CreatedAt"),
         "Status": repo_row.get("Status"),
         "itemId": repo_row.get("itemId"),
+        "repositoryId": repo_row.get("repositoryId"),
     }
     for key, value in payload.items():
         _assign_listing_value(row, key, value)
@@ -1619,16 +1660,26 @@ async def attach_listing_fields_to_form_rows(
 
 
 async def _sql_repository_records(
-    db: Any, *, repository_id: str, repository_name: str
+    db: Any,
+    *,
+    repository_id: str,
+    repository_name: str,
+    items_table: str = "",
 ) -> list[dict[str, Any]]:
     """Tenant items_* table when EZOFIS /repositories/{id}/items returns nothing."""
     compact = _compact_id(repository_id)
-    if db is None or not compact:
+    named = (items_table or "").strip()
+    if "." in named:
+        named = named.split(".")[-1].strip('"')
+    if db is None or not (compact or named):
         return []
     table_names: list[str] = []
+    if named:
+        table_names.append(named)
     if len(compact) >= 8:
         table_names.extend((f"items_{compact[:8]}", f"Items_{compact[:8]}"))
-    table_names.append(f"items_{compact}")
+    if compact:
+        table_names.append(f"items_{compact}")
     located = None
     try:
         located = await find_table(
@@ -1693,6 +1744,7 @@ async def _sql_repository_records(
             fname = ""
         record = {
             "itemId": row_get(row, "item_id"),
+            "repositoryId": repository_id,
             "Repository_Name": repo_name,
             "Repository": repo_name,
             "FileName": fname,
@@ -1791,6 +1843,7 @@ async def _repository_item_records(
             fname = _pick_file_name(row)
             record = {
                 "itemId": _pick(row, "itemId", "item_id", "id", "Id"),
+                "repositoryId": repo_id,
                 "Repository_Name": repo_name,
                 "Repository": repo_name,
                 "FileName": fname,
@@ -1827,12 +1880,65 @@ async def _repository_item_records(
         if isinstance(batch, Exception):
             continue
         records.extend(batch)
+    if not records and db is not None and fallback_name:
+        try:
+            records = await _sql_repository_by_name(db, fallback_name)
+        except Exception:
+            records = records or []
     if fallback_name:
         for row in records:
             if not str(row.get("Repository_Name") or "").strip():
                 row["Repository_Name"] = fallback_name
                 row["Repository"] = fallback_name
     return await resolve_user_names(ezofis, records, tenant_id=tenant_id, db=db)
+
+
+async def _sql_repository_by_name(db: Any, repository_name: str) -> list[dict[str, Any]]:
+    """Read folder rows from ItemsTableName when the EZOFIS item list is empty."""
+    want = (repository_name or "").strip()
+    if db is None or not want:
+        return []
+    located = await find_table(
+        db,
+        ("Repositories", "repositories", "wrepository"),
+        prefer_schemas=("repository", "dbo", "public"),
+    )
+    if located is None:
+        return []
+    schema, table = located
+    by_lower, _ = await fetch_columns(db, schema, table)
+    id_col = _sql_col(by_lower, "id")
+    name_col = _sql_col(by_lower, "name")
+    items_col = _sql_col(by_lower, "itemstablename", "items_table_name", "items_table")
+    if not name_col:
+        return []
+    select = [f"CAST({quote_ident(name_col)} AS text) AS name"]
+    if id_col:
+        select.insert(0, f"CAST({quote_ident(id_col)} AS text) AS id")
+    if items_col:
+        select.append(f"CAST({quote_ident(items_col)} AS text) AS items_table")
+    sql = (
+        f"SELECT {', '.join(select)} FROM {qualified(schema, table)} "
+        f"WHERE lower(CAST({quote_ident(name_col)} AS text)) = lower($1)"
+    )
+    try:
+        found = await db.fetch(sql, want)
+    except Exception:
+        return []
+    records: list[dict[str, Any]] = []
+    for row in found or []:
+        repo_id = str(row_get(row, "id") or "")
+        repo_name = str(row_get(row, "name") or want)
+        items_table = str(row_get(row, "items_table") or "")
+        records.extend(
+            await _sql_repository_records(
+                db,
+                repository_id=repo_id,
+                repository_name=repo_name,
+                items_table=items_table,
+            )
+        )
+    return records
 
 
 async def _repository_rows(

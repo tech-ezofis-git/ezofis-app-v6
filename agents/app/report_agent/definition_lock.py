@@ -678,12 +678,8 @@ def _should_relocate(
         return False
     preferred_table = (preferred.table or "").lower()
     if "repositor" in str(report_type or "").lower() and is_repository_items_table(preferred_table):
-        if all(
-            str(s.get("table") or "").lower().startswith("ezfb_")
-            or is_catalog_table(str(s.get("table") or ""))
-            for s in sources_out
-        ):
-            return True
+        # Folder file_name lives on repository.items_*, not on the workflow form table.
+        return True
     if any(is_fact_table(str(s.get("table") or "")) for s in sources_out):
         return False
     return all(is_catalog_table(str(s.get("table") or "")) for s in sources_out)
@@ -791,10 +787,11 @@ def definition_from_table(
         real = _match_live_column(entry, leaf) or entry.columns.get(leaf)
         if not real or real.lower() in seen:
             continue
+        key = hint.rsplit(".", 1)[-1] if "." in hint else hint
         columns.append(
             {
-                "key": real,
-                "label": real.replace("_", " "),
+                "key": key,
+                "label": key.replace("_", " "),
                 "source": f"{alias}.{real}",
                 "aggregate": "none",
             }

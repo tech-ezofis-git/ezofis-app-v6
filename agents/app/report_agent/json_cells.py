@@ -1,4 +1,4 @@
-"""Keep nested form grids (PO / invoice line items) as JSON for the Console table."""
+"""Return nested form grids (PO / invoice line items) as JSON arrays."""
 from __future__ import annotations
 
 import ast
@@ -150,10 +150,10 @@ def _looks_like_form_grid(value: Any) -> bool:
 
 
 def structured_cell(value: Any, key: str = "") -> Any:
-    """Return nested grids as a JSON string so Console parseJsonValue can table them.
+    """Return PO / invoice line grids as a JSON array, not a quoted string.
 
-    Native JSON arrays become comma-separated once C# or JS stringifies them.
-    A string that starts with `[` / `{` survives that path and expands as a table.
+    A string that starts with `[` is one text cell on the report page. An array
+    of objects is what the page renders as a table.
     """
     if value in (None, ""):
         return value
@@ -161,9 +161,9 @@ def structured_cell(value: Any, key: str = "") -> Any:
     if is_line_item_key(key) or _looks_like_form_grid(value):
         rows = _line_item_rows(value)
         if rows:
-            return json.dumps(rows, default=str)
+            return rows
     if isinstance(parsed, (list, dict)):
-        return json.dumps(parsed, default=str)
+        return parsed
     return value
 
 

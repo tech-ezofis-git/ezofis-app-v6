@@ -14,31 +14,26 @@ _PO_LINE_JSON = (
 
 def test_po_line_item_cell_is_json_array_not_comma_separated():
     cell = structured_cell(_PO_LINE_JSON, key="PO_Line_Item")
-    assert isinstance(cell, str)
-    assert cell.startswith("[")
-    rows = json.loads(cell)
-    assert isinstance(rows, list)
-    assert rows[0]["Description"] == "Network Edge Router"
-    assert rows[0]["Quantity"] == "2"
-    assert rows[1]["Amount"] == "900"
-    assert ",".join(row["Description"] for row in rows) != cell
+    assert isinstance(cell, list)
+    assert cell[0]["Description"] == "Network Edge Router"
+    assert cell[0]["Quantity"] == "2"
+    assert cell[1]["Amount"] == "900"
 
 
 def test_joined_json_objects_are_wrapped_back_into_an_array():
     joined = _PO_LINE_JSON.strip()[1:-1]
     cell = structured_cell(joined, key="Invoice_Line_Item")
-    rows = json.loads(cell)
-    assert len(rows) == 2
-    assert rows[1]["Description"] == "Managed Network Switch"
+    assert isinstance(cell, list)
+    assert len(cell) == 2
+    assert cell[1]["Description"] == "Managed Network Switch"
 
 
-def test_native_list_of_dicts_is_json_string():
+def test_native_list_of_dicts_is_json_array():
     cell = structured_cell(
         [{"Description": "Widget", "Quantity": 1, "Amount": 10}],
         key="Line Item",
     )
-    rows = json.loads(cell)
-    assert rows == [{"Description": "Widget", "Quantity": 1, "Amount": 10}]
+    assert cell == [{"Description": "Widget", "Quantity": 1, "Amount": 10}]
 
 
 def test_finish_structured_cells_rewrites_po_and_invoice_columns():
@@ -51,8 +46,10 @@ def test_finish_structured_cells_rewrites_po_and_invoice_columns():
             }
         ]
     )
-    po = json.loads(rows[0]["PO_Line_Item"])
-    invoice = json.loads(rows[0]["Invoice_Line_Item"])
+    po = rows[0]["PO_Line_Item"]
+    invoice = rows[0]["Invoice_Line_Item"]
+    assert isinstance(po, list)
+    assert isinstance(invoice, list)
     assert po[0]["Description"] == "Network Edge Router"
     assert invoice[1]["Description"] == "Managed Network Switch"
     assert rows[0]["Supplier"] == "Acme"
@@ -61,8 +58,8 @@ def test_finish_structured_cells_rewrites_po_and_invoice_columns():
 def test_python_repr_list_is_recovered_as_json():
     raw = str(json.loads(_PO_LINE_JSON))
     cell = structured_cell(raw, key="PO Line Item")
-    rows = json.loads(cell)
-    assert rows[0]["Description"] == "Network Edge Router"
+    assert isinstance(cell, list)
+    assert cell[0]["Description"] == "Network Edge Router"
 
 
 def test_plain_text_cells_stay_plain_text():
