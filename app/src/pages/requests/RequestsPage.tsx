@@ -16,7 +16,9 @@ import workflowsApiV6, {
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import PageEmptyState from '@/components/common/PageEmptyState'
+import { queryClient } from '@/lib/tanstack-query/queryClient'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { invalidateRequestLists } from '@/pages/requests/hooks/useAllWorkflowsInbox'
 import useAuthUserStore from '@/stores/authUserStore'
 import type {
   InboxItem,
@@ -592,10 +594,18 @@ const RequestsPage = () => {
     [handleWorkflowSelect],
   )
 
+  const refreshRequestListsAfterAction = useCallback(
+    () => invalidateRequestLists(queryClient),
+    [],
+  )
+
   // A request from All Inbox opens straight away (its own workflow is loaded
   // into the store for it); Back returns to All Inbox and the store's
   // previous workflow is put back.
   const inlineOverview = useInlineRequestOverview({
+    // An action (approve, reject, submit…) closed the request: show the
+    // All Workflows inbox's fresh data, not its cached list.
+    onClosedByAction: refreshRequestListsAfterAction,
     onError: () =>
       showToast({
         message: t`Couldn't open this request. Try again.`,
@@ -2066,13 +2076,7 @@ const RequestsPage = () => {
               activeTab={activeTab}
               allWorkflows={allWorkflow}
               countsRefreshing={isRefreshingCounts || isFetching}
-              exceptionsCount={inboxResult?.exceptionsCount}
               isConnectingWatchEmail={isConnectingWatchEmail}
-              exceptionsCount={
-                activeTab === 'Inbox' || activeTab === 'Exceptions'
-                  ? inboxResult?.exceptionsCount
-                  : (exceptionsCountRef.current ?? undefined)
-              }
               isLoading={isLoading}
               metaData={metaData}
               stageCounts={stageTabCounts}
@@ -2081,6 +2085,11 @@ const RequestsPage = () => {
               workflow={workflow}
               connectedWatchEmail={
                 canShowWatchEmail ? connectedWatchEmail : null
+              }
+              exceptionsCount={
+                activeTab === 'Inbox' || activeTab === 'Exceptions'
+                  ? inboxResult?.exceptionsCount
+                  : (exceptionsCountRef.current ?? undefined)
               }
               hideListTabs={
                 viewMode === 'kanban' || workflow?.id === 'procurement'
