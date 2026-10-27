@@ -93,6 +93,17 @@ export default function AllWorkflowsInbox({
   // Only the first workflow starts open; the user opens the others.
   const [expanded, setExpanded] = useState<Set<string> | null>(null)
   const [query, setQuery] = useState('')
+  // "New today" / "Earlier" sections the user folded, as `${workflowId}:${tone}`
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const toggleSection = (key: string) =>
+    setCollapsedSections((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   const deferredQuery = useDeferredValue(query)
   const [searchExpanded, setSearchExpanded] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -136,34 +147,30 @@ export default function AllWorkflowsInbox({
 
   // "Open <short name>" uses each workflow's Short Name setting
   // (settings.general.shortName), else the first word of its name.
-const settingsQueries = useQueries({
-  queries: groups.map((group) => ({
-    queryKey: ['workflow-short-name', group.workflowId],
+  const settingsQueries = useQueries({
+    queries: groups.map((group) => ({
+      enabled: Boolean(group.workflowId),
 
-    enabled: Boolean(group.workflowId),
+      queryKey: ['workflow-short-name', group.workflowId],
 
-    staleTime: 5 * 60_000,
+      retry: 2,
 
-    retry: 2,
-    retryDelay: (attempt:any) => Math.min(1000 * 2 ** attempt, 5000),
+      staleTime: 5 * 60_000,
+      queryFn: async () => {
+        const res = await workflowsApiV6.getWorkflowById(group.workflowId)
 
-    queryFn: async () => {
-      const res = await workflowsApiV6.getWorkflowById(
-        group.workflowId
-      );
+        if (res.error || !res.data) {
+          throw new Error(res.error || 'Failed to fetch workflow')
+        }
 
-      if (res.error || !res.data) {
-        throw new Error(
-          res.error || 'Failed to fetch workflow'
-        );
-      }
+        const general = extractWorkflowGeneral(res.data)
 
-      const general = extractWorkflowGeneral(res.data);
+        return String(general?.shortName ?? '').trim()
+      },
 
-      return String(general?.shortName ?? '').trim();
-    },
-  })),
-});
+      retryDelay: (attempt: any) => Math.min(1000 * 2 ** attempt, 5000),
+    })),
+  })
   const shortNameFor = (group: AllWorkflowsInboxGroup, index: number) =>
     settingsQueries[index]?.data ||
     getDefaultShortName(group.workflowName) ||
@@ -520,18 +527,35 @@ const settingsQueries = useQueries({
                             tone: 'earlier',
                           },
                         ] as const
-                      ).map(({ icon, list, title, tone }) =>
-                        list.length ? (
+                      ).map(({ icon, list, title, tone }) => {
+                        if (!list.length) return null
+                        const sectionKey = `${group.workflowId}:${tone}`
+                        const sectionOpen = !collapsedSections.has(sectionKey)
+                        return (
                           <div
                             key={tone}
                             className={cn(
-                              'rounded-lg border-l-4 p-2 pt-0',
+                              'overflow-hidden rounded-lg border-l-2 px-2 pb-2',
+                              !sectionOpen && 'pb-0',
                               tone === 'new'
-                                ? 'border-primary-8 bg-primary-1'
-                                : 'border-orange-8 bg-orange-1',
+                                ? 'border-primary-5 bg-primary-1/50'
+                                : 'border-orange-5 bg-orange-1/50',
                             )}
                           >
-                            <div className='flex items-center gap-2 px-1 py-2'>
+                            <button
+                              aria-expanded={sectionOpen}
+                              type='button'
+                              className={cn(
+                                // Bleeds over the section padding so the hover
+                                // fills the full width.
+                                'group/section -mx-2 flex w-[calc(100%+1rem)] items-center gap-2 px-3 py-2 text-left transition-colors duration-200',
+                                sectionOpen && 'mb-1',
+                                tone === 'new'
+                                  ? 'hover:bg-primary-2 active:bg-primary-3'
+                                  : 'hover:bg-orange-2 active:bg-orange-3',
+                              )}
+                              onClick={() => toggleSection(sectionKey)}
+                            >
                               <span
                                 className={cn(
                                   'flex size-6 items-center justify-center rounded-md',
@@ -562,33 +586,44 @@ const settingsQueries = useQueries({
                               >
                                 {list.length}
                               </span>
-                            </div>
-                            <div className='flex flex-col gap-2'>
-                              {list.map(({ raw, row }) => (
-                                <GridRowItem
-                                  activeTab='Inbox'
-                                  hasSelectionActive={false}
-                                  index={rowIndexOf(raw)}
-                                  isSelected={false}
-                                  row={row}
-                                  selectable={false}
-                                  toggleRowSelection={noop}
-                                  workflow={detail}
-                                  key={String(
-                                    raw.transactionId ||
-                                      raw.workflowInstanceId ||
-                                      raw.processId ||
-                                      raw.id,
-                                  )}
-                                  onRowClick={() =>
-                                    onOpenRequest(group.workflowId, raw)
-                                  }
-                                />
-                              ))}
-                            </div>
+                              <Icon
+                                name='tabler:chevron-down'
+                                className={cn(
+                                  'ml-auto size-4 shrink-0 text-gray-9 transition-transform duration-300 ease-out group-hover/section:text-gray-12',
+                                  sectionOpen
+                                    ? 'group-hover/section:translate-y-0.5'
+                                    : '-rotate-90 group-hover/section:translate-x-0.5',
+                                )}
+                              />
+                            </button>
+                            {sectionOpen ? (
+                              <div className='animate-in fade-in flex flex-col gap-2 duration-200'>
+                                {list.map(({ raw, row }) => (
+                                  <GridRowItem
+                                    activeTab='Inbox'
+                                    hasSelectionActive={false}
+                                    index={rowIndexOf(raw)}
+                                    isSelected={false}
+                                    row={row}
+                                    selectable={false}
+                                    toggleRowSelection={noop}
+                                    workflow={detail}
+                                    key={String(
+                                      raw.transactionId ||
+                                        raw.workflowInstanceId ||
+                                        raw.processId ||
+                                        raw.id,
+                                    )}
+                                    onRowClick={() =>
+                                      onOpenRequest(group.workflowId, raw)
+                                    }
+                                  />
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
-                        ) : null,
-                      )}
+                        )
+                      })}
                       {!needle && group.items.length < group.totalCount ? (
                         <div className='mt-2 flex justify-end'>
                           <button

@@ -882,11 +882,12 @@ export function DocumentDetailsView({
     }
 
     setMetadataSaveError('')
-    const { error: saveError } = await updateRepositoryItemMetadata({
-      itemId: id,
-      metadata: changed,
-      repositoryId,
-    })
+    const { data: saved, error: saveError } =
+      await updateRepositoryItemMetadata({
+        itemId: id,
+        metadata: changed,
+        repositoryId,
+      })
 
     if (saveError) {
       const message = toUiErrorMessage(saveError, t`Failed to update metadata`)
@@ -906,8 +907,13 @@ export function DocumentDetailsView({
     setSavedMetadataValues((previous) => ({ ...previous, ...changed }))
     setIsEditingMetadata(false)
     setMetadataEditSource(null)
+    // The edit is a new Timeline entry — reload it.
+    setTimelineLoaded(false)
     showToast({
-      message: t`Metadata updated successfully.`,
+      message:
+        saved && saved.changes?.length === 0
+          ? t`No changes to save.`
+          : t`Metadata updated successfully.`,
       variant: 'success',
     })
     onMetadataSaved?.()
