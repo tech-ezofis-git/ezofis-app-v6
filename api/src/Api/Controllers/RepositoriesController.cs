@@ -130,11 +130,26 @@ public sealed class RepositoriesController : ControllerBase
     public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
         var tenantId = RequireTenantId();
-        var list = await _provisioner.ListRepositoriesAsync(tenantId, cancellationToken, GetUserId());
-        if (IsCurrentUserAdmin())
-            return Ok(list);
-
         var userId = GetUserId();
+        var list = await _provisioner.ListRepositoriesAsync(tenantId, cancellationToken, userId);
+
+        // TenantAdmin-created repositories are hidden from non-TenantAdmins by the list above, unless
+        // this user was explicitly given access (folder/document security or a share).
+        var grantedHidden = new List<RepositorySummaryDto>();
+        if (userId is Guid requesterId)
+        {
+            var visibleIds = list.Select(r => r.Id).ToHashSet();
+            var all = await _provisioner.ListRepositoriesAsync(tenantId, cancellationToken);
+            foreach (var repo in all.Where(r => !visibleIds.Contains(r.Id)))
+            {
+                if (await _security.HasExplicitAccessAsync(repo.Id, tenantId, requesterId, cancellationToken))
+                    grantedHidden.Add(repo);
+            }
+        }
+
+        if (IsCurrentUserAdmin())
+            return Ok(MergeRepositoryLists(list, grantedHidden));
+
         if (userId is null)
             return Ok(Array.Empty<RepositorySummaryDto>());
 
@@ -145,7 +160,7 @@ public sealed class RepositoriesController : ControllerBase
             isAdmin: false,
             cancellationToken);
         var allowed = allowedIds.ToHashSet();
-        return Ok(list.Where(r => allowed.Contains(r.Id)).ToList());
+        return Ok(MergeRepositoryLists(list.Where(r => allowed.Contains(r.Id)), grantedHidden));
     }
 
     [HttpGet("/api/repositories/{id:guid}")]
@@ -1299,6 +1314,17 @@ public sealed class RepositoriesController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    /// <summary>Same order as ListRepositoriesAsync: active first, then by name.</summary>
+    private static List<RepositorySummaryDto> MergeRepositoryLists(
+        IEnumerable<RepositorySummaryDto> visible,
+        IReadOnlyList<RepositorySummaryDto> granted) =>
+        granted.Count == 0
+            ? visible.ToList()
+            : visible.Concat(granted)
+                .OrderBy(r => !string.Equals(r.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .ThenBy(r => r.Name, StringComparer.Ordinal)
+                .ToList();
 
     private static IReadOnlyDictionary<string, string> ParseMetadataBody(JsonElement body)
     {

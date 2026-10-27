@@ -2,7 +2,7 @@ using System.Net.Mail;
 
 namespace SaaSApp.Catalog;
 
-/// <summary>From address for product mail. OTP stays "EZOFIS". User notifications use "Display Name (via Ezofis)".</summary>
+/// <summary>From address for product mail. OTP stays "EZOFIS". User notifications use "Display Name (via EZOFIS)".</summary>
 public static class EzofisMailAddress
 {
     public static MailAddress System(string emailId) =>
@@ -17,7 +17,7 @@ public static class EzofisMailAddress
             return System(emailId);
         }
 
-        return new MailAddress(emailId.Trim(), $"{name} (via Ezofis)");
+        return new MailAddress(emailId.Trim(), $"{name} (via EZOFIS)");
     }
 
     private static string? StripViaSuffix(string? userName)

@@ -675,6 +675,31 @@ public sealed class RepositorySecurityService : IRepositorySecurityService
         return false;
     }
 
+    public async Task<bool> HasExplicitAccessAsync(
+        Guid repositoryId,
+        Guid tenantId,
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (userId == Guid.Empty)
+            return false;
+
+        await EnsureSchemaAsync(cancellationToken);
+
+        if (await GetShareRecipientAccessAsync(repositoryId, userId, cancellationToken) != null)
+            return true;
+
+        var principalIds = await ResolvePrincipalIdsAsync(tenantId, userId, cancellationToken);
+        var access = await GetEffectiveFolderAccessAsync(repositoryId, principalIds, cancellationToken);
+        if (access.PoliciesConfigured && HasPermission(access.Permissions, RepositorySecurityPermissions.View))
+            return true;
+
+        var docs = await GetDocumentSecurityAsync(repositoryId, tenantId, cancellationToken);
+        return docs.Rules.Any(r =>
+            string.Equals(r.Action, RepositorySecurityActions.Grant, StringComparison.OrdinalIgnoreCase)
+            && PrincipalsMatch(r.UserIds, r.GroupIds, principalIds));
+    }
+
     public async Task<IReadOnlyList<Guid>> FilterAccessibleRepositoryIdsAsync(
         IReadOnlyList<Guid> repositoryIds,
         Guid tenantId,

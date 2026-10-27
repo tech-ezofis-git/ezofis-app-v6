@@ -155,6 +155,17 @@ public interface IRepositorySecurityService
         string permission = RepositorySecurityPermissions.View,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// True when this user was explicitly given access to the repository: a folder security policy
+    /// with View, a document security Grant rule (user or group), or a file/repository share.
+    /// Unlike <see cref="CanAccessRepositoryAsync"/>, the Admin bypass does not count.
+    /// </summary>
+    Task<bool> HasExplicitAccessAsync(
+        Guid repositoryId,
+        Guid tenantId,
+        Guid userId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Guid>> FilterAccessibleRepositoryIdsAsync(
         IReadOnlyList<Guid> repositoryIds,
         Guid tenantId,
