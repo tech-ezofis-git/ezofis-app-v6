@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import type { StageTrailItem } from '@/pages/requests/utils/workflow.utils'
 import IconButton from '@/components/base/button/IconButton'
@@ -14,6 +15,8 @@ interface Props {
   /** Master form "Remaining Budget" for the request's lookup values. */
   budget?: string | null
   commentCount?: number
+  /** Extra buttons shown before the panel icons (e.g. Initiate sub-workflow). */
+  extraActions?: ReactNode
   isSubmitDisabled?: boolean
   isSubmitting?: boolean
   /** Workflow steps (previous / current / next), shown in the header. */
@@ -32,6 +35,7 @@ const Header = ({
   badge,
   budget,
   commentCount = 0,
+  extraActions,
   isSubmitDisabled,
   isSubmitting,
   stageTrail = [],
@@ -142,6 +146,8 @@ const Header = ({
             <Icon className='size-4' name='tabler:terminal-2' />
           </button>
         </Tooltip> */}
+
+        {extraActions ? <div className='mr-1'>{extraActions}</div> : null}
 
         {onTogglePanel &&
           panelButtons.map((panel) => (

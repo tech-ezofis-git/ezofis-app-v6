@@ -9,10 +9,21 @@ import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
+import {
+  toLinkedProcessSummary,
+  useLinkSubProcess,
+  useMainProcess,
+  useSubProcesses,
+} from '@/features/sub-workflow'
+import useSubWorkflowInitiator from '@/features/sub-workflow/hooks/useSubWorkflowInitiator'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
-import { ensureNormalizedRuntimeFormJson } from '@/pages/form-builder/helpers/runtimeFieldAdapter'
+import { evaluateFormRules } from '@/pages/form-builder/helpers/ruleEngine'
+import {
+  ensureNormalizedRuntimeFormJson,
+  getEffectiveFieldLabel,
+} from '@/pages/form-builder/helpers/runtimeFieldAdapter'
 import {
   extractGenericRequestNumber,
   getFieldKeyByLabel,
@@ -49,6 +60,11 @@ import {
   stopFailedApAgentJob,
 } from '../../utils/resolveApAgentJobMessage'
 import {
+  getStageEditableFieldIds,
+  getStageHiddenFieldIds,
+  getStageReadOnlyFieldIds,
+} from '../../utils/stageFormAccess'
+import {
   extractWorkflowGeneral,
   extractWorkflowGraph,
   getActionsForActivity,
@@ -57,6 +73,14 @@ import {
   isAccountsPayableWorkflow,
   type WorkflowStageStep,
 } from '../../utils/workflow.utils'
+import InitiateSubWorkflowButton from '../sub-workflow/InitiateSubWorkflowButton'
+import ParentRequestLink from '../sub-workflow/ParentRequestLink'
+import SubWorkflowRequest from '../sub-workflow/SubWorkflowRequest'
+import {
+  getMissingMandatoryFieldsList,
+  isFieldFilled,
+  isFieldRequired,
+} from '../workflow-request/utils/fieldRendering'
 import {
   attachmentToFormFileValue,
   getFirstFileUploadField,
@@ -1235,7 +1259,7 @@ const Request = ({
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [activeAction, setActiveAction] = useState<string | null>(null)
   const [rightView, setRightView] = useState<
-    'overview' | 'history' | 'attachments' | 'comments'
+    'overview' | 'history' | 'attachments' | 'comments' | 'subProcess'
   >('overview')
   const [isEditing, setIsEditing] = useState<boolean>(false)
 
@@ -2054,6 +2078,26 @@ const Request = ({
     return String(block?.type || '').toUpperCase() === 'END'
   }, [currentActivityId, workflowGraph])
 
+  // Workflow Initiator on the current step: "Initiate - <child>" opens the
+  // child's new-request form in place of this request and links the result.
+  const subWorkflow = useSubWorkflowInitiator(
+    overviewWorkflowData || rawWorkflowData,
+    currentActivityId,
+    { enabled: !hideActions && canActOnRequest && !!currentActivityId },
+  )
+  const linkSubProcess = useLinkSubProcess()
+  const [isInitiatingSubWorkflow, setIsInitiatingSubWorkflow] = useState(false)
+  // Sub Process tab count, and the parent link when this request is a child.
+  const linkedProcessId = isGenericWorkflow ? genericInstanceId : undefined
+  const { data: subProcesses } = useSubProcesses(
+    resolvedWorkflowId,
+    linkedProcessId,
+  )
+  const { data: parentProcess } = useMainProcess(
+    resolvedWorkflowId,
+    linkedProcessId,
+  )
+
   const resolvedRequestNo = useMemo(() => {
     let raw = ''
     const titleField =
@@ -2373,8 +2417,73 @@ const Request = ({
     }
   }, [hasAgentData, activeTabValue])
 
-  const handleMoveNext = async (action: string) => {
-    setActiveAction(action)
+  // Action validation order (see CLAUDE.md "Request action validation"):
+  // 1. Form settings — the form's own required fields (field settings +
+  //    form rules), skipping fields the form or this stage hides/locks.
+  // 2. Workflow (stage) settings — checklist, document, signature, then the
+  //    stage's mandatory fields.
+  // Returns false (and toasts) on the first failure.
+  const validateBeforeAction = (): boolean => {
+    if (isGenericWorkflow && genericFormPanels.length > 0) {
+      const allFieldIds: string[] = []
+      genericFormPanels.forEach((panel: any) =>
+        (panel.fields || []).forEach((f: any) =>
+          allFieldIds.push(String(f.id)),
+        ),
+      )
+      const userId = String(authUserStore.getState().session?.id || '')
+      const stageHidden = getStageHiddenFieldIds(
+        currentBlockSettings,
+        allFieldIds,
+        userId,
+      )
+      const stageReadOnly = getStageReadOnlyFieldIds(
+        currentBlockSettings,
+        allFieldIds,
+        userId,
+      )
+      const missingFormFields = getMissingMandatoryFieldsList(
+        [],
+        genericFormPanels,
+        genericFormModel,
+      )
+      // Required fields the form locks but this stage opens for editing are
+      // skipped above (form-locked) — check those too.
+      const stageEditable = getStageEditableFieldIds(
+        currentBlockSettings,
+        userId,
+      )
+      if (stageEditable) {
+        const states = evaluateFormRules(genericFormPanels, genericFormModel)
+        genericFormPanels.forEach((panel: any) => {
+          if (panel?.id && states[panel.id]?.visible === false) return
+          ;(panel.fields || []).forEach((field: any) => {
+            const id = String(field.id)
+            const state = states[field.id]
+            if (!stageEditable.has(id) || state?.visible === false) return
+            const required = state ? state.required : isFieldRequired(field)
+            if (required && !isFieldFilled(field, genericFormModel[field.id])) {
+              missingFormFields.push({
+                id,
+                label: getEffectiveFieldLabel(field, 'Required Field'),
+              })
+            }
+          })
+        })
+      }
+      const missingFormField = missingFormFields.find(
+        (field) => !stageHidden?.has(field.id) && !stageReadOnly?.has(field.id),
+      )
+      if (missingFormField) {
+        const fieldLabel = missingFormField.label
+        showToast({
+          message: t`Please complete "${fieldLabel}" before continuing.`,
+          variant: 'info',
+        })
+        return false
+      }
+    }
+
     const checklistItems: { id: string; label: string; required: boolean }[] =
       Array.isArray(currentBlockSettings.checklistItems)
         ? currentBlockSettings.checklistItems
@@ -2383,31 +2492,28 @@ const Request = ({
       (item) => item.required && !checklistChecked[item.id],
     )
     if (missingChecklistItem) {
-      setActiveAction(null)
       showToast({
         message: t`Please complete "${missingChecklistItem.label}" before continuing.`,
         variant: 'info',
       })
-      return
+      return false
     }
     if (
       currentBlockSettings.documentRequired &&
       genericAttachments.length === 0
     ) {
-      setActiveAction(null)
       showToast({
         message: t`Please attach at least one file before continuing.`,
         variant: 'info',
       })
-      return
+      return false
     }
     if (currentBlockSettings.userSignature && !signatureConfirmed) {
-      setActiveAction(null)
       showToast({
         message: t`Please confirm your signature before continuing.`,
         variant: 'info',
       })
-      return
+      return false
     }
     const mandatoryFields: string[] = Array.isArray(
       currentBlockSettings.mandatoryFields,
@@ -2421,13 +2527,21 @@ const Request = ({
         return val === undefined || val === null || val === ''
       })
       if (missingField) {
-        setActiveAction(null)
         showToast({
           message: t`Please complete all required fields before continuing.`,
           variant: 'info',
         })
-        return
+        return false
       }
+    }
+    return true
+  }
+
+  const handleMoveNext = async (action: string) => {
+    setActiveAction(action)
+    if (!validateBeforeAction()) {
+      setActiveAction(null)
+      return
     }
 
     try {
@@ -2630,6 +2744,11 @@ const Request = ({
 
     if (action !== 'Save' && ruleActions.length > 0) {
       await handleMoveNext(action)
+      return
+    }
+
+    if (action !== 'Save' && !validateBeforeAction()) {
+      setActiveAction(null)
       return
     }
 
@@ -3041,6 +3160,59 @@ const Request = ({
     }
   }
 
+  if (isInitiatingSubWorkflow && subWorkflow.childWorkflow) {
+    const parentProcessId = genericInstanceId || selectedItem?.processId
+    return (
+      <SubWorkflowRequest
+        childWorkflow={subWorkflow.childWorkflow}
+        parent={{
+          fields: genericFormPanels,
+          model: isGenericWorkflow ? genericFormModel : formModel,
+          requestNo: resolvedRequestNo,
+          workflowName: String(rawWorkflowData?.name || ''),
+        }}
+        onClose={() => setIsInitiatingSubWorkflow(false)}
+        onCreated={async ({ processId, requestNo }) => {
+          if (!processId || !parentProcessId) return
+          try {
+            await linkSubProcess.mutateAsync([
+              {
+                mainProcessId: parentProcessId,
+                mainWorkflowId: resolvedWorkflowId,
+                subProcessId: processId,
+                subWorkflowId: subWorkflow.subWorkflowId,
+              },
+              {
+                child: toLinkedProcessSummary({
+                  processId,
+                  requestNo,
+                  workflowId: subWorkflow.subWorkflowId,
+                  workflowName: subWorkflow.childName,
+                }),
+                parent: toLinkedProcessSummary({
+                  processId: parentProcessId,
+                  requestNo: resolvedRequestNo,
+                  workflowId: resolvedWorkflowId,
+                  workflowName: rawWorkflowData?.name,
+                }),
+              },
+            ])
+            const childLabel = requestNo || subWorkflow.childName
+            showToast({
+              message: t`Linked ${childLabel} to ${resolvedRequestNo} as a sub-process.`,
+              variant: 'success',
+            })
+          } catch {
+            showToast({
+              message: t`The request was created, but it could not be linked to ${resolvedRequestNo}.`,
+              variant: 'error',
+            })
+          }
+        }}
+      />
+    )
+  }
+
   return (
     <div className='flex h-full min-h-0 w-full flex-col overflow-hidden p-0'>
       <div className='sticky top-0 z-50 bg-surface'>
@@ -3131,6 +3303,15 @@ const Request = ({
               ? genericComments.length
               : selectedItem?.commentsCount || 0
           }
+          extraActions={
+            subWorkflow.canInitiate ? (
+              <InitiateSubWorkflowButton
+                childName={subWorkflow.childName}
+                disabled={submitting}
+                onClick={() => setIsInitiatingSubWorkflow(true)}
+              />
+            ) : null
+          }
           lastActionAt={
             selectedItem?.lastActionDate ||
             selectedItem?.lastAction?.date ||
@@ -3145,6 +3326,9 @@ const Request = ({
             request?.transactionCreatedAt ||
             request?.createdAtUtc ||
             request?.createdAt
+          }
+          parentLink={
+            parentProcess ? <ParentRequestLink parent={parentProcess} /> : null
           }
           raisedAt={
             selectedItem?.transactionCreatedAt ||
@@ -3188,6 +3372,9 @@ const Request = ({
           }
           stageSince={
             selectedItem?.transactionCreatedAt || request?.transactionCreatedAt
+          }
+          subProcessCount={
+            isGenericWorkflow ? (subProcesses?.length ?? 0) : undefined
           }
           ticketUserId={
             selectedItem?.userId ||

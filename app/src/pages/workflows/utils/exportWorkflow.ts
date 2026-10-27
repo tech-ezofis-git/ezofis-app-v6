@@ -1,4 +1,8 @@
 import type { Edge, Node } from '@xyflow/react'
+import {
+  INITIATOR_BLOCK_TYPES,
+  writeInitiatorSettings,
+} from '@/features/sub-workflow/utils/blockSettings'
 import { ensureStartAndEndNodes } from '@/services/ai/workflowConfig'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
@@ -52,6 +56,7 @@ const mapToolTypeToLegacyType = (
   if (t === NODE_TOOL_TYPE.SLACK) return 'SLACK'
   if (t === NODE_TOOL_TYPE.TEAMS) return 'TEAMS'
   if (t === NODE_TOOL_TYPE.CONDITION) return 'CONDITION'
+  if (t === NODE_TOOL_TYPE.WORKFLOW_CONNECTOR) return 'WORKFLOW_CONNECTOR'
   if (
     t === NODE_TOOL_TYPE.MANUAL_USER ||
     t === 'verifier' ||
@@ -359,6 +364,26 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       delete settings.pdfTemplateJson
     }
 
+    const legacyType = mapToolTypeToLegacyType(
+      toolType,
+      data,
+      index,
+      nodes.length,
+    )
+
+    // Workflow Initiator (START / INTERNAL_ACTOR): both keys are written
+    // together and reset when off or missing a target, as V5 expects.
+    if ((INITIATOR_BLOCK_TYPES as readonly string[]).includes(legacyType)) {
+      Object.assign(
+        settings,
+        writeInitiatorSettings(
+          Boolean(settings.workflowInitiator),
+          settings.subWorkflowId,
+        ),
+      )
+      if (!settings.workflowInitiator) delete settings.subWorkflowName
+    }
+
     // Clean up internal UI fields
     settings.toolType = toolType || data.toolType
     delete settings.icon
@@ -376,7 +401,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       id: node.id,
       left: Math.round(node.position.x),
       top: Math.round(node.position.y),
-      type: mapToolTypeToLegacyType(toolType, data, index, nodes.length),
+      type: legacyType,
       width: node.measured?.width ?? 175,
       settings,
     }

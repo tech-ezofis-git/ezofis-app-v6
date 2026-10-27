@@ -5,6 +5,7 @@ import Input from '@/components/base/inputs/InputText'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { generateId } from '../utils/generateId'
 import { NODE_TOOL_TYPE, type NodeToolType } from '../utils/nodeToolTypes'
+import { WORKFLOW_CONNECTOR_NODE } from '../utils/workflowConnector'
 
 interface IntegrationItem {
   bgColor: string
@@ -61,6 +62,11 @@ const AddNodeMenu = () => {
   }, [closeAddMenu])
 
   const handleItemSelect = (item: IntegrationItem) => {
+    // A new Workflow Connector has no target yet, so flag it until one is set.
+    const initialData =
+      item.toolType === NODE_TOOL_TYPE.WORKFLOW_CONNECTOR
+        ? { subWorkflowId: '', subWorkflowName: '', warning: true }
+        : {}
     if (nodeId) {
       // Change existing node
       const nodes = getNodes()
@@ -70,6 +76,7 @@ const AddNodeMenu = () => {
             ...node,
             data: {
               ...node.data,
+              ...initialData,
               icon: item.icon,
               iconColor: item.iconColor,
               label: item.label,
@@ -107,6 +114,7 @@ const AddNodeMenu = () => {
           const newNodeId = generateId()
           const newNode = {
             data: {
+              ...initialData,
               icon: item.icon,
               iconColor: item.iconColor,
               label: item.label,
@@ -402,6 +410,17 @@ const AddNodeMenu = () => {
       iconColor: '#f97316',
       label: 'Condition',
       toolType: NODE_TOOL_TYPE.CONDITION,
+      type: 'highlight',
+    },
+    {
+      bgColor: 'bg-pink-2',
+      category: 'triggers',
+      description: WORKFLOW_CONNECTOR_NODE.subLabel,
+      icon: WORKFLOW_CONNECTOR_NODE.icon,
+      iconColor: WORKFLOW_CONNECTOR_NODE.iconColor,
+      label: 'Workflow Connector',
+      nodeType: 'action',
+      toolType: NODE_TOOL_TYPE.WORKFLOW_CONNECTOR,
       type: 'highlight',
     },
     {

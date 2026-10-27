@@ -2,6 +2,13 @@ import type { Edge, Node } from '@xyflow/react'
 import { generateId } from './generateId'
 import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
 import { poSourceToNodeData } from './poSourceConfig'
+import {
+  INITIATOR_BLOCK_TYPES,
+  isSubWorkflowIdSet,
+  readConnectorSettings,
+  readInitiatorSettings,
+} from '@/features/sub-workflow/utils/blockSettings'
+import { WORKFLOW_CONNECTOR_NODE } from './workflowConnector'
 
 function getNodeDefaults(toolType: string) {
   const typeStr = normalizeNodeToolType(toolType)
@@ -105,6 +112,8 @@ function getNodeDefaults(toolType: string) {
       iconColor: '',
       subLabel: 'Microsoft Teams integration',
     }
+  if (typeStr === NODE_TOOL_TYPE.WORKFLOW_CONNECTOR)
+    return { ...WORKFLOW_CONNECTOR_NODE }
   if (typeStr === NODE_TOOL_TYPE.CONDITION)
     return {
       icon: 'lucide:split',
@@ -193,6 +202,8 @@ function mapLegacyTypeToToolType(
       return NODE_TOOL_TYPE.TEAMS
     case 'CONDITION':
       return NODE_TOOL_TYPE.CONDITION
+    case 'WORKFLOW_CONNECTOR':
+      return NODE_TOOL_TYPE.WORKFLOW_CONNECTOR
     case 'INTERNAL_ACTOR':
       return NODE_TOOL_TYPE.MANUAL_USER
     case 'START': {
@@ -375,6 +386,38 @@ export const importWorkflow = (
     }
 
     const defaults = getNodeDefaults(toolType)
+
+    // Workflow Connector: keep the target and show it on the node card.
+    const connectorUi: Record<string, unknown> =
+      normalizeNodeToolType(toolType) === NODE_TOOL_TYPE.WORKFLOW_CONNECTOR
+        ? (() => {
+            const { subWorkflowId } = readConnectorSettings(block.settings)
+            const subWorkflowName = String(block.settings?.subWorkflowName || '')
+            return {
+              subLabel: subWorkflowName
+                ? `Starts ${subWorkflowName}`
+                : WORKFLOW_CONNECTOR_NODE.subLabel,
+              subWorkflowId,
+              subWorkflowName,
+              warning: !isSubWorkflowIdSet(subWorkflowId),
+            }
+          })()
+        : {}
+
+    // Workflow Initiator on START / INTERNAL_ACTOR blocks.
+    const initiatorUi: Record<string, unknown> = (
+      INITIATOR_BLOCK_TYPES as readonly string[]
+    ).includes(block.type)
+      ? (() => {
+          const initiator = readInitiatorSettings(block.settings)
+          return {
+            ...initiator,
+            subWorkflowName: initiator.workflowInitiator
+              ? String(block.settings?.subWorkflowName || '')
+              : '',
+          }
+        })()
+      : {}
 
     // Map AP Agent nested settings into flat UI fields used by APAgentSettingsPanel
     const apAgent = block.settings?.apAgent
@@ -654,6 +697,8 @@ export const importWorkflow = (
         warning: false,
         ...apAgentUi,
         ...quoteSourceUi,
+        ...connectorUi,
+        ...initiatorUi,
         // specifically map the legacy block properties we might need for rendering
         // but avoid polluting the new structure with unmapped settings
       },

@@ -16,6 +16,10 @@ import {
   NODE_TOOL_TYPE,
 } from '../../utils/nodeToolTypes'
 import { validateWorkflowSettings } from '../../utils/validateWorkflowSettings'
+import {
+  getWorkflowConnectorErrors,
+  getWorkflowInitiatorErrors,
+} from '../../utils/workflowConnector'
 
 const BuilderHeader = () => {
   const navigate = useNavigate()
@@ -76,6 +80,24 @@ const BuilderHeader = () => {
     }
 
     const isPublished = String(currentStatus).toLowerCase() === 'published'
+
+    // Published Workflow Connector / Initiator steps must point at another
+    // workflow.
+    if (isPublished) {
+      const selfId = workflowId === 'new' ? state.workflowId : workflowId
+      const connectorErrors = getWorkflowConnectorErrors(getNodes(), selfId)
+      const initiatorErrors = getWorkflowInitiatorErrors(getNodes(), selfId)
+      if (connectorErrors.length > 0 || initiatorErrors.length > 0) {
+        showToast({
+          message: connectorErrors[0] ?? initiatorErrors[0],
+          toastTitle: connectorErrors.length
+            ? 'Workflow Connector'
+            : 'Workflow Initiator',
+          variant: 'default',
+        })
+        return
+      }
+    }
 
     state.setWorkflowStatus(isPublished ? 'published' : 'draft')
 

@@ -63,6 +63,17 @@ TanStack Query is the fetching/caching layer (provider + query client in `src/li
 
 `src/components/base` wraps Mantine primitives into the project's design-system components (Button, Modal, Drawer, DataTable, inputs, etc.) — prefer these over raw Mantine or HTML elements, and check the matching `src/routes/stories/*.tsx` for intended usage. `src/components/common` holds higher-level shared widgets (file-upload, document-preview, filters, `AiBrandIcon`). Builder UIs use dedicated stacks: `src/features/builder` (drag-and-drop form builder: Canvas/FieldSidebar/QuestionCard + its own Zustand store) and `@xyflow/react` (React Flow) for the node-based workflow builder.
 
+### Request action validation (rule)
+
+When a user acts on a request (Approve, Reject, Submit, Forward, ...), validation **always runs form settings first, then workflow settings**:
+
+1. **Form settings**: the form's own required fields (field `settings.validation` + form rules), via `getMissingMandatoryFieldsList` in `workflow-request/utils/fieldRendering.ts`. Fields the form or the current stage's Security & Form Access hides or locks for this user are skipped.
+2. **Workflow (stage) settings**: from the current block's `settings`, in order: required checklist items → `documentRequired` → `userSignature` → stage `mandatoryFields`.
+
+Stop at the first failure and show one toast. In the request Overview this lives in `validateBeforeAction` (`src/pages/requests/components/request/Request.tsx`). Any new action path or new check must go through it and keep this order: form checks before stage checks, never the other way round.
+
+For field display (hidden/read-only) the same order applies: the form's own settings + rules give the default, then the stage is applied on top. The stage can lock more fields, and a field the stage **explicitly** lists under Editable Fields = Custom (`getStageEditableFieldIds` in `src/pages/requests/utils/stageFormAccess.ts`) is editable even when a form setting/rule locks it — that's how a form locks a field everywhere and one stage opens it up. "All fields" grants nothing explicit and never overrides the form. Calculated fields and request-number source fields always stay locked. A required field opened this way must be filled before the action (checked in `validateBeforeAction`).
+
 ### Auth & tracking
 
 MSAL (`@azure/msal-react`) and Google OAuth providers wrap the app in `main.tsx` for federated sign-in, but app-level session/token state lives in `authUserStore`, independent of the SDK's own state. PostHog (`posthog-js`) identifies the user whenever `setSession` is called; `src/lib/web-vitals` reports on load.

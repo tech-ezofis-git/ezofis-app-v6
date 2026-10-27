@@ -22,6 +22,7 @@ import SettingsSection from './common/SettingsSection'
 import ChecklistTab from './manual-user/ChecklistTab'
 import GeneralTab from './manual-user/GeneralTab'
 import SecurityTab from './manual-user/SecurityTab'
+import WorkflowInitiatorTab from './manual-user/WorkflowInitiatorTab'
 
 const PDF_TEMPLATE_PLACEHOLDER = `{
   "name": "",
@@ -349,6 +350,26 @@ export default function ManualUserSettingsPanel({
           onToggle={() => toggleSection('checklist')}
         >
           <ChecklistTab nodeData={nodeData} updateNodeData={updateNodeData} />
+        </SettingsSection>
+
+        <SettingsSection
+          icon='lucide:git-branch-plus'
+          isOpen={openSections.subWorkflow ?? Boolean(nodeData.workflowInitiator)}
+          title='Sub Workflow'
+          variant='premium'
+          onToggle={() =>
+            setOpenSections((prev) => ({
+              ...prev,
+              subWorkflow: !(
+                prev.subWorkflow ?? Boolean(nodeData.workflowInitiator)
+              ),
+            }))
+          }
+        >
+          <WorkflowInitiatorTab
+            nodeData={nodeData}
+            updateNodeData={updateNodeData}
+          />
         </SettingsSection>
 
         {getNodeToolType(nodeData) === NODE_TOOL_TYPE.MANUAL_USER && (

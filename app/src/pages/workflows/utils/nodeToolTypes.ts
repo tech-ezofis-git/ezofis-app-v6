@@ -18,6 +18,7 @@ export const NODE_TOOL_TYPE = {
   QUOTE_AGENT: 'quote_agent',
   SLACK: 'slack',
   TEAMS: 'teams',
+  WORKFLOW_CONNECTOR: 'workflow_connector',
 } as const
 
 export type NodeToolType = (typeof NODE_TOOL_TYPE)[keyof typeof NODE_TOOL_TYPE]
