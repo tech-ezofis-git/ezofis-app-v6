@@ -13,7 +13,6 @@ import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
-import HoverExpandableText from './HoverExpandableText'
 import {
   extractGenericRequestNumber,
   readPreviewChipText,
@@ -21,6 +20,7 @@ import {
   resolvePreviewFieldColumns,
 } from './columns/useDynamicColumns'
 import GenericStagePill from './GenericStagePill'
+import HoverExpandableText from './HoverExpandableText'
 
 // Matches the "Xh Ym ago" granularity already used in the request-detail
 // History panel, instead of dayjs's coarser "8 hours ago".
@@ -213,7 +213,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
     row?.actionDate ||
     startedAt
 
-  const { color, currentLabel, isTerminal, previousLabel } =
+  const { color, currentLabel, isEnd, isTerminal, previousLabel } =
     getGenericStageInfo(workflow, row)
   // Same color as the stage in the request header's stage trail.
   const stageTone = color ? STAGE_TONE[color] : undefined
@@ -279,7 +279,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
           {`JOB-${activeJobId}`}
         </span>
         {jobMessage ? (
-          <div className='ml-auto flex min-w-0 max-w-[320px] shrink items-center justify-end pr-1'>
+          <div className='ml-auto flex max-w-[320px] min-w-0 shrink items-center justify-end pr-1'>
             <span className='animate-pulse truncate text-right text-12 font-semibold text-[var(--orange-9)]'>
               {jobMessage}
             </span>
@@ -372,7 +372,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
               variant='outline-purple'
             />
             <HoverExpandableText
-              className='text-[10px] font-medium italic text-[var(--primary-9)]'
+              className='text-[10px] font-medium text-[var(--primary-9)] italic'
               expandStyle='inline'
               maxLines={2}
               normalMaxWidthClass='max-w-[180px]'
@@ -391,7 +391,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
               variant='outline-purple'
             />
             <HoverExpandableText
-              className='text-[11px] font-medium italic text-[var(--gray-11)]'
+              className='text-[11px] font-medium text-[var(--gray-11)] italic'
               expandStyle='inline'
               maxLines={2}
               normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
@@ -437,8 +437,22 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
                   : 'Time running from last action'
               }
             >
-              <span className='inline-flex items-center gap-1 rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-11 font-semibold text-orange-11'>
-                <Icon className='size-3 text-orange-9' name='tabler:clock' />
+              {/* Finished (END block) requests show their time in green */}
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-11 font-semibold',
+                  isEnd
+                    ? 'border-green-3 bg-green-1 text-green-11'
+                    : 'border-orange-3 bg-orange-1 text-orange-11',
+                )}
+              >
+                <Icon
+                  className={cn(
+                    'size-3',
+                    isEnd ? 'text-green-9' : 'text-orange-9',
+                  )}
+                  name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
+                />
                 <span>{formatRunningTime(lastActionAt)}</span>
               </span>
             </Tooltip>

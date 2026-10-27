@@ -6,7 +6,10 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import Skeleton from '@/components/base/Skeleton'
 import { extractGenericRequestNumber } from '@/pages/requests/components/columns/useDynamicColumns'
-import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
+import {
+  getGenericStageInfo,
+  isAtEndBlock,
+} from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
 import type { PortalWorkflowSummary } from '../helpers/portalWorkflows'
@@ -460,6 +463,9 @@ export default function PortalMobileHome({
               row,
             )
             const started = parseUtcDate(startedAt)
+            // A request sitting on the END block is finished — no timer
+            // A request sitting on the END block is finished — green time
+            const isEnd = isAtEndBlock(workflow, row.activityId)
             const running = lastActionAt ? formatRunningTime(lastActionAt) : ''
             return (
               <motion.button
@@ -504,22 +510,37 @@ export default function PortalMobileHome({
                       name='lucide:chevron-right'
                     />
                   </span>
-                  {currentLabel ? (
-                    <span className='flex min-w-0 items-center gap-1 text-12 text-gray-10'>
-                      <Icon
-                        className='size-3.5 shrink-0 text-gray-8'
-                        name='tabler:git-branch'
-                      />
-                      <span className='truncate'>{currentLabel}</span>
-                    </span>
-                  ) : null}
-                  {raisedBy ? (
-                    <span className='flex min-w-0 items-center gap-1 text-12 text-gray-11'>
-                      <Icon
-                        className='size-3.5 shrink-0 text-gray-8'
-                        name='tabler:user'
-                      />
-                      <span className='truncate'>{raisedBy}</span>
+                  {/* Who raised it on the left, current stage badge on the
+                      right — one row */}
+                  {raisedBy || currentLabel ? (
+                    <span className='flex min-w-0 items-center justify-between gap-2'>
+                      <span className='flex min-w-0 items-center gap-1 text-12 text-gray-11'>
+                        {raisedBy ? (
+                          <>
+                            <Icon
+                              className='size-3.5 shrink-0 text-gray-8'
+                              name='tabler:user'
+                            />
+                            <span className='truncate'>{raisedBy}</span>
+                          </>
+                        ) : null}
+                      </span>
+                      {currentLabel ? (
+                        <span
+                          className={cn(
+                            'inline-flex h-5 max-w-[50%] shrink-0 items-center gap-1 rounded-full px-2 text-11 font-semibold',
+                            isTerminal
+                              ? 'bg-green-2 text-green-11'
+                              : 'bg-primary-2 text-primary-11',
+                          )}
+                        >
+                          <Icon
+                            className='size-3 shrink-0'
+                            name='tabler:git-branch'
+                          />
+                          <span className='truncate'>{currentLabel}</span>
+                        </span>
+                      ) : null}
                     </span>
                   ) : null}
                   {started || running ? (
@@ -538,8 +559,20 @@ export default function PortalMobileHome({
                         <span />
                       )}
                       {running ? (
-                        <span className='inline-flex shrink-0 items-center gap-1 rounded-full bg-orange-2 px-2 py-0.5 text-11 font-semibold whitespace-nowrap text-orange-11'>
-                          <Icon className='size-3' name='tabler:clock' />
+                        <span
+                          className={cn(
+                            'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-11 font-semibold whitespace-nowrap',
+                            isEnd
+                              ? 'bg-green-2 text-green-11'
+                              : 'bg-orange-2 text-orange-11',
+                          )}
+                        >
+                          <Icon
+                            className='size-3'
+                            name={
+                              isEnd ? 'tabler:circle-check' : 'tabler:clock'
+                            }
+                          />
                           {running}
                         </span>
                       ) : null}

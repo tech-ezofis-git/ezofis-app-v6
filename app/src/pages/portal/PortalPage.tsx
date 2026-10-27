@@ -11,6 +11,9 @@ import PortalHome from './components/PortalHome'
 import PortalLogin from './components/PortalLogin'
 import PortalPicker from './components/PortalPicker'
 import PortalShell, { type PortalHeaderInfo } from './components/PortalShell'
+import PortalSuccessCelebration, {
+  notifyPortalSuccess,
+} from './components/PortalSuccessCelebration'
 import PortalWizard from './components/PortalWizard'
 import { applyPortalBranding } from './helpers/portalBranding'
 import {
@@ -282,6 +285,13 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
 
   const handleAuthenticated = (user: PortalAuthUser) => {
     setSession(portalId, user)
+    // Phones only — larger screens had no sign-in toast before
+    notifyPortalSuccess({
+      icon: 'tabler:user-check',
+      message: t`Signed in as ${user.displayName || user.username}.`,
+      title: t`Welcome back!`,
+      toastOnDesktop: false,
+    })
     setSelectedSubmission(null)
     setView('home')
     setSelectedWorkflowId(
@@ -537,6 +547,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
       >
         {content}
       </AnimateSlideUp>
+      <PortalSuccessCelebration />
     </PortalShell>
   )
 }

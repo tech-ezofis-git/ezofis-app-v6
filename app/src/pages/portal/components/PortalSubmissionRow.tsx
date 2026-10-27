@@ -16,6 +16,7 @@ import { buildTableMeta } from '@/pages/requests/utils/dynamicTable.utils'
 import {
   extractPreviewValues,
   getGenericStageInfo,
+  isAtEndBlock,
 } from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
@@ -158,7 +159,11 @@ export default function PortalSubmissionRow({
   const startedLabel = startedAt
     ? dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')
     : ''
-  const runningLabel = lastActionAt ? formatRunningTime(lastActionAt) : ''
+  // A request sitting on the END block is finished — no running timer
+  // A request sitting on the END block is finished — its time shows green
+  const isEnd = isAtEndBlock(workflow, row.activityId)
+  const showRunning = Boolean(lastActionAt)
+  const runningLabel = showRunning ? formatRunningTime(lastActionAt) : ''
 
   return (
     <button
@@ -189,8 +194,19 @@ export default function PortalSubmissionRow({
               {requestNo}
             </span>
             {runningLabel ? (
-              <span className='inline-flex shrink-0 items-center gap-1 text-12 font-medium whitespace-nowrap text-orange-11'>
-                <Icon className='size-3.5 text-orange-9' name='tabler:clock' />
+              <span
+                className={cn(
+                  'inline-flex shrink-0 items-center gap-1 text-12 font-medium whitespace-nowrap',
+                  isEnd ? 'text-green-11' : 'text-orange-11',
+                )}
+              >
+                <Icon
+                  name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
+                  className={cn(
+                    'size-3.5',
+                    isEnd ? 'text-green-9' : 'text-orange-9',
+                  )}
+                />
                 {runningLabel}
               </span>
             ) : null}
@@ -347,7 +363,7 @@ export default function PortalSubmissionRow({
             ) : null}
           </div>
 
-          <div className='flex min-w-0 items-center justify-end'>
+          <div className='flex min-w-0 items-center justify-start'>
             {raisedBy ? (
               <Tooltip content={`Raised By: ${raisedBy}`} position='bottom'>
                 <div className='flex min-w-0 items-center gap-1.5 font-medium text-gray-11'>
@@ -362,7 +378,7 @@ export default function PortalSubmissionRow({
           </div>
 
           <div className='flex justify-end'>
-            {lastActionAt ? (
+            {showRunning ? (
               <Tooltip
                 position='bottom'
                 content={
@@ -371,8 +387,21 @@ export default function PortalSubmissionRow({
                     : 'Time running from last action'
                 }
               >
-                <span className='inline-flex items-center gap-1 rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-11 font-semibold whitespace-nowrap text-orange-11'>
-                  <Icon className='size-3 text-orange-9' name='tabler:clock' />
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-11 font-semibold whitespace-nowrap',
+                    isEnd
+                      ? 'border-green-3 bg-green-1 text-green-11'
+                      : 'border-orange-3 bg-orange-1 text-orange-11',
+                  )}
+                >
+                  <Icon
+                    name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
+                    className={cn(
+                      'size-3',
+                      isEnd ? 'text-green-9' : 'text-orange-9',
+                    )}
+                  />
                   <span>{formatRunningTime(lastActionAt)}</span>
                 </span>
               </Tooltip>

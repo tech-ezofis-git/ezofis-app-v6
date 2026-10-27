@@ -1,12 +1,11 @@
 import { useLingui } from '@lingui/react/macro'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import workflowsApiV6 from '@/api/v6/workflows'
+import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import AttachmentSplitView from '@/pages/requests/components/request/components/generic-overview/AttachmentSplitView'
 import Attachments from '@/pages/requests/components/request/components/sections/attachment/Attachments'
-import WorkflowFormRenderer, {
-  WorkflowStageBar,
-} from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import { WorkflowNameContext } from '@/pages/requests/components/workflow-request/WorkflowNameContext'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
@@ -17,6 +16,7 @@ import {
   extractWorkflowGraph,
   getStageTrail,
 } from '@/pages/requests/utils/workflow.utils'
+import cn from '@/utils/cn'
 import type { PortalSubmission } from '../helpers/portalSubmissions'
 import type { PortalHeaderInfo } from './PortalShell'
 import {
@@ -40,6 +40,7 @@ import {
 import PortalActivity from './PortalActivity'
 import { PortalDetailSkeleton } from './PortalLayoutSkeleton'
 import PortalSubmissionDetails from './PortalSubmissionDetails'
+import { notifyPortalSuccess } from './PortalSuccessCelebration'
 import PortalTicketComments from './PortalTicketComments'
 
 type PortalDetailChrome = {
@@ -289,12 +290,15 @@ export default function PortalDetail({
         })
         return
       }
-      showToast({
-        message:
+      notifyPortalSuccess({
+        icon:
+          action.toLowerCase() === 'submit'
+            ? 'tabler:send'
+            : 'tabler:circle-check',
+        title:
           action.toLowerCase() === 'submit'
             ? t`Request ${submission.requestNo} submitted successfully`
             : t`Request ${submission.requestNo} action "${action}" completed successfully`,
-        variant: 'success',
       })
       onMoved?.()
     } catch (error) {
@@ -382,11 +386,63 @@ export default function PortalDetail({
   return (
     <div className='h-full min-h-0 overflow-y-auto'>
       <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8'>
-        {workflowStages.length > 0 && (
-          <WorkflowStageBar
-            currentActivityId={activityId ? String(activityId) : undefined}
-            stages={workflowStages}
-          />
+        {/* From lg the header already shows the stage trail; below it,
+            the same pill style here (every step, scrolls sideways) */}
+        {headerStageTrail.length > 0 && (
+          <nav
+            aria-label={t`Workflow stages`}
+            className='ez-scrollbar -mx-1 flex items-center gap-0.5 overflow-x-auto rounded-full border border-gray-3 bg-surface p-1 lg:hidden'
+          >
+            {headerStageTrail.map(({ color, number, step }, index) => {
+              const isDone = step.status === 'done'
+              const isCurrent = step.status === 'current'
+              return (
+                <Fragment key={`${step.id}-${number}`}>
+                  {index > 0 ? (
+                    <Icon
+                      className='size-3.5 shrink-0 text-gray-8'
+                      name='lucide:chevron-right'
+                      aria-hidden
+                    />
+                  ) : null}
+                  <span
+                    aria-current={isCurrent ? 'step' : undefined}
+                    className={cn(
+                      'flex shrink-0 items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1 text-12 whitespace-nowrap transition-colors',
+                      isCurrent
+                        ? 'bg-primary-1 font-semibold text-primary-11 ring-1 ring-primary-5'
+                        : isDone
+                          ? 'font-medium text-gray-12'
+                          : 'font-medium text-gray-10',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
+                        isDone
+                          ? color === 'red'
+                            ? 'bg-red-9 text-white'
+                            : 'bg-green-9 text-white'
+                          : isCurrent
+                            ? 'bg-primary-9 text-white'
+                            : 'border border-gray-5 bg-surface text-gray-10',
+                      )}
+                    >
+                      {isDone ? (
+                        <Icon
+                          className='size-3 stroke-[3]'
+                          name='lucide:check'
+                        />
+                      ) : (
+                        number
+                      )}
+                    </span>
+                    {step.label}
+                  </span>
+                </Fragment>
+              )
+            })}
+          </nav>
         )}
 
         {panels.length > 0 ? (

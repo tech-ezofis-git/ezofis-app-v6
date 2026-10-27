@@ -184,7 +184,7 @@ export default function PortalShell({
                 contentWidth,
               )}
             >
-              <div className='flex min-w-0 flex-1 items-center gap-3'>
+              <div className='flex min-w-0 flex-1 items-center gap-2 sm:gap-3'>
                 <PortalBackButton label={t`Back`} onClick={detail.onBack} />
                 <h1 className='min-w-0 truncate text-15 font-semibold text-gray-13'>
                   {detail.requestNo}
@@ -206,32 +206,39 @@ export default function PortalShell({
                   <StageTrail items={headerInfo.stageTrail} />
                 </div>
               ) : null}
-              <div className='flex shrink-0 flex-wrap items-center gap-2 max-sm:w-full max-sm:justify-end sm:gap-3'>
+              {/* Budget + section shortcuts stay on the request-number row,
+                  even on phones */}
+              <div className='flex shrink-0 items-center gap-1.5 sm:gap-3'>
                 <PortalBudget value={headerInfo?.budget} />
                 <PortalSectionButtons
                   attachmentCount={detail.attachmentCount}
                   commentCount={detail.commentCount}
                   showHistory
                 />
-                {(detail.actions || []).map((action) => {
-                  const label = action.label.toLowerCase()
-                  const color = label.includes('reject')
-                    ? 'red'
-                    : label.includes('approve')
-                      ? 'green'
-                      : 'primary'
-                  return (
-                    <Button
-                      className='rounded-lg'
-                      color={color}
-                      key={action.value}
-                      label={action.label}
-                      loading={Boolean(detail.acting)}
-                      onClick={() => detail.onAction?.(action.value)}
-                    />
-                  )
-                })}
               </div>
+              {/* Review actions: inline from sm, their own row on phones */}
+              {detail.actions?.length ? (
+                <div className='flex shrink-0 flex-wrap items-center gap-2 max-sm:w-full max-sm:justify-end'>
+                  {(detail.actions || []).map((action) => {
+                    const label = action.label.toLowerCase()
+                    const color = label.includes('reject')
+                      ? 'red'
+                      : label.includes('approve')
+                        ? 'green'
+                        : 'primary'
+                    return (
+                      <Button
+                        className='rounded-lg'
+                        color={color}
+                        key={action.value}
+                        label={action.label}
+                        loading={Boolean(detail.acting)}
+                        onClick={() => detail.onAction?.(action.value)}
+                      />
+                    )
+                  })}
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -264,7 +271,7 @@ function PortalBudget({ value }: { value?: string | null }) {
   const isAmount =
     /\d/.test(raw) && Number.isFinite(amount) && !/[a-z]/i.test(raw)
   return (
-    <div className='flex shrink-0 flex-col border-r border-gray-3 pr-3 text-right'>
+    <div className='flex shrink-0 flex-col border-r border-gray-3 pr-2 text-right sm:pr-3'>
       <span className='mb-1 text-[10px] leading-none font-semibold whitespace-nowrap text-gray-11'>
         {t`Budget`}
       </span>
@@ -318,12 +325,12 @@ function PortalSectionButtons({
       : []),
   ]
   return (
-    <div className='flex shrink-0 items-center gap-1'>
+    <div className='flex shrink-0 items-center gap-0.5 sm:gap-1'>
       {buttons.map((button) => (
         <Tooltip content={button.label} key={button.id} position='bottom'>
           <button
             aria-label={button.label}
-            className='relative flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-10 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95 active:bg-gray-4'
+            className='relative flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-10 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95 active:bg-gray-4 sm:size-9'
             type='button'
             onClick={() => scrollToPortalSection(button.id)}
           >

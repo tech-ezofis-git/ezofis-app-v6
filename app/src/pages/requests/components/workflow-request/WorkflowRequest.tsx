@@ -542,8 +542,15 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
       return
     }
 
+    const responseData = (result as any)?.data
+    const requestNo =
+      responseData?.requestNo ||
+      responseData?.items?.[0]?.requestNo ||
+      responseData?.data?.requestNo
     showToast({
-      message: t`Request submitted successfully.`,
+      message: requestNo
+        ? t`Request ${requestNo} submitted successfully.`
+        : t`Request submitted successfully.`,
       variant: 'success',
     })
     if (result.commentError) {
@@ -553,7 +560,6 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
       })
     }
 
-    const responseData = (result as any)?.data
     const apAgentJobId = extractApAgentJobId(responseData)
     const processId =
       responseData?.instanceId ||

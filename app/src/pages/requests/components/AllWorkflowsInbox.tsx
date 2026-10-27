@@ -211,7 +211,7 @@ export default function AllWorkflowsInbox({
       <div className='flex flex-wrap items-center justify-between gap-4 border-b border-gray-3 px-4'>
         <div className='-mb-px flex items-center gap-6'>
           <span className='border-b-2 border-primary-9 py-3.5 text-14 font-medium text-gray-13'>
-            {inbox.isLoading ? t`All Inbox` : t`All Inbox (${totalCount})`}
+            {inbox.isLoading ? t`My Inbox` : t`My Inbox (${totalCount})`}
           </span>
         </div>
         <div className='flex items-center gap-2 py-2'>
@@ -454,9 +454,16 @@ export default function AllWorkflowsInbox({
                         workflowDotClass(group.workflowId),
                       )}
                     />
-                    <span className='truncate text-15 font-semibold text-gray-13'>
+                    <button
+                      className='truncate text-15 font-semibold text-gray-13 underline-offset-2 transition-colors hover:text-blue-11 hover:underline active:text-blue-12'
+                      type='button'
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onOpenWorkflow(option)
+                      }}
+                    >
                       {group.workflowName || option.name}
-                    </span>
+                    </button>
                     <span className='rounded-full bg-gray-3 px-2 py-0.5 text-12 font-semibold text-gray-11'>
                       {group.totalCount}
                     </span>
@@ -471,7 +478,7 @@ export default function AllWorkflowsInbox({
                       </span>
                     ) : null}
                     <button
-                      className='group/open ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-13 font-semibold text-primary-11 transition-colors hover:bg-primary-2 active:scale-95'
+                      className='group/open ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-13 font-semibold text-primary-11 underline-offset-2 transition-colors hover:bg-primary-2 hover:text-blue-11 hover:underline active:scale-95'
                       type='button'
                       onClick={(event) => {
                         event.stopPropagation()
@@ -486,18 +493,67 @@ export default function AllWorkflowsInbox({
                     </button>
                   </div>
                   {isCollapsed ? null : (
-                    <div className='bg-gray-1 px-3 pt-1 pb-3'>
-                      {[
-                        [t`New today`, today],
-                        [t`Earlier — not yet actioned`, earlier],
-                      ].map(([title, list]) =>
-                        (list as typeof cards).length ? (
-                          <div key={String(title)}>
-                            <p className='mx-1 mt-3 mb-2 text-12 font-semibold tracking-wide text-gray-10 uppercase'>
-                              {title as string}
-                            </p>
+                    <div className='flex flex-col gap-3 bg-gray-1 px-3 pt-3 pb-3'>
+                      {(
+                        [
+                          {
+                            icon: 'tabler:inbox',
+                            list: today,
+                            title: t`New today`,
+                            tone: 'new',
+                          },
+                          {
+                            icon: 'tabler:hourglass-high',
+                            list: earlier,
+                            title: t`Earlier — not yet actioned`,
+                            tone: 'earlier',
+                          },
+                        ] as const
+                      ).map(({ icon, list, title, tone }) =>
+                        list.length ? (
+                          <div
+                            key={tone}
+                            className={cn(
+                              'rounded-lg border-l-4 p-2 pt-0',
+                              tone === 'new'
+                                ? 'border-primary-8 bg-primary-1'
+                                : 'border-orange-8 bg-orange-1',
+                            )}
+                          >
+                            <div className='flex items-center gap-2 px-1 py-2'>
+                              <span
+                                className={cn(
+                                  'flex size-6 items-center justify-center rounded-md',
+                                  tone === 'new'
+                                    ? 'bg-primary-3 text-primary-11'
+                                    : 'bg-orange-3 text-orange-11',
+                                )}
+                              >
+                                <Icon className='size-3.5' name={icon} />
+                              </span>
+                              <p
+                                className={cn(
+                                  'text-12 font-semibold tracking-wide uppercase',
+                                  tone === 'new'
+                                    ? 'text-primary-11'
+                                    : 'text-orange-11',
+                                )}
+                              >
+                                {title}
+                              </p>
+                              <span
+                                className={cn(
+                                  'rounded-full px-1.5 py-px text-[11px] font-bold tabular-nums',
+                                  tone === 'new'
+                                    ? 'bg-primary-3 text-primary-11'
+                                    : 'bg-orange-3 text-orange-11',
+                                )}
+                              >
+                                {list.length}
+                              </span>
+                            </div>
                             <div className='flex flex-col gap-2'>
-                              {(list as typeof cards).map(({ raw, row }) => (
+                              {list.map(({ raw, row }) => (
                                 <GridRowItem
                                   activeTab='Inbox'
                                   hasSelectionActive={false}

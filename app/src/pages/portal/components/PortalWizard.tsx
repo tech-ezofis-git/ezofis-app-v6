@@ -1,12 +1,14 @@
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { uploadForOcr } from '@/api/v6/folder/folder'
-import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import workflowsApiV6 from '@/api/v6/workflows'
+import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import { isFileColumnType } from '@/pages/form-builder/helpers/tableColumnFiles'
 import { DOCUMENT_ACCEPT } from '@/pages/requests/components/request/components/newrequest/utils'
 import {
   getFileIcon,
@@ -16,6 +18,8 @@ import CommentsPanel, {
   type LocalComment,
 } from '@/pages/requests/components/workflow-request/components/CommentsPanel'
 import CompactDropzone from '@/pages/requests/components/workflow-request/components/CompactDropzone'
+import RepoFieldsPanel from '@/pages/requests/components/workflow-request/components/RepoFieldsPanel'
+import UploadedFilePreview from '@/pages/requests/components/workflow-request/components/UploadedFilePreview'
 import { readStartedInstanceId } from '@/pages/requests/components/workflow-request/hooks/useWorkflowForm'
 import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-request/utils/buildStartWorkflowPayload'
 import {
@@ -30,39 +34,36 @@ import {
   getFileExtension,
   getMissingMandatoryFieldIds,
   getMissingMandatoryFields,
+  getRepoFieldValue,
   hydrateFormModel,
   isFieldFilled,
   isFieldHidden,
   isFieldRequired,
-  getRepoFieldValue,
   mergeOcrFieldHints,
   stringifyFieldValue,
   syntheticFieldId,
   withoutRequestNumberMandatory,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
-import RepoFieldsPanel from '@/pages/requests/components/workflow-request/components/RepoFieldsPanel'
-import UploadedFilePreview from '@/pages/requests/components/workflow-request/components/UploadedFilePreview'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import {
+  type TableUploadRequest,
+  WorkflowNameContext,
+  WorkflowRepositoryIdContext,
+  WorkflowTableUploadContext,
+} from '@/pages/requests/components/workflow-request/WorkflowNameContext'
 import { useHeaderBudget } from '@/pages/requests/hooks/useMasterFormValue'
 import {
   computeWorkflowStages,
   getStageTrail,
 } from '@/pages/requests/utils/workflow.utils'
 import {
-  WorkflowNameContext,
-  WorkflowRepositoryIdContext,
-  WorkflowTableUploadContext,
-  type TableUploadRequest,
-} from '@/pages/requests/components/workflow-request/WorkflowNameContext'
-import { isFileColumnType } from '@/pages/form-builder/helpers/tableColumnFiles'
-import Button from '@/components/base/button/Button'
-import {
   getStartStageHiddenFieldIds,
   getWorkflowInitiateType,
   isDocumentFormWorkflow,
 } from '@/pages/requests/utils/workflow.utils'
-import { getCurrentFormUser } from '@/utils/currentFormUser'
 import cn from '@/utils/cn'
+import { getCurrentFormUser } from '@/utils/currentFormUser'
+import type { PortalHeaderInfo } from './PortalShell'
 import {
   formPanelSectionId,
   getInitiateNodeLabel,
@@ -85,9 +86,9 @@ import {
   type PortalWizardSource,
 } from '../helpers/portalWizardLoad'
 import { getStartActionLabel } from '../helpers/portalWorkflowAccess'
-import type { PortalHeaderInfo } from './PortalShell'
 import PortalDocumentUpload from './PortalDocumentUpload'
 import { PortalDetailSkeleton } from './PortalLayoutSkeleton'
+import { notifyPortalSuccess } from './PortalSuccessCelebration'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const AP_POLL_ATTEMPTS = 12
@@ -129,6 +130,24 @@ const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
 const TABLE_FIELD_TYPES = new Set(['TABLE', 'DYNAMIC_TABLE'])
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+// The start-workflow response may arrive as a JSON string or nest the
+// request number under items/data.
+const readRequestNo = (data: unknown): string | null => {
+  let record: any = data
+  if (typeof record === 'string') {
+    try {
+      record = JSON.parse(record)
+    } catch {
+      return null
+    }
+  }
+  const requestNo =
+    record?.requestNo ||
+    record?.items?.[0]?.requestNo ||
+    record?.data?.requestNo
+  return requestNo ? String(requestNo) : null
+}
+
 const PortalWizard = ({
   workflowId,
   workflowName,
@@ -155,6 +174,7 @@ const PortalWizard = ({
   const [processingText, setProcessingText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [apInstanceId, setApInstanceId] = useState<string | null>(null)
+  const [apRequestNo, setApRequestNo] = useState<string | null>(null)
   const [primaryPending, setPrimaryPending] = useState<PendingOcrFile | null>(
     null,
   )
@@ -185,6 +205,7 @@ const PortalWizard = ({
         setComments([])
         setCommentDraft('')
         setApInstanceId(null)
+        setApRequestNo(null)
         setPrimaryPending(null)
         setExtraPending([])
         setAttemptedSubmit(false)
@@ -489,6 +510,7 @@ const PortalWizard = ({
           : startRes.data
       const instanceId = parsed?.instanceId
       if (instanceId) setApInstanceId(String(instanceId))
+      setApRequestNo(readRequestNo(parsed))
 
       let filledAnswers: AnswerMap | null = null
       for (let attempt = 0; attempt < AP_POLL_ATTEMPTS; attempt++) {
@@ -1054,6 +1076,14 @@ const PortalWizard = ({
     return ''
   }
 
+  // Phones get the celebration card; larger screens keep the toast
+  const notifyRequestCreated = (requestNo: string | null) =>
+    notifyPortalSuccess({
+      icon: 'tabler:send',
+      message: t`You can track it from My Submissions.`,
+      title: requestNo ? t`Request ${requestNo} created.` : t`Request created.`,
+    })
+
   const handleSubmit = async () => {
     setAttemptedSubmit(true)
     if (!source || processing || submitting || staging) return
@@ -1076,10 +1106,7 @@ const PortalWizard = ({
             apInstanceId,
             comments.map((comment) => comment.text.trim()).filter(Boolean),
           )
-          showToast({
-            message: t`Request created. You can track it from My Submissions.`,
-            variant: 'success',
-          })
+          notifyRequestCreated(apRequestNo)
           if (commentError) {
             showToast({ message: commentError, variant: 'error' })
           }
@@ -1141,10 +1168,7 @@ const PortalWizard = ({
         readStartedInstanceId(data),
         pendingComments,
       )
-      showToast({
-        message: t`Request created. You can track it from My Submissions.`,
-        variant: 'success',
-      })
+      notifyRequestCreated(readRequestNo(data))
       if (commentError) showToast({ message: commentError, variant: 'error' })
       onSubmitted()
     } catch (error) {
@@ -1293,190 +1317,194 @@ const PortalWizard = ({
 
   return (
     <WorkflowRepositoryIdContext.Provider value={source.repositoryId || ''}>
-    <WorkflowTableUploadContext.Provider value={requestTableUpload}>
-    {activeTableUpload ? (
-      <div className='flex h-full min-h-0 flex-col overflow-hidden'>
-        <div className='flex shrink-0 items-center gap-2 border-b border-gray-3 bg-surface px-4 py-2.5'>
-          <button
-            className='group flex cursor-pointer items-center gap-1 text-xs font-semibold text-gray-11 transition-all hover:text-gray-13 active:scale-95'
-            type='button'
-            onClick={handleCancelTableUpload}
-          >
-            <Icon
-              className='size-4 transition-transform group-hover:-translate-x-0.5'
-              name='tabler:arrow-left'
-            />
-            <span>{t`Back`}</span>
-          </button>
-        </div>
-        <div className='flex min-h-0 min-w-0 flex-1 gap-4 overflow-hidden p-4'>
-          <div className='min-w-0 flex-1'>
-            <UploadedFilePreview
-              activeHighlightTerm={highlightTerm}
-              activeKey={null}
-              focusRequestId={highlightRequestId}
-              files={[
-                {
-                  fileName: activeTableUpload.file.name,
-                  key: 'table-file',
-                  rawFile: activeTableUpload.file,
-                },
-              ]}
-              onSelectKey={() => {}}
-            />
-          </div>
-          <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-            <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
-              <RepoFieldsPanel
-                descriptors={tableUploadDescriptors}
-                formModel={tableUploadModel}
-                hasAttemptedSubmit
-                missingMandatoryFieldIds={missingTableUploadIds}
-                repoFieldHints={repoFieldHints}
-                repositoryId={source.repositoryId}
-                onFieldChange={(fieldId, value) =>
-                  setTableUploadValues((prev) => ({
-                    ...prev,
-                    [fieldId]: value,
-                  }))
-                }
-                onFieldFocus={(value) => {
-                  const text = value == null ? '' : String(value).trim()
-                  if (!text) return
-                  setHighlightTerm(text)
-                  setHighlightRequestId((id) => id + 1)
-                }}
-              />
-            </div>
-            <div className='mt-3 flex items-center justify-end gap-2 border-t border-gray-3 pt-3'>
-              <Button
-                label={t`Cancel`}
-                variant='outline'
+      <WorkflowTableUploadContext.Provider value={requestTableUpload}>
+        {activeTableUpload ? (
+          <div className='flex h-full min-h-0 flex-col overflow-hidden'>
+            <div className='flex shrink-0 items-center gap-2 border-b border-gray-3 bg-surface px-4 py-2.5'>
+              <button
+                className='group flex cursor-pointer items-center gap-1 text-xs font-semibold text-gray-11 transition-all hover:text-gray-13 active:scale-95'
+                type='button'
                 onClick={handleCancelTableUpload}
-              />
-              <Button
-                disabled={missingTableUploadIds.size > 0}
-                label={t`Upload`}
-                loading={confirmingTableUpload}
-                variant='solid'
-                onClick={handleConfirmTableUpload}
-              />
+              >
+                <Icon
+                  className='size-4 transition-transform group-hover:-translate-x-0.5'
+                  name='tabler:arrow-left'
+                />
+                <span>{t`Back`}</span>
+              </button>
             </div>
-          </div>
-        </div>
-      </div>
-    ) : null}
-    {/* Kept mounted (just hidden) while a table file is being indexed, so the
-        form and its table keep their state. */}
-    <div
-      className={cn(
-        'h-full min-h-0 overflow-y-auto',
-        activeTableUpload && 'hidden',
-      )}
-      ref={setScrollEl}
-    >
-      <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8'>
-        {needsDocumentSection ? (
-          <div className='scroll-mt-3' id={PORTAL_SECTION_DOCUMENT}>
-            <PortalDocumentUpload
-              analyzed={Boolean(primaryPending?.ocrChecked || apInstanceId)}
-              analyzing={processing && preparingFieldId === null}
-              analyzingText={processingText}
-              file={files[0] || null}
-              isInvoice={source.isAccountsPayable}
-              label={documentTitle}
-              stepCount={wizardStepCount}
-              onAnalyze={() => void handleAnalyzeDocument()}
-              onCancel={() => onCancel?.()}
-              onFiles={handleSelectPrimaryFiles}
-              onRemoveFile={() => removeFile(0)}
-            />
-            {fieldError ? (
-              <p className='mt-3 text-12 font-medium text-red-9'>
-                {fieldError}
-              </p>
-            ) : null}
+            <div className='flex min-h-0 min-w-0 flex-1 gap-4 overflow-hidden p-4'>
+              <div className='min-w-0 flex-1'>
+                <UploadedFilePreview
+                  activeHighlightTerm={highlightTerm}
+                  activeKey={null}
+                  focusRequestId={highlightRequestId}
+                  files={[
+                    {
+                      fileName: activeTableUpload.file.name,
+                      key: 'table-file',
+                      rawFile: activeTableUpload.file,
+                    },
+                  ]}
+                  onSelectKey={() => {}}
+                />
+              </div>
+              <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+                <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
+                  <RepoFieldsPanel
+                    descriptors={tableUploadDescriptors}
+                    formModel={tableUploadModel}
+                    missingMandatoryFieldIds={missingTableUploadIds}
+                    repoFieldHints={repoFieldHints}
+                    repositoryId={source.repositoryId}
+                    hasAttemptedSubmit
+                    onFieldChange={(fieldId, value) =>
+                      setTableUploadValues((prev) => ({
+                        ...prev,
+                        [fieldId]: value,
+                      }))
+                    }
+                    onFieldFocus={(value) => {
+                      const text = value == null ? '' : String(value).trim()
+                      if (!text) return
+                      setHighlightTerm(text)
+                      setHighlightRequestId((id) => id + 1)
+                    }}
+                  />
+                </div>
+                <div className='mt-3 flex items-center justify-end gap-2 border-t border-gray-3 pt-3'>
+                  <Button
+                    label={t`Cancel`}
+                    variant='outline'
+                    onClick={handleCancelTableUpload}
+                  />
+                  <Button
+                    disabled={missingTableUploadIds.size > 0}
+                    label={t`Upload`}
+                    loading={confirmingTableUpload}
+                    variant='solid'
+                    onClick={handleConfirmTableUpload}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         ) : null}
-
-        {formPanels.length > 0 ? (
-          // Same workflow-name context as the in-app new request, so table
-          // file columns pick workflow-specific OCR (e.g. expense reimbursement)
-          <WorkflowNameContext.Provider
-            value={String(source.workflow?.name || source.workflowName || '')}
-          >
-            <div className={PORTAL_FORM_WRAPPER_CLASS}>
-              <WorkflowFormRenderer
-                formModel={portalFormModel}
-                hasAttemptedSubmit={attemptedSubmit}
-                hiddenFieldIds={hiddenFileFieldIds}
-                missingMandatoryFieldIds={missingMandatoryFieldIds}
-                panels={formPanels}
-                preparingFieldId={preparingFieldId}
-                repoFieldHints={repoFieldHints}
-                repositoryId={source.repositoryId}
-                disableOwnScroll
-                preparePhase={
-                  processing ? 'extracting' : staging ? 'uploading' : null
-                }
-                getPanelValue={(panel, index) =>
-                  formPanelSectionId(panel, index)
-                }
-                onFieldChange={handleFieldChange}
-                onOcrFieldList={applyOcrToAnswers}
-                onRequestUpload={handleRequestUpload}
-              />
-            </div>
-          </WorkflowNameContext.Provider>
-        ) : (
-          <div className='rounded-xl border border-gray-4 bg-surface p-5 text-13 text-gray-10'>
-            {t`No form panels found for this request.`}
-          </div>
-        )}
-
+        {/* Kept mounted (just hidden) while a table file is being indexed, so the
+        form and its table keep their state. */}
         <div
-          className='scroll-mt-3 rounded-xl border border-gray-3 bg-gray-0 p-6 shadow-2xs transition-shadow hover:shadow-sm'
-          id={PORTAL_SECTION_ATTACHMENTS}
-        >
-          <div className='mb-3 text-15 font-semibold text-gray-13'>
-            {t`Attachments`}
-          </div>
-          {processing && extraFiles.length > 0 && preparingFieldId === null ? (
-            <div className='flex min-h-44 flex-col items-center justify-center gap-3 rounded-xl border border-gray-4 bg-gray-1'>
-              <Icon
-                className='size-8 animate-spin text-primary-9'
-                name='tabler:loader-2'
-              />
-              <p className='text-13 font-medium text-gray-11'>
-                {processingText || t`Extracting data from the document…`}
-              </p>
-            </div>
-          ) : (
-            <CompactDropzone
-              accept={DOCUMENT_ACCEPT}
-              helperText={t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 10 MB`}
-              loadingText={t`Extracting data from the document…`}
-              multiple
-              onFiles={handleExtraFiles}
-            />
+          ref={setScrollEl}
+          className={cn(
+            'h-full min-h-0 overflow-y-auto',
+            activeTableUpload && 'hidden',
           )}
-          {renderFileList(extraFiles, removeExtraFile)}
-        </div>
-
-        <div
-          className='scroll-mt-3 rounded-xl transition-shadow'
-          id={PORTAL_SECTION_COMMENTS}
         >
-          <CommentsPanel
-            comments={comments}
-            draft={commentDraft}
-            onDraftChange={setCommentDraft}
-            onSend={addComment}
-          />
+          <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8'>
+            {needsDocumentSection ? (
+              <div className='scroll-mt-3' id={PORTAL_SECTION_DOCUMENT}>
+                <PortalDocumentUpload
+                  analyzed={Boolean(primaryPending?.ocrChecked || apInstanceId)}
+                  analyzing={processing && preparingFieldId === null}
+                  analyzingText={processingText}
+                  file={files[0] || null}
+                  isInvoice={source.isAccountsPayable}
+                  label={documentTitle}
+                  stepCount={wizardStepCount}
+                  onAnalyze={() => void handleAnalyzeDocument()}
+                  onCancel={() => onCancel?.()}
+                  onFiles={handleSelectPrimaryFiles}
+                  onRemoveFile={() => removeFile(0)}
+                />
+                {fieldError ? (
+                  <p className='mt-3 text-12 font-medium text-red-9'>
+                    {fieldError}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {formPanels.length > 0 ? (
+              // Same workflow-name context as the in-app new request, so table
+              // file columns pick workflow-specific OCR (e.g. expense reimbursement)
+              <WorkflowNameContext.Provider
+                value={String(
+                  source.workflow?.name || source.workflowName || '',
+                )}
+              >
+                <div className={PORTAL_FORM_WRAPPER_CLASS}>
+                  <WorkflowFormRenderer
+                    formModel={portalFormModel}
+                    hasAttemptedSubmit={attemptedSubmit}
+                    hiddenFieldIds={hiddenFileFieldIds}
+                    missingMandatoryFieldIds={missingMandatoryFieldIds}
+                    panels={formPanels}
+                    preparingFieldId={preparingFieldId}
+                    repoFieldHints={repoFieldHints}
+                    repositoryId={source.repositoryId}
+                    disableOwnScroll
+                    preparePhase={
+                      processing ? 'extracting' : staging ? 'uploading' : null
+                    }
+                    getPanelValue={(panel, index) =>
+                      formPanelSectionId(panel, index)
+                    }
+                    onFieldChange={handleFieldChange}
+                    onOcrFieldList={applyOcrToAnswers}
+                    onRequestUpload={handleRequestUpload}
+                  />
+                </div>
+              </WorkflowNameContext.Provider>
+            ) : (
+              <div className='rounded-xl border border-gray-4 bg-surface p-5 text-13 text-gray-10'>
+                {t`No form panels found for this request.`}
+              </div>
+            )}
+
+            <div
+              className='scroll-mt-3 rounded-xl border border-gray-3 bg-gray-0 p-6 shadow-2xs transition-shadow hover:shadow-sm'
+              id={PORTAL_SECTION_ATTACHMENTS}
+            >
+              <div className='mb-3 text-15 font-semibold text-gray-13'>
+                {t`Attachments`}
+              </div>
+              {processing &&
+              extraFiles.length > 0 &&
+              preparingFieldId === null ? (
+                <div className='flex min-h-44 flex-col items-center justify-center gap-3 rounded-xl border border-gray-4 bg-gray-1'>
+                  <Icon
+                    className='size-8 animate-spin text-primary-9'
+                    name='tabler:loader-2'
+                  />
+                  <p className='text-13 font-medium text-gray-11'>
+                    {processingText || t`Extracting data from the document…`}
+                  </p>
+                </div>
+              ) : (
+                <CompactDropzone
+                  accept={DOCUMENT_ACCEPT}
+                  helperText={t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 10 MB`}
+                  loadingText={t`Extracting data from the document…`}
+                  multiple
+                  onFiles={handleExtraFiles}
+                />
+              )}
+              {renderFileList(extraFiles, removeExtraFile)}
+            </div>
+
+            <div
+              className='scroll-mt-3 rounded-xl transition-shadow'
+              id={PORTAL_SECTION_COMMENTS}
+            >
+              <CommentsPanel
+                comments={comments}
+                draft={commentDraft}
+                onDraftChange={setCommentDraft}
+                onSend={addComment}
+              />
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-    </WorkflowTableUploadContext.Provider>
+      </WorkflowTableUploadContext.Provider>
     </WorkflowRepositoryIdContext.Provider>
   )
 }

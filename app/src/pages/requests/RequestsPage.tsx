@@ -796,11 +796,18 @@ const RequestsPage = () => {
     [rawWorkflowData, isAccountsPayable],
   )
 
+  // While counts reload, the header keeps showing the previous ones.
+  const [isRefreshingCounts, setIsRefreshingCounts] = useState(false)
   const refreshInstanceCounts = useCallback(
     async (workflowId: string, wfDetailOverride?: any) => {
-      const countRes = await workflowsApiV6.getInstanceCount(workflowId)
-      if (countRes?.data) applyInstanceCount(countRes.data)
-      await fetchStageCounts(workflowId, wfDetailOverride)
+      setIsRefreshingCounts(true)
+      try {
+        const countRes = await workflowsApiV6.getInstanceCount(workflowId)
+        if (countRes?.data) applyInstanceCount(countRes.data)
+        await fetchStageCounts(workflowId, wfDetailOverride)
+      } finally {
+        setIsRefreshingCounts(false)
+      }
     },
     [applyInstanceCount, fetchStageCounts],
   )
@@ -2045,6 +2052,7 @@ const RequestsPage = () => {
               // Pass state and setter to Header
               activeTab={activeTab}
               allWorkflows={allWorkflow}
+              countsRefreshing={isRefreshingCounts || isFetching}
               exceptionsCount={inboxResult?.exceptionsCount}
               isConnectingWatchEmail={isConnectingWatchEmail}
               isLoading={isLoading}
