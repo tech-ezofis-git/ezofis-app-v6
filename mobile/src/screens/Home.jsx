@@ -8,6 +8,8 @@ import { wfApi, toCard, agentInsight, ageDays, prettyName } from '../wf.js';
 import { apiErrorMessage } from '../api.js';
 import { LiveCard, Skeleton, ErrorNote } from './LiveWorkflow.jsx';
 import { AskAiCard, AskAiSheet, useAskAiNew } from './AskAi.jsx';
+import { SUGGESTIONS } from '../assistant.js';
+import { ToSignCard, usePendingSigns } from './DocActions.jsx';
 
 const AI_HINTS = {
   'What needs my approval today?': ['approv', 'today', 'pending', 'waiting', 'how many', 'inbox', 'open'],
@@ -138,9 +140,10 @@ function LiveHome() {
   const [reload, setReload] = useState(0);
   const [wf, setWf] = useState('');
   const [wfOpen, setWfOpen] = useState(false);
-  const [ai, setAi] = useState(null); // null = closed, '' = open, 'question' = open and ask it
   const [aiNew, aiSeen] = useAskAiNew();
-  const openAi = (q) => { aiSeen(); setAi(q || ''); };
+  const toSign = usePendingSigns(reload);
+  // Ask AI opens the full chat on the Repository Assistant API (screens/AskAiChat.jsx).
+  const openAi = (q) => { aiSeen(); nav('/app/ask' + (q ? '?q=' + encodeURIComponent(q) : '')); };
   useEffect(() => {
     let off = false;
     setErr('');
@@ -162,12 +165,6 @@ function LiveHome() {
   const insight = insightRow ? agentInsight(insightRow) : null;
   const name = (me && (me.displayName || [me.firstName, me.lastName].filter(Boolean).join(' '))) || prettyName(session && session.email);
   const role = (me && me.role) || (session && session.role) || '';
-  const AI_NOTE = 'Answers come from your live inbox.';
-  const AI_Q = {
-    'What needs my approval today?': () => (total ? `${total} request${total > 1 ? 's are' : ' is'} waiting for you across ${groups.length} workflow${groups.length > 1 ? 's' : ''}${newToday ? `, ${newToday} new today` : ''}.\n` + groups.map((x) => `• ${x.workflowName}: ${x.totalCount}`).join('\n') : 'Your inbox is clear.'),
-    'Which requests are oldest?': () => { const o = all.slice().sort((a, b) => String(a.transactionCreatedAt).localeCompare(String(b.transactionCreatedAt))).slice(0, 3); return o.length ? o.map((r) => `${r.referenceNumber} · ${r.name} · ${ageDays(r.transactionCreatedAt) ? 'waiting ' + ageDays(r.transactionCreatedAt) + ' day' + (ageDays(r.transactionCreatedAt) > 1 ? 's' : '') : 'arrived today'}`).join('\n') : 'Nothing is waiting.'; },
-    'What did the AI agents flag?': () => { const f = all.map((r) => [r, agentInsight(r)]).filter(([, a]) => a && a.tone === 'bad').slice(0, 4); return f.length ? f.map(([r, a]) => `${r.referenceNumber}: ${a.decision}${a.insight ? ' — ' + a.insight : ''}`).join('\n') : 'No AI exceptions in your inbox right now.'; },
-  };
 
   return (
     <div className="screen">
@@ -197,6 +194,7 @@ function LiveHome() {
               ) : !data.failed ? (
                 <div className="update-card"><UpdHead arrow={false} /><span style={{ fontSize: 17, fontWeight: 600 }}>You're all caught up</span><span style={{ fontSize: 13, opacity: 0.92 }}>{counts ? `${counts.completedCount} completed · ${counts.sentCount} in progress` : 'Nothing is waiting for you'}</span></div>
               ) : null}
+              <ToSignCard list={toSign} onOpen={() => nav('/app/sign')} />
               <h2 className="sec-title">Quick actions</h2>
               <div className="qa-grid">
                 <button type="button" className="qa" onClick={() => nav('/app/upload?source=scan')}><span className="c solid"><Icon name="camera" size={24} /></span>Scan</button>
@@ -204,7 +202,7 @@ function LiveHome() {
                 <button type="button" className="qa" onClick={() => nav('/app/inbox?tab=completed')}><span className="c"><Icon name="checkCircle" size={24} /></span>Completed</button>
                 <button type="button" className={'qa ai' + (aiNew ? ' hot' : '')} onClick={() => openAi('')}><span className="c ai"><Sparkle size={22} color="#fff" />{aiNew ? <span className="qa-new">New</span> : null}</span>Ask AI</button>
               </div>
-              <AskAiCard questions={Object.keys(AI_Q)} isNew={aiNew} onAsk={openAi} />
+              <AskAiCard questions={SUGGESTIONS.map((s) => s.text)} isNew={aiNew} onAsk={openAi} sub="Find documents, invoices and requests in seconds" placeholder="Ask about a document or request…" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div className="home-div" role="separator" aria-hidden="true" />
@@ -251,7 +249,6 @@ function LiveHome() {
       <Sheet open={wfOpen} onClose={() => setWfOpen(false)} title="Show dashboard for">
         <div className="sheet-list">{groups.map((x) => <button key={x.workflowId} type="button" className={'opt' + (g && x.workflowId === g.workflowId ? ' on' : '')} onClick={() => { setWf(x.workflowId); setWfOpen(false); }}><span style={{ flex: 1 }}>{x.workflowName}</span><span className="muted" style={{ fontSize: 12 }}>{x.totalCount}</span></button>)}</div>
       </Sheet>
-      <AskAiSheet open={ai !== null} initial={ai} onClose={() => setAi(null)} answers={AI_Q} hints={AI_HINTS} footnote={AI_NOTE} />
     </div>
   );
 }

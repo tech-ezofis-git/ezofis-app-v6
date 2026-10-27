@@ -16,6 +16,9 @@ This app was built in a Claude chat session from 25 to 27 Oct 2026 and moved her
 | 0.4.2 | File viewer: file on the top 70%, metadata on the bottom 30% with scroll, download/share icons, AI Summary overlay button |
 | 0.4.3 | Per-workflow tabs from `requestTabs` (by-activity); action button text and colour from `buttonColor`; tab badge = list total; simpler workflow picker in New request |
 | 0.4.4 | Home: updates card overlaps the hero (40/60), then Quick actions, then Ask AI, then Dashboard; background auto-refresh; phone notifications |
+| 0.4.5 | Ask EZOFIS AI on the Repository Assistant chatbot API (`/app/ask`): one session per chat, rich answers (text, filters, result cards, repository picker), documents open in the in-app file viewer, requests open the ticket, Stop / Try again / New chat; Ask AI in the tablet rail |
+| 0.4.6 | Folders on the repository API: repositories, folder tree with subfolders, file lists and search, file view with metadata / OCR confidence / AI summary, edit details and delete; bulk upload with live OCR progress, staged files ("To review"), review & export or delete. `uploadWithOcr` also sends `metadata` |
+| 0.4.7 | MOBILE_APP_REPOSITORY_API: intelligent upload (AI picks the folder → OCR → review → archive), structured AI summary (key facts, highlights), share by email (can view / can edit, remove access), Shared with me, request signatures (one by one / all at once, status, cancel), To sign list and signing on the PDF (draw, place, sign or decline). Sheets render on `<body>` and never squeeze their content |
 
 ## Still open
 1. **Server push** for notifications when the app is closed. The backend needs to register device tokens and send through FCM (Android) / APNs (iOS) when an inbox item is created. Today notifications come from the app's own polling, so they only work while Android keeps the app in memory.
@@ -25,13 +28,25 @@ This app was built in a Claude chat session from 25 to 27 Oct 2026 and moved her
    - Needs backend token verification before release.
 4. **Release builds:** a real signing key and Gradle build from `android/`, and an iOS build in Xcode (set the Team).
 5. **Not wired yet:**
-   - Folders still use sample data (no Folder API yet).
    - No notifications API (the in-app list is built on the device).
    - AP agent job polling after start is not shown.
 6. **Not tested on a real device yet:**
    - the phone-notification bridge in the test APK (`onJsPrompt` in `apk-shell/build_apk.py`);
    - background polling while the app is in the background.
-7. **Design canvas:** the C5/C6 file-viewer proposals in `docs/design-canvas/` were replaced by the 70/30 layout that is now in the app.
+7. **Ask AI (0.4.5), not checked against the live agent yet:**
+   - The `chatbot_result` shape was taken from the agents code (`agents/app/agents/chatbot_agent.py`, `agents/app/chatbot/format_blocks.py`) and the web client (`app/src/components/common/ask-ai/`), and tested with mocks only.
+   - Actions the agent proposes (`pending_action`: start workflow, upload, create user) are confirmed through `POST /actions/{id}/confirm` on the agents service, which V6 doesn't proxy. The app tells the user to finish them on the web.
+   - Form-entry results have no mobile screen yet ("Open on the web").
+8. **Folders (0.4.6), not checked against a live tenant yet:**
+   - Tested with mocks shaped on the API contracts (`api/src/Modules/Repository/Repository.Application/Contracts`).
+   - Form designer (create/update/delete form) and form-entry writes are admin/web functions; the app only reads forms and master entries.
+   - Raw OCR text stays hidden on purpose (CLAUDE.md rule). Extracted values and OCR confidence are shown.
+9. **Share & sign (0.4.7), not checked against a live tenant yet:**
+   - Tested with mocks shaped on `RepositorySignRequestContracts.cs` / `RepositoryShareContracts.cs` and the agents `document_intelligent_result` / `summary_result` contracts.
+   - Recipients without an app session (share link and sign invite: preview → OTP → verify) use the web; the app covers the logged-in user (shared with me, pending-for-me).
+   - There is no API to list the shares on a document, so "Remove access" is offered for shares made in the open sheet only.
+   - The signature is placed at a tapped point at about 160 × 50 pt (scaled to the drawing); it can't be dragged or resized yet.
+10. **Design canvas:** the C5/C6 file-viewer proposals in `docs/design-canvas/` were replaced by the 70/30 layout that is now in the app.
 
 ## Server behaviour seen during development
 - **Errors:** GET /Workflows/{id} sometimes returned 500 or timed out; the app shows retry buttons.
@@ -42,6 +57,6 @@ This app was built in a Claude chat session from 25 to 27 Oct 2026 and moved her
 `docs/design-canvas/*.dc.html` + `canvas.json` are the source of the Claude Design canvas (A: welcome/brand, B: home/inbox/ticket, C: folders/files). They are design references, not app code.
 
 ## Testing
-`tests/e2e/` holds a Python + Playwright mock of the Workflow API (`wfmock.py`, `expform.py`, shaped like the live responses with fake data) and 12 flow checks (`test_flow*.py`). They run against `dist-single/index.html` with every call to `https://cloud.ezofis.com/**` intercepted.
+`tests/e2e/` holds a Python + Playwright mock of the Workflow API (`wfmock.py`, `expform.py`, shaped like the live responses with fake data) and 15 flow checks (`test_flow*.py`; 13 Ask AI, 14 Folders, 15 intelligent upload / summary / share / sign). They run against `dist-single/index.html` with every call to `https://cloud.ezofis.com/**` intercepted.
 
 The checks print what they find rather than asserting; read the output and look for `errors []`. Screenshots go to `tests/e2e/shots/`.

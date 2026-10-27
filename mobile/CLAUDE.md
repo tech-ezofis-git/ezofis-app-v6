@@ -14,7 +14,7 @@ tests/e2e/run_all.sh              # mock end-to-end checks (Playwright + Python)
 python3 apk-shell/build_apk.py dist-single/index.html apk-shell/ic_launcher.png /tmp/u.apk && \
 python3 apk-shell/sign_v2.py /tmp/u.apk EZOFIS-Mobile-test.apk apk-shell     # SDK-free test APK
 ```
-Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 19 / 0.4.4.
+Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 22 / 0.4.7.
 
 ## Code map
 - `src/api.js`: sign-in (`loggedFrom: "MOBILE"`, 2FA, tenants), session storage, `authed()` (Bearer + `X-Tenant-Id`). A 401 dispatches `SESSION_EXPIRED`, which sends the user back to login.
@@ -24,6 +24,7 @@ Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py
   - `tabsFor` (`settings.general.requestTabs`), line items, hidden technical fields, `canStart`.
 - `src/formEngine.js`: New-request form with web-form parity: defaults, master-data options, cascades, formulas, conditional required, OCR fill, payload.
 - `src/store.jsx`: app state. `live` = signed in, otherwise sample data from `src/data.js`. `bumpLive()` refreshes live screens.
+- `src/repo.js`: repository (Folders) client `repoApi`: browse tree, items query, metadata/delete, staged files (index list, save, export, delete), bulk upload jobs (tracked on the device per tenant). `docApi` (MOBILE_APP_REPOSITORY_API): intelligent upload (classify → OCR → stage → archive), AI summary + `parseSummary`, share / revoke / shared with me, sign requests and signing.
 - `src/LiveWatcher.jsx`: auto-refresh poller (45 s while open, 2 min in the background). Adds new requests to in-app notifications and sends a phone notification.
 - `src/notify.js`: phone notifications. Capacitor LocalNotifications, or the test-APK `prompt('ezofis:…')` bridge, or the Web Notification API.
 - `src/screens/`:
@@ -31,7 +32,9 @@ Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py
   - `LiveWorkflow.jsx`: inbox list, ticket detail, actions;
   - `NewRequest.jsx`: new request;
   - `FileViewer.jsx` + `OfficeViewers.jsx`: in-app viewers for pdf, image, eml, msg, docx, xlsx, pptx;
-  - `AskAi.jsx`: Ask AI;
+  - `LiveFolders.jsx`: Folders on the repository API (repositories, tree, files, upload with OCR progress, review & export); `Folders.jsx` keeps the sample screens;
+  - `DocActions.jsx`: Share sheet, Request signatures sheet, signature status, To sign list (`/app/sign`), signing screen with signature pad (`/app/sign/:id`), intelligent upload, Shared with me;
+  - `AskAiChat.jsx`: Ask EZOFIS AI chat (Repository Assistant API, `src/assistant.js`); `AskAi.jsx`: the Home Ask AI card and the sample-data sheet;
   - `More.jsx`: Notifications, Settings;
   - `Onboarding.jsx`: splash, login, 2FA.
 - `apk-shell/`: hand-written DEX/manifest/arsc builder plus APK v2 signer, for test APKs without the Android SDK.

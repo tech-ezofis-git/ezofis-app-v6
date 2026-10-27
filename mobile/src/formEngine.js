@@ -321,6 +321,8 @@ export async function uploadWithOcr(repositoryId, entry, targets) {
   fd.append('file', entry.file, entry.file.name);
   fd.append('repositoryId', repositoryId);
   fd.append('filename', entry.file.name);
+  // metadata (flat { name: value }) is the preferred input for uploadWithOcr (FORM_AND_REPOSITORY_FUNCTIONS_API §1b); fields stays as the fallback
+  if (entry.ocrFieldList && entry.ocrFieldList.length) fd.append('metadata', JSON.stringify(Object.fromEntries(entry.ocrFieldList.map((f) => [String(f.name || '').split(',')[0], f.value == null ? '' : String(f.value)]).filter(([k]) => k))));
   if (entry.ocrFieldList && entry.ocrFieldList.length) fd.append('fields', JSON.stringify(entry.ocrFieldList));
   else if (targets && targets.length) fd.append('fields', JSON.stringify(targets.map((t) => `${t.label},${t.type}`)));
   if (entry.ocrJson) fd.append('ocrJson', typeof entry.ocrJson === 'string' ? entry.ocrJson : JSON.stringify(entry.ocrJson));

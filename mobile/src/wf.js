@@ -34,9 +34,10 @@ export const wfApi = {
   },
   // File bytes for an attachment / repository item (same call the web viewer uses).
   // §5.7 GET /api/repositories/{repositoryId}/items/{itemId}/file?disposition=inline|attachment → raw bytes.
-  file: (repositoryId, itemId, disposition = 'inline') => authedBlob(`/repositories/${repositoryId}/items/${toGuid(itemId)}/file?disposition=${disposition}`),
+  // shareToken: documents shared with me (GET /repositories/shared-with-me) are opened through their share
+  file: (repositoryId, itemId, disposition = 'inline', shareToken) => authedBlob(`/repositories/${repositoryId}/items/${toGuid(itemId)}/file?disposition=${disposition}${shareToken ? '&shareToken=' + encodeURIComponent(shareToken) : ''}`),
   // Repository item (metadata fields) and its AI summary (POST; consumes AI credits, so only on request).
-  item: (repositoryId, itemId) => authed(`/repositories/${repositoryId}/items/${toGuid(itemId)}`),
+  item: (repositoryId, itemId, shareToken) => authed(`/repositories/${repositoryId}/items/${toGuid(itemId)}${shareToken ? '?shareToken=' + encodeURIComponent(shareToken) : ''}`),
   aiSummary: (repositoryId, itemId) => authed(`/repositories/${repositoryId}/items/${toGuid(itemId)}/ai-summary`, { method: 'POST', timeout: 180000 }).then((d) => { const c = (d && d.data) || d; return { output: (c && (c.output || c.Output)) || (typeof c === 'string' ? c : ''), creditConsumed: !!(c && (c.creditConsumed || c.CreditConsumed)) }; }),
   // Start a new request with JSON form data (payload shape mirrors the cloud.ezofis.com client).
   // §9.2 Start with JSON form data (formData keyed by field jsonId; tables as arrays of row objects).

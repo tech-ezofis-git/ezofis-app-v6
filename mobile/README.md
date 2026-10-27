@@ -29,7 +29,7 @@ npx cap sync ios       # resolves Swift packages / CocoaPods on the Mac
 npx cap open ios       # set your Team under Signing & Capabilities, then Run
 ```
 
-## Test APK (v0.4.4)
+## Test APK (v0.4.7)
 
 The test APK was assembled without the Android SDK by `apk-shell/build_apk.py`. It's a minimal WebView wrapper that loads the single-file build (`SINGLE=1 npx vite build` → `dist-single/index.html`). `apk-shell/sign_v2.py` signs it with a throwaway test key. The key is created in `apk-shell/` on the first run and is git-ignored, so it is never committed:
 
@@ -54,7 +54,7 @@ iOS gets centred titles and a translucent tab bar; Android gets left-aligned tit
 
 ## Connecting the real API
 
-Sign-in (`src/api.js`) and the Workflow API (`src/wf.js`, `src/formEngine.js`) are wired to cloud.ezofis.com; see the Workflow API section below. Folders and notifications still use sample data until those APIs exist.
+Sign-in (`src/api.js`) and the Workflow API (`src/wf.js`, `src/formEngine.js`) are wired to cloud.ezofis.com; see the Workflow API section below. Folders use the repository API (`src/repo.js`, see "Folders" below). Notifications still use sample data until that API exists.
 
 ## Workflow API (Workflow API Full Reference, 26 Oct 2026)
 
@@ -85,7 +85,7 @@ When you are signed in, Home, Workflow (Inbox / Sent / Completed, ticket detail,
 
 Hidden on every screen: OCR text, tenant / workflow-instance / storage-provider / repository IDs and other technical keys (see `isTechnicalKey` / `isTechnicalLabel` in `src/wf.js`).
 
-Not wired yet: filter-fields, `by-activity`, notifications (no API; the list shows this device's actions), Folders (sample data until a Folder API doc).
+Not wired yet: filter-fields, `by-activity`, notifications (no API; the list shows this device's actions).
 
 Note for the test APK: from 0.4.1 the WebView shell has a file chooser (WebChromeClient.onShowFileChooser → system document picker, one file per pick), so uploads work. "Save a copy" (downloads) still needs the Capacitor build. Every upload is limited to 20 MB per file.
 
@@ -129,6 +129,47 @@ To make Google sign-in work (all in ONE Google Cloud project):
 3. Build in Android Studio and install on a device with Google Play services.
 
 **Security:** per the API doc, `POST /auth/social/login` does not yet verify a Google/Microsoft token. Do not ship social sign-in until the backend verifies the provider ID token. The app never lets a user type the email for social sign-in; it only sends the email returned by the provider SDK.
+
+## Folders (v0.4.6)
+
+Signed-in users get their EZOFIS repositories (FORM_AND_REPOSITORY_FUNCTIONS_API, Oct 2026). Calls are in `src/repo.js`; screens are in `src/screens/LiveFolders.jsx`. Explore mode keeps the sample folders.
+
+| Screen | Endpoint(s) |
+|---|---|
+| Folders (repositories you can view) | `GET /repositories` |
+| Folder tree: levels, subfolders, "Organized by" | `GET /repositories/{id}/browse/structure`, `GET .../browse/children?pathId&parentFilters` |
+| Files in a folder, All files, search | `POST /repositories/{id}/items/query` (`filters` = the folder path, `search`) with "Load more" |
+| File view: preview, metadata, OCR confidence, AI summary | `GET .../items/{itemId}/file`, `GET .../items/{itemId}`, `POST .../items/{itemId}/ai-summary` |
+| Edit details / Delete | `PATCH .../items/{itemId}/metadata`, `DELETE .../items/{itemId}` |
+| Upload (scan, photos, files; several at once) | `POST /uploadAndIndex/bulkUpload` → `jobId`; progress `GET /uploadAndIndex/bulkUpload/jobs/{jobId}` |
+| To review (staged files) | `POST /uploadAndIndex/index/all` |
+| Review & export | `GET /uploadAndIndex/files/{fileId}` (view), `PUT .../index/{fileId}/fields` (save for later), `PUT .../index/{fileId}` (export to the folder), `POST .../index/deleteFiles` |
+
+A file moves through **Uploading → Reading with AI → Ready to review → Exported to folder**. Upload progress is kept on the device, so it continues on the Folders page and after the app restarts. Each staged file is reviewed one by one. The reviewer checks the AI-extracted values; folder-level fields are required before export. Raw OCR text stays hidden; the extracted values and the OCR confidence are shown.
+
+## Intelligent upload, AI summary, share and sign (v0.4.7)
+
+From MOBILE_APP_REPOSITORY_API (Oct 2026). Calls are in `src/repo.js` (`docApi`); screens are in `src/screens/DocActions.jsx`.
+
+| Feature | Where | Endpoint(s) |
+|---|---|---|
+| Intelligent upload (switch on Upload, on by default) | Upload → pick or scan → AI suggests the folder (with confidence and other candidates) → OCR details → check → Save to folder | `POST /repositories/document-intelligent-agent/upload` → `POST /uploadAndIndex/uploadForOcr` → `POST /uploadAndIndex/uploadWithOcr` (`metadata`, `ocrJson`, `ocrText`) → `PUT /uploadAndIndex/index/{fileId}` |
+| AI summary | AI Summary button on any file | `POST /repositories/{repo}/items/{item}/ai-summary`. The first call uses 1 credit; later calls are free. `output` is parsed into title, type, summary and key facts, with highlights |
+| Share | Share in the file details | `POST .../items/{item}/share` `{ email, message, action: 0 view / 1 edit }` per email; Remove = `DELETE /repositories/share/{shareId}` |
+| Shared with me | Folders home | `GET /repositories/shared-with-me`; opened with `?shareToken=` on the file and detail calls |
+| Request signatures (PDF only) | Request signature in the file details; status under "Signatures" | `POST .../items/{item}/sign-requests` (sequential / parallel, signers, message, expiry), `GET .../sign-requests`, `POST /sign-requests/{id}/cancel` |
+| Sign | "To sign" card on Home and Folders → `/app/sign` → draw the signature, tap where it goes → Sign or Decline | `GET /sign-requests/pending-for-me`, `GET /sign-requests/{id}/file`, `POST /sign-requests/{id}/sign` (page, x, y, width, height in PDF points from the top-left; PNG data URL), `POST .../decline` |
+
+AI calls wait up to 5 minutes and show progress. Raw OCR text stays hidden.
+
+## Ask EZOFIS AI (v0.4.5)
+
+Signed-in users open Ask AI from Home (the Ask AI quick action, the Ask AI card or one of its suggestion chips) or from the tablet rail. The chat calls `POST /api/repositories/assistant/chatbot`; see `docs/workflow-api-integration.md` for the details. In a chat:
+- The assistant searches documents, folders, requests, comments and form entries, and remembers earlier questions in the same chat.
+- Answers show the applied filters and result cards. **Open file** shows the document in the in-app viewer (PDF, Office, e-mail, images) with its metadata. **View request** opens the ticket.
+- When results sit in several repositories, the assistant asks which one to search. The chosen repository shows above the input and can be cleared.
+- Answers can take up to 2 minutes, so the app shows progress and a **Stop** button. **New chat** starts a fresh conversation.
+- "Explore with sample data" keeps the offline sample answers.
 
 ## Auto-refresh and phone notifications (v0.4.4)
 

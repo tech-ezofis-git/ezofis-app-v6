@@ -24,7 +24,7 @@ function matchQuestion(text, keys, hints) {
   return best;
 }
 
-export function AskAiCard({ questions, onAsk, isNew }) {
+export function AskAiCard({ questions, onAsk, isNew, sub = 'Get answers about your requests in seconds', placeholder = 'Ask about your requests…' }) {
   return (
     <section className={'askai' + (isNew ? ' is-new' : '')} aria-label="Ask EZOFIS AI">
       <div className="askai-glow" aria-hidden="true" />
@@ -32,11 +32,11 @@ export function AskAiCard({ questions, onAsk, isNew }) {
         <span className="askai-ic"><Sparkle size={22} color="#fff" /></span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="askai-t">Ask EZOFIS AI{isNew ? <span className="askai-new">New</span> : null}</div>
-          <div className="askai-s">Get answers about your requests in seconds</div>
+          <div className="askai-s">{sub}</div>
         </div>
       </div>
       <button type="button" className="askai-input" onClick={() => onAsk('')}>
-        <span className="askai-ph">Ask about your requests…</span>
+        <span className="askai-ph">{placeholder}</span>
         <span className="askai-go" aria-hidden="true"><Icon name="send" size={16} /></span>
       </button>
       <div className="askai-chips">

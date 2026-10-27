@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore, actionKind } from './store.jsx';
 import markColor from './assets/mark-color.png';
@@ -119,7 +120,7 @@ export function Rail() {
   const nav = useNavigate();
   const loc = useLocation();
   const { requests, unread, live, inboxCount } = useStore();
-  const items = [...TABS.slice(0, 3), { to: '/app/notifications', icon: 'bell', label: 'Alerts' }, TABS[3]];
+  const items = [...TABS.slice(0, 3), ...(live ? [{ to: '/app/ask', icon: 'chat', label: 'Ask AI' }] : []), { to: '/app/notifications', icon: 'bell', label: 'Alerts' }, TABS[3]];
   return (
     <nav className="rail" aria-label="Main">
       <img src={markColor} alt="EZOFIS" className="rail-logo" />
@@ -147,7 +148,8 @@ export function Sheet({ open, onClose, title, children }) {
     return () => window.removeEventListener('keydown', k);
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  // Rendered on <body> so a sheet opened inside a scrolling panel (e.g. the file viewer) is never clipped.
+  return createPortal(
     <div className="sheet-wrap" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" className="sheet-backdrop" aria-label="Close" onClick={onClose} />
       <div className="sheet">
@@ -155,7 +157,8 @@ export function Sheet({ open, onClose, title, children }) {
         {title ? <div className="sheet-title">{title}</div> : null}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
