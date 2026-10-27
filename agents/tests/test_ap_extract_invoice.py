@@ -7,6 +7,7 @@ from app.ap_skills.extract_invoice import (
     _coalesce_invoice,
     _guess_vendor,
     _header_from_column_layout,
+    _heuristic_from_text,
     _is_grounded,
     _normalize_date,
     _shape_ok,
@@ -294,3 +295,44 @@ Invoice Total
     assert lines[1]["amount"] == "2430.00"
     assert lines[2]["qty"] == 3
     assert lines[2]["amount"] == "651.00"
+
+
+def test_as_invoice_keeps_tax_on_header():
+    invoice = _as_invoice({"tax": "125.00", "invoice_date": "2026-05-20"})
+    assert invoice["tax"] == 125.0
+    assert invoice["invoice_header"]["Invoice Tax Amount"] == "125.0"
+    assert invoice["invoice_header"]["Invoice Date"] == "2026-05-20"
+
+
+def test_heuristic_reads_tax_and_short_date_labels():
+    text = """
+INVOICE
+Date: May 20, 2026
+Sales Tax: 86.40
+Invoice Total: 1524.00
+"""
+    invoice = _heuristic_from_text(text)
+    assert invoice["invoice_date"] == "2026-05-20"
+    assert invoice["tax"] == 86.4
+    assert invoice["invoice_header"]["Invoice Tax Amount"] == "86.4"
+    assert invoice["invoice_header"]["Invoice Date"] == "2026-05-20"
+
+
+def test_heuristic_reads_tax_with_rate_on_the_same_line():
+    text = "VERTEX INDUSTRIAL SUPPLY LTD    Tax (13%): $109.20\nTotal Due: $949.20\n"
+    invoice = _heuristic_from_text(text)
+    assert invoice["tax"] == 109.2
+    assert invoice["invoice_header"]["Invoice Tax Amount"] == "109.2"
+
+
+def test_heuristic_reads_tax_with_rate_on_the_next_line():
+    text = "Subtotal\n4605.00\nTax (13%)\n598.65\nInvoice Total\n5203.65\n"
+    invoice = _heuristic_from_text(text)
+    assert invoice["tax"] == 598.65
+    assert invoice["invoice_header"]["Invoice Tax Amount"] == "598.65"
+
+
+def test_heuristic_ignores_tax_id():
+    text = "Tax ID: 874532198\nInvoice Total: 100.00\n"
+    invoice = _heuristic_from_text(text)
+    assert invoice.get("tax") in (None, "")

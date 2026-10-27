@@ -5,7 +5,7 @@ alwaysApply: true
 
 Extract AP invoice fields from the OCR text. Reply with JSON only, no markdown:
 {"doc_type":"invoice"|"other","invoice_number":"","invoice_date":"","due_date":"",
-"terms":"","vendor":"","po_number":"","total":null,"currency":"","line_items":
+"terms":"","vendor":"","po_number":"","total":null,"tax":null,"currency":"","line_items":
 [{"description":"","qty":null,"price":null,"amount":null}]}
 
 PDF OCR often puts table headers and values on separate lines.
@@ -18,5 +18,8 @@ Payment Terms / Terms (e.g. Net 30, Net One Month) → terms.
 If due_date is missing but terms and invoice_date are present, leave due_date empty
 (the system will compute it from terms).
 Invoice Total / Amount Due is total.
+Sales Tax, GST, HST, VAT, Invoice Tax Amount, or Tax with a rate such as Tax (13%) is tax (the tax total, not a tax id).
+Invoice Date, Document Date, Inv Date, or a header line labeled Date is invoice_date.
+Do not use Due Date as invoice_date.
 If the text is only form labels (Terms, Currency, PO Number) with no values,
 leave every field empty. Do not guess USD or copy a label as a value.

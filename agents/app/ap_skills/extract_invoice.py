@@ -9,7 +9,15 @@ from typing import Any, Optional
 
 from app.agents.ocr_helpers import InvalidOcrPageError, resolve_pageno
 from app.ap_skills.payment_terms import due_date_from_terms, looks_like_payment_terms
-from app.ap_skills.types import ApContext, ApSkillError, ApSkillResult, field_text, line_description, norm_token
+from app.ap_skills.types import (
+    ApContext,
+    ApSkillError,
+    ApSkillResult,
+    field_number,
+    field_text,
+    line_description,
+    norm_token,
+)
 
 logger = logging.getLogger("orchestrator.ap.extract_invoice")
 
@@ -35,7 +43,7 @@ _LINE_KEYS = (
 _EXTRACT_PROMPT = (
     "Extract AP invoice fields from the OCR text. Reply with JSON only, no markdown: "
     '{"doc_type":"invoice"|"other","invoice_number":"","invoice_date":"","due_date":"",'
-    '"terms":"","vendor":"","po_number":"","total":null,"currency":"","line_items":'
+    '"terms":"","vendor":"","po_number":"","total":null,"tax":null,"currency":"","line_items":'
     '[{"description":"","qty":null,"price":null,"amount":null}]} '
     "Do not invent values; leave unknowns empty."
 )
@@ -153,8 +161,17 @@ def _as_invoice(data: dict[str, Any]) -> dict[str, Any]:
             orig_header = header
             break
     invoice_date_raw = field_text(
-        src, "invoice_date", "invoiceDate", "Invoice Date", "Document Date", "date"
+        src,
+        "invoice_date",
+        "invoiceDate",
+        "Invoice Date",
+        "Document Date",
+        "Inv Date",
+        "Invoice Dt",
+        "date",
+        "Date",
     )
+    tax = _tax_amount(src)
     due_date_raw = field_text(src, "due_date", "dueDate", "Due Date")
     terms = field_text(
         src,
@@ -213,6 +230,7 @@ def _as_invoice(data: dict[str, Any]) -> dict[str, Any]:
             src, "matter_id", "matterId", "Matter ID", "MatterId", "matter_no", "Matter No"
         ),
         "total": total,
+        "tax": tax,
         "currency": field_text(src, "currency", "Currency"),
         "line_items": normalized_lines,
     }
@@ -245,6 +263,8 @@ def _as_invoice(data: dict[str, Any]) -> dict[str, Any]:
         header.setdefault("Currency", out["currency"])
     if total is not None:
         header.setdefault("Invoice Amount", str(total))
+    if tax is not None:
+        header.setdefault("Invoice Tax Amount", str(tax))
     if header:
         out["invoice_header"] = header
     if raw_lines and orig_key != "line_items":
@@ -284,8 +304,34 @@ _TERMS_BLOCK = re.compile(
     re.I | re.MULTILINE,
 )
 _INVOICE_DATE_BLOCK = re.compile(
-    r"(?:^|\n)\s*(?:Invoice Date|Document Date)\s*(?:\n|:)\s*([^\n]+)",
+    r"(?:^|\n)\s*(?:Invoice\s*Date|Document\s*Date|Inv\.?\s*Date|Invoice\s*Dt|Date)\s*(?:\n|:)\s*([^\n]+)",
     re.I | re.MULTILINE,
+)
+# "Tax (13%)" / "Tax 13%" is a tax total. "Tax ID" is not.
+_TAX_RATE = r"(?:\(\s*)?\d+(?:\.\d+)?\s*%\s*\)?"
+_TAX_LABEL = re.compile(
+    r"(?:invoice\s*tax(?:\s*amount)?|tax\s*amount|sales\s*tax|\bgst\b|\bhst\b|\bvat\b|"
+    r"\btax(?!\s*id\b)\s*" + _TAX_RATE + r")\s*[:\-]?\s*",
+    re.I,
+)
+_TAX_BLOCK = re.compile(
+    r"(?:^|\n)\s*(?:Invoice\s*Tax(?:\s*Amount)?|Tax\s*Amount|Sales\s*Tax|GST|HST|VAT|"
+    r"Tax(?!\s*ID\b)\s*" + _TAX_RATE + r")\s*\n\s*(?:USD|CAD|EUR|GBP|INR)?\s*([\d,]+\.\d{2})",
+    re.I | re.MULTILINE,
+)
+_TAX_KEY = re.compile(r"\btax\b", re.I)
+_TAX_ID_KEY = re.compile(r"\btax\s*id\b", re.I)
+_TAX_KEYS = (
+    "tax",
+    "tax_amount",
+    "invoice_tax_amount",
+    "Invoice Tax Amount",
+    "Tax Amount",
+    "Tax",
+    "Sales Tax",
+    "GST",
+    "HST",
+    "VAT",
 )
 _CURRENCY_TOKEN = re.compile(r"\b(CAD|USD|EUR|GBP|INR|SGD|AED)\b", re.I)
 _VENDOR_ENTITY = re.compile(r"\b(ltd|limited|inc|corp|llc|gmbh|plc|co\.?)\b", re.I)
@@ -313,6 +359,11 @@ _COLUMN_LABELS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"^due\s*date$", re.I), "Due Date"),
     (re.compile(r"^invoice\s*date$", re.I), "Invoice Date"),
     (re.compile(r"^document\s*date$", re.I), "Invoice Date"),
+    (re.compile(r"^inv\.?\s*date$", re.I), "Invoice Date"),
+    (re.compile(r"^invoice\s*dt$", re.I), "Invoice Date"),
+    (re.compile(r"^date$", re.I), "Invoice Date"),
+    (re.compile(r"^(?:invoice\s*)?tax(?:\s*amount)?$", re.I), "Invoice Tax Amount"),
+    (re.compile(r"^(?:sales\s*tax|gst|hst|vat)$", re.I), "Invoice Tax Amount"),
     (re.compile(r"^currency$", re.I), "Currency"),
 )
 
@@ -345,6 +396,8 @@ def _shape_ok(label: str, value: str) -> bool:
         return any(ch.isdigit() for ch in value)
     if label in ("Due Date", "Invoice Date"):
         return _normalize_date(value) is not None
+    if label == "Invoice Tax Amount":
+        return _tax_amount({label: value}) is not None
     if label == "Currency":
         return bool(_CURRENCY_TOKEN.fullmatch(value.strip()))
     if label == "Terms":
@@ -477,6 +530,39 @@ def _guess_vendor(text: str) -> str:
     return ""
 
 
+def _tax_amount(src: dict[str, Any]) -> Any:
+    """Header tax total. Ignores tax ids and non-numeric text."""
+    number = field_number(src, *_TAX_KEYS)
+    if number is not None:
+        return number
+    text = field_text(src, *_TAX_KEYS)
+    if text:
+        money = _MONEY_TOKEN.search(text)
+        if money:
+            return field_number({"tax": money.group(0)}, "tax")
+    # Labeled OCR often keeps the rate on the key: "Tax (13%)" -> "$109.20".
+    for key, raw in src.items():
+        label = str(key)
+        if _TAX_ID_KEY.search(label) or not _TAX_KEY.search(label):
+            continue
+        money = _MONEY_TOKEN.search(str(raw))
+        if money:
+            return field_number({"tax": money.group(0)}, "tax")
+    return None
+
+
+def _guess_tax(text: str) -> Any:
+    match = _TAX_LABEL.search(text or "")
+    if match:
+        money = _MONEY_TOKEN.search(text[match.end() :])
+        if money:
+            return money.group(0)
+    block = _TAX_BLOCK.search(text or "")
+    if block:
+        return block.group(1)
+    return None
+
+
 def _guess_total(text: str) -> Any:
     match = _TOTAL_LABEL.search(text or "")
     if match:
@@ -542,11 +628,21 @@ def _heuristic_from_text(text: str) -> dict[str, Any]:
         if found:
             currency = found.group(1).upper()
     due_date = field_text(merged, "Due Date", "due_date")
-    invoice_date = field_text(merged, "Invoice Date", "invoice_date", "Shipped", "Document Date")
+    invoice_date = field_text(
+        merged, "Invoice Date", "invoice_date", "Shipped", "Document Date", "Inv Date", "Date"
+    )
     if not invoice_date:
         date_match = _INVOICE_DATE_BLOCK.search(text or "")
         if date_match:
             invoice_date = date_match.group(1).strip()
+    if invoice_date and _normalize_date(invoice_date) is None and not field_text(
+        merged, "Invoice Date", "Document Date", "Inv Date"
+    ):
+        # A bare "Date" line that is not a date (tax id, page marker) is not the invoice date.
+        invoice_date = ""
+    tax = _tax_amount(merged)
+    if tax is None:
+        tax = _guess_tax(text)
     terms = field_text(merged, "Terms", "TERMS", "Payment Terms", "payment_terms", "terms")
     if not terms or not looks_like_payment_terms(terms):
         terms_match = _TERMS_BLOCK.search(text or "")
@@ -563,6 +659,7 @@ def _heuristic_from_text(text: str) -> dict[str, Any]:
         "currency": currency,
         "due_date": due_date,
         "invoice_date": invoice_date,
+        "tax": tax,
         "terms": terms,
         "invoice_header": merged,
         "line_items": _guess_line_items_from_ocr(text),
@@ -694,6 +791,7 @@ _GROUNDABLE_FIELDS = frozenset(
         "currency",
         "due_date",
         "invoice_date",
+        "tax",
         "grn_number",
         "matter_id",
     }
