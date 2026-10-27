@@ -442,14 +442,15 @@ public sealed class RepositoryItemQueryService : IRepositoryItemQueryService
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
 
-        var updatedFieldCount = await RepositoryItemMetadataUpdateHelper.UpdateAsync(
+        var update = await RepositoryItemMetadataUpdateHelper.UpdateAsync(
             connection, repo, tenantId, repositoryId, itemId, metadata, userId, cancellationToken);
 
-        if (updatedFieldCount < 0)
+        if (update.UpdatedFieldCount < 0)
             return null;
 
-        // Do not write noisy "Metadata updated" timeline rows -- ingest/OCR/workflow history are shown instead.
-        return new UpdateRepositoryItemMetadataResult(itemId, updatedFieldCount);
+        // Old/new values go to repository."ItemMetadataHistory" (shown on the timeline as one
+        // "metadata" event per save) -- no separate "Metadata updated" timeline row.
+        return new UpdateRepositoryItemMetadataResult(itemId, update.UpdatedFieldCount, update.Changes, update.ChangeId);
     }
 
     public async Task<bool> SoftDeleteItemAsync(

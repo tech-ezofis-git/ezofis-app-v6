@@ -105,6 +105,7 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IWorkflowLegacyMailboxQueryService, WorkflowLegacyMailboxQueryService>();
         services.AddScoped<IWorkflowInstanceHistoryService, WorkflowInstanceHistoryService>();
         services.AddScoped<IWorkflowProcessAddonService, WorkflowProcessAddonService>();
+        services.AddScoped<WorkflowDelegationMailService>();
         services.AddScoped<IWorkflowLegacyTransactionSyncService, WorkflowLegacyTransactionSyncService>();
         services.AddScoped<IWorkflowInboxShareAssignmentService, WorkflowInboxShareAssignmentService>();
         services.AddScoped<IApDashboardQueryService, ApDashboardQueryService>();

@@ -29,6 +29,7 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
     private readonly WorkflowLegacyMailboxSyncService _mailboxSync;
     private readonly IRepositoryItemShareService _itemShares;
     private readonly IWorkflowDelegationService _delegations;
+    private readonly WorkflowDelegationMailService _delegationMail;
     private readonly ILogger<WorkflowLegacyTransactionSyncService> _logger;
 
     public WorkflowLegacyTransactionSyncService(
@@ -37,6 +38,7 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         WorkflowLegacyMailboxSyncService mailboxSync,
         IRepositoryItemShareService itemShares,
         IWorkflowDelegationService delegations,
+        WorkflowDelegationMailService delegationMail,
         ILogger<WorkflowLegacyTransactionSyncService> logger)
     {
         _tenantContext = tenantContext;
@@ -44,6 +46,7 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         _mailboxSync = mailboxSync;
         _itemShares = itemShares;
         _delegations = delegations;
+        _delegationMail = delegationMail;
         _logger = logger;
     }
 
@@ -104,6 +107,7 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         // Workflow delegation: when the resolved assignee is away and has an active delegation
         // covering this workflow/stage with "redirect new requests" on, route to the delegate
         // instead. Caller-supplied activityUserId (explicit reassignment) is never overridden.
+        var currentStepAssignee = resolvedActivityUserId;
         if (activityUserId is null)
         {
             resolvedActivityUserId = await RedirectToDelegateAsync(
@@ -234,6 +238,10 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
             await _mailboxSync.SyncTransactionRowAsync(
                 workflowId, existingRow.Id, connection, mailboxForm, cancellationToken);
 
+            // If this step had been routed to a delegate, tell the original assignee what was done.
+            await _delegationMail.NotifyActionAsync(
+                connection, workflowId, workflowInstanceId, existingRow.Id, review!.Trim(), userId, cancellationToken);
+
             int? nextTransactionId = null;
             Guid? nextTransactionGuid = null;
             var workflowCompleted = false;
@@ -250,7 +258,7 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
                     }
                 }
 
-                await CompleteWorkflowInstanceAsync(connection, instancesTable, workflowInstanceId, userId, cancellationToken);
+                await CompleteAndNotifyAsync(connection, workflowId, instancesTable, workflowInstanceId, userId, cancellationToken);
                 await _mailboxSync.SyncInstanceEndTransactionsAsync(
                     workflowId, workflowInstanceId, connection, mailboxForm, cancellationToken);
 
@@ -315,6 +323,7 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
 
                     // The next step's own assignee may be away: route it to their active delegate.
                     // (The check above only covers the current step's assignee.)
+                    var nextStepAssignee = nextActivityUserId;
                     nextActivityUserId = await RedirectToDelegateAsync(
                         workflowId, nextTxActivityId, nextActivityUserId, cancellationToken);
 
@@ -329,12 +338,19 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
                         matchedRule?.Id,
                         cancellationToken);
 
+                    if (nextActivityUserId != nextStepAssignee)
+                    {
+                        await _delegationMail.RecordRedirectAndNotifyAsync(
+                            connection, workflowId, workflowInstanceId, nextTransactionId.Value, nextStep.Name,
+                            nextStepAssignee, nextActivityUserId, cancellationToken);
+                    }
+
                     await _mailboxSync.SyncTransactionRowAsync(
                         workflowId, nextTransactionId.Value, connection, mailboxForm, cancellationToken);
 
                     if (IsEndStage(nextStep))
                     {
-                        await CompleteWorkflowInstanceAsync(connection, instancesTable, workflowInstanceId, userId, cancellationToken);
+                        await CompleteAndNotifyAsync(connection, workflowId, instancesTable, workflowInstanceId, userId, cancellationToken);
                         await _mailboxSync.SyncInstanceEndTransactionsAsync(
                             workflowId, workflowInstanceId, connection, mailboxForm, cancellationToken);
                         workflowCompleted = true;
@@ -375,7 +391,7 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
             }
             else
             {
-                await CompleteWorkflowInstanceAsync(connection, instancesTable, workflowInstanceId, userId, cancellationToken);
+                await CompleteAndNotifyAsync(connection, workflowId, instancesTable, workflowInstanceId, userId, cancellationToken);
                 await _mailboxSync.SyncInstanceEndTransactionsAsync(
                     workflowId, workflowInstanceId, connection, mailboxForm, cancellationToken);
                 workflowCompleted = true;
@@ -422,10 +438,17 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         await _mailboxSync.SyncTransactionRowAsync(
             workflowId, insertedId, connection, mailboxForm, cancellationToken);
 
+        if (resolvedActivityUserId != currentStepAssignee)
+        {
+            await _delegationMail.RecordRedirectAndNotifyAsync(
+                connection, workflowId, workflowInstanceId, insertedId, targetStep.Name,
+                currentStepAssignee, resolvedActivityUserId, cancellationToken);
+        }
+
         var insertedEndStage = IsEndStage(targetStep);
         if (insertedEndStage)
         {
-            await CompleteWorkflowInstanceAsync(connection, instancesTable, workflowInstanceId, userId, cancellationToken);
+            await CompleteAndNotifyAsync(connection, workflowId, instancesTable, workflowInstanceId, userId, cancellationToken);
             await _mailboxSync.SyncInstanceEndTransactionsAsync(
                 workflowId, workflowInstanceId, connection, mailboxForm, cancellationToken);
             _logger.LogInformation(
@@ -640,6 +663,19 @@ WHERE id = @WorkflowInstanceId;";
         cmd.Parameters.AddWithValue("@Status", (int)WorkflowInstanceStatus.Completed);
         cmd.Parameters.AddWithValue("@WorkflowInstanceId", workflowInstanceId);
         await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <summary>Marks the instance completed, then emails original assignees whose steps went to a delegate.</summary>
+    private async Task CompleteAndNotifyAsync(
+        NpgsqlConnection connection,
+        Guid workflowId,
+        string instancesTable,
+        Guid workflowInstanceId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        await CompleteWorkflowInstanceAsync(connection, instancesTable, workflowInstanceId, userId, cancellationToken);
+        await _delegationMail.NotifyCompletedAsync(connection, workflowId, workflowInstanceId, cancellationToken);
     }
 
     /// <summary>

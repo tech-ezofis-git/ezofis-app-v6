@@ -38,6 +38,7 @@ The tenant comes from the token. Errors return `{ "error": "..." }` with `400` u
 | 4b | Upload file (flat path) | `POST /api/repositories/{repoId}/items/upload` | `RepositoriesController` |
 | 4c | Update item metadata | `PATCH /api/repositories/{repoId}/items/{itemId}/metadata` | `RepositoriesController` |
 | 4d | Delete item (soft) | `DELETE /api/repositories/{repoId}/items/{itemId}` | `RepositoriesController` |
+| 4e | Metadata edit history | `GET /api/repositories/{repoId}/items/{itemId}/metadata/history` | `RepositoriesController` |
 | 5a | Folder structure | `GET /api/repositories/{repoId}/browse/structure` | `RepositoriesController` |
 | 5b | Next folder level | `GET /api/repositories/{repoId}/browse/children` | `RepositoriesController` |
 | 5c | Item list (paged) | `GET /api/repositories/{repoId}/items` | `RepositoriesController` |
@@ -334,7 +335,75 @@ Response `201` (both):
 
 ### 4c. `PATCH /api/repositories/{repoId}/items/{itemId}/metadata`
 
-Body: `{ "Supplier": "Acme", "Amount": "1200" }` (or wrapped in `metadata`). Response: `{ itemId, updatedFieldCount, item }`.
+Use this for the **Save** button on the archived-file metadata panel. Send only the fields shown in the panel (keys = field name or column, same as upload metadata):
+
+```json
+{ "metadata": { "Billing Address": "1800 Woodward Dr, Ottawa, ON, K2C 0P7", "Order Number": "EST-900004" } }
+```
+
+The update and its history are saved in one transaction. Only fields whose value **actually changed** are recorded (`1200` vs `1200.00`, or the same text with extra spaces, is not a change).
+
+Response:
+
+```json
+{
+  "itemId": "c3f1...",
+  "updatedFieldCount": 2,
+  "changeId": "9a7e...",
+  "changes": [
+    { "field": "Order Number", "column": "OrderNumber", "oldValue": "EST-900003", "newValue": "EST-900004" }
+  ],
+  "item": { "...": "full item detail after save" }
+}
+```
+
+`changes` is empty and `changeId` is `null` when nothing changed. Needs **EditMetadata** permission.
+
+### 4e. Metadata edit history
+
+Every metadata save that changes at least one value is stored in `repository."ItemMetadataHistory"` (one row per field, grouped by `changeId`; the table is created automatically on first save). It is shown two ways:
+
+**a) In the Timeline tab** — `GET /api/repositories/{repoId}/items/{itemId}/timeline` now includes one event per save:
+
+```json
+{
+  "id": "9a7e...",
+  "eventType": "metadata",
+  "title": "Metadata edited — Order Number",
+  "description": "Order Number: EST-900003 → EST-900004",
+  "actorType": "User",
+  "actorName": "Jake Gillis",
+  "createdAtUtc": "2026-10-27T09:15:02Z",
+  "isDerived": false,
+  "metadataChanges": [
+    { "field": "Order Number", "column": "OrderNumber", "oldValue": "EST-900003", "newValue": "EST-900004" }
+  ]
+}
+```
+
+When several fields change in one save the title is `Metadata edited (N fields)` and `metadataChanges` lists each one. Use `metadataChanges` to render an old → new table under the timeline entry; `description` is a ready-made one-line summary. Empty values show as `(empty)` in `description` and `null` in `metadataChanges`. Other timeline events have `metadataChanges: null`.
+
+**b) Dedicated list** — `GET /api/repositories/{repoId}/items/{itemId}/metadata/history` (newest first, needs **View** permission):
+
+```json
+{
+  "itemId": "c3f1...",
+  "count": 1,
+  "entries": [
+    {
+      "changeId": "9a7e...",
+      "changedAtUtc": "2026-10-27T09:15:02Z",
+      "changedBy": "2eb6...",
+      "changedByName": "Jake Gillis",
+      "changes": [
+        { "field": "Order Number", "column": "OrderNumber", "oldValue": "EST-900003", "newValue": "EST-900004" }
+      ]
+    }
+  ]
+}
+```
+
+`404` when the item does not exist. Edits made by the AP agent through the same update path are recorded too (`changedBy` may be `null`, shown as actor type `System`).
 
 ### 4d. `DELETE /api/repositories/{repoId}/items/{itemId}`
 

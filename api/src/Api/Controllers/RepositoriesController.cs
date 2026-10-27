@@ -1072,7 +1072,34 @@ public sealed class RepositoriesController : ControllerBase
         }
     }
 
-    /// <summary>Update metadata on an existing item (after upload). Body = JSON object, same keys as upload metadata.</summary>
+    /// <summary>
+    /// Metadata edit history (newest first): one entry per save with each changed field's old and new value.
+    /// The same edits also appear on GET .../timeline as <c>eventType = "metadata"</c>.
+    /// </summary>
+    [HttpGet("/api/repositories/{id:guid}/items/{itemId:guid}/metadata/history")]
+    public async Task<IActionResult> GetItemMetadataHistory(
+        Guid id,
+        Guid itemId,
+        CancellationToken cancellationToken = default)
+    {
+        var tenantId = RequireTenantId();
+        if (await EnsureRepositoryAccessAsync(id, tenantId, RepositorySecurityPermissions.View, cancellationToken) is { } denied)
+            return denied;
+        try
+        {
+            var history = await _itemActivity.GetMetadataHistoryAsync(id, tenantId, itemId, cancellationToken);
+            return history == null ? NotFound() : Ok(history);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Update metadata on an existing item (after upload). Body = JSON object, same keys as upload metadata.
+    /// Fields whose value changed are saved to metadata history (old → new) and returned in <c>changes</c>.
+    /// </summary>
     [HttpPatch("/api/repositories/{id:guid}/items/{itemId:guid}/metadata")]
     public async Task<IActionResult> UpdateItemMetadata(
         Guid id,
@@ -1098,6 +1125,8 @@ public sealed class RepositoriesController : ControllerBase
             {
                 result.ItemId,
                 result.UpdatedFieldCount,
+                changeId = result.ChangeId,
+                changes = result.Changes ?? Array.Empty<RepositoryItemMetadataChangeDto>(),
                 item
             });
         }

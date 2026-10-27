@@ -1,3 +1,4 @@
+using System.Globalization;
 using Npgsql;
 using NpgsqlTypes;
 using SaaSApp.Repository.Application.Contracts;
@@ -14,7 +15,16 @@ internal static class RepositoryItemMetadataUpdateHelper
         "ModifiedAtUtc", "ModifiedBy"
     };
 
-    public static async Task<int> UpdateAsync(
+    /// <summary>
+    /// <c>UpdatedFieldCount</c> = fields written (-1 when the item was not found);
+    /// <c>Changes</c> = fields whose value actually differed, also saved to metadata history.
+    /// </summary>
+    public sealed record UpdateResult(
+        int UpdatedFieldCount,
+        IReadOnlyList<RepositoryItemMetadataChangeDto> Changes,
+        Guid? ChangeId);
+
+    public static async Task<UpdateResult> UpdateAsync(
         NpgsqlConnection connection,
         RepositoryDetailDto repo,
         Guid tenantId,
@@ -38,6 +48,23 @@ internal static class RepositoryItemMetadataUpdateHelper
                 "No valid metadata fields to update. Use GET .../items/filter-fields for allowed keys that exist on this repository table.");
         }
 
+        await RepositoryItemMetadataHistoryStore.EnsureTableAsync(connection, null, cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        var oldValues = await LoadCurrentValuesAsync(
+            connection, transaction, table, columnUpdates.Keys.ToList(), tenantId, repositoryId, itemId, cancellationToken);
+        if (oldValues == null)
+            return new UpdateResult(-1, Array.Empty<RepositoryItemMetadataChangeDto>(), null);
+
+        var changes = new List<RepositoryItemMetadataChangeDto>();
+        foreach (var (column, newValue) in columnUpdates)
+        {
+            var oldText = FormatValue(oldValues.GetValueOrDefault(column));
+            var newText = FormatValue(newValue);
+            if (!string.Equals(oldText, newText, StringComparison.Ordinal))
+                changes.Add(new RepositoryItemMetadataChangeDto(ResolveFieldName(repo, column), column, oldText, newText));
+        }
+
         var sets = new List<string>();
         var parameters = new List<NpgsqlParameter>();
         var index = 0;
@@ -58,7 +85,7 @@ internal static class RepositoryItemMetadataUpdateHelper
             WHERE id = @ItemId AND tenant_id = @TenantId AND repository_id = @RepositoryId AND is_deleted = false;
             """;
 
-        await using var cmd = new NpgsqlCommand(sql, connection);
+        await using var cmd = new NpgsqlCommand(sql, connection, transaction);
         foreach (var p in parameters)
             cmd.Parameters.Add(p);
         cmd.Parameters.AddWithValue("@ModifiedBy", (object?)userId ?? DBNull.Value);
@@ -67,7 +94,81 @@ internal static class RepositoryItemMetadataUpdateHelper
         cmd.Parameters.AddWithValue("@RepositoryId", repositoryId);
 
         var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
-        return rows == 0 ? -1 : columnUpdates.Count;
+        if (rows == 0)
+            return new UpdateResult(-1, Array.Empty<RepositoryItemMetadataChangeDto>(), null);
+
+        Guid? changeId = null;
+        if (changes.Count > 0)
+        {
+            changeId = Guid.NewGuid();
+            await RepositoryItemMetadataHistoryStore.InsertAsync(
+                connection, transaction, tenantId, repositoryId, itemId, changeId.Value, changes, userId, cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return new UpdateResult(columnUpdates.Count, changes, changeId);
+    }
+
+    /// <summary>Current values of the columns about to change (row locked); null when the item is missing.</summary>
+    private static async Task<Dictionary<string, object?>?> LoadCurrentValuesAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string table,
+        IReadOnlyList<string> columns,
+        Guid tenantId,
+        Guid repositoryId,
+        Guid itemId,
+        CancellationToken cancellationToken)
+    {
+        var select = string.Join(", ", columns.Select(RepositorySqlHelper.PhysicalColumnRef));
+        var sql = $"""
+            SELECT {select}
+            FROM {table}
+            WHERE id = @ItemId AND tenant_id = @TenantId AND repository_id = @RepositoryId AND is_deleted = false
+            FOR UPDATE;
+            """;
+        await using var cmd = new NpgsqlCommand(sql, connection, transaction);
+        cmd.Parameters.AddWithValue("@ItemId", itemId);
+        cmd.Parameters.AddWithValue("@TenantId", tenantId);
+        cmd.Parameters.AddWithValue("@RepositoryId", repositoryId);
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+            return null;
+
+        var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < columns.Count; i++)
+            values[columns[i]] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+        return values;
+    }
+
+    /// <summary>
+    /// Text form used for history and change detection, so 1200.00 vs 1200 or a date vs its
+    /// midnight timestamp do not count as edits. Blank is treated as no value.
+    /// </summary>
+    private static string? FormatValue(object? value) => value switch
+    {
+        null or DBNull => null,
+        string s => string.IsNullOrWhiteSpace(s) ? null : s.Trim(),
+        decimal d => d.ToString("0.############################", CultureInfo.InvariantCulture),
+        double d => d.ToString("0.############", CultureInfo.InvariantCulture),
+        float f => f.ToString("0.######", CultureInfo.InvariantCulture),
+        DateTime dt => dt.TimeOfDay == TimeSpan.Zero
+            ? dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            : dt.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture),
+        DateOnly d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        bool b => b ? "true" : "false",
+        IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
+        _ => value.ToString()
+    };
+
+    /// <summary>Repository field display name for a column (e.g. "Billing Address"), else the column.</summary>
+    private static string ResolveFieldName(RepositoryDetailDto repo, string column)
+    {
+        var field = repo.Fields.FirstOrDefault(f =>
+            string.Equals(f.SqlColumnName, column, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(RepositorySqlHelper.ToPhysicalName(f.SqlColumnName), column, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(f.Name, column, StringComparison.OrdinalIgnoreCase));
+        return string.IsNullOrWhiteSpace(field?.Name) ? column : field.Name;
     }
 
     private static Dictionary<string, object?> BuildColumnUpdates(

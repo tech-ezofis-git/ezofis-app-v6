@@ -126,6 +126,9 @@ public sealed class RepositoryItemActivityService : IRepositoryItemActivityServi
         events.AddRange(await LoadCommentTimelineEventsAsync(
             connection, repositoryId, tenantId, itemId, cancellationToken));
 
+        events.AddRange(BuildMetadataTimelineEvents(
+            await RepositoryItemMetadataHistoryStore.ListAsync(connection, tenantId, repositoryId, itemId, cancellationToken)));
+
         events = await ResolveActorNamesAsync(connection, events, cancellationToken);
         events = DeduplicateTimelineEvents(events)
             .OrderBy(e => e.CreatedAtUtc)
@@ -145,6 +148,69 @@ public sealed class RepositoryItemActivityService : IRepositoryItemActivityServi
             AssigneeEmail: assigneeEmail,
             TicketHistory: hasTicket ? ticketHistory : null);
     }
+
+    public async Task<RepositoryItemMetadataHistoryResultDto?> GetMetadataHistoryAsync(
+        Guid repositoryId,
+        Guid tenantId,
+        Guid itemId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await ItemExistsAsync(repositoryId, tenantId, itemId, cancellationToken))
+            return null;
+
+        await using var connection = new NpgsqlConnection(RequireConnectionString());
+        await connection.OpenAsync(cancellationToken);
+
+        var rows = await RepositoryItemMetadataHistoryStore.ListAsync(
+            connection, tenantId, repositoryId, itemId, cancellationToken);
+        var userIds = rows.Where(r => r.ChangedBy.HasValue).Select(r => r.ChangedBy!.Value).Distinct().ToList();
+        var names = userIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await RepositoryUserNameResolver.ResolveDisplayNamesAsync(connection, userIds, cancellationToken);
+
+        var entries = rows
+            .GroupBy(r => r.ChangeId)
+            .Select(g =>
+            {
+                var first = g.First();
+                return new RepositoryItemMetadataHistoryEntryDto(
+                    g.Key,
+                    first.ChangedAtUtc,
+                    first.ChangedBy,
+                    first.ChangedBy is Guid by && names.TryGetValue(by, out var name) ? name : null,
+                    g.Select(ToChangeDto).ToList());
+            })
+            .OrderByDescending(e => e.ChangedAtUtc)
+            .ToList();
+
+        return new RepositoryItemMetadataHistoryResultDto(itemId, entries.Count, entries);
+    }
+
+    /// <summary>One <c>metadata</c> timeline event per save, listing each field's old → new value.</summary>
+    private static IEnumerable<RepositoryItemTimelineEventDto> BuildMetadataTimelineEvents(
+        IReadOnlyList<RepositoryItemMetadataHistoryStore.HistoryRow> rows) =>
+        rows
+            .GroupBy(r => r.ChangeId)
+            .Select(g =>
+            {
+                var first = g.First();
+                var changes = g.Select(ToChangeDto).ToList();
+                var description = string.Join("; ", changes.Select(c =>
+                    $"{c.Field}: {c.OldValue ?? "(empty)"} → {c.NewValue ?? "(empty)"}"));
+                return new RepositoryItemTimelineEventDto(
+                    g.Key,
+                    "metadata",
+                    changes.Count == 1 ? $"Metadata edited — {changes[0].Field}" : $"Metadata edited ({changes.Count} fields)",
+                    description,
+                    first.ChangedBy.HasValue ? "User" : "System",
+                    first.ChangedBy?.ToString("D"),
+                    first.ChangedAtUtc,
+                    IsDerived: false,
+                    MetadataChanges: changes);
+            });
+
+    private static RepositoryItemMetadataChangeDto ToChangeDto(RepositoryItemMetadataHistoryStore.HistoryRow row) =>
+        new(row.FieldName, row.ColumnName, row.OldValue, row.NewValue);
 
     public async Task<RepositoryItemTicketResultDto?> GetTicketAsync(
         Guid repositoryId,

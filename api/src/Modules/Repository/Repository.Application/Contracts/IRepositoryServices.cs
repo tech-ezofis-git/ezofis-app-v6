@@ -175,6 +175,16 @@ public interface IRepositoryItemActivityService
         Guid itemId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Metadata edit history for an item, newest first (one entry per save, with old/new per field).
+    /// Returns null when the item does not exist.
+    /// </summary>
+    Task<RepositoryItemMetadataHistoryResultDto?> GetMetadataHistoryAsync(
+        Guid repositoryId,
+        Guid tenantId,
+        Guid itemId,
+        CancellationToken cancellationToken = default);
+
     Task<RepositoryItemTimelineEventDto?> AddTimelineEventAsync(
         Guid repositoryId,
         Guid tenantId,

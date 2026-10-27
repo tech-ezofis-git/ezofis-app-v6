@@ -376,7 +376,31 @@ public sealed record UpdateRepositoryItemMetadataRequest(
 
 public sealed record UpdateRepositoryItemMetadataResult(
     Guid ItemId,
-    int UpdatedFieldCount);
+    int UpdatedFieldCount,
+    /// <summary>Fields whose value actually changed in this save (old → new). Empty when nothing changed.</summary>
+    IReadOnlyList<RepositoryItemMetadataChangeDto>? Changes = null,
+    /// <summary>History id for this save; null when no field changed.</summary>
+    Guid? ChangeId = null);
+
+/// <summary>One edited metadata field: display name, physical column, and old/new values as text.</summary>
+public sealed record RepositoryItemMetadataChangeDto(
+    string Field,
+    string Column,
+    string? OldValue,
+    string? NewValue);
+
+/// <summary>One metadata save (all fields changed together) in the item's metadata history.</summary>
+public sealed record RepositoryItemMetadataHistoryEntryDto(
+    Guid ChangeId,
+    DateTime ChangedAtUtc,
+    Guid? ChangedBy,
+    string? ChangedByName,
+    IReadOnlyList<RepositoryItemMetadataChangeDto> Changes);
+
+public sealed record RepositoryItemMetadataHistoryResultDto(
+    Guid ItemId,
+    int Count,
+    IReadOnlyList<RepositoryItemMetadataHistoryEntryDto> Entries);
 
 public sealed record RepositoryItemFileContent(
     Stream Stream,
@@ -392,7 +416,9 @@ public sealed record RepositoryItemTimelineEventDto(
     string? ActorType,
     string? ActorName,
     DateTime CreatedAtUtc,
-    bool IsDerived = false);
+    bool IsDerived = false,
+    /// <summary>Set on <c>metadata</c> events: each edited field with old and new value.</summary>
+    IReadOnlyList<RepositoryItemMetadataChangeDto>? MetadataChanges = null);
 
 /// <summary>One step in the ticket history shown when opening a raise-ticket file.</summary>
 public sealed record RepositoryItemTicketHistoryStepDto(
