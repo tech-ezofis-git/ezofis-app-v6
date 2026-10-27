@@ -154,10 +154,21 @@ Each phase ends with: the code done, a targeted type-check of the changed files,
 
 ### Phase 6 — Lists & history
 
-- Inbox / Grid: an expand chevron on rows with `subworkflowTransaction[]`, and sub-rows with a status icon, requestNo, stage and duration.
-- History: a `[CONNECTOR]` marker on stages with `subWorkflowHistory`, and a collapsible child-stage table. This also covers mechanism B's visible output.
-- Per-child history / attachments / comments shortcuts.
-- **Depends on** backend Q5 (are these fields present on V6).
+**Done (localhost-only, mock data).**
+
+- **Inbox cards** (`GenericGridCard.tsx`, the default grid view of generic workflows): a "sitemap · N ▾" chip next to the request number when the row has children. It expands `components/sub-workflow/SubProcessRows.tsx` inline under the card: status icon, request number, workflow · stage · age. Clicking a row opens that child in place.
+  - Data comes from `useRowSubProcesses` (`features/sub-workflow/hooks`). Live mode reads the row's own `subworkflowTransaction` (V5 field, mapped by `toSubProcessRow`). Mock mode makes one `useSubProcessesForWorkflow` query per workflow, shared by every card, so there are no per-row calls.
+- **History** (`History.tsx`): steps with child steps get an orange "Connector" badge and a collapsible `components/sub-workflow/SubWorkflowHistoryBlock.tsx` (child request number, step count, then a Stage / User / Received / Processed / Status table).
+  - Live rows use their own `subWorkflowHistory`.
+  - Mock entries come from `useSubWorkflowHistory` and are merged by `attachConnectorHistory` (matched to a step by name, otherwise appended as a connector step).
+  - The empty-history check now looks at the merged list.
+- Per-child history / attachments / comments shortcuts: covered by opening the child, whose own tabs have them. No separate shortcuts were added.
+- **Not covered:** the table and kanban views have no child rows (the grid is the default view), and AP workflows use a different card.
+- Tests: `attachConnectorHistory` and the mock's grouped children (27 sub-workflow tests total).
+- Checked in the browser on 2026-10-27, with mock links and a connector history entry seeded on real request EXP-2026-101:
+  - Only EXP-2026-101 shows the chip ("2"); expanding lists EXP-2026-100 and DA-SIM-7, and clicking EXP-2026-100 opens it, with its parent link back to EXP-2026-101.
+  - EXP-2026-101's history shows its two real steps plus "Document Approval (connector)" with the Connector badge; expanding shows both DA-SIM-7 steps with the right users, dates and statuses.
+- **Live-mode dependency:** backend Q5 (do V6 list/history responses include these fields?).
 
 ### Phase 7 — Other surfaces, mobile, polish
 
@@ -173,5 +184,5 @@ Each phase ends with: the code done, a targeted type-check of the changed files,
 - [x] Phase 3 — initiator toggle
 - [x] Phase 4 — initiate + create + link
 - [x] Phase 5 — Sub Process tab + parent link
-- [ ] Phase 6 — lists & history
+- [x] Phase 6 — lists & history (grid view + history; table/kanban views not covered)
 - [ ] Phase 7 — mobile, other surfaces, polish

@@ -9,6 +9,15 @@ import { subWorkflowApi } from './subWorkflowApi'
 
 export const subWorkflowKeys = {
   all: ['sub-workflow'] as const,
+  byWorkflow: (workflowId?: Id) =>
+    [...subWorkflowKeys.all, 'by-workflow', String(workflowId)] as const,
+  history: (workflowId?: Id, processId?: Id) =>
+    [
+      ...subWorkflowKeys.all,
+      'history',
+      String(workflowId),
+      String(processId),
+    ] as const,
   mainProcess: (workflowId?: Id, processId?: Id) =>
     [
       ...subWorkflowKeys.all,
@@ -45,6 +54,22 @@ export const useSubProcesses = (workflowId?: Id, processId?: Id) =>
 export const useMainProcess = (workflowId?: Id, processId?: Id) =>
   useQuery(getMainProcessQueryOptions(workflowId, processId))
 
+/** Children of every request in a workflow (one query shared by all rows). */
+export const useSubProcessesForWorkflow = (workflowId?: Id) =>
+  useQuery({
+    enabled: Boolean(workflowId),
+    queryKey: subWorkflowKeys.byWorkflow(workflowId),
+    queryFn: () => subWorkflowApi.getSubProcessesForWorkflow(workflowId!),
+  })
+
+/** Mock connector steps for a request's history (live rows carry their own). */
+export const useSubWorkflowHistory = (workflowId?: Id, processId?: Id) =>
+  useQuery({
+    enabled: Boolean(workflowId && processId),
+    queryKey: subWorkflowKeys.history(workflowId, processId),
+    queryFn: () => subWorkflowApi.getHistory(workflowId!, processId!),
+  })
+
 export const useLinkSubProcess = () => {
   const queryClient = useQueryClient()
   return useMutation({
@@ -62,6 +87,9 @@ export const useLinkSubProcess = () => {
           link.subWorkflowId,
           link.subProcessId,
         ),
+      })
+      queryClient.invalidateQueries({
+        queryKey: subWorkflowKeys.byWorkflow(link.mainWorkflowId),
       })
     },
   })

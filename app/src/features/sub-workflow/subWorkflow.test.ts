@@ -322,3 +322,45 @@ describe('isSubWorkflowEnabled', () => {
     }
   })
 })
+
+describe('attachConnectorHistory', () => {
+  const steps = [{ requestNo: 'VO-1', stage: 'Start', status: 'Submit' }]
+
+  it('attaches to the matching stage, else appends a connector row', async () => {
+    const { attachConnectorHistory } = await import('./utils/history')
+    const rows: { stage: string; subWorkflowHistory?: unknown }[] = [
+      { stage: 'Start' },
+      { stage: 'Vendor Setup' },
+    ]
+    const out = attachConnectorHistory(rows, [
+      { stage: 'vendor setup', subWorkflowHistory: steps },
+      { stage: 'Budget Check', subWorkflowHistory: steps },
+    ])
+    expect(out[1].subWorkflowHistory).toEqual(steps)
+    expect(out).toHaveLength(3)
+    expect(out[2]).toMatchObject({ stage: 'Budget Check', status: 'Connector' })
+    expect(rows[1]).not.toHaveProperty('subWorkflowHistory')
+  })
+
+  it('keeps rows that already carry live child steps', async () => {
+    const { attachConnectorHistory } = await import('./utils/history')
+    const live = [{ stage: 'Vendor Setup', subWorkflowHistory: steps }]
+    const out = attachConnectorHistory(live, [
+      { stage: 'Vendor Setup', subWorkflowHistory: [] },
+    ])
+    expect(out).toEqual(live)
+  })
+})
+
+describe('mock children by workflow', () => {
+  beforeEach(() => mockSubWorkflowBackend.reset())
+
+  it('groups seeded children under their parent', async () => {
+    const byParent = await mockSubWorkflowBackend.getSubProcessesForWorkflow(10)
+    expect(byParent['555'].map((r) => r.requestNo)).toEqual([
+      'VO-0012',
+      'VO-0013',
+      'BC-0004',
+    ])
+  })
+})
