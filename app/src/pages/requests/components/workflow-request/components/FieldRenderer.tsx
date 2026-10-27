@@ -70,6 +70,7 @@ interface ChoiceFieldProps {
   value: any
   error?: string
   loading?: boolean
+  noAutoSelect?: boolean
   options?: FieldOption[]
   readOnly?: boolean
   required?: boolean
@@ -86,6 +87,12 @@ interface Props {
   // The whole form is view-only (not just this field). Master/parent fill
   // still writes into read-only fields unless this is set.
   formViewOnly?: boolean
+  // A form rule locks this field (a stage may still have opened it). Single
+  // option auto-select is skipped so a deliberately empty value stays empty.
+  ruleLocked?: boolean
+  // This field was just cleared by a change elsewhere; hold off auto-select
+  // and master fill so they don't refill it straight away.
+  autoFillSuppressed?: boolean
   isPreparing?: boolean
   panels?: any[]
   preparePhase?: 'extracting' | 'uploading' | null
@@ -128,6 +135,7 @@ const ChoiceRadioGroupField = ({
   error,
   field,
   loading,
+  noAutoSelect,
   options,
   readOnly,
   required,
@@ -159,14 +167,14 @@ const ChoiceRadioGroupField = ({
     value !== undefined && value !== null ? String(value) : ''
 
   useEffect(() => {
-    if (readOnly) return
+    if (readOnly || noAutoSelect) return
     if (
       allOptions.length === 1 &&
       (value === undefined || value === null || value === '')
     ) {
       onChange(allOptions[0])
     }
-  }, [allOptions, value, readOnly, onChange])
+  }, [allOptions, value, readOnly, noAutoSelect, onChange])
 
   const handleAddCustom = () => {
     const trimmed = newOptionText.trim()
@@ -334,6 +342,7 @@ const ChoiceCheckboxGroupField = ({
   error,
   field,
   loading,
+  noAutoSelect,
   options,
   readOnly,
   required,
@@ -369,14 +378,14 @@ const ChoiceCheckboxGroupField = ({
       : []
 
   useEffect(() => {
-    if (readOnly) return
+    if (readOnly || noAutoSelect) return
     if (
       allOptions.length === 1 &&
       (!value || (Array.isArray(value) && value.length === 0))
     ) {
       onChange([allOptions[0]])
     }
-  }, [allOptions, value, readOnly, onChange])
+  }, [allOptions, value, readOnly, noAutoSelect, onChange])
 
   const handleToggle = (opt: string) => {
     if (readOnly) return
@@ -948,6 +957,8 @@ const FieldRendererBase = ({
   preparePhase,
   repoFieldHints,
   repositoryId,
+  ruleLocked,
+  autoFillSuppressed,
   syncReadOnly,
   value,
   viewOnly,
@@ -1164,7 +1175,7 @@ const FieldRendererBase = ({
   const effectiveLabel = getEffectiveFieldLabel(field)
 
   useEffect(() => {
-    if (readOnly) return
+    if (readOnly || ruleLocked || autoFillSuppressed) return
     if (
       (runtimeType === 'SINGLE_SELECT' || runtimeType === 'MULTI_SELECT') &&
       selectOptions.length === 1
@@ -1184,7 +1195,15 @@ const FieldRendererBase = ({
         }
       }
     }
-  }, [runtimeType, selectOptions, value, readOnly, onChange])
+  }, [
+    runtimeType,
+    selectOptions,
+    value,
+    readOnly,
+    ruleLocked,
+    autoFillSuppressed,
+    onChange,
+  ])
 
   // "Fill Value" from a master table / another field (SHORT_TEXT, NUMBER,
   // DATE, DATE_TIME). Renders nothing; writes the resolved value via onChange
@@ -1198,7 +1217,7 @@ const FieldRendererBase = ({
       allFields={allFields}
       field={field}
       formModel={formModel || {}}
-      readOnly={syncReadOnly ?? readOnly}
+      readOnly={Boolean(syncReadOnly ?? readOnly) || Boolean(autoFillSuppressed)}
       value={value}
       onChange={onChange}
       onLoadingChange={setIsMasterFilling}
@@ -1451,6 +1470,7 @@ const FieldRendererBase = ({
           error={error}
           field={field}
           loading={isOptionsLoading}
+          noAutoSelect={Boolean(ruleLocked || autoFillSuppressed)}
           options={selectOptions}
           readOnly={readOnly}
           required={required}
@@ -1540,6 +1560,7 @@ const FieldRendererBase = ({
             error={error}
             field={field}
             loading={isOptionsLoading}
+            noAutoSelect={Boolean(ruleLocked || autoFillSuppressed)}
             options={selectOptions}
             readOnly={readOnly}
             required={required}

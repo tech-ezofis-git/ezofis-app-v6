@@ -1,6 +1,12 @@
 import { t } from '@lingui/macro'
 import { useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
+import {
+  attachConnectorHistory,
+  getConnectorSteps,
+  isSubWorkflowEnabled,
+  useSubWorkflowHistory,
+} from '@/features/sub-workflow'
 import { useHistory } from '@/pages/requests/hooks/useHistory'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
@@ -34,6 +40,7 @@ import {
   isAccountsPayableWorkflow,
   isSapPoSourceConfigured,
 } from '@/pages/requests/utils/workflow.utils'
+import SubWorkflowHistoryBlock from '../../../../sub-workflow/SubWorkflowHistoryBlock'
 
 type Props = {
   enabled?: boolean
@@ -239,7 +246,7 @@ export default function History({
   const isSapConfigured = isSapPoSourceConfigured(currentWorkflow)
   const showSapTimeline = isApWorkflow && isSapConfigured
 
-  const displayFlows = useMemo(() => {
+  const baseFlows = useMemo(() => {
     if (!flows || flows.length === 0) return []
 
     const result: HistoryRow[] = []
@@ -389,6 +396,21 @@ export default function History({
     return result
   }, [flows, isCompleted, showSapTimeline])
 
+  // Sub-workflow connector steps (localhost-only until the API is ready):
+  // live rows carry `subWorkflowHistory`; the mock supplies them separately.
+  const subWorkflowEnabled = isSubWorkflowEnabled()
+  const { data: connectorEntries } = useSubWorkflowHistory(
+    subWorkflowEnabled ? workflowId : undefined,
+    instanceId || processId,
+  )
+  const displayFlows = useMemo(
+    () =>
+      subWorkflowEnabled
+        ? attachConnectorHistory(baseFlows, connectorEntries)
+        : baseFlows,
+    [baseFlows, connectorEntries, subWorkflowEnabled],
+  )
+
   if (isLoading) {
     return (
       <div className='flex flex-col items-center justify-center py-8'>
@@ -411,7 +433,7 @@ export default function History({
     )
   }
 
-  if (!flows.length) {
+  if (!displayFlows.length) {
     return (
       <div className='py-8 text-center text-gray-10'>
         <Icon
@@ -475,6 +497,9 @@ export default function History({
             const actor = pickActor(h)
             const date = getFormattedTimestamp(h)
             const titleLc = safeLower(title)
+            const connectorSteps = subWorkflowEnabled
+              ? getConnectorSteps(h)
+              : []
             const isApAgent = titleLc.includes('ap agent')
             const isSapCreated =
               titleLc.includes('supplier invoice created in sap') ||
@@ -609,6 +634,11 @@ export default function History({
                         {matchBadge.label}
                       </span>
                     )}
+                    {connectorSteps.length > 0 && (
+                      <span className='shrink-0 rounded border border-orange-3 bg-orange-1 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-orange-11 uppercase'>
+                        {t`Connector`}
+                      </span>
+                    )}
                   </div>
                   <div className='mt-1 flex flex-wrap items-center gap-1.5 text-11 font-medium text-gray-9'>
                     <span className='flex items-center gap-1'>
@@ -650,6 +680,9 @@ export default function History({
                       </>
                     )}
                   </div>
+                  {connectorSteps.length > 0 && (
+                    <SubWorkflowHistoryBlock rows={connectorSteps} />
+                  )}
                 </div>
               </div>
             )

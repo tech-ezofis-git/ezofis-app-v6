@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBreadcrumbs'
+import { updateRepositoryItemMetadata } from '@/api/v6/folder/folder'
 import uploadAndIndexApi, {
   type IndexStageFileRequest,
 } from '@/api/v6/uploadAndIndex'
@@ -793,12 +794,45 @@ export function FolderExplorer() {
         fileColumns={fileColumns}
         fileData={getSelectedFileRow(selectedFile)}
         onBack={() => setAppView(selectedFile ? 'details' : 'explorer')}
-        onSave={(values) => {
-          console.log('save metadata', {
-            itemId: selectedFile,
-            repositoryId: getRepositoryIdFromFolder(activeFolder),
-            values,
+        onSave={async (values) => {
+          const repositoryId = String(
+            getSelectedFileRow(selectedFile)?.repositoryId ||
+              getRepositoryIdFromFolder(activeFolder) ||
+              '',
+          )
+          if (!selectedFile || !repositoryId) return
+          // The API takes text values (dates as yyyy-MM-dd, which the form
+          // already uses); blanks are ignored server-side, so send every field
+          // and let it record only what changed.
+          const metadata: Record<string, string> = {}
+          Object.entries(values).forEach(([key, value]) => {
+            if (value == null || value === '') return
+            metadata[key] =
+              typeof value === 'object' ? JSON.stringify(value) : String(value)
           })
+          const { data: saved, error } = await updateRepositoryItemMetadata({
+            itemId: String(selectedFile),
+            metadata,
+            repositoryId,
+          })
+          if (error) {
+            showToast({
+              message: error || t`Failed to update metadata`,
+              variant: 'error',
+            })
+            return
+          }
+          showToast({
+            message:
+              saved && saved.changes?.length === 0
+                ? t`No changes to save.`
+                : t`Metadata updated successfully.`,
+            variant: 'success',
+          })
+          // Reload the documents list, then reopen the details view (it
+          // remounts and fetches the item and its Timeline fresh).
+          await refreshData()
+          setAppView('details')
         }}
       />
     )

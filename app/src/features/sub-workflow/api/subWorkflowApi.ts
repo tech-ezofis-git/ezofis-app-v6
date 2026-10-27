@@ -4,6 +4,7 @@ import type {
   Id,
   MainProcessDetails,
   SubProcessRow,
+  SubWorkflowHistoryRow,
   SubWorkflowLink,
 } from '../types'
 import { type MockProcess, mockSubWorkflowBackend } from './mock/mockStore'
@@ -51,8 +52,9 @@ const safeParse = (value: string) => {
 }
 
 // Live response shapes are unconfirmed (SUBWORKFLOW_PLAN.md §4). These
-// mappers accept the V5 field names and fall back gracefully.
-const toSubProcessRow = (row: any): SubProcessRow => ({
+// mappers accept the V5 field names (incl. list rows' `subworkflowTransaction`
+// entries) and fall back gracefully.
+export const toSubProcessRow = (row: any): SubProcessRow => ({
   duration: row.duration ?? row.sublastActionDuration,
   flowStatus: row.flowStatus ?? row.subProcessStatus ?? 0,
   lastAction: row.lastAction,
@@ -94,6 +96,21 @@ export const subWorkflowApi = {
     return payload
   },
 
+  /**
+   * Connector steps for a request's history, as `{ stage,
+   * subWorkflowHistory }`. Live history rows carry `subWorkflowHistory`
+   * themselves (V5 processHistory), so only the mock answers here.
+   */
+  getHistory: async (
+    workflowId: Id,
+    processId: Id,
+  ): Promise<
+    { stage: string; subWorkflowHistory: SubWorkflowHistoryRow[] }[]
+  > => {
+    if (!isSubWorkflowMock()) return []
+    return mockSubWorkflowBackend.getHistory(workflowId, processId)
+  },
+
   /** Parent of a child request, or null when the request is not a child. */
   getMainProcess: async (
     workflowId: Id,
@@ -118,5 +135,17 @@ export const subWorkflowApi = {
       return mockSubWorkflowBackend.getSubProcesses(workflowId, processId)
     const data = await requestApi.getSubWorkflow(workflowId, processId)
     return asArray(data).map(toSubProcessRow)
+  },
+
+  /**
+   * Children of every request in a workflow, keyed by parent process id, for
+   * the inbox list. Live list rows carry `subworkflowTransaction` (V5), so
+   * only the mock answers here.
+   */
+  getSubProcessesForWorkflow: async (
+    workflowId: Id,
+  ): Promise<Record<string, SubProcessRow[]>> => {
+    if (!isSubWorkflowMock()) return {}
+    return mockSubWorkflowBackend.getSubProcessesForWorkflow(workflowId)
   },
 }
