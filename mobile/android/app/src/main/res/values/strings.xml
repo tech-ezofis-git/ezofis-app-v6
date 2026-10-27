@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EZOFIS</string>
+    <string name="title_activity_main">EZOFIS</string>
+    <string name="package_name">com.ezofis.mobile</string>
+    <string name="custom_url_scheme">com.ezofis.mobile</string>
+    <!-- Web OAuth client id from the SAME Google Cloud project as the Android client (139628703331-...). Not the Android client id. -->
+    <string name="google_web_client_id"></string>
+</resources>
