@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Supplier filter with hundreds of values</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8300E6}a:hover{color:#643094}
+@keyframes shimmer{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #2A2333; font-family: Poppins, system-ui, sans-serif; color: #14101F">
+  <div style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(20,16,31,.5)"></div>
+  <div style="position: absolute; left: 0; right: 0; top: 54px; bottom: 0; background: #FFFFFF; border-radius: 24px 24px 0 0; display: flex; flex-direction: column; overflow: hidden">
+    <div style="padding: 10px 20px 12px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid #ECE7F4">
+      <span style="align-self: center; width: 40px; height: 5px; border-radius: 999px; background: #DCD6E6"></span>
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div><div style="font-size: 18px; font-weight: 600">Supplier</div><div style="font-size: 12px; color: #5E5873">Accounts Payable · 384 suppliers</div></div>
+        <a href="LargeResults.dc.html" aria-label="Close" style="width: 40px; height: 40px; border-radius: 999px; background: #F6F3FB; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+      </div>
+      <label style="height: 46px; border-radius: 12px; border: 2px solid #8300E6; display: flex; align-items: center; gap: 10px; padding: 0 12px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5873" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input type="search" placeholder="Search 384 suppliers" aria-label="Search suppliers" style="flex: 1; border: 0; background: transparent; font: 400 15px Poppins, sans-serif; outline: none; min-width: 0">
+      </label>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <span style="height: 30px; padding: 0 8px 0 12px; display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; background: #8300E6; color: #FFFFFF; font-size: 12px; font-weight: 500">Nexus Industrial<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg></span>
+        <span style="height: 30px; padding: 0 8px 0 12px; display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; background: #8300E6; color: #FFFFFF; font-size: 12px; font-weight: 500">Delta Office<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg></span>
+        <span style="height: 30px; padding: 0 12px; display: inline-flex; align-items: center; border-radius: 999px; background: #F1EBFA; color: #643094; font-size: 12px; font-weight: 600">+1 more</span>
+      </div>
+    </div>
+
+    <div style="flex: 1; min-height: 0; display: flex; position: relative">
+      <div style="flex: 1; min-width: 0; padding: 4px 8px 0 20px; display: flex; flex-direction: column">
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.1px; color: #5E5873; padding: 10px 0 4px">RECENTLY USED</div>
+        <sc-for list="{{ recent }}" as="r" hint-placeholder-count="2">
+          <div style="min-height: 48px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F0ECF6">
+            <span style="flex: none; width: 22px; height: 22px; border-radius: 6px; background: {{ r.boxBg }}; border: 2px solid {{ r.boxLine }}; box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+            <span style="flex: 1; font-size: 14px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ r.name }}</span>
+            <span style="font-size: 12px; color: #5E5873; font-variant-numeric: tabular-nums">{{ r.n }}</span>
+          </div>
+        </sc-for>
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+          <div style="font-size: 13px; font-weight: 700; color: #643094; padding: 12px 0 2px">{{ g.letter }}</div>
+          <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+            <div style="min-height: 48px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F0ECF6">
+              <span style="flex: none; width: 22px; height: 22px; border-radius: 6px; background: {{ r.boxBg }}; border: 2px solid {{ r.boxLine }}; box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+              <span style="flex: 1; font-size: 14px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ r.name }}</span>
+              <span style="font-size: 12px; color: #5E5873; font-variant-numeric: tabular-nums">{{ r.n }}</span>
+            </div>
+          </sc-for>
+        </sc-for>
+        <div style="display: flex; align-items: center; gap: 12px; min-height: 48px; animation: shimmer 1.4s infinite"><span style="width: 22px; height: 22px; border-radius: 6px; background: #ECE7F4"></span><span style="flex: 1; height: 10px; border-radius: 6px; background: #ECE7F4"></span><span style="width: 24px; height: 10px; border-radius: 6px; background: #ECE7F4"></span></div>
+        <div style="font-size: 12px; color: #5E5873; text-align: center; padding: 4px 0 12px">Loading more suppliers…</div>
+      </div>
+      <div role="navigation" aria-label="Jump to letter" style="flex: none; width: 24px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 12px 0; font-size: 10px; font-weight: 600; color: #643094">
+        <sc-for list="{{ letters }}" as="l" hint-placeholder-count="26"><span style="color: {{ l.c }}">{{ l.t }}</span></sc-for>
+      </div>
+    </div>
+
+    <div style="padding: 12px 16px 30px; border-top: 1px solid #ECE7F4; display: grid; grid-template-columns: 1fr 2fr; gap: 10px">
+      <button type="button" style="height: 52px; border: 1.5px solid #643094; border-radius: 14px; background: #FFFFFF; color: #643094; font: 600 15px Poppins, sans-serif">Clear (3)</button>
+      <a href="LargeResults.dc.html" style="height: 52px; border-radius: 14px; background: linear-gradient(90deg, #8300E6, #643094); color: #FFFFFF; font: 600 15px Poppins, sans-serif; display: flex; align-items: center; justify-content: center; text-decoration: none">Show 214 files</a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const on = { boxBg: '#8300E6', boxLine: '#8300E6' }, off = { boxBg: '#FFFFFF', boxLine: '#CFC8DC' };
+    const row = (name, n, sel) => ({ name, n, ...(sel ? on : off) });
+    return {
+      recent: [row('Nexus Industrial Solutions Ltd', 148, true), row('Delta Office Supplies', 37, true)],
+      groups: [
+        { letter: 'A', rows: [row('Acme Fasteners Inc.', 22), row('Aldridge Logistics', 9), row('Apex Safety Gear', 29, true), row('Atlas Packaging Co.', 14)] },
+        { letter: 'B', rows: [row('Bayview Electricals', 31), row('Birch & Co. Printing', 6)] }
+      ],
+      letters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('').map((t, i) => ({ t, c: i < 2 ? '#8300E6' : '#9C96AB' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

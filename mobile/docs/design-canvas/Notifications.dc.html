@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notifications</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8300E6}a:hover{color:#643094}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Poppins, system-ui, sans-serif; color: #14101F">
+  <div style="background: #FBFAFE; padding: 50px 20px 14px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px">
+      <a href="Home.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 2px 10px rgba(40,10,80,.1); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+      <h1 style="margin: 0; text-align: center; font-size: 19px; font-weight: 600">Notifications</h1>
+      <button type="button" style="height: 40px; border: 0; background: transparent; font: 600 13px Poppins, sans-serif; color: #8300E6">Mark all read</button>
+    </div>
+    <div role="tablist" style="display: flex; gap: 8px">
+      <button type="button" role="tab" onClick="{{ fAll }}" style="height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: {{ c.all.bg }}; color: {{ c.all.fg }}; font: 500 13px Poppins, sans-serif">All · 4 new</button>
+      <button type="button" role="tab" onClick="{{ fWf }}" style="height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: {{ c.wf.bg }}; color: {{ c.wf.fg }}; font: 500 13px Poppins, sans-serif">Workflow</button>
+      <button type="button" role="tab" onClick="{{ fFiles }}" style="height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: {{ c.files.bg }}; color: {{ c.files.fg }}; font: 500 13px Poppins, sans-serif">Files</button>
+    </div>
+  </div>
+
+  <div style="padding: 12px 20px 30px; display: flex; flex-direction: column; gap: 10px">
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 1.1px; color: #5E5873; margin-top: 6px">{{ g.label }}</div>
+      <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="3">
+        <a href="{{ n.href }}" style="border-radius: 16px; background: {{ n.bg }}; padding: 12px 14px; display: flex; gap: 12px; text-decoration: none; color: #14101F; position: relative">
+          <span style="flex: none; width: 38px; height: 38px; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: {{ n.accent }}"></span></span>
+          <span style="flex: 1; min-width: 0">
+            <span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-size: 14px; font-weight: 600; color: {{ n.titleFg }}">{{ n.title }}</span><span style="flex: none; font-size: 11px; color: #5E5873">{{ n.time }}</span></span>
+            <span style="display: block; font-size: 13px; color: #3B364A; margin-top: 2px; line-height: 1.4">{{ n.body }}</span>
+          </span>
+          <sc-if value="{{ n.unread }}" hint-placeholder-val="{{ true }}"><span aria-label="Unread" style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 999px; background: #8300E6"></span></sc-if>
+        </a>
+      </sc-for>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { f: 'all' }; }
+  renderVals() {
+    const P = { bg: '#F8F3FF', titleFg: '#643094' }, T = { bg: '#EFFCFD', titleFg: '#0A6E7A' }, A = { bg: '#FFF6EC', titleFg: '#9A4508' }, R = { bg: '#FDF1F4', titleFg: '#A61E3F' };
+    const all = [
+      { g: 'TODAY', type: 'wf', title: 'You approved EXP-REQ-75', body: 'Expense Reimbursement · moved to Completed', time: 'Just now', accent: '#0E8A5F', unread: true, href: 'ActionDone.dc.html', ...P },
+      { g: 'TODAY', type: 'files', title: '2 files exported', body: 'Nexus_Invoice_Oct.pdf, Scan_26-Oct_1142.jpg → Accounts Payable · Indexed', time: '5 min', accent: '#0A7C89', unread: true, href: 'FoldersUpdated.dc.html', ...T },
+      { g: 'TODAY', type: 'files', title: '1 file needs review', body: 'Delivery_note_4471.pdf · low confidence on document type', time: '8 min', accent: '#B45309', unread: true, href: 'Review.dc.html', ...A },
+      { g: 'TODAY', type: 'wf', title: 'New request assigned', body: 'INV-2026-3101 · Accounts Payable · Matched to PO-31001', time: '1 h', accent: '#8300E6', unread: true, href: 'Inbox.dc.html', ...P },
+      { g: 'EARLIER', type: 'wf', title: 'Comment on EXP-REQ-75', body: 'Requester: Taxi to the client site, receipt attached.', time: '2 h', accent: '#8300E6', unread: false, href: 'Ticket.dc.html', ...P },
+      { g: 'EARLIER', type: 'wf', title: 'DOC-0218 is overdue', body: 'Document Approval · due 2 days ago', time: 'Yesterday', accent: '#C2264B', unread: false, href: 'Inbox.dc.html', ...R }
+    ];
+    const f = this.state.f;
+    const list = all.filter(n => f === 'all' || n.type === f);
+    const groups = ['TODAY', 'EARLIER'].map(l => ({ label: l, items: list.filter(n => n.g === l) })).filter(g => g.items.length);
+    const on = { bg: '#8300E6', fg: '#FFFFFF' }, off = { bg: '#F1EBFA', fg: '#643094' };
+    return {
+      groups,
+      c: { all: f === 'all' ? on : off, wf: f === 'wf' ? on : off, files: f === 'files' ? on : off },
+      fAll: () => this.setState({ f: 'all' }),
+      fWf: () => this.setState({ f: 'wf' }),
+      fFiles: () => this.setState({ f: 'files' })
+    };
+  }
+}
+</script>
+</body>
+</html>

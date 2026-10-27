@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Folder with its own filters</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8300E6}a:hover{color:#643094}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Poppins, system-ui, sans-serif; color: #14101F">
+  <div style="background: #FBFAFE; padding: 50px 20px 14px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="FolderList.dc.html" aria-label="Back to all folders" style="flex: none; width: 44px; height: 44px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 2px 10px rgba(40,10,80,.1); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+      <div style="flex: 1; min-width: 0">
+        <div style="font-size: 18px; font-weight: 600; line-height: 1.2">Expense Reimbursement</div>
+        <div style="font-size: 12px; color: #5E5873">342 files</div>
+      </div>
+      <button type="button" aria-label="Switch folder" style="width: 44px; height: 44px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7h12l-3-3M17 17H5l3 3"></path></svg></button>
+    </div>
+    <label style="height: 48px; border-radius: 12px; border: 1.5px solid #CFC8DC; background: #FFFFFF; display: flex; align-items: center; gap: 10px; padding: 0 14px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5873" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <input type="search" placeholder="Search in Expense Reimbursement" aria-label="Search files" style="flex: 1; border: 0; background: transparent; font: 400 15px Poppins, sans-serif; outline: none; min-width: 0">
+    </label>
+    <div style="display: flex; gap: 8px; overflow: hidden">
+      <span style="flex: none; height: 34px; padding: 0 10px 0 14px; display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; background: #8300E6; color: #FFFFFF; font-size: 13px; font-weight: 500">Claim type: Travel<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg></span>
+      <span style="flex: none; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; background: #F1EBFA; color: #643094; font-size: 13px; font-weight: 500">Employee<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#643094" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+      <span style="flex: none; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; background: #F1EBFA; color: #643094; font-size: 13px; font-weight: 500">Expense month<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#643094" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+    </div>
+  </div>
+
+  <div style="padding: 14px 20px 110px; display: flex; flex-direction: column; gap: 12px">
+    <div style="border-radius: 12px; background: #EFFCFD; padding: 8px 12px; font-size: 12px; color: #0A5560; display: flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0A7C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8v.5"></path></svg>Filters change with each folder's fields</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <span style="min-height: 64px; border-radius: 16px; background: linear-gradient(135deg, #F7F1FF, #EADCFD); border: 1px solid #E2D2FA; color: #643094; display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 13px; font-weight: 500"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8300E6" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0116 0"></path></svg>By Employee</span>
+      <span style="min-height: 64px; border-radius: 16px; background: linear-gradient(135deg, #EFFCFD, #D6F4F7); border: 1px solid #C7EDF1; color: #0A5560; display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 13px; font-weight: 500"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A7C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16v12H4zM8 7V4h8v3"></path></svg>By Claim type</span>
+      <span style="min-height: 64px; border-radius: 16px; background: linear-gradient(135deg, #F5F3FA, #E8E2F2); border: 1px solid #DED6EC; color: #3D2A55; display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 13px; font-weight: 500"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#643094" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>By Month</span>
+      <span style="min-height: 64px; border-radius: 16px; background: linear-gradient(135deg, #F0FDFE, #D9F7F8); border: 1px solid #C2F0F2; color: #0A5560; display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 13px; font-weight: 500"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A7C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Staged for review</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px"><span style="font-size: 17px; font-weight: 600">Recent files</span><span style="font-size: 12px; color: #5E5873">86 of 342 · Travel</span></div>
+    <div style="border-radius: 16px; background: #EFFCFD; padding: 12px 14px; display: flex; gap: 12px">
+      <span style="flex: none; width: 40px; height: 48px; border-radius: 8px; background: #FFFFFF; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; box-sizing: border-box; font-size: 10px; font-weight: 700; color: #643094">JPG</span>
+      <span style="flex: 1; min-width: 0"><span style="display: block; font-size: 15px; font-weight: 600; color: #0A6E7A">Receipt_taxi_oct.jpg</span><span style="display: block; font-size: 13px; color: #3B364A">Travel | Arun E. | EXP-REQ-75</span><span style="display: block; font-size: 12px; color: #0A6E7A; font-weight: 600; margin-top: 3px">Indexed · $ 42.50 · 2 h ago</span></span>
+    </div>
+    <div style="border-radius: 16px; background: #F8F3FF; padding: 12px 14px; display: flex; gap: 12px">
+      <span style="flex: none; width: 40px; height: 48px; border-radius: 8px; background: #FFFFFF; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; box-sizing: border-box; font-size: 10px; font-weight: 700; color: #A61E3F">PDF</span>
+      <span style="flex: 1; min-width: 0"><span style="display: block; font-size: 15px; font-weight: 600; color: #643094">Flight_BLR_YYZ.pdf</span><span style="display: block; font-size: 13px; color: #3B364A">Travel | Priya R. | EXP-REQ-71</span><span style="display: block; font-size: 12px; color: #0A6E7A; font-weight: 600; margin-top: 3px">Indexed · $ 1,240.00 · yesterday</span></span>
+    </div>
+    <div style="border-radius: 16px; background: #F8F3FF; padding: 12px 14px; display: flex; gap: 12px">
+      <span style="flex: none; width: 40px; height: 48px; border-radius: 8px; background: #FFFFFF; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; box-sizing: border-box; font-size: 10px; font-weight: 700; color: #643094">JPG</span>
+      <span style="flex: 1; min-width: 0"><span style="display: block; font-size: 15px; font-weight: 600; color: #643094">Receipt_hotel_oct.jpg</span><span style="display: block; font-size: 13px; color: #3B364A">Travel | Arun E. | EXP-REQ-69</span><span style="display: block; font-size: 12px; color: #0A6E7A; font-weight: 600; margin-top: 3px">Indexed · $ 212.00 · 3 d ago</span></span>
+    </div>
+    <a href="LargeResults.dc.html" style="align-self: center; font-size: 14px; font-weight: 600; text-decoration: none; padding: 8px">See all 86 files</a>
+  </div>
+
+  <a href="Upload.dc.html" aria-label="Upload to this folder" style="position: absolute; right: 20px; bottom: 104px; width: 60px; height: 60px; border-radius: 20px; background: linear-gradient(135deg, #8300E6, #643094); box-shadow: 0 10px 24px rgba(100,48,148,.4); display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"></path></svg></a>
+
+  <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 86px; background: #FFFFFF; border-radius: 24px 24px 0 0; box-shadow: 0 -6px 24px rgba(40,10,80,.08); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding-top: 12px; box-sizing: border-box">
+    <a href="Home.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #6B6580; font-size: 12px; font-weight: 500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6B6580" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"></path></svg>Home</a>
+    <a href="Inbox.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #6B6580; font-size: 12px; font-weight: 500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6B6580" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 13l3-8h12l3 8v6a1 1 0 01-1 1H4a1 1 0 01-1-1z"></path><path d="M3 13h5l1.5 2.5h5L16 13h5"></path></svg>Inbox</a>
+    <a href="FolderList.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #14101F; font-size: 12px; font-weight: 600"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8300E6" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1z"></path></svg>Folders</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #6B6580; font-size: 12px; font-weight: 500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6B6580" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"></path></svg>Settings</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

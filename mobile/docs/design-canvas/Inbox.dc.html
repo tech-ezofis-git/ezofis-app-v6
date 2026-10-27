@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workflow inbox</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8300E6}a:hover{color:#643094}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Poppins, system-ui, sans-serif; color: #14101F">
+  <div style="background: #FBFAFE; padding: 52px 20px 14px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: grid; grid-template-columns: 44px 1fr 44px; align-items: center">
+      <a href="Home.dc.html" aria-label="Back to home" style="width: 44px; height: 44px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 2px 10px rgba(40,10,80,.08); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+      <h1 style="margin: 0; text-align: center; font-size: 19px; font-weight: 600">Workflow</h1>
+      <button type="button" aria-label="Search requests" style="width: 44px; height: 44px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button>
+    </div>
+    <button type="button" style="height: 50px; border: 1.5px solid #8300E6; border-radius: 12px; background: #FFFFFF; padding: 0 14px; display: flex; align-items: center; gap: 10px; font: 500 15px Poppins, sans-serif; color: #14101F; text-align: left"><span style="flex: 1">All workflows</span><svg width="14" height="14" viewBox="0 0 24 24" fill="#14101F" aria-hidden="true"><path d="M5 8h14l-7 9z"></path></svg></button>
+    <div role="tablist" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #F1EBFA; border-radius: 999px; padding: 4px">
+      <button type="button" role="tab" onClick="{{ showInbox }}" style="height: 40px; border: 0; border-radius: 999px; background: {{ inboxBg }}; color: {{ inboxColor }}; font: 600 14px Poppins, sans-serif">Inbox · 4</button>
+      <button type="button" role="tab" onClick="{{ showActioned }}" style="height: 40px; border: 0; border-radius: 999px; background: {{ actBg }}; color: {{ actColor }}; font: 600 14px Poppins, sans-serif">Actioned · 3</button>
+    </div>
+  </div>
+
+  <div style="padding: 14px 20px 110px; display: flex; flex-direction: column; gap: 12px">
+    <sc-for list="{{ items }}" as="item" hint-placeholder-count="4">
+      <a href="Ticket.dc.html" style="display: flex; flex-direction: column; gap: 4px; background: {{ item.cardBg }}; border-radius: 18px; padding: 14px 16px; text-decoration: none; color: #14101F; box-shadow: 0 4px 12px rgba(40,10,80,.06)">
+        <span style="display: flex; justify-content: space-between; gap: 8px; align-items: center"><span style="font-weight: 600; font-size: 16px; color: {{ item.titleColor }}">{{ item.id }}</span><span style="padding: 3px 10px; border-radius: 999px; background: #FFFFFF; color: {{ item.pillFg }}; font-size: 12px; font-weight: 600">{{ item.status }}</span></span>
+        <span style="font-size: 14px; color: #3B364A">{{ item.title }}</span>
+        <span style="display: flex; justify-content: space-between; font-size: 13px; color: #5E5873; margin-top: 4px"><span>{{ item.wf }} · {{ item.meta }}</span><span style="font-weight: 600; color: #14101F">{{ item.amount }}</span></span>
+      </a>
+    </sc-for>
+  </div>
+
+  <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 86px; background: #FFFFFF; border-radius: 24px 24px 0 0; box-shadow: 0 -6px 24px rgba(40,10,80,.08); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding-top: 12px; box-sizing: border-box">
+    <a href="Home.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #6B6580; font-size: 12px; font-weight: 500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6B6580" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"></path></svg>Home</a>
+    <a href="Inbox.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #14101F; font-size: 12px; font-weight: 600"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8300E6" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 13l3-8h12l3 8v6a1 1 0 01-1 1H4a1 1 0 01-1-1z"></path><path d="M3 13h5l1.5 2.5h5L16 13h5"></path></svg>Inbox</a>
+    <a href="Folders.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #6B6580; font-size: 12px; font-weight: 500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6B6580" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1z"></path></svg>Folders</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #6B6580; font-size: 12px; font-weight: 500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6B6580" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"></path></svg>Settings</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: 'inbox' }; }
+  renderVals() {
+    const P = { cardBg: '#F8F3FF', titleColor: '#643094' };
+    const T = { cardBg: '#EFFCFD', titleColor: '#0A6E7A' };
+    const ok = { pillFg: '#0E6B4A' }, bad = { pillFg: '#A61E3F' }, warn = { pillFg: '#9A4508' }, neu = { pillFg: '#643094' };
+    const inbox = [
+      { id: 'INV-2026-3101', amount: 'CAD 1,582.00', title: 'Nexus Industrial Solutions Ltd · PO-31001', wf: 'Accounts Payable', meta: 'Due today', status: 'Matched', ...P, ...ok },
+      { id: 'DOC-0218', amount: '', title: 'Vendor contract renewal for review', wf: 'Document Approval', meta: '2 days late', status: 'Overdue', ...T, ...bad },
+      { id: 'EXP-1042', amount: '$640.00', title: 'Client visit travel claim', wf: 'Expense', meta: 'Due tomorrow', status: 'Pending', ...P, ...neu },
+      { id: 'QRQ-0077', amount: '$2,310.00', title: 'Quote for safety equipment', wf: 'Quote Request', meta: 'In 3 days', status: 'Info needed', ...T, ...warn }
+    ];
+    const actioned = [
+      { id: 'INV-2026-3088', amount: '$4,120.00', title: 'You approved · 25-Oct, 4:12 PM', wf: 'Accounts Payable', meta: 'Moved to Payment', status: 'Approved', ...P, ...ok },
+      { id: 'EXP-1037', amount: '$85.50', title: 'You rejected · 24-Oct, 11:02 AM', wf: 'Expense', meta: 'Missing receipt', status: 'Rejected', ...P, ...bad },
+      { id: 'DOC-0211', amount: '', title: 'You sent back · 22-Oct, 9:40 AM', wf: 'Document Approval', meta: 'With requester', status: 'Returned', ...T, ...warn }
+    ];
+    const isInbox = this.state.tab === 'inbox';
+    return {
+      items: isInbox ? inbox : actioned,
+      inboxBg: isInbox ? '#8300E6' : 'transparent',
+      inboxColor: isInbox ? '#FFFFFF' : '#643094',
+      actBg: isInbox ? 'transparent' : '#8300E6',
+      actColor: isInbox ? '#643094' : '#FFFFFF',
+      showInbox: () => this.setState({ tab: 'inbox' }),
+      showActioned: () => this.setState({ tab: 'actioned' })
+    };
+  }
+}
+</script>
+</body>
+</html>

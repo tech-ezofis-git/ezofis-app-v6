@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Splash tagline loader</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FFFFFF}a:hover{color:#5CE1E6}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: linear-gradient(180deg, #8300E6 0%, #643094 58%, #2E1747 100%); font-family: Poppins, system-ui, sans-serif; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px">
+  <a href="Welcome.dc.html" style="position: absolute; top: 56px; right: 20px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,.85); text-decoration: none; padding: 10px 8px">Skip</a>
+
+  <div aria-live="polite" style="min-height: 84px; display: flex; align-items: center; font-family: 'Eastman Grotesque', Poppins, sans-serif; font-weight: 600; font-size: 30px; line-height: 1.25; text-align: center; padding: 0 36px; white-space: pre-line">{{ line }}</div>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 14px">
+    <div style="width: 96px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.3); overflow: hidden"><div style="width: {{ pct }}; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #5CE1E6, #19C1D4); transition: width .6s ease"></div></div>
+    <div style="font-size: 12px; color: rgba(255,255,255,.75)">{{ status }}</div>
+  </div>
+
+  <sc-if value="{{ done }}" hint-placeholder-val="{{ false }}">
+    <a href="Welcome.dc.html" style="position: absolute; left: 24px; right: 24px; bottom: 110px; height: 52px; border-radius: 14px; background: #FFFFFF; color: #643094; font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: center; text-decoration: none">Get started</a>
+  </sc-if>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 44px; display: flex; justify-content: center">
+    <img src="/_blob/e8544a836a5d0e1399f410fefa55df86" alt="ezofis" style="width: 120px; height: auto">
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { i: 0 }; }
+  componentDidMount() {
+    this.timer = setInterval(() => this.setState(s => ({ i: s.i >= 3 ? 3 : s.i + 1 })), 2200);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const lines = [
+      { text: 'Idea. Innovate.\nImplement.', status: 'Starting EZOFIS…' },
+      { text: 'Say goodbye to\ntedious workflows.', status: 'Securing your session…' },
+      { text: 'Your gateway to\nsmarter workflows.', status: 'Loading your workspace…' },
+      { text: 'The human is the boss,\nalways.', status: 'Ready' }
+    ];
+    const i = this.state.i;
+    return { line: lines[i].text, status: lines[i].status, pct: ((i + 1) * 25) + '%', done: i === 3 };
+  }
+}
+</script>
+</body>
+</html>

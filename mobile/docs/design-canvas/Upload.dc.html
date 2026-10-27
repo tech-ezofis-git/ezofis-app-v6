@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upload documents</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8300E6}a:hover{color:#643094}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Poppins, system-ui, sans-serif; color: #14101F">
+  <div style="background: #FBFAFE; padding: 52px 20px 10px; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center">
+    <a href="Folders.dc.html" aria-label="Back to folders" style="width: 44px; height: 44px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 2px 10px rgba(40,10,80,.08); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14101F" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+    <h1 style="margin: 0; text-align: center; font-size: 19px; font-weight: 600">Add documents</h1>
+    <span></span>
+  </div>
+
+  <div style="padding: 16px 20px 120px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="dest" style="font-size: 15px; font-weight: 600">Upload to <span style="color: #C2264B">*</span></label>
+      <button id="dest" type="button" style="height: 54px; border: 1.5px solid #8300E6; border-radius: 12px; background: #FFFFFF; padding: 0 16px; display: flex; align-items: center; font: 400 15px Poppins, sans-serif; color: #14101F; text-align: left"><span style="flex: 1">Accounts Payable</span><svg width="14" height="14" viewBox="0 0 24 24" fill="#14101F" aria-hidden="true"><path d="M5 8h14l-7 9z"></path></svg></button>
+    </div>
+
+    <div style="border-radius: 22px; background: linear-gradient(160deg, #FFFFFF, #F4EDFE); border: 1px solid #ECE2FA; padding: 18px 8px 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+      <button type="button" style="border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 8px; font: 500 13px Poppins, sans-serif; color: #14101F"><span style="width: 62px; height: 62px; border-radius: 999px; background: linear-gradient(135deg, #8300E6, #643094); box-shadow: 0 8px 18px rgba(100,48,148,.3); display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></span>Scan</button>
+      <button type="button" style="border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 8px; font: 500 13px Poppins, sans-serif; color: #14101F"><span style="width: 62px; height: 62px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2D2FA; box-shadow: 0 6px 16px rgba(131,0,230,.12); display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8300E6" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-9 9"></path></svg></span>Photos</button>
+      <button type="button" style="border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 8px; font: 500 13px Poppins, sans-serif; color: #14101F"><span style="width: 62px; height: 62px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2D2FA; box-shadow: 0 6px 16px rgba(131,0,230,.12); display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8300E6" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path></svg></span>Files</button>
+    </div>
+
+    <div style="border-radius: 22px; background: linear-gradient(120deg, #0A7C89, #0B6F7B); color: #FFFFFF; padding: 16px 18px; display: flex; gap: 14px; align-items: center">
+      <span style="flex: none; width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg></span>
+      <span style="flex: 1"><span style="display: block; font-size: 16px; font-weight: 600">Intelligent classification</span><span style="display: block; font-size: 13px; opacity: .92; margin-top: 2px">AI sets the type and fills folder fields</span></span>
+      <span role="switch" aria-checked="true" aria-label="Intelligent classification" style="flex: none; width: 48px; height: 28px; border-radius: 999px; background: #5CE1E6; position: relative"><span style="position: absolute; right: 3px; top: 3px; width: 22px; height: 22px; border-radius: 999px; background: #FFFFFF"></span></span>
+    </div>
+
+    <h2 style="margin: 4px 0 0; font-size: 18px; font-weight: 600">Processing · 3 files</h2>
+    <div style="border-radius: 18px; background: #EFFCFD; padding: 12px 16px"><div style="display: flex; justify-content: space-between"><span style="font-size: 15px; font-weight: 600; color: #0A6E7A">Nexus_Invoice_Oct.pdf</span><span style="font-size: 12px; font-weight: 600; color: #0A6E7A">Ready</span></div><div style="font-size: 13px; color: #3B364A; margin-top: 2px">Invoice | 98% | 6 fields extracted</div></div>
+    <div style="border-radius: 18px; background: #F8F3FF; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px"><div style="display: flex; justify-content: space-between"><span style="font-size: 15px; font-weight: 600; color: #643094">Scan_26-Oct_1142.jpg</span><span style="font-size: 12px; font-weight: 600; color: #643094">Classifying</span></div><span style="height: 6px; border-radius: 999px; background: #E6DAF7; overflow: hidden"><span style="display: block; width: 62%; height: 100%; border-radius: 999px; background: #8300E6"></span></span></div>
+    <div style="border-radius: 18px; background: #FFF6EC; padding: 12px 16px"><div style="display: flex; justify-content: space-between"><span style="font-size: 15px; font-weight: 600; color: #9A4508">Delivery_note_4471.pdf</span><span style="font-size: 12px; font-weight: 600; color: #9A4508">Check type</span></div><div style="font-size: 13px; color: #3B364A; margin-top: 2px">Low confidence | review before export</div></div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: #FFFFFF; border-radius: 24px 24px 0 0; box-shadow: 0 -6px 24px rgba(40,10,80,.08); padding: 14px 20px 30px">
+    <a href="Review.dc.html" style="height: 54px; border-radius: 14px; background: linear-gradient(90deg, #8300E6, #643094); color: #FFFFFF; font: 600 16px Poppins, sans-serif; display: flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 0 8px 20px rgba(100,48,148,.3)">Review 2 staged files</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
