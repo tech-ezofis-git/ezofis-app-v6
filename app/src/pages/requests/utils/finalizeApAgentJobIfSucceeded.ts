@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import workflowsApiV6 from '@/api/v6/workflows'
+import { invalidateRequestLists } from '@/pages/requests/hooks/useAllWorkflowsInbox'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { isJobStatusFailed } from '@/pages/requests/utils/resolveApAgentJobMessage'
 
@@ -18,9 +19,9 @@ export const isApAgentJobSucceeded = (jobData: any) => {
   if (!jobData || isJobStatusFailed(jobData)) return false
   return Boolean(
     String(jobData.stage || '').toUpperCase() === 'COMPLETED' ||
-      String(jobData.hangfireStatus || '') === 'Succeeded' ||
-      jobData.isTerminal ||
-      jobData.isCompleted,
+    String(jobData.hangfireStatus || '') === 'Succeeded' ||
+    jobData.isTerminal ||
+    jobData.isCompleted,
   )
 }
 
@@ -30,8 +31,8 @@ export const isApAgentJobSucceeded = (jobData: any) => {
  * multiple times — only the first Succeeded for a jobId runs the fetches.
  */
 export const finalizeApAgentJobIfSucceeded = async ({
-  jobData,
   apAgentJobId,
+  jobData,
   queryClient,
   workflowId,
 }: {
@@ -47,9 +48,7 @@ export const finalizeApAgentJobIfSucceeded = async ({
   finalizedApJobs.add(jobId)
 
   const instanceId =
-    jobData.instanceId ||
-    requestStore.getState().jobMappings?.[jobId] ||
-    null
+    jobData.instanceId || requestStore.getState().jobMappings?.[jobId] || null
   const resolvedWorkflowId =
     workflowId ||
     jobData.workflowId ||
@@ -81,14 +80,11 @@ export const finalizeApAgentJobIfSucceeded = async ({
         ),
       ])
     } catch (error) {
-      console.error(
-        'Error fetching lists after AP agent job succeeded:',
-        error,
-      )
+      console.error('Error fetching lists after AP agent job succeeded:', error)
     }
   }
 
-  queryClient.invalidateQueries({ queryKey: ['inbox'] })
+  invalidateRequestLists(queryClient)
   queryClient.invalidateQueries({ queryKey: ['request-detail'] })
   requestStore.getState().workflowRefresh()
 

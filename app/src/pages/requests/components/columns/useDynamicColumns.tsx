@@ -1776,6 +1776,8 @@ const getBaseColumns = (
         exportLabel: t`Last Action`,
         exportValue: (row: any) => getLastActionText(row),
         renderCell: (row: any) => {
+          // Finished (END block) requests show their time in green
+          const isEnd = getGenericStageInfo(workflow, row).isEnd
           const lastActionAt =
             row?.lastActionDate ||
             row?.lastAction?.createdAt ||
@@ -1802,8 +1804,21 @@ const getBaseColumns = (
             else runningStr = 'Just now'
           }
           return (
-            <span className='inline-flex items-center gap-1.5 rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-[11px] font-medium text-orange-11'>
-              <Icon className='size-3 text-orange-9' name='tabler:clock' />
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium',
+                isEnd
+                  ? 'border-green-3 bg-green-1 text-green-11'
+                  : 'border-orange-3 bg-orange-1 text-orange-11',
+              )}
+            >
+              <Icon
+                className={cn(
+                  'size-3',
+                  isEnd ? 'text-green-9' : 'text-orange-9',
+                )}
+                name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
+              />
               <span>{runningStr}</span>
             </span>
           )
@@ -2006,7 +2021,7 @@ const getBaseColumns = (
               variant='outline-purple'
             />
             <HoverExpandableText
-              className='text-[11px] font-medium italic text-[var(--gray-11)]'
+              className='text-[11px] font-medium text-[var(--gray-11)] italic'
               expandStyle='inline'
               maxLines={2}
               normalMaxWidthClass='max-w-[220px]'

@@ -128,82 +128,6 @@ export function extractBlocks(workflow: any): any[] {
   return []
 }
 
-// How the workflow is initiated ("initiate using"), read from settings /
-// workflowJson / flowJson the same way the in-app new request does, upper-cased
-// without separators: 'FORM', 'DOCUMENT', 'DOCUMENTFORM', or '' when unset.
-export function getWorkflowInitiateType(workflow: any): string {
-  if (!workflow) return ''
-  const parse = (value: any) => {
-    if (typeof value !== 'string') return value || null
-    try {
-      return JSON.parse(value)
-    } catch {
-      return null
-    }
-  }
-  return String(
-    workflow.settings?.general?.initiateUsing?.type ||
-      parse(workflow.workflowJson)?.settings?.general?.initiateUsing?.type ||
-      parse(workflow.flowJson)?.settings?.general?.initiateUsing?.type ||
-      '',
-  )
-    .toUpperCase()
-    .replace(/[-_\s]/g, '')
-}
-
-// True when the workflow starts from an uploaded document ("Document Form")
-export function isDocumentFormWorkflow(workflow: any): boolean {
-  return getWorkflowInitiateType(workflow) === 'DOCUMENTFORM'
-}
-
-// Field ids the workflow's start block hides from the initiator on a new
-// request (its "form visibility" access and secure-control rules). Shared by
-// the in-app new request and the portal so both hide the same fields.
-export function getStartStageHiddenFieldIds(
-  workflow: any,
-  panels: any[],
-  currentUserId: string,
-): Set<string> {
-  const blocks = extractBlocks(workflow)
-  // Find the first trigger / start / manual user block for New Request
-  const startBlock =
-    blocks.find((b: any) => {
-      const type = String(b.type || b.toolType || '').toUpperCase()
-      return (
-        type === 'START' ||
-        type === 'INITIATOR' ||
-        type === 'TRIGGER' ||
-        type === 'MANUAL_USER' ||
-        type === 'FORM_SUBMISSION'
-      )
-    }) || blocks[0]
-
-  const settings = startBlock?.settings || {}
-  const access = String(settings.formVisibilityAccess || 'ALL').toUpperCase()
-  const allFieldIds = panels.flatMap((p: any) =>
-    (p.fields || []).map((f: any) => String(f.id)),
-  )
-  if (access === 'ALL') return new Set<string>()
-  if (access === 'NONE') return new Set(allFieldIds)
-
-  const rules = Array.isArray(settings.formSecureControls)
-    ? settings.formSecureControls
-    : []
-  const rule =
-    rules.find((r: any) => String(r.userId) === currentUserId) ||
-    rules.find((r: any) => !r.userId) ||
-    (rules.length === 1 ? rules[0] : null)
-
-  if (!rule) return new Set<string>()
-  const specifiedFields = new Set<string>((rule.formFields || []).map(String))
-  const mode = (rule.visibilityMode || 'HIDE').toUpperCase()
-  if (mode === 'SHOW') {
-    return new Set(allFieldIds.filter((id) => !specifiedFields.has(id)))
-  }
-  // HIDE mode (default)
-  return specifiedFields
-}
-
 export function getStageNameFromWorkflow(
   activityId?: string | null,
   workflow?: any,
@@ -257,6 +181,82 @@ export function getStageNameFromWorkflow(
     match.data?.stage
 
   return name ? String(name) : null
+}
+
+// Field ids the workflow's start block hides from the initiator on a new
+// request (its "form visibility" access and secure-control rules). Shared by
+// the in-app new request and the portal so both hide the same fields.
+export function getStartStageHiddenFieldIds(
+  workflow: any,
+  panels: any[],
+  currentUserId: string,
+): Set<string> {
+  const blocks = extractBlocks(workflow)
+  // Find the first trigger / start / manual user block for New Request
+  const startBlock =
+    blocks.find((b: any) => {
+      const type = String(b.type || b.toolType || '').toUpperCase()
+      return (
+        type === 'START' ||
+        type === 'INITIATOR' ||
+        type === 'TRIGGER' ||
+        type === 'MANUAL_USER' ||
+        type === 'FORM_SUBMISSION'
+      )
+    }) || blocks[0]
+
+  const settings = startBlock?.settings || {}
+  const access = String(settings.formVisibilityAccess || 'ALL').toUpperCase()
+  const allFieldIds = panels.flatMap((p: any) =>
+    (p.fields || []).map((f: any) => String(f.id)),
+  )
+  if (access === 'ALL') return new Set<string>()
+  if (access === 'NONE') return new Set(allFieldIds)
+
+  const rules = Array.isArray(settings.formSecureControls)
+    ? settings.formSecureControls
+    : []
+  const rule =
+    rules.find((r: any) => String(r.userId) === currentUserId) ||
+    rules.find((r: any) => !r.userId) ||
+    (rules.length === 1 ? rules[0] : null)
+
+  if (!rule) return new Set<string>()
+  const specifiedFields = new Set<string>((rule.formFields || []).map(String))
+  const mode = (rule.visibilityMode || 'HIDE').toUpperCase()
+  if (mode === 'SHOW') {
+    return new Set(allFieldIds.filter((id) => !specifiedFields.has(id)))
+  }
+  // HIDE mode (default)
+  return specifiedFields
+}
+
+// How the workflow is initiated ("initiate using"), read from settings /
+// workflowJson / flowJson the same way the in-app new request does, upper-cased
+// without separators: 'FORM', 'DOCUMENT', 'DOCUMENTFORM', or '' when unset.
+export function getWorkflowInitiateType(workflow: any): string {
+  if (!workflow) return ''
+  const parse = (value: any) => {
+    if (typeof value !== 'string') return value || null
+    try {
+      return JSON.parse(value)
+    } catch {
+      return null
+    }
+  }
+  return String(
+    workflow.settings?.general?.initiateUsing?.type ||
+      parse(workflow.workflowJson)?.settings?.general?.initiateUsing?.type ||
+      parse(workflow.flowJson)?.settings?.general?.initiateUsing?.type ||
+      '',
+  )
+    .toUpperCase()
+    .replace(/[-_\s]/g, '')
+}
+
+// True when the workflow starts from an uploaded document ("Document Form")
+export function isDocumentFormWorkflow(workflow: any): boolean {
+  return getWorkflowInitiateType(workflow) === 'DOCUMENTFORM'
 }
 
 /**
@@ -376,10 +376,10 @@ export type StageRoute = {
 
 export type WorkflowStageStep = {
   id: string
-  label: string
   isCondition?: boolean
   isEnd?: boolean
   isSuccess?: boolean
+  label: string
   /** Condition steps: every route forward from the stage before it. */
   routes?: StageRoute[]
   status?: 'done' | 'current' | 'future'
@@ -387,7 +387,11 @@ export type WorkflowStageStep = {
 
 const stageLabel = (block: any) =>
   String(
-    block?.settings?.label || block?.label || block?.name || block?.type || 'Stage',
+    block?.settings?.label ||
+      block?.label ||
+      block?.name ||
+      block?.type ||
+      'Stage',
   )
 
 const isConditionType = (type: string) =>
@@ -531,18 +535,18 @@ const conditionalStep = (
 
 export interface ComputeWorkflowStagesParams {
   workflow: any
-  history?: any[]
   currentActivityId?: string | number
+  history?: any[]
   isCompleted?: boolean
 }
 
 // Computes user-facing stages based on history (executed path), active stage,
 // and prospective next stage (or condition block if multiple connections exist).
 export const computeWorkflowStages = ({
-  workflow,
-  history = [],
   currentActivityId,
+  history = [],
   isCompleted = false,
+  workflow,
 }: ComputeWorkflowStagesParams): WorkflowStageStep[] => {
   const { blocks, rules } = extractWorkflowGraph(workflow)
   if (!blocks.length) return []
@@ -552,7 +556,9 @@ export const computeWorkflowStages = ({
   blocks.forEach((block: any) => {
     const l = stageLabel(block).toLowerCase().trim()
     if (l) byName.set(l, block)
-    const n = String(block.name || '').toLowerCase().trim()
+    const n = String(block.name || '')
+      .toLowerCase()
+      .trim()
     if (n) byName.set(n, block)
   })
 
@@ -582,7 +588,9 @@ export const computeWorkflowStages = ({
       }
 
       if (typeStr === 'END') {
-        const rawName = String(h.stageName || h.stage || '').toLowerCase().trim()
+        const rawName = String(h.stageName || h.stage || '')
+          .toLowerCase()
+          .trim()
         if (rawName && byName.has(rawName)) {
           executedEndBlock = byName.get(rawName)
           break
@@ -638,14 +646,18 @@ export const computeWorkflowStages = ({
       let block = actId ? byId.get(actId) : null
 
       if (!block) {
-        const rawName = String(h.stageName || h.stage || '').toLowerCase().trim()
+        const rawName = String(h.stageName || h.stage || '')
+          .toLowerCase()
+          .trim()
         block = byName.get(rawName)
       }
 
       if (!block && h.title) {
         const titleStr = String(h.title).toLowerCase()
         const afterDash = (
-          titleStr.split('—')[1] || titleStr.split('-')[1] || ''
+          titleStr.split('—')[1] ||
+          titleStr.split('-')[1] ||
+          ''
         ).trim()
         if (afterDash && byName.has(afterDash)) {
           block = byName.get(afterDash)
@@ -660,8 +672,7 @@ export const computeWorkflowStages = ({
         }
       }
 
-      const isEnd =
-        block && String(block.type || '').toUpperCase() === 'END'
+      const isEnd = block && String(block.type || '').toUpperCase() === 'END'
       if (isEnd) return // Appended explicitly when terminal
 
       if (block) {
@@ -736,17 +747,17 @@ export const computeWorkflowStages = ({
     if (endBlock) {
       result.push({
         id: String(endBlock.id),
-        label: stageLabel(endBlock),
         isEnd: true,
         isSuccess: true,
+        label: stageLabel(endBlock),
         status: 'done',
       })
     } else {
       result.push({
         id: '__end_success__',
-        label: executedEndLabel || 'Workflow Success',
         isEnd: true,
         isSuccess: true,
+        label: executedEndLabel || 'Workflow Success',
         status: 'done',
       })
     }
@@ -802,8 +813,8 @@ export const computeWorkflowStages = ({
           const isEnd = nextType === 'END'
           result.push({
             id: String(nextBlock.id),
-            label: isEnd ? t`Completed` : stageLabel(nextBlock),
             isEnd,
+            label: isEnd ? t`Completed` : stageLabel(nextBlock),
             status: 'future',
           })
         }
@@ -815,15 +826,15 @@ export const computeWorkflowStages = ({
 }
 
 export type StageTrailItem = {
-  /** 1-based position of the step in the whole flow. */
-  number: number
-  step: WorkflowStageStep
   /**
    * Done / current steps: button color of the connection the request took
    * into this step from the previous one (green / red / orange / primary /
    * secondary), when set.
    */
   color?: string
+  /** 1-based position of the step in the whole flow. */
+  number: number
+  step: WorkflowStageStep
 }
 
 /** Button color of the rule from `fromId` to `toId` (only when unambiguous). */
@@ -934,45 +945,24 @@ export const listWorkflowStages = (
   isCompleted?: boolean,
 ): WorkflowStageStep[] =>
   computeWorkflowStages({
-    workflow,
-    history,
     currentActivityId,
+    history,
     isCompleted,
+    workflow,
   })
 
 export interface GenericStageInfo {
+  currentLabel: string
+  /** Sitting on the workflow's END block (finished). */
+  isEnd: boolean
+  isTerminal: boolean
+  previousLabel: string | null
   /**
    * Button color of the connection into the current stage (green / red /
    * orange / primary / secondary), as the header stage trail colors it;
    * undefined when not set or when incoming connections disagree.
    */
   color?: string
-  currentLabel: string
-  isTerminal: boolean
-  previousLabel: string | null
-}
-
-// Settings live on the workflow record, inside workflowJson, or inside a
-// stringified flowJson. Stage tabs (Enquiry / Qualified / Processed) are
-// settings.general.requestTabs. Reading only workflowJson.settings misses
-// them when the API returns workflowJson as a string.
-export function extractWorkflowGeneral(workflow: any): any {
-  if (!workflow) return undefined
-
-  const direct =
-    workflow.settings?.general || workflow.workflowJson?.settings?.general
-  if (direct && typeof direct === 'object') return direct
-
-  const raw = workflow.flowJson ?? workflow.workflowJson
-  if (!raw) return undefined
-  if (typeof raw === 'object') return raw.settings?.general
-
-  try {
-    const flow = JSON.parse(raw)
-    return flow?.settings?.general
-  } catch {
-    return undefined
-  }
 }
 
 // The workflow-settings "Preview" field labels (Workflow Builder ->
@@ -1027,6 +1017,38 @@ export function extractPreviewValues(workflow: any): string[] {
   return []
 }
 
+// Settings live on the workflow record, inside workflowJson, or inside a
+// stringified flowJson. Stage tabs (Enquiry / Qualified / Processed) are
+// settings.general.requestTabs. Reading only workflowJson.settings misses
+// them when the API returns workflowJson as a string.
+export function extractWorkflowGeneral(workflow: any): any {
+  if (!workflow) return undefined
+
+  const direct =
+    workflow.settings?.general || workflow.workflowJson?.settings?.general
+  if (direct && typeof direct === 'object') return direct
+
+  const raw = workflow.flowJson ?? workflow.workflowJson
+  if (!raw) return undefined
+  if (typeof raw === 'object') return raw.settings?.general
+
+  try {
+    const flow = JSON.parse(raw)
+    return flow?.settings?.general
+  } catch {
+    return undefined
+  }
+}
+
+// True when the row's current activity is the workflow's END block — the
+// request is finished, so running timers no longer apply.
+export const isAtEndBlock = (workflow: any, activityId: unknown): boolean => {
+  if (activityId == null || activityId === '') return false
+  const { blocks } = extractWorkflowGraph(workflow)
+  const block = blocks.find((b: any) => String(b.id) === String(activityId))
+  return String(block?.type || '').toUpperCase() === 'END'
+}
+
 // Previous → Current stage for a list/grid row, without a per-row history
 // call: Current comes straight off the row (`stage`/`activityId`); Previous
 // comes from the workflow's own rule graph (the rule whose toBlockId is
@@ -1067,7 +1089,15 @@ export const getGenericStageInfo = (
         .filter(Boolean),
     ),
   )
-  const color = incomingColors.length === 1 ? incomingColors[0] : undefined
+  // A request on the END block is finished: always green, whatever color
+  // the connection into it carries.
+  // Ids can arrive as number or string, so compare as strings here.
+  const isEnd = isAtEndBlock(workflow, activityId)
+  const color = isEnd
+    ? 'green'
+    : incomingColors.length === 1
+      ? incomingColors[0]
+      : undefined
 
-  return { color, currentLabel, isTerminal, previousLabel }
+  return { color, currentLabel, isEnd, isTerminal, previousLabel }
 }

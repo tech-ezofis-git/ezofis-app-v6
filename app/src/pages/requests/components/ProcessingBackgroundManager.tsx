@@ -1,12 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import workflowsApiV6 from '@/api/v6/workflows'
+import { invalidateRequestLists } from '@/pages/requests/hooks/useAllWorkflowsInbox'
+import requestStore from '../stores/useRequestStore'
 import {
   finalizeApAgentJobIfSucceeded,
   markApAgentJobHandled,
   wasApAgentJobFinalized,
 } from '../utils/finalizeApAgentJobIfSucceeded'
-import requestStore from '../stores/useRequestStore'
 import {
   isJobStatusFailed,
   stopFailedApAgentJob,
@@ -240,7 +241,7 @@ export const ProcessingBackgroundManager = () => {
             })
 
             if (isCompleted) {
-              queryClient.invalidateQueries({ queryKey: ['inbox'] })
+              invalidateRequestLists(queryClient)
               queryClient.invalidateQueries({ queryKey: ['request-detail'] })
               setTimeout(() => {
                 removeProcessingProcess(processId)
@@ -263,7 +264,13 @@ export const ProcessingBackgroundManager = () => {
     return () => {
       pollers.forEach((p) => p && clearInterval(p.intervalId))
     }
-  }, [processingProcesses.length, rawWorkflowData?.id, queryClient, removeProcessingProcess, updateProcessingProcess])
+  }, [
+    processingProcesses.length,
+    rawWorkflowData?.id,
+    queryClient,
+    removeProcessingProcess,
+    updateProcessingProcess,
+  ])
 
   return null
 }

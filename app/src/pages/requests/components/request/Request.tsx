@@ -10,12 +10,14 @@ import Tooltip from '@/components/base/Tooltip'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
+import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import { ensureNormalizedRuntimeFormJson } from '@/pages/form-builder/helpers/runtimeFieldAdapter'
 import {
   extractGenericRequestNumber,
   getFieldKeyByLabel,
 } from '@/pages/requests/components/columns/useDynamicColumns'
+import { invalidateRequestLists } from '@/pages/requests/hooks/useAllWorkflowsInbox'
 import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
@@ -24,26 +26,28 @@ import { useComments } from '../../hooks/useComments'
 import { useHeaderBudget } from '../../hooks/useMasterFormValue'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
-import {
-  extractApAgentJobId,
-  registerApAgentJobProcessing,
-} from '../../utils/registerApAgentJobProcessing'
-import {
-  finalizeApAgentJobIfSucceeded,
-  markApAgentJobHandled,
-  wasApAgentJobFinalized,
-} from '../../utils/finalizeApAgentJobIfSucceeded'
-import {
-  isJobStatusFailed,
-  stopFailedApAgentJob,
-} from '../../utils/resolveApAgentJobMessage'
+import { loadAppliedValues } from '../../utils/appliedSuggestions'
 import {
   isDecorativeFieldType,
   isMatrixFieldType,
   isTableType,
 } from '../../utils/dynamicTable.utils'
 import { setFieldForAttachment } from '../../utils/fieldAttachmentMap'
-import { loadAppliedValues } from '../../utils/appliedSuggestions'
+import {
+  finalizeApAgentJobIfSucceeded,
+  markApAgentJobHandled,
+  wasApAgentJobFinalized,
+} from '../../utils/finalizeApAgentJobIfSucceeded'
+import { getCanonicalFieldLabel } from '../../utils/localizeRequestUi'
+import {
+  extractApAgentJobId,
+  registerApAgentJobProcessing,
+} from '../../utils/registerApAgentJobProcessing'
+import { REQUEST_ATTACHMENTS_CHANGED_EVENT } from '../../utils/requestEvents'
+import {
+  isJobStatusFailed,
+  stopFailedApAgentJob,
+} from '../../utils/resolveApAgentJobMessage'
 import {
   extractWorkflowGeneral,
   extractWorkflowGraph,
@@ -64,19 +68,16 @@ import {
   seedGmailFirstFileUpload,
   shouldSeedFirstFileUploadFromAttachment,
 } from '../workflow-request/utils/gmailFormAttachment'
-import { isDocumentGenerateBlock } from './components/generic-overview/documentGenerateTemplate'
-import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
 import {
   collectFormFields,
   collectFormTableFields,
 } from './components/generic-overview/AgentEditableTables'
+import { isDocumentGenerateBlock } from './components/generic-overview/documentGenerateTemplate'
+import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
 import { summarizeQuoteResult } from './components/generic-overview/quoteResultUtils'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 import ForwardPopover from './ForwardPopover'
-import { getCanonicalFieldLabel } from '../../utils/localizeRequestUi'
-import { REQUEST_ATTACHMENTS_CHANGED_EVENT } from '../../utils/requestEvents'
-import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 
 const cleanKey = (s: string) =>
   s
@@ -425,7 +426,8 @@ export const shouldIncludeExtractedField = (
 export const getExtractedFieldLabel = (
   metaMap: Map<string, { label: string; originalId?: string; type: string }>,
   key: string,
-): string => resolveFieldMeta(metaMap, key)?.label || getCanonicalFieldLabel(key) || key
+): string =>
+  resolveFieldMeta(metaMap, key)?.label || getCanonicalFieldLabel(key) || key
 
 export const parseTableFieldValue = (val: unknown): any[] => {
   if (Array.isArray(val)) return val
@@ -617,12 +619,12 @@ export const resolveWorkflowFormContext = (
     null
 
   return {
-    resolvedFormId,
-    resolvedFormEntryId,
-    resolvedTransactionId,
-    resolvedWorkflowId,
     itemFormDataObj,
     reqFormDataObj,
+    resolvedFormEntryId,
+    resolvedFormId,
+    resolvedTransactionId,
+    resolvedWorkflowId,
   }
 }
 
@@ -1050,7 +1052,8 @@ const storeFormValues = (
     const label = String(field?.label || '').trim()
     if (label) headings.add(label)
     const columns = field?.settings?.specific?.tableColumns
-    if (field?.id && Array.isArray(columns)) columnsByFieldId.set(field.id, columns)
+    if (field?.id && Array.isArray(columns))
+      columnsByFieldId.set(field.id, columns)
   }
 
   // Quote 2 / Quote 3 totals are Calculated fields whose formula often cannot
@@ -1059,7 +1062,10 @@ const storeFormValues = (
   // is what move-next and the document preview send.
   for (const field of fields) {
     const id = field?.id
-    if (!id || !QUOTE_VARIANT_TOTAL_LABEL.test(String(field?.label || '').trim())) {
+    if (
+      !id ||
+      !QUOTE_VARIANT_TOTAL_LABEL.test(String(field?.label || '').trim())
+    ) {
       continue
     }
     if (isBlankStoredValue(calculated[id]) && !isBlankStoredValue(values[id])) {
@@ -1083,7 +1089,9 @@ const storeFormValues = (
       const subtotalCol = columns.find((col) => columnTitle(col) === 'subtotal')
       next[key] = value.map((row) => {
         if (!row || typeof row !== 'object' || Array.isArray(row)) return row
-        const hasControlId = Object.keys(row).some((cell) => CONTROL_ID.test(cell))
+        const hasControlId = Object.keys(row).some((cell) =>
+          CONTROL_ID.test(cell),
+        )
         if (!hasControlId) return row
         const stored: Record<string, any> = {}
         for (const [cell, cellValue] of Object.entries(row)) {
@@ -1186,10 +1194,10 @@ const Request = ({
     hasFetched: genericAttachmentsFetched,
     refetch: refetchGenericAttachments,
   } = useAttachments(
-      resolvedWorkflowId,
-      genericInstanceId,
-      isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
-    )
+    resolvedWorkflowId,
+    genericInstanceId,
+    isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
+  )
 
   // Same idea as genericAttachments above - keep the header's comment
   // count and the Comments panel reading from the same live list instead
@@ -1631,7 +1639,8 @@ const Request = ({
         '',
     ).toLowerCase()
     return (
-      stage.includes('document generate') || stage.includes('document generator')
+      stage.includes('document generate') ||
+      stage.includes('document generator')
     )
   }, [
     currentBlock,
@@ -1936,9 +1945,15 @@ const Request = ({
   ])
 
   const isInboxTab = useMemo(() => {
-    const norm = String(requestListTab || '').trim().toLowerCase()
-    const localizedInvoices = String(t`Invoices`).trim().toLowerCase()
-    const localizedInbox = String(t`Inbox`).trim().toLowerCase()
+    const norm = String(requestListTab || '')
+      .trim()
+      .toLowerCase()
+    const localizedInvoices = String(t`Invoices`)
+      .trim()
+      .toLowerCase()
+    const localizedInbox = String(t`Inbox`)
+      .trim()
+      .toLowerCase()
     if (
       norm === 'inbox' ||
       norm === 'invoices' ||
@@ -1947,7 +1962,9 @@ const Request = ({
     ) {
       return true
     }
-    const itemTab = String(selectedItem?._listTab || '').trim().toLowerCase()
+    const itemTab = String(selectedItem?._listTab || '')
+      .trim()
+      .toLowerCase()
     return itemTab === 'inbox' || itemTab === 'invoices'
   }, [requestListTab, selectedItem?._listTab, t])
 
@@ -2561,7 +2578,7 @@ const Request = ({
           variant: 'success',
         })
 
-        queryClient.invalidateQueries({ queryKey: ['inbox'] })
+        invalidateRequestLists(queryClient)
         queryClient.invalidateQueries({
           queryKey: [
             'request-detail',
@@ -2591,6 +2608,7 @@ const Request = ({
           selectedItem?.transactionId,
         ],
       })
+      invalidateRequestLists(queryClient)
       workflowRefresh()
       closeRequest()
     } catch (e) {
@@ -2618,11 +2636,11 @@ const Request = ({
     try {
       setSubmitting(true)
       const {
-        resolvedFormId,
+        itemFormDataObj,
         resolvedFormEntryId,
+        resolvedFormId,
         resolvedTransactionId,
         resolvedWorkflowId,
-        itemFormDataObj,
       } = resolveWorkflowFormContext(
         selectedItem,
         request,
@@ -2695,7 +2713,7 @@ const Request = ({
           message: t`Request is being processed.`,
           variant: 'success',
         })
-        queryClient.invalidateQueries({ queryKey: ['inbox'] })
+        invalidateRequestLists(queryClient)
         queryClient.invalidateQueries({
           queryKey: [
             'request-detail',
@@ -2724,6 +2742,7 @@ const Request = ({
           selectedItem?.transactionId,
         ],
       })
+      invalidateRequestLists(queryClient)
       workflowRefresh()
       closeRequest()
     } catch (e: any) {
@@ -3023,9 +3042,7 @@ const Request = ({
   }
 
   return (
-    <div
-      className='flex h-full min-h-0 w-full flex-col overflow-hidden p-0'
-    >
+    <div className='flex h-full min-h-0 w-full flex-col overflow-hidden p-0'>
       <div className='sticky top-0 z-50 bg-surface'>
         <Header
           activeAction={activeAction}
@@ -3048,9 +3065,6 @@ const Request = ({
           selectedItem={selectedItem}
           showApprove={isInboxTab}
           simple={isGenericWorkflow}
-          stageSince={
-            selectedItem?.transactionCreatedAt || request?.transactionCreatedAt
-          }
           stageTrail={stageTrail}
           status={statusBadge}
           totalAmount={totalAmount}
@@ -3067,7 +3081,6 @@ const Request = ({
               return {
                 ...a,
                 disabled: true,
-                onClick: undefined,
                 renderWrapper: (btn: React.ReactNode) => (
                   <Tooltip
                     content={t`Quote data has changed. Regenerate the PDF before you continue.`}
@@ -3077,6 +3090,7 @@ const Request = ({
                     {btn}
                   </Tooltip>
                 ),
+                onClick: undefined,
               }
             }
             if (
@@ -3172,6 +3186,9 @@ const Request = ({
             selectedItem?.lastActionStageName ||
             request?.lastActionStageName
           }
+          stageSince={
+            selectedItem?.transactionCreatedAt || request?.transactionCreatedAt
+          }
           ticketUserId={
             selectedItem?.userId ||
             request?.userId ||
@@ -3195,11 +3212,6 @@ const Request = ({
             {isGenericWorkflow ? (
               <GenericRequestOverview
                 attachments={genericAttachments}
-                attachmentsLoading={
-                  isGenericWorkflow &&
-                  !!genericInstanceId &&
-                  !genericAttachmentsFetched
-                }
                 checklistChecked={checklistChecked}
                 comments={genericComments}
                 documentRequired={!!currentBlockSettings.documentRequired}
@@ -3210,6 +3222,11 @@ const Request = ({
                 signatureConfirmed={signatureConfirmed}
                 userSignatureRequired={!!currentBlockSettings.userSignature}
                 viewOnly={hideActions || !canActOnRequest}
+                attachmentsLoading={
+                  isGenericWorkflow &&
+                  !!genericInstanceId &&
+                  !genericAttachmentsFetched
+                }
                 checklistItems={
                   Array.isArray(currentBlockSettings.checklistItems)
                     ? currentBlockSettings.checklistItems

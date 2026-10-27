@@ -1,10 +1,21 @@
-import { useQuery } from '@tanstack/react-query'
+import { type QueryClient, useQuery } from '@tanstack/react-query'
 import {
   type AllWorkflowsInboxGroup,
   getAllWorkflowsInbox,
 } from '@/api/v6/workflows'
 
 export const ALL_WORKFLOWS_INBOX_KEY = ['all-workflows-inbox']
+
+/**
+ * Refetch every request list after a request changes (approve, reject,
+ * submit, background job done): the per-workflow lists (`inbox`) and the
+ * All Workflows inbox, which is cached separately and would otherwise keep
+ * showing the request until its staleTime runs out.
+ */
+export const invalidateRequestLists = (queryClient: QueryClient) => {
+  void queryClient.invalidateQueries({ queryKey: ['inbox'] })
+  void queryClient.invalidateQueries({ queryKey: ALL_WORKFLOWS_INBOX_KEY })
+}
 
 /** Rows fetched per workflow group (the API's default is 20). */
 const ITEMS_PER_WORKFLOW = 20

@@ -57,6 +57,9 @@ export default function WorkflowSwitcher({
   const selectedOverdue = isAllWorkflows
     ? overdueTotal
     : (countById.get(String(value?.id))?.overdue ?? 0)
+  const selectedTotal = isAllWorkflows
+    ? (inbox.data?.totalCount ?? 0)
+    : (countById.get(String(value?.id))?.total ?? 0)
 
   const needle = query.trim().toLowerCase()
   const visible = workflows.filter(
@@ -118,13 +121,17 @@ export default function WorkflowSwitcher({
           <span className='min-w-0 flex-1 truncate text-left font-medium'>
             {isAllWorkflows ? t`All Workflows` : value?.name || t`Select`}
           </span>
-          {selectedOverdue > 0 ? (
+          {selectedTotal > 0 ? (
             <Tooltip
-              content={t`${selectedOverdue} earlier — not yet actioned`}
               position='bottom'
+              content={
+                selectedOverdue > 0
+                  ? t`${selectedTotal} open · ${selectedOverdue} earlier — not yet actioned`
+                  : t`${selectedTotal} open`
+              }
             >
-              <span className='shrink-0 rounded-full bg-orange-2 px-1.5 py-px text-[11px] font-bold text-orange-11 tabular-nums'>
-                {selectedOverdue}
+              <span className='shrink-0 rounded-full bg-gray-3 px-1.5 py-px text-[11px] font-bold text-gray-11 tabular-nums'>
+                {selectedTotal}
               </span>
             </Tooltip>
           ) : null}

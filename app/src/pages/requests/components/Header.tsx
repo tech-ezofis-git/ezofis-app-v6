@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
+import { useRef } from 'react'
 import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -29,6 +30,8 @@ interface Props {
     onClick: () => void
   }[]
   connectedWatchEmail?: string | null
+  /** Counts or the list are reloading: keep showing the last counts. */
+  countsRefreshing?: boolean
   exceptionsCount?: number
   hideListTabs?: boolean
   isConnectingWatchEmail?: boolean
@@ -49,6 +52,7 @@ const Header = ({
   activeTab,
   allWorkflows,
   connectedWatchEmail,
+  countsRefreshing = false,
   exceptionsCount,
   hideListTabs = false,
   isConnectingWatchEmail,
@@ -71,6 +75,18 @@ const Header = ({
   const sentCount = Number(metaData?.sentCount ?? 0)
   const completedCount = Number(metaData?.completedCount ?? 0)
   const resolvedExceptionsCount = exceptionsCount ?? 0
+
+  // Last counts shown per workflow + tab, so a tab switch doesn't flash 0
+  // (or another stale value) before the fresh numbers arrive.
+  const shownCountsRef = useRef<Record<string, number>>({})
+  const displayCountFor = (tab: RequestTabDescriptor) => {
+    const key = `${workflow?.id ?? ''}:${tab.value}`
+    const fresh = countFor(tab)
+    const previous = shownCountsRef.current[key]
+    if (countsRefreshing && previous !== undefined) return previous
+    shownCountsRef.current[key] = fresh
+    return fresh
+  }
 
   const countFor = (tab: RequestTabDescriptor) => {
     if (stageCounts) {
@@ -132,7 +148,9 @@ const Header = ({
                 key={tab.value}
                 value={tab.value}
                 label={
-                  isLoading ? tab.label : `${tab.label} (${countFor(tab)})`
+                  isLoading
+                    ? tab.label
+                    : `${tab.label} (${displayCountFor(tab)})`
                 }
               />
             ))}
