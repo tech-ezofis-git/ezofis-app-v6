@@ -1,0 +1,11 @@
+{
+  "appId": "com.ezofis.mobile",
+  "appName": "EZOFIS",
+  "webDir": "dist",
+  "android": { "backgroundColor": "#643094" },
+  "ios": { "backgroundColor": "#643094", "contentInset": "never" },
+  "plugins": {
+    "StatusBar": { "style": "LIGHT", "backgroundColor": "#643094" },
+    "CapacitorHttp": { "enabled": true }
+  }
+}
