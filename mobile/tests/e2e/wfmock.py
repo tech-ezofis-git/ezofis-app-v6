@@ -59,9 +59,43 @@ PDF = (b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pag
 def mailbox(box, wf=None, inst=None, page=1, size=20):
     rows = [r for r in STATE[box] if (not wf or r['workflowId'] == wf) and (not inst or r['workflowInstanceId'] == inst)]
     return {'items': rows[(page-1)*size: page*size], 'totalCount': len(rows), 'pageNumber': page, 'pageSize': size, 'tableExists': True}
+# Repository Assistant chatbot: the V6 API returns only the agent's chatbot_result (REPOSITORY_CHATBOT_API_FRONTEND).
+def doc_card(i, name, repo='repo-ap', repo_name='Accounts Payable'):
+    return {'title': name, 'subtitle': 'Supplier · Field Hit', 'description': 'Vertex Industrial Supply', 'type': 'document', 'matchSource': 'field',
+            'id': {'itemId': f'item-ap-{i}', 'repositoryId': repo, 'repositoryName': repo_name}, 'modifiedDateandtime': iso(24 * i)}
+def chatbot(body):
+    STATE.setdefault('chat', []).append(body)
+    msg = (body or {}).get('message', '').lower()
+    if not msg.strip(): return 400, {'error': 'message is required.'}
+    if 'fail' in msg: return 502, {'error': 'Repository Python chatbot service is unavailable: timeout'}
+    blocks = []
+    if body.get('specificId'):
+        blocks = [{'type': 'paragraph', 'text': 'In **Accounts Payable** I found 1 invoice from Vertex Industrial Supply.'},
+                  {'type': 'cards', 'items': [doc_card(1, 'INV-2026-3005.pdf')]}]
+    elif 'where' in msg or 'repository' in msg:
+        blocks = [{'type': 'paragraph', 'text': 'Invoices are stored in more than one place. Which repository should I search?'},
+                  {'type': 'repo_picker', 'title': 'Choose a repository', 'items': [{'name': 'Accounts Payable', 'repositoryId': 'repo-ap'}, {'name': 'Expense Claims', 'repositoryId': 'repo-exp'}]}]
+    elif 'hello' in msg:
+        blocks = [{'type': 'paragraph', 'text': 'Hi! Ask me about a document, invoice, PO or request.'}]
+    elif 'nothing' in msg:
+        return 200, {'conversation': [], 'text': {'blocks': []}, 'hits': [], 'action': None, 'actionTo': None}
+    else:
+        blocks = [{'type': 'paragraph', 'text': 'I found **6 results** for invoices from Vertex Industrial Supply.\nThe newest is INV-2026-3005.'},
+                  {'type': 'bullets', 'title': 'Filters Applied', 'items': [{'label': 'Search', 'value': 'invoices'}, {'label': 'Supplier', 'value': 'Vertex Industrial Supply'}, {'label': 'Repository', 'value': 'Accounts Payable'}]},
+                  {'type': 'cards', 'title': 'Results', 'items': [doc_card(1, 'INV-2026-3005.pdf'),
+                      {'title': 'EXP-2026-92', 'subtitle': 'Request · Field Hit', 'description': '{"bbce89bf": "Client lunch"}', 'type': 'ticket', 'id': {'workflowId': EXP, 'instanceId': 'inst-exp-1', 'requestNo': 'EXP-2026-92'}},
+                      {'title': 'Vendor master: Vertex', 'subtitle': 'Form entry', 'description': 'Vendor code V-3101', 'type': 'form', 'id': {'formId': 'form-vendor'}, 'fields': [{'label': 'Vendor code', 'value': 'V-3101'}, {'label': 'Contact', 'value': 'ap@example.com'}]},
+                      doc_card(2, 'INV-2026-2990.pdf'), doc_card(3, 'PO-30005.xlsx'), doc_card(4, 'Statement-Oct.pdf')]}]
+    pending = {'action_id': 'act-1', 'tool': 'chatbot_start_workflow', 'arguments': {}} if 'start' in msg else None
+    res = {'conversation': [{'role': 'user', 'content': body['message']}, {'role': 'assistant', 'content': 'ok'}], 'text': {'blocks': blocks}, 'hits': [],
+           'action': None, 'actionTo': 'Repository', 'tenantId': 't1', 'specificId': body.get('specificId')}
+    if pending: res['pending_action'] = pending
+    return 200, res
+
 def handle(method, path, qs, body):
     STATE['calls'].append((method, path, qs, body))
     if STATE['fail401']: return 401, {'message': 'Unauthorized'}
+    if path == '/repositories/assistant/chatbot' and method == 'POST': return chatbot(body)
     if path == '/usersession': return 200, {'id': 'u1', 'email': 'student.lawyer@example.com', 'displayName': 'Student Lawyer', 'role': 'User', 'Job Title': None, 'department': 'Legal', 'MFAuthentication': 'No', 'configuration': 1}
     p = path[len('/Workflows'):] if path.startswith('/Workflows') else None
     if path.startswith('/repositories/') and path.endswith('/file'): return 200, ('bytes', PDF, 'application/pdf')

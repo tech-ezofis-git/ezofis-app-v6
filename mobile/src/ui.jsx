@@ -119,7 +119,7 @@ export function Rail() {
   const nav = useNavigate();
   const loc = useLocation();
   const { requests, unread, live, inboxCount } = useStore();
-  const items = [...TABS.slice(0, 3), { to: '/app/notifications', icon: 'bell', label: 'Alerts' }, TABS[3]];
+  const items = [...TABS.slice(0, 3), ...(live ? [{ to: '/app/ask', icon: 'chat', label: 'Ask AI' }] : []), { to: '/app/notifications', icon: 'bell', label: 'Alerts' }, TABS[3]];
   return (
     <nav className="rail" aria-label="Main">
       <img src={markColor} alt="EZOFIS" className="rail-logo" />

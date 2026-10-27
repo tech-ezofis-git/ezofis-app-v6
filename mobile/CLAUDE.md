@@ -14,7 +14,7 @@ tests/e2e/run_all.sh              # mock end-to-end checks (Playwright + Python)
 python3 apk-shell/build_apk.py dist-single/index.html apk-shell/ic_launcher.png /tmp/u.apk && \
 python3 apk-shell/sign_v2.py /tmp/u.apk EZOFIS-Mobile-test.apk apk-shell     # SDK-free test APK
 ```
-Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 19 / 0.4.4.
+Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 20 / 0.4.5.
 
 ## Code map
 - `src/api.js`: sign-in (`loggedFrom: "MOBILE"`, 2FA, tenants), session storage, `authed()` (Bearer + `X-Tenant-Id`). A 401 dispatches `SESSION_EXPIRED`, which sends the user back to login.
@@ -31,7 +31,7 @@ Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py
   - `LiveWorkflow.jsx`: inbox list, ticket detail, actions;
   - `NewRequest.jsx`: new request;
   - `FileViewer.jsx` + `OfficeViewers.jsx`: in-app viewers for pdf, image, eml, msg, docx, xlsx, pptx;
-  - `AskAi.jsx`: Ask AI;
+  - `AskAiChat.jsx`: Ask EZOFIS AI chat (Repository Assistant API, `src/assistant.js`); `AskAi.jsx`: the Home Ask AI card and the sample-data sheet;
   - `More.jsx`: Notifications, Settings;
   - `Onboarding.jsx`: splash, login, 2FA.
 - `apk-shell/`: hand-written DEX/manifest/arsc builder plus APK v2 signer, for test APKs without the Android SDK.

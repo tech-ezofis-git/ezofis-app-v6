@@ -16,6 +16,7 @@ This app was built in a Claude chat session from 25 to 27 Oct 2026 and moved her
 | 0.4.2 | File viewer: file on the top 70%, metadata on the bottom 30% with scroll, download/share icons, AI Summary overlay button |
 | 0.4.3 | Per-workflow tabs from `requestTabs` (by-activity); action button text and colour from `buttonColor`; tab badge = list total; simpler workflow picker in New request |
 | 0.4.4 | Home: updates card overlaps the hero (40/60), then Quick actions, then Ask AI, then Dashboard; background auto-refresh; phone notifications |
+| 0.4.5 | Ask EZOFIS AI on the Repository Assistant chatbot API (`/app/ask`): one session per chat, rich answers (text, filters, result cards, repository picker), documents open in the in-app file viewer, requests open the ticket, Stop / Try again / New chat; Ask AI in the tablet rail |
 
 ## Still open
 1. **Server push** for notifications when the app is closed. The backend needs to register device tokens and send through FCM (Android) / APNs (iOS) when an inbox item is created. Today notifications come from the app's own polling, so they only work while Android keeps the app in memory.
@@ -31,7 +32,11 @@ This app was built in a Claude chat session from 25 to 27 Oct 2026 and moved her
 6. **Not tested on a real device yet:**
    - the phone-notification bridge in the test APK (`onJsPrompt` in `apk-shell/build_apk.py`);
    - background polling while the app is in the background.
-7. **Design canvas:** the C5/C6 file-viewer proposals in `docs/design-canvas/` were replaced by the 70/30 layout that is now in the app.
+7. **Ask AI (0.4.5), not checked against the live agent yet:**
+   - The `chatbot_result` shape was taken from the agents code (`agents/app/agents/chatbot_agent.py`, `agents/app/chatbot/format_blocks.py`) and the web client (`app/src/components/common/ask-ai/`), and tested with mocks only.
+   - Actions the agent proposes (`pending_action`: start workflow, upload, create user) are confirmed through `POST /actions/{id}/confirm` on the agents service, which V6 doesn't proxy. The app tells the user to finish them on the web.
+   - Form-entry results have no mobile screen yet ("Open on the web").
+8. **Design canvas:** the C5/C6 file-viewer proposals in `docs/design-canvas/` were replaced by the 70/30 layout that is now in the app.
 
 ## Server behaviour seen during development
 - **Errors:** GET /Workflows/{id} sometimes returned 500 or timed out; the app shows retry buttons.

@@ -9,6 +9,7 @@ import { Inbox, EditRequest, Done } from './screens/Workflow.jsx';
 import { Folders, FileView, Upload, Review, EditMeta } from './screens/Folders.jsx';
 import { Notifications, Settings } from './screens/More.jsx';
 import NewRequest from './screens/NewRequest.jsx';
+import AskAiChat from './screens/AskAiChat.jsx';
 import LiveWatcher from './LiveWatcher.jsx';
 
 const ROOTS = ['/app/home', '/app/inbox', '/app/folders', '/app/settings'];
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="done/:id" element={<Done />} />
         <Route path="new" element={<NewRequest />} />
         <Route path="new/:wfId" element={<NewRequest />} />
+        <Route path="ask" element={<AskAiChat />} />
         <Route path="folders" element={<Folders />} />
         <Route path="folders/file/:id" element={<FileView />} />
         <Route path="upload" element={<Upload />} />

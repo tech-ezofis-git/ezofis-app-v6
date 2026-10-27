@@ -29,7 +29,7 @@ npx cap sync ios       # resolves Swift packages / CocoaPods on the Mac
 npx cap open ios       # set your Team under Signing & Capabilities, then Run
 ```
 
-## Test APK (v0.4.4)
+## Test APK (v0.4.5)
 
 The test APK was assembled without the Android SDK by `apk-shell/build_apk.py`. It's a minimal WebView wrapper that loads the single-file build (`SINGLE=1 npx vite build` → `dist-single/index.html`). `apk-shell/sign_v2.py` signs it with a throwaway test key. The key is created in `apk-shell/` on the first run and is git-ignored, so it is never committed:
 
@@ -129,6 +129,15 @@ To make Google sign-in work (all in ONE Google Cloud project):
 3. Build in Android Studio and install on a device with Google Play services.
 
 **Security:** per the API doc, `POST /auth/social/login` does not yet verify a Google/Microsoft token. Do not ship social sign-in until the backend verifies the provider ID token. The app never lets a user type the email for social sign-in; it only sends the email returned by the provider SDK.
+
+## Ask EZOFIS AI (v0.4.5)
+
+Signed-in users open Ask AI from Home (the Ask AI quick action, the Ask AI card or one of its suggestion chips) or from the tablet rail. The chat calls `POST /api/repositories/assistant/chatbot`; see `docs/workflow-api-integration.md` for the details. In a chat:
+- The assistant searches documents, folders, requests, comments and form entries, and remembers earlier questions in the same chat.
+- Answers show the applied filters and result cards. **Open file** shows the document in the in-app viewer (PDF, Office, e-mail, images) with its metadata. **View request** opens the ticket.
+- When results sit in several repositories, the assistant asks which one to search. The chosen repository shows above the input and can be cleared.
+- Answers can take up to 2 minutes, so the app shows progress and a **Stop** button. **New chat** starts a fresh conversation.
+- "Explore with sample data" keeps the offline sample answers.
 
 ## Auto-refresh and phone notifications (v0.4.4)
 

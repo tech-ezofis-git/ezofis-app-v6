@@ -42,6 +42,24 @@ Source: WORKFLOW_API_FULL_REFERENCE_1 (26 Oct 2026, 8 pages; adds §5.7 file vie
 - **Phone notifications:** Capacitor LocalNotifications in the release build; a native prompt bridge in the test APK; the Web Notification API in browsers.
 - **Backend needed for notifications when the app is closed:** a device-token registration endpoint plus an FCM/APNs push when an inbox item is created. Without these, notifications only appear while the app process is alive.
 
+## v0.4.5 — Ask EZOFIS AI (Repository Assistant chatbot)
+Source: REPOSITORY_CHATBOT_API_FRONTEND (Oct 2026). Client: `src/assistant.js`. Screen: `src/screens/AskAiChat.jsx` (`/app/ask`).
+- **Call:** POST /api/repositories/assistant/chatbot `{ message, sessionId, specificId? }` with Bearer + X-Tenant-Id. `actionFrom` and `token` are left out (the server defaults to "Repository" and forwards the Authorization header). Timeout 125 s, because the server waits up to 120 s.
+- **Session:** `sessionId = "mobile-<uuid>"`, created when the chat opens, kept for every message, and replaced on "New chat" or an organization switch.
+- **Response:** the agent's `chatbot_result`. The app renders `text.blocks`:
+  - `paragraph` (with `**bold**` and line breaks, shown as text, never HTML);
+  - `bullets` (e.g. Filters Applied, shown as tags);
+  - `card` / `cards` (result cards; first 4, then "Show more");
+  - `repo_picker` (tapping a repository asks the same question again with `specificId`).
+  With no blocks, it falls back to `hits`, then `reply` / `conversation`.
+- **Result cards:**
+  - `id.itemId` + `id.repositoryId` → "Open file" in the in-app viewer (§5.7 file + item metadata);
+  - `id.workflowId` + `id.instanceId` → "View request" (ticket detail);
+  - anything else → "Open on the web".
+  - Raw form JSON in ticket descriptions is hidden.
+- **Errors:** 400 → the server's message; 502/503/504 → "Ask AI is unavailable right now"; timeout → a hint to ask a shorter question. Each error has "Try again".
+- **Not wired:** global search (`/assistant/search`); confirming agent actions (`pending_action`) — the app points to cloud.ezofis.com.
+
 ## ⚠️ Security finding (for backend)
 - The "Users" master form (bb32d502…) returns a **plain-text Password column** in /form/{id}/entry/all to any user who can read it. The app keeps only the columns a form references, but the column should be removed or excluded server-side.
 
