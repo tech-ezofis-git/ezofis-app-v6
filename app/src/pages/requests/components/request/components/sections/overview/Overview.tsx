@@ -4230,6 +4230,7 @@ const Overview = (props: any) => {
     selectedItem?.processId,
     selectedItem?.id,
     selectedItem?.transactionId,
+    selectedItem?.workflowInstanceId,
     selectedItem?.apAgentJobId ? `job-${selectedItem.apAgentJobId}` : undefined,
   ])
 
@@ -4299,8 +4300,20 @@ const Overview = (props: any) => {
         }
         lastFetchedRef.current = { itemId: '', localUrl, repoId: '' }
         setPreviewUrl(localUrl)
+        // The uploaded file's own type and name. Assuming PDF would open an
+        // uploaded email (.eml) in the PDF viewer first and switch to the
+        // email viewer later - a second load.
+        const localName = String(
+          selectedFile?.fileName ||
+            selectedFile?.name ||
+            selectedItem?._localFileName ||
+            '',
+        )
         setFileType(
-          selectedFile?.type || selectedItem?.type || 'application/pdf',
+          selectedFile?.type ||
+            selectedItem?.type ||
+            selectedItem?._localFileType ||
+            (/\.eml$/i.test(localName) ? 'message/rfc822' : 'application/pdf'),
         )
         setIsViewerLoading(false)
         return
@@ -4417,6 +4430,7 @@ const Overview = (props: any) => {
     selectedFile?.name ||
     selectedItem?.repositoryItem?.fileName ||
     selectedItem?.name ||
+    selectedItem?._localFileName ||
     'document.pdf'
 
   // One duplicate decision for the card, the detail view and the header: any

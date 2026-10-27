@@ -223,10 +223,10 @@ export default function AllWorkflowsInbox({
             ref={searchRef}
             role='search'
             className={cn(
-              'flex h-8 items-center overflow-hidden rounded-md border border-[var(--border-default)] bg-surface transition-all duration-300 select-none',
+              'flex h-9 items-center overflow-hidden rounded-lg border border-gray-4 bg-surface transition-all duration-300 select-none',
               searchExpanded
                 ? 'focus-within:border-primary w-72 justify-start pr-1 max-sm:w-48'
-                : 'w-8 cursor-pointer justify-center text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
+                : 'w-9 cursor-pointer justify-center text-gray-11 hover:border-primary-7 hover:text-gray-12 active:scale-95',
             )}
             onClick={openSearch}
           >

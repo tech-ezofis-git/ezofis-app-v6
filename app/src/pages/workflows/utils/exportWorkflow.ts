@@ -397,8 +397,16 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       sourceToolType === NODE_TOOL_TYPE.QUALIFY_AGENT ||
       sourceToolType?.includes('qualify')
     ) {
+      const norm = actionName
+        .toUpperCase()
+        .replace(/[\s_-]+/g, ' ')
+        .trim()
       actionName =
-        actionName.toUpperCase() === 'DISQUALIFY' ? 'DISQUALIFY' : 'QUALIFY'
+        norm === 'DISQUALIFY'
+          ? 'DISQUALIFY'
+          : norm === 'NEEDS REVIEW' || norm === 'NEED REVIEW'
+            ? 'NEEDS REVIEW'
+            : 'QUALIFY'
     } else if (sourceToolType === NODE_TOOL_TYPE.CONDITION) {
       const norm = actionName.toUpperCase().replace(/_/g, ' ')
       actionName = norm.includes('NOT') ? 'NOT SATISFIED' : 'SATISFIED'

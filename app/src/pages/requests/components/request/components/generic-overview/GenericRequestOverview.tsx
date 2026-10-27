@@ -39,6 +39,7 @@ import {
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
+import { useStableRequestKey } from '@/pages/requests/hooks/useStableRequestKey'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { setFieldForAttachment } from '@/pages/requests/utils/fieldAttachmentMap'
 import {
@@ -125,6 +126,8 @@ interface Props {
   // this view's file-field display and Attachments panel all agree on the
   // same list instead of each fetching it separately).
   attachments: AttachmentItem[]
+  /** True while the attachment list is still being fetched. */
+  attachmentsLoading?: boolean
   formModel: Record<string, any>
   rawWorkflowData: any
   rightView: 'overview' | 'history' | 'attachments' | 'comments'
@@ -193,20 +196,44 @@ const DocumentApprovalSplitLayout = ({
       ? {
         _localFileUrl: selectedItem?._localFileUrl,
         fileExtension:
-          selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+          (
+            selectedItem?.repositoryItem?.fileName ||
+            selectedItem?._localFileName
+          )
+            ?.split('.')
+            .pop() || 'pdf',
         fileName:
-          selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          selectedItem?.repositoryItem?.fileName ||
+          selectedItem?.name ||
+          selectedItem?._localFileName,
         itemId: selectedItem?.itemId,
-        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        name:
+          selectedItem?.repositoryItem?.fileName ||
+          selectedItem?.name ||
+          selectedItem?._localFileName,
         repositoryId: selectedItem?.repositoryId,
+        type: selectedItem?._localFileType || undefined,
       }
       : null
 
+  // This layout always shows the first received file, so the uploaded copy
+  // stays on screen when its server copy arrives.
+  const approvalRequestKey = useStableRequestKey([
+    selectedItem?.itemId,
+    selectedItem?.id,
+    selectedItem?.requestId,
+    selectedItem?.transactionId,
+    selectedItem?.processId,
+    selectedItem?.workflowInstanceId,
+  ])
   const {
     isLoading: previewLoading,
     mimeType,
     previewUrl,
-  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId)
+  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId, {
+    keepLocalPreview: true,
+    requestKey: approvalRequestKey,
+  })
 
   const previewFileName =
     previewAttachment?.fileName ||
@@ -331,6 +358,7 @@ const DocumentApprovalSplitLayout = ({
 const DocumentFormSplitLayout = ({
   attachments,
   attachmentsCount,
+  attachmentsLoading = false,
   attachmentsNode,
   commentsCount,
   commentsNode,
@@ -350,6 +378,7 @@ const DocumentFormSplitLayout = ({
 }: {
   attachments: AttachmentItem[]
   attachmentsCount?: number
+  attachmentsLoading?: boolean
   attachmentsNode?: ReactNode
   commentsCount?: number
   commentsNode?: ReactNode
@@ -407,6 +436,24 @@ const DocumentFormSplitLayout = ({
     '',
   )
 
+  // Same request keeps the same key when ids arrive later (an upload starts as
+  // a temporary request), so the viewer is not rebuilt when it is replaced.
+  const stableRequestKey = useStableRequestKey([
+    selectedItem?.itemId,
+    selectedItem?.id,
+    selectedItem?.requestId,
+    selectedItem?.transactionId,
+    selectedItem?.processId,
+    selectedItem?.workflowInstanceId,
+    selectedItem?.apAgentJobId ? `job-${selectedItem.apAgentJobId}` : undefined,
+  ])
+  // True once the user opened another file or a new upload was added, so the
+  // viewer must follow the new file instead of keeping the first upload.
+  const viewerFileChangedRef = useRef({ changed: false, key: stableRequestKey })
+  if (viewerFileChangedRef.current.key !== stableRequestKey) {
+    viewerFileChangedRef.current = { changed: false, key: stableRequestKey }
+  }
+
   // Reset baseline when navigating to a different request.
   useEffect(() => {
     hasSeededAttachmentKeysRef.current = false
@@ -460,7 +507,10 @@ const DocumentFormSplitLayout = ({
         getLatestAttachment(addedFiles) ||
         addedFiles[addedFiles.length - 1],
     )
-    if (newestKey) setViewerAttachmentKey(newestKey)
+    if (newestKey) {
+      viewerFileChangedRef.current.changed = true
+      setViewerAttachmentKey(newestKey)
+    }
   }, [attachments, recentDocument, viewerAttachmentKey])
 
   // Viewer strip: original files plus anything uploaded during this visit,
@@ -488,6 +538,7 @@ const DocumentFormSplitLayout = ({
 
   const handleSelectViewerAttachment = useCallback((file: AttachmentItem) => {
     const key = attachmentKeyOf(file)
+    viewerFileChangedRef.current.changed = true
     setViewerAttachmentKey(key)
     if (!key) return
     setNewAttachmentKeys((prev) => {
@@ -673,7 +724,24 @@ const DocumentFormSplitLayout = ({
   const targetItemId =
     viewerAttachment?.itemId || viewerAttachment?.id || selectedItem?.itemId
 
-  const previewAttachment = viewerAttachment
+  // Until the attachment list arrives, the request's own item is not
+  // necessarily the original file (for an email it can be one of its images).
+  // Starting from it would download that file, throw it away and download the
+  // real one a moment later, so wait for the list first.
+  const [waitExpired, setWaitExpired] = useState(false)
+  useEffect(() => {
+    // Never wait forever if the list cannot be fetched.
+    const timer = window.setTimeout(() => setWaitExpired(true), 8000)
+    return () => window.clearTimeout(timer)
+  }, [])
+  const waitingForAttachments =
+    attachmentsLoading &&
+    attachments.length === 0 &&
+    !waitExpired &&
+    !selectedItem?._localFileUrl
+  const previewAttachment = waitingForAttachments
+    ? null
+    : viewerAttachment
     ? {
       ...viewerAttachment,
       itemId: targetItemId,
@@ -683,12 +751,23 @@ const DocumentFormSplitLayout = ({
       ? {
         _localFileUrl: selectedItem?._localFileUrl,
         fileExtension:
-          selectedItem?.repositoryItem?.fileName?.split('.').pop() || 'pdf',
+          (
+            selectedItem?.repositoryItem?.fileName ||
+            selectedItem?._localFileName
+          )
+            ?.split('.')
+            .pop() || 'pdf',
         fileName:
-          selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+          selectedItem?.repositoryItem?.fileName ||
+          selectedItem?.name ||
+          selectedItem?._localFileName,
         itemId: selectedItem?.itemId,
-        name: selectedItem?.repositoryItem?.fileName || selectedItem?.name,
+        name:
+          selectedItem?.repositoryItem?.fileName ||
+          selectedItem?.name ||
+          selectedItem?._localFileName,
         repositoryId: selectedItem?.repositoryId,
+        type: selectedItem?._localFileType || undefined,
       }
       : null
 
@@ -696,7 +775,10 @@ const DocumentFormSplitLayout = ({
     isLoading: previewLoading,
     mimeType: previewMimeType,
     previewUrl,
-  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId)
+  } = useAttachmentPreviewUrl(previewAttachment as any, targetRepoId, {
+    keepLocalPreview: !viewerFileChangedRef.current.changed,
+    requestKey: stableRequestKey,
+  })
 
   const viewerFileName =
     previewAttachment?.fileName ||
@@ -717,12 +799,12 @@ const DocumentFormSplitLayout = ({
         />
         <div className='min-h-0 flex-1 p-4'>
           <div className='relative h-full min-h-0 overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xs'>
-            {previewAttachment ? (
+            {previewAttachment || waitingForAttachments ? (
               <DocumentPreviewViewer
                 fileName={viewerFileName}
                 fileUrl={previewUrl || null}
                 isImage={viewerKind === 'image' || viewerKind === 'tiff'}
-                isLoading={previewLoading}
+                isLoading={previewLoading || waitingForAttachments}
                 isPdf={viewerKind === 'pdf'}
               />
             ) : (
@@ -849,6 +931,7 @@ const DocumentFormSplitLayout = ({
 // the New Request compose layout.
 const GenericRequestOverview = ({
   attachments,
+  attachmentsLoading = false,
   checklistChecked = {},
   checklistItems = [],
   comments = [],
@@ -1441,6 +1524,7 @@ const GenericRequestOverview = ({
           <DocumentFormSplitLayout
             attachments={attachments}
             attachmentsCount={attachments.length}
+            attachmentsLoading={attachmentsLoading}
             commentsCount={comments.length}
             formModel={formModel}
             hiddenFieldIds={hiddenFieldIds}

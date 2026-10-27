@@ -1,5 +1,5 @@
 // @/pages/requests/hooks/useAttachmentPreviewUrl.ts
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
 import authUserStore from '@/stores/authUserStore'
 import type { AttachmentItem } from './useAttachments'
@@ -15,6 +15,24 @@ const isUuid = (val: string | number | undefined | null): boolean => {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     val,
   )
+}
+
+// A file chosen on this device has no server content type yet. Without one,
+// the preview must not assume PDF, or an uploaded email (.eml) would first open
+// in the PDF viewer and only switch to the email viewer once the server copy
+// arrives - a second load.
+const guessMimeFromName = (fileName: string): string => {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
+  const byExtension: Record<string, string> = {
+    eml: 'message/rfc822',
+    gif: 'image/gif',
+    jpeg: 'image/jpeg',
+    jpg: 'image/jpeg',
+    msg: 'application/vnd.ms-outlook',
+    png: 'image/png',
+    webp: 'image/webp',
+  }
+  return byExtension[ext] ?? 'application/pdf'
 }
 
 const getMimeTypeFromBase64 = (base64: string): string => {
@@ -77,15 +95,72 @@ const fetchLegacyBinary = async (
 export function useAttachmentPreviewUrl(
   file: PreviewableAttachment | null,
   fallbackRepositoryId?: string | number,
+  options?: {
+    /**
+     * A request that starts from an uploaded file first shows that local file;
+     * its server copy arrives later. With this on, the file already on screen
+     * stays (no second download, no viewer rebuild) until it is turned off,
+     * for example when the user opens a different attachment.
+     */
+    keepLocalPreview?: boolean
+    /** Identifies the open request; the kept file is dropped when it changes. */
+    requestKey?: string
+  },
 ) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [mimeType, setMimeType] = useState<string | null>(null)
-  const localUrl = file?._localFileUrl || file?.localUrl || ''
-  const repoId = String(file?.repositoryId || fallbackRepositoryId || '').trim()
-  const itemId = String(file?.itemId || file?.id || '').trim()
-  const contentType = file?.type || file?.contentType || ''
-  const legacyFileId = file?.id
-  const fetchKey = `${localUrl}|${repoId}|${itemId}|${String(legacyFileId ?? '')}|${contentType}`
+  const rawLocalUrl = file?._localFileUrl || file?.localUrl || ''
+  const rawRepoId = String(
+    file?.repositoryId || fallbackRepositoryId || '',
+  ).trim()
+  const rawItemId = String(file?.itemId || file?.id || '').trim()
+  const rawContentType = file?.type || file?.contentType || ''
+  const rawLegacyFileId = file?.id
+
+  // Remember the uploaded (local) file while it is the one on screen. When the
+  // server copy of the same request replaces it, reuse the remembered values so
+  // the preview key does not change and nothing reloads.
+  const keptRef = useRef<{
+    contentType: string
+    itemId: string
+    legacyFileId: typeof rawLegacyFileId
+    localUrl: string
+    repoId: string
+    requestKey: string
+  } | null>(null)
+  const requestKey = options?.requestKey ?? ''
+  if (!options?.keepLocalPreview) {
+    keptRef.current = null
+  } else if (keptRef.current && keptRef.current.requestKey !== requestKey) {
+    keptRef.current = null
+  }
+  if (options?.keepLocalPreview && rawLocalUrl) {
+    keptRef.current = {
+      contentType: rawContentType,
+      itemId: rawItemId,
+      legacyFileId: rawLegacyFileId,
+      localUrl: rawLocalUrl,
+      repoId: rawRepoId,
+      requestKey,
+    }
+  }
+  const localFileName = String(file?.fileName || file?.name || '')
+  const kept = !rawLocalUrl && rawItemId ? keptRef.current : null
+
+  const localUrl = kept ? kept.localUrl : rawLocalUrl
+  const repoId = kept ? kept.repoId : rawRepoId
+  const itemId = kept ? kept.itemId : rawItemId
+  const contentType = kept ? kept.contentType : rawContentType
+  const legacyFileId = kept ? kept.legacyFileId : rawLegacyFileId
+  // The key names the file, not its description. Details such as the content
+  // type or a legacy id can arrive after the request opens (when the
+  // attachment list loads) and must not trigger a second download of the same
+  // file.
+  const fetchKey = localUrl
+    ? `local:${localUrl}`
+    : isUuid(repoId) && isUuid(itemId)
+      ? `${repoId}|${itemId}`
+      : `${repoId}|${itemId}|${String(legacyFileId ?? '')}`
   const canLoad = Boolean(
     localUrl ||
     (repoId && itemId && repoId !== 'undefined' && itemId !== 'undefined'),
@@ -109,7 +184,7 @@ export function useAttachmentPreviewUrl(
     const fetchFile = async () => {
       if (localUrl) {
         setPreviewUrl(localUrl)
-        setMimeType(contentType || 'application/pdf')
+        setMimeType(contentType || guessMimeFromName(localFileName))
         setReadyKey(fetchKey)
         return
       }
@@ -170,7 +245,16 @@ export function useAttachmentPreviewUrl(
     // Reload only when the file identity changes. A new attachment object
     // on each parent render must not revoke the blob and flash the viewer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contentType, fetchKey, itemId, legacyFileId, localUrl, repoId])
+  }, [fetchKey])
+
+  // A file on this device is ready at once; there is nothing to download.
+  if (localUrl) {
+    return {
+      isLoading: false,
+      mimeType: contentType || guessMimeFromName(localFileName),
+      previewUrl: localUrl,
+    }
+  }
 
   const isCurrent = readyKey === fetchKey
   return {

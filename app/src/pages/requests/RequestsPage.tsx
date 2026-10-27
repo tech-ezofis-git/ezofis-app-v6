@@ -426,6 +426,9 @@ const RequestsPage = () => {
     inbox: number | null
     sent: number | null
   }>({ closed: null, inbox: null, sent: null })
+  // The Exceptions count is worked out from the rows of the Invoices/Exceptions
+  // list. Remember it so the Exceptions tab keeps its count on other tabs.
+  const exceptionsCountRef = useRef<number | null>(null)
 
   useEffect(() => {
     try {
@@ -1054,6 +1057,7 @@ const RequestsPage = () => {
       lastLoadedWorkflowIdRef.current = wfId
       if (isNew) {
         listTotalsRef.current = { closed: null, inbox: null, sent: null }
+        exceptionsCountRef.current = null
         requestStore.getState().clearQuickFilters()
       }
       loadSelectedWorkflow(String(wfId), workflow.name)
@@ -1140,6 +1144,15 @@ const RequestsPage = () => {
       return prev ?? current
     })
   }, [activeTab, inboxResult?.totalItems, isFetching])
+
+  // Only the Invoices and Exceptions lists hold the exception invoices, so only
+  // they update the remembered count; other tabs would report 0.
+  useEffect(() => {
+    if (isFetching || inboxResult?.exceptionsCount == null) return
+    if (activeTab === 'Inbox' || activeTab === 'Exceptions') {
+      exceptionsCountRef.current = inboxResult.exceptionsCount
+    }
+  }, [activeTab, inboxResult?.exceptionsCount, isFetching])
 
   useEffect(() => {
     setupStore.getState().setIsActivatingAutomation(false)
@@ -2055,6 +2068,11 @@ const RequestsPage = () => {
               countsRefreshing={isRefreshingCounts || isFetching}
               exceptionsCount={inboxResult?.exceptionsCount}
               isConnectingWatchEmail={isConnectingWatchEmail}
+              exceptionsCount={
+                activeTab === 'Inbox' || activeTab === 'Exceptions'
+                  ? inboxResult?.exceptionsCount
+                  : (exceptionsCountRef.current ?? undefined)
+              }
               isLoading={isLoading}
               metaData={metaData}
               stageCounts={stageTabCounts}
