@@ -397,16 +397,26 @@ const WorkflowFormRenderer = ({
     return validateFormModel(panels, formModel, { formRules }).errors
   }, [hasAttemptedSubmit, panels, formModel, formRules])
 
+  // field id -> id of the field whose change cleared it
+  const [autoFillSuppressed, setAutoFillSuppressed] = useState<
+    Record<string, string>
+  >({})
+
   const handleFieldChangeWithCascade = (fieldId: string, value: any) => {
     onFieldChange(fieldId, value)
-    const dependentChildIds = getDependentChildFieldIds(fieldId, panels)
-    for (const childId of dependentChildIds) {
-      if (
-        formModel?.[childId] !== undefined &&
-        formModel?.[childId] !== null &&
-        formModel?.[childId] !== ''
-      ) {
-        onFieldChange(childId, null)
+    const isFilled = (v: any) =>
+      v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && !v.length)
+    const cleared: string[] = []
+    // Children were derived from the parent's previous value. If the parent
+    // was empty (e.g. auto-filled when a stage opens it) there is nothing
+    // stale to clear, and saved child values must be kept.
+    if (isFilled(formModel?.[fieldId])) {
+      const dependentChildIds = getDependentChildFieldIds(fieldId, panels)
+      for (const childId of dependentChildIds) {
+        if (isFilled(formModel?.[childId])) {
+          onFieldChange(childId, null)
+          cleared.push(childId)
+        }
       }
     }
     // Clear fields this change just hid or locked via conditional rules
@@ -431,8 +441,32 @@ const WorkflowFormRenderer = ({
       }
       if (key !== fieldId && cleaned[key] !== nextModel[key]) {
         onFieldChange(key, cleaned[key])
+        cleared.push(key)
+        // A field cleared by a rule (e.g. Product Code locked by Status =
+        // New) also invalidates the values that were filled from it.
+        if (isFilled(nextModel[key])) {
+          for (const childId of getDependentChildFieldIds(key, panels)) {
+            if (childId !== fieldId && isFilled(cleaned[childId])) {
+              onFieldChange(childId, null)
+              cleared.push(childId)
+            }
+          }
+        }
       }
     }
+
+    // Auto-select / master fill would immediately refill what was just
+    // cleared (their source, e.g. the top Existing Product Code, still has a
+    // value). Hold them off until the field that triggered the clear changes
+    // again, or the user edits the cleared field themselves.
+    setAutoFillSuppressed((prev) => {
+      const next: Record<string, string> = {}
+      for (const [id, trigger] of Object.entries(prev)) {
+        if (trigger !== fieldId && id !== fieldId) next[id] = trigger
+      }
+      for (const id of cleared) next[id] = fieldId
+      return next
+    })
   }
 
   // Hidden fields are not rendered, so their master "Fill Value" sync would
@@ -462,7 +496,7 @@ const WorkflowFormRenderer = ({
         field={field}
         formModel={formModel || {}}
         key={`fill-sync-${field.id}`}
-        readOnly={Boolean(viewOnly)}
+        readOnly={Boolean(viewOnly) || field.id in autoFillSuppressed}
         value={formModel?.[field.id]}
         onChange={(value) => handleFieldChangeWithCascade(field.id, value)}
       />
@@ -567,6 +601,8 @@ const WorkflowFormRenderer = ({
                   preparePhase={preparePhase}
                   repoFieldHints={repoFieldHints}
                   repositoryId={repositoryId}
+                  autoFillSuppressed={field.id in autoFillSuppressed}
+                  ruleLocked={Boolean(evaluatedFieldStates[field.id]?.disabled)}
                   value={formModel[field.id]}
                   error={(() => {
                     if (!hasAttemptedSubmit) return undefined
@@ -639,6 +675,8 @@ const WorkflowFormRenderer = ({
                 preparePhase={preparePhase}
                 repoFieldHints={repoFieldHints}
                 repositoryId={repositoryId}
+                autoFillSuppressed={field.id in autoFillSuppressed}
+                ruleLocked={Boolean(evaluatedFieldStates[field.id]?.disabled)}
                 value={formModel[field.id]}
                 error={(() => {
                   if (!hasAttemptedSubmit) return undefined
