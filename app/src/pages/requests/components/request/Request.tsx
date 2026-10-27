@@ -3176,7 +3176,9 @@ const Request = ({
       <SubWorkflowRequest
         childWorkflow={subWorkflow.childWorkflow}
         parent={{
-          fields: genericFormPanels,
+          fields: isGenericWorkflow
+            ? genericFormPanels
+            : getFormPanels(overviewWorkflowData),
           model: isGenericWorkflow ? genericFormModel : formModel,
           requestNo: resolvedRequestNo,
           workflowName: String(rawWorkflowData?.name || ''),

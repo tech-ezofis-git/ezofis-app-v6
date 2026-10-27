@@ -11,3 +11,4 @@ pnpm-lock.yaml
 .agent/skills
 messages.po
 messages.ts
+subworkflow-screenshots
