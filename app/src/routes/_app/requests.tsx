@@ -25,7 +25,7 @@ type RequestsDeepLinkSearch = {
 export const Route = createFileRoute('/_app/requests')({
   component: RouteComponent,
   staticData: {
-    pageTitle: 'Requests',
+    pageTitle: 'Workflows',
   },
   beforeLoad: ({ search }) => {
     if (search.workflowId && search.processId) {

@@ -1281,7 +1281,7 @@ export default function DashboardCharts() {
                   <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
                     <h3 className='font-poppins text-14 font-semibold text-text-primary'>
                       {dashboardData?.profitVsApSpending?.title ||
-                        'Profit vs AP spending'}
+                        'AP spending'}
                     </h3>
                     <div className='mb-4 font-inter text-11 text-text-muted'>
                       {dashboardData?.profitVsApSpending?.subtitle ||
@@ -1444,6 +1444,193 @@ export default function DashboardCharts() {
                           />
                         </AreaChart>
                       </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+
+          {/* Aging Section */}
+          <div className='flex flex-col gap-4'>
+            <div
+              className='flex cursor-pointer flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg border border-border-default bg-surface px-4 py-4 text-text-primary shadow-xs transition-all duration-300 select-none hover:border-primary-9/40 hover:bg-primary-3/5 hover:shadow-sm active:scale-[0.99]'
+              onClick={() =>
+                setIsSupplierFollowUpExpanded(!isSupplierFollowUpExpanded)
+              }
+            >
+              <div>
+                <h3 className='font-poppins text-14 font-semibold'>
+                  {agingOversightData?.title || 'Aging & Process Oversight'}
+                </h3>
+                <p className='mt-0.5 font-inter text-11 text-text-secondary'>
+                  {agingOversightData?.subtitle ||
+                    'Portfolio-level view of overdue exposure and approval cycles'}
+                </p>
+              </div>
+              <div className='flex flex-wrap items-center gap-6'>
+                <div className='flex flex-col gap-0.5 text-center md:text-right'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
+                    {aging90PlusKpi?.label || '90+ Days'}
+                  </span>
+                  <span className='text-15 font-semibold text-primary-9'>
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      aging90PlusKpi?.displayValue || 'No data available'
+                    )}
+                  </span>
+                </div>
+                <div className='flex flex-col gap-0.5 text-center md:text-right'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
+                    {criticalExceptionsKpi?.label || 'Critical Exceptions'}
+                  </span>
+                  <span className='text-15 font-semibold text-red-9'>
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-10 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      criticalExceptionsKpi?.displayValue || 'No data available'
+                    )}
+                  </span>
+                </div>
+                <div className='flex flex-col gap-0.5 text-center md:text-right'>
+                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
+                    {approvalRateKpi?.label || 'Approval Rate'}
+                  </span>
+                  <span className='text-success text-15 font-semibold'>
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      approvalRateKpi?.displayValue || 'No data available'
+                    )}
+                  </span>
+                </div>
+                <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
+                  {isSupplierFollowUpExpanded ? (
+                    <ChevronUp className='h-5 w-5 text-primary-9' />
+                  ) : (
+                    <ChevronDown className='h-5 w-5' />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {isSupplierFollowUpExpanded &&
+              (!hasData(agingOversightData) ? (
+                <div className='flex flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 py-10 text-center'>
+                  <p className='text-13 font-medium text-text-secondary'>
+                    No data available
+                  </p>
+                </div>
+              ) : (
+                <div className='grid grid-cols-12 gap-5'>
+                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
+                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                      {dashboardData?.invoiceAgingAnalysis?.title ||
+                        'Invoice aging analysis'}
+                    </h3>
+                    <div className='mb-4 font-inter text-11 text-text-muted'>
+                      {dashboardData?.invoiceAgingAnalysis?.subtitle ||
+                        'Click a segment to drill into invoices'}
+                    </div>
+                    <div className='h-64'>
+                      {!hasData(
+                        dashboardData?.invoiceAgingAnalysis?.buckets,
+                      ) ? (
+                        <div className='flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 text-center'>
+                          <p className='text-12 font-medium text-text-secondary'>
+                            No records found
+                          </p>
+                        </div>
+                      ) : (
+                        <ResponsiveContainer height='100%' width='100%'>
+                          <BarChart
+                            data={invoiceAgingData}
+                            margin={{ bottom: 10 }}
+                          >
+                            <CartesianGrid
+                              strokeDasharray='3 3'
+                              vertical={false}
+                            />
+                            <XAxis dataKey='name' tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} />
+                            <Tooltip
+                              formatter={(v: any) => [
+                                `${v} Invoices`,
+                                'Volume',
+                              ]}
+                            />
+                            <Bar
+                              barSize={24}
+                              className='cursor-pointer'
+                              dataKey='value'
+                              fill='#8300e6'
+                              radius={[4, 4, 0, 0]}
+                              onClick={(data: any) => {
+                                setDrillAgingBucket(data?.name ?? null)
+                                setActiveDrill('Aging Analysis')
+                              }}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
+                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                      Approval delay heat map
+                    </h3>
+                    <div className='mb-4 font-inter text-11 text-text-muted'>
+                      Average days to approve by department · last 8 weeks
+                    </div>
+                    <div className='mt-3 flex flex-col gap-2 font-inter'>
+                      <div className='grid grid-cols-9 gap-1 text-center text-[10px] font-semibold text-text-muted'>
+                        <div></div>
+                        {['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'].map(
+                          (w) => (
+                            <div key={w}>{w}</div>
+                          ),
+                        )}
+                      </div>
+                      {[
+                        { cells: [2, 1, 3, 2, 4, 5, 2, 1], dept: 'IT' },
+                        { cells: [1, 2, 1, 1, 2, 1, 3, 1], dept: 'Finance' },
+                        { cells: [5, 4, 6, 8, 7, 5, 6, 5], dept: 'Marketing' },
+                        { cells: [3, 2, 4, 3, 3, 4, 2, 3], dept: 'Operations' },
+                        { cells: [4, 5, 3, 4, 5, 2, 4, 4], dept: 'HR' },
+                        { cells: [6, 7, 9, 8, 7, 6, 9, 8], dept: 'Legal' },
+                      ].map((row) => (
+                        <div
+                          className='grid grid-cols-9 items-center gap-1'
+                          key={row.dept}
+                        >
+                          <div className='pr-2 text-right text-11 font-semibold text-text-secondary'>
+                            {row.dept}
+                          </div>
+                          {row.cells.map((val, idx) => {
+                            let color = 'bg-primary-4'
+                            if (val > 7) color = 'bg-primary-10 text-white'
+                            else if (val > 4) color = 'bg-primary-9 text-white'
+                            else if (val > 2)
+                              color = 'bg-primary-3 text-primary-9'
+                            return (
+                              <div
+                                key={idx}
+                                title={`${row.dept}: ${val} days`}
+                                className={cn(
+                                  'flex h-8 items-center justify-center rounded text-11 font-semibold',
+                                  color,
+                                )}
+                              >
+                                {val}d
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                    <div className='text-10 mt-3 font-inter text-text-muted'>
+                      Darker cells indicate longer processing bottlenecks.
                     </div>
                   </div>
                 </div>
@@ -1790,192 +1977,7 @@ export default function DashboardCharts() {
               ))}
           </div>
 
-          {/* Aging Section */}
-          <div className='flex flex-col gap-4'>
-            <div
-              className='flex cursor-pointer flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg border border-border-default bg-surface px-4 py-4 text-text-primary shadow-xs transition-all duration-300 select-none hover:border-primary-9/40 hover:bg-primary-3/5 hover:shadow-sm active:scale-[0.99]'
-              onClick={() =>
-                setIsSupplierFollowUpExpanded(!isSupplierFollowUpExpanded)
-              }
-            >
-              <div>
-                <h3 className='font-poppins text-14 font-semibold'>
-                  {agingOversightData?.title || 'Aging & Process Oversight'}
-                </h3>
-                <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  {agingOversightData?.subtitle ||
-                    'Portfolio-level view of overdue exposure and approval cycles'}
-                </p>
-              </div>
-              <div className='flex flex-wrap items-center gap-6'>
-                <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
-                    {aging90PlusKpi?.label || '90+ Days'}
-                  </span>
-                  <span className='text-15 font-semibold text-primary-9'>
-                    {_isLoading ? (
-                      <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
-                    ) : (
-                      aging90PlusKpi?.displayValue || 'No data available'
-                    )}
-                  </span>
-                </div>
-                <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
-                    {criticalExceptionsKpi?.label || 'Critical Exceptions'}
-                  </span>
-                  <span className='text-15 font-semibold text-red-9'>
-                    {_isLoading ? (
-                      <span className='inline-block h-5 w-10 animate-pulse rounded bg-gray-3' />
-                    ) : (
-                      criticalExceptionsKpi?.displayValue || 'No data available'
-                    )}
-                  </span>
-                </div>
-                <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
-                    {approvalRateKpi?.label || 'Approval Rate'}
-                  </span>
-                  <span className='text-success text-15 font-semibold'>
-                    {_isLoading ? (
-                      <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
-                    ) : (
-                      approvalRateKpi?.displayValue || 'No data available'
-                    )}
-                  </span>
-                </div>
-                <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
-                  {isSupplierFollowUpExpanded ? (
-                    <ChevronUp className='h-5 w-5 text-primary-9' />
-                  ) : (
-                    <ChevronDown className='h-5 w-5' />
-                  )}
-                </div>
-              </div>
-            </div>
 
-            {isSupplierFollowUpExpanded &&
-              (!hasData(agingOversightData) ? (
-                <div className='flex flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 py-10 text-center'>
-                  <p className='text-13 font-medium text-text-secondary'>
-                    No data available
-                  </p>
-                </div>
-              ) : (
-                <div className='grid grid-cols-12 gap-5'>
-                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
-                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                      {dashboardData?.invoiceAgingAnalysis?.title ||
-                        'Invoice aging analysis'}
-                    </h3>
-                    <div className='mb-4 font-inter text-11 text-text-muted'>
-                      {dashboardData?.invoiceAgingAnalysis?.subtitle ||
-                        'Click a segment to drill into invoices'}
-                    </div>
-                    <div className='h-64'>
-                      {!hasData(
-                        dashboardData?.invoiceAgingAnalysis?.buckets,
-                      ) ? (
-                        <div className='flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 text-center'>
-                          <p className='text-12 font-medium text-text-secondary'>
-                            No records found
-                          </p>
-                        </div>
-                      ) : (
-                        <ResponsiveContainer height='100%' width='100%'>
-                          <BarChart
-                            data={invoiceAgingData}
-                            margin={{ bottom: 10 }}
-                          >
-                            <CartesianGrid
-                              strokeDasharray='3 3'
-                              vertical={false}
-                            />
-                            <XAxis dataKey='name' tick={{ fontSize: 11 }} />
-                            <YAxis tick={{ fontSize: 11 }} />
-                            <Tooltip
-                              formatter={(v: any) => [
-                                `${v} Invoices`,
-                                'Volume',
-                              ]}
-                            />
-                            <Bar
-                              barSize={24}
-                              className='cursor-pointer'
-                              dataKey='value'
-                              fill='#8300e6'
-                              radius={[4, 4, 0, 0]}
-                              onClick={(data: any) => {
-                                setDrillAgingBucket(data?.name ?? null)
-                                setActiveDrill('Aging Analysis')
-                              }}
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
-                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                      Approval delay heat map
-                    </h3>
-                    <div className='mb-4 font-inter text-11 text-text-muted'>
-                      Average days to approve by department · last 8 weeks
-                    </div>
-                    <div className='mt-3 flex flex-col gap-2 font-inter'>
-                      <div className='grid grid-cols-9 gap-1 text-center text-[10px] font-semibold text-text-muted'>
-                        <div></div>
-                        {['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'].map(
-                          (w) => (
-                            <div key={w}>{w}</div>
-                          ),
-                        )}
-                      </div>
-                      {[
-                        { cells: [2, 1, 3, 2, 4, 5, 2, 1], dept: 'IT' },
-                        { cells: [1, 2, 1, 1, 2, 1, 3, 1], dept: 'Finance' },
-                        { cells: [5, 4, 6, 8, 7, 5, 6, 5], dept: 'Marketing' },
-                        { cells: [3, 2, 4, 3, 3, 4, 2, 3], dept: 'Operations' },
-                        { cells: [4, 5, 3, 4, 5, 2, 4, 4], dept: 'HR' },
-                        { cells: [6, 7, 9, 8, 7, 6, 9, 8], dept: 'Legal' },
-                      ].map((row) => (
-                        <div
-                          className='grid grid-cols-9 items-center gap-1'
-                          key={row.dept}
-                        >
-                          <div className='pr-2 text-right text-11 font-semibold text-text-secondary'>
-                            {row.dept}
-                          </div>
-                          {row.cells.map((val, idx) => {
-                            let color = 'bg-primary-4'
-                            if (val > 7) color = 'bg-primary-10 text-white'
-                            else if (val > 4) color = 'bg-primary-9 text-white'
-                            else if (val > 2)
-                              color = 'bg-primary-3 text-primary-9'
-                            return (
-                              <div
-                                key={idx}
-                                title={`${row.dept}: ${val} days`}
-                                className={cn(
-                                  'flex h-8 items-center justify-center rounded text-11 font-semibold',
-                                  color,
-                                )}
-                              >
-                                {val}d
-                              </div>
-                            )
-                          })}
-                        </div>
-                      ))}
-                    </div>
-                    <div className='text-10 mt-3 font-inter text-text-muted'>
-                      Darker cells indicate longer processing bottlenecks.
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
         </div>
       ) : (
         /* ===== AP TEAM TRACK ===== */

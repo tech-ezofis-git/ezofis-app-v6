@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useLocation, useMatches, useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { getFormsListQueryOptions } from '@/api/form/queries'
@@ -9,6 +9,7 @@ import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { resolveAskAiPageContext } from '@/components/common/ask-ai/chatbotApi'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
+import { rememberSearchReturn } from '@/pages/search/searchReturn'
 import cn from '@/utils/cn'
 import {
   fetchGlobalSearch,
@@ -30,7 +31,9 @@ const ENABLE_LOCAL_CACHE = false
 const GlobalSearch = () => {
   const { t } = useLingui()
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
+  const routeMatches = useMatches()
   const pageContext = useAskAiActionStore((state) => state.pageContext)
   const setPending = useAskAiActionStore((state) => state.setPending)
 
@@ -237,6 +240,11 @@ const GlobalSearch = () => {
     const searchText = query.trim()
     if (!searchText) return
 
+    // So the Search page's Back returns here.
+    rememberSearchReturn({
+      href: `${pathname}${location.searchStr || ''}`,
+      title: String(routeMatches.at(-1)?.staticData?.pageTitle ?? ''),
+    })
     void navigate({ search: { q: searchText }, to: '/search' })
     closeSearch()
   }
@@ -634,7 +642,7 @@ const GlobalSearch = () => {
                                   <div className='mt-2 flex items-center gap-2'>
                                     <div className='size-[5px] shrink-0 rounded-full bg-secondary-9' />
 
-                                    <div className='text-gray-9 line-clamp-1 text-[12.5px] hover:line-clamp-none'>
+                                    <div className='line-clamp-1 text-[12.5px] text-gray-9 hover:line-clamp-none'>
                                       <span className='font-medium text-gray-11'>
                                         {query}
                                       </span>{' '}
@@ -651,7 +659,7 @@ const GlobalSearch = () => {
                                     <div className='flex items-start gap-2'>
                                       <div className='mt-[7px] size-[5px] shrink-0 rounded-full bg-secondary-9' />
                                       <div
-                                        className='text-gray-10 line-clamp-1 text-[12.5px] leading-relaxed hover:line-clamp-none'
+                                        className='line-clamp-1 text-[12.5px] leading-relaxed text-gray-10 hover:line-clamp-none'
                                         dangerouslySetInnerHTML={{
                                           __html: foundLine(
                                             hit.found[0],
