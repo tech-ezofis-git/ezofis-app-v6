@@ -30,8 +30,8 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
         var tenantId = _tenantContext.TenantId
             ?? throw new InvalidOperationException("TenantId is required to sync builtin role membership.");
 
-        var (adminRole, tenantUserRole) = await EnsureRolesExistAsync(_context, tenantId, cancellationToken);
-        await SyncOneUserAsync(_context, tenantId, userId, roleName, adminRole.Id, tenantUserRole.Id, cancellationToken);
+        var roles = await EnsureRolesExistAsync(_context, tenantId, cancellationToken);
+        await SyncOneUserAsync(_context, tenantId, userId, roleName, roles, cancellationToken);
     }
 
     /// <summary>Ensures builtin roles/permissions/membership for a tenant using an explicit DbContext (signup / middleware).</summary>
@@ -49,18 +49,30 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
         Guid tenantId,
         CancellationToken cancellationToken)
     {
-        var (adminRole, tenantUserRole) = await EnsureRolesExistAsync(context, tenantId, cancellationToken);
+        var roles = await EnsureRolesExistAsync(context, tenantId, cancellationToken);
         await UsersSchemaEnsurer.EnsureRoleMenusTablesAsync(context, cancellationToken);
-        await EnsureRoleMenusAsync(context, tenantId, adminRole.Id, cancellationToken);
-        await EnsureRoleMenusAsync(context, tenantId, tenantUserRole.Id, cancellationToken);
-        await SyncAllMembershipsAsync(context, tenantId, adminRole.Id, tenantUserRole.Id, cancellationToken);
+        await EnsureRoleMenusAsync(context, tenantId, roles.TenantAdmin.Id, cancellationToken);
+        await EnsureRoleMenusAsync(context, tenantId, roles.Admin.Id, cancellationToken);
+        await EnsureRoleMenusAsync(context, tenantId, roles.TenantUser.Id, cancellationToken);
+        await SyncAllMembershipsAsync(context, tenantId, roles, cancellationToken);
     }
 
-    private static async Task<(Role Admin, Role TenantUser)> EnsureRolesExistAsync(
+    private sealed record BuiltinRoles(Role TenantAdmin, Role Admin, Role TenantUser)
+    {
+        public IEnumerable<Guid> Ids => [TenantAdmin.Id, Admin.Id, TenantUser.Id];
+    }
+
+    private static async Task<BuiltinRoles> EnsureRolesExistAsync(
         UsersDbContext context,
         Guid tenantId,
         CancellationToken cancellationToken)
     {
+        var tenantAdminRole = await GetOrCreateBuiltinRoleAsync(
+            context,
+            tenantId,
+            User.RoleTenantAdmin,
+            "Tenant owner. Full access, including TenantAdmin-only repositories.",
+            cancellationToken);
         var adminRole = await GetOrCreateBuiltinRoleAsync(
             context,
             tenantId,
@@ -73,7 +85,7 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
             User.RoleTenantUser,
             "Standard tenant user.",
             cancellationToken);
-        return (adminRole, tenantUserRole);
+        return new BuiltinRoles(tenantAdminRole, adminRole, tenantUserRole);
     }
 
     private static async Task<Role> GetOrCreateBuiltinRoleAsync(
@@ -105,7 +117,7 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
 
         if (existing != null)
         {
-            // Backfill: Admin/TenantUser were only granted categories present at first create.
+            // Backfill: builtin roles were only granted categories present at first create.
             // New categories (or empty create) left some options as Visible:false in the UI.
             EnsureAllCategoryPermissions(existing, categoryKeys);
             return existing;
@@ -177,39 +189,45 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
         }
     }
 
+    /// <summary>Builtin role a user's Users.Role maps to (TenantAdmin, Admin, TenantUser), or null for custom roles.</summary>
+    private static Guid? BuiltinRoleIdFor(string? roleName, BuiltinRoles roles)
+    {
+        var trimmed = roleName?.Trim();
+        if (string.Equals(trimmed, User.RoleTenantAdmin, StringComparison.OrdinalIgnoreCase))
+            return roles.TenantAdmin.Id;
+        if (string.Equals(trimmed, User.RoleAdmin, StringComparison.OrdinalIgnoreCase))
+            return roles.Admin.Id;
+        if (string.Equals(trimmed, User.RoleTenantUser, StringComparison.OrdinalIgnoreCase))
+            return roles.TenantUser.Id;
+        return null;
+    }
+
     private static async Task SyncAllMembershipsAsync(
         UsersDbContext context,
         Guid tenantId,
-        Guid adminRoleId,
-        Guid tenantUserRoleId,
+        BuiltinRoles roles,
         CancellationToken cancellationToken)
     {
-        // TenantAdmin is a superset of Admin: gets the same builtin admin menus/permissions.
-        var adminUserIds = await context.Users
+        var users = await context.Users
             .AsNoTracking()
-            .Where(u => u.Role == User.RoleAdmin || u.Role == User.RoleTenantAdmin)
-            .Select(u => u.Id)
+            .Where(u => u.Role == User.RoleTenantAdmin || u.Role == User.RoleAdmin || u.Role == User.RoleTenantUser)
+            .Select(u => new { u.Id, u.Role })
             .ToListAsync(cancellationToken);
 
-        var tenantUserIds = await context.Users
-            .AsNoTracking()
-            .Where(u => u.Role == User.RoleTenantUser)
-            .Select(u => u.Id)
-            .ToListAsync(cancellationToken);
+        // Each user belongs to exactly the builtin role matching Users.Role
+        // (TenantAdmin users -> TenantAdmin role, no longer the Admin role).
+        var wanted = users
+            .Select(u => (RoleId: BuiltinRoleIdFor(u.Role, roles)!.Value, UserId: u.Id))
+            .ToHashSet();
 
+        var builtinIds = roles.Ids.ToList();
         var existing = await context.UserRoles
-            .Where(ur => ur.RoleId == adminRoleId || ur.RoleId == tenantUserRoleId)
+            .Where(ur => builtinIds.Contains(ur.RoleId))
             .ToListAsync(cancellationToken);
-
-        var adminSet = adminUserIds.ToHashSet();
-        var tenantUserSet = tenantUserIds.ToHashSet();
 
         foreach (var ur in existing)
         {
-            var keep =
-                (ur.RoleId == adminRoleId && adminSet.Contains(ur.UserId))
-                || (ur.RoleId == tenantUserRoleId && tenantUserSet.Contains(ur.UserId));
-            if (!keep)
+            if (!wanted.Contains((ur.RoleId, ur.UserId)))
                 context.UserRoles.Remove(ur);
         }
 
@@ -217,16 +235,10 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
             .Select(ur => (ur.RoleId, ur.UserId))
             .ToHashSet();
 
-        foreach (var userId in adminUserIds)
+        foreach (var (roleId, userId) in wanted)
         {
-            if (existingPairs.Add((adminRoleId, userId)))
-                await context.UserRoles.AddAsync(UserRole.Create(tenantId, adminRoleId, userId), cancellationToken);
-        }
-
-        foreach (var userId in tenantUserIds)
-        {
-            if (existingPairs.Add((tenantUserRoleId, userId)))
-                await context.UserRoles.AddAsync(UserRole.Create(tenantId, tenantUserRoleId, userId), cancellationToken);
+            if (existingPairs.Add((roleId, userId)))
+                await context.UserRoles.AddAsync(UserRole.Create(tenantId, roleId, userId), cancellationToken);
         }
     }
 
@@ -235,35 +247,23 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
         Guid tenantId,
         Guid userId,
         string? roleName,
-        Guid adminRoleId,
-        Guid tenantUserRoleId,
+        BuiltinRoles roles,
         CancellationToken cancellationToken)
     {
-        var trimmed = roleName?.Trim();
-        // TenantAdmin is a superset of Admin: gets the same builtin admin menus/permissions.
-        var wantAdmin = string.Equals(trimmed, User.RoleAdmin, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(trimmed, User.RoleTenantAdmin, StringComparison.OrdinalIgnoreCase);
-        var wantTenantUser = string.Equals(trimmed, User.RoleTenantUser, StringComparison.OrdinalIgnoreCase);
+        var wantedRoleId = BuiltinRoleIdFor(roleName, roles);
+        var builtinIds = roles.Ids.ToList();
 
         var memberships = await context.UserRoles
-            .Where(ur => ur.UserId == userId && (ur.RoleId == adminRoleId || ur.RoleId == tenantUserRoleId))
+            .Where(ur => ur.UserId == userId && builtinIds.Contains(ur.RoleId))
             .ToListAsync(cancellationToken);
-
-        var hasAdmin = memberships.Any(ur => ur.RoleId == adminRoleId);
-        var hasTenantUser = memberships.Any(ur => ur.RoleId == tenantUserRoleId);
 
         foreach (var ur in memberships)
         {
-            if (ur.RoleId == adminRoleId && !wantAdmin)
-                context.UserRoles.Remove(ur);
-            else if (ur.RoleId == tenantUserRoleId && !wantTenantUser)
+            if (ur.RoleId != wantedRoleId)
                 context.UserRoles.Remove(ur);
         }
 
-        if (wantAdmin && !hasAdmin)
-            await context.UserRoles.AddAsync(UserRole.Create(tenantId, adminRoleId, userId), cancellationToken);
-
-        if (wantTenantUser && !hasTenantUser)
-            await context.UserRoles.AddAsync(UserRole.Create(tenantId, tenantUserRoleId, userId), cancellationToken);
+        if (wantedRoleId is Guid roleId && memberships.All(ur => ur.RoleId != roleId))
+            await context.UserRoles.AddAsync(UserRole.Create(tenantId, roleId, userId), cancellationToken);
     }
 }

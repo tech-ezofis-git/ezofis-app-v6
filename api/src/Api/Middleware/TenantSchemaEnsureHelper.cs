@@ -163,8 +163,9 @@ internal static class TenantSchemaEnsureHelper
             cancellationToken);
 
     /// <summary>
-    /// Seeds Admin/TenantUser roles and backfills any missing active permission categories and sidebar menus.
-    /// Skips only when both builtins grant every active category and Admin has every seeded menu, including form, folder-create, portal, and report-builder.
+    /// Seeds TenantAdmin/Admin/TenantUser roles and backfills any missing active permission categories and sidebar menus.
+    /// Skips only when the builtins grant every active category, every TenantAdmin user is in the TenantAdmin role,
+    /// and Admin has every seeded menu, including form, folder-create, portal, and report-builder.
     /// </summary>
     public static Task EnsureBuiltinRolesAsync(
         Guid tenantId,
@@ -173,13 +174,41 @@ internal static class TenantSchemaEnsureHelper
         CancellationToken cancellationToken) =>
         EnsureOnceAsync(
             tenantId,
-            "users-builtin-roles-v4",
+            "users-builtin-roles-v5",
             connectionString,
             """
             SELECT 1
             WHERE EXISTS (
                 SELECT 1 FROM users."Roles" r
                 WHERE r."Name" = 'Admin' AND r."IsDeleted" = false
+            )
+            AND EXISTS (
+                SELECT 1 FROM users."Roles" r
+                WHERE r."Name" = 'TenantAdmin' AND r."IsDeleted" = false
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM users."PermissionCategories" pc
+                WHERE pc."IsActive" = true
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM users."Roles" r
+                      INNER JOIN users."RolePermissions" rp ON rp."RoleId" = r."Id"
+                      WHERE r."Name" = 'TenantAdmin'
+                        AND r."IsDeleted" = false
+                        AND lower(rp."PermissionKey") = lower(pc."Key")
+                  )
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM users."Users" u
+                WHERE u."Role" = 'TenantAdmin'
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM users."UserRoles" ur
+                      INNER JOIN users."Roles" r ON r."Id" = ur."RoleId"
+                      WHERE ur."UserId" = u."Id" AND r."Name" = 'TenantAdmin' AND r."IsDeleted" = false
+                  )
             )
             AND EXISTS (
                 SELECT 1 FROM users."Roles" r

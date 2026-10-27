@@ -144,6 +144,18 @@ public static class UsersSchemaEnsurer
             "Name" = EXCLUDED."Name",
             "SortOrder" = EXCLUDED."SortOrder",
             "IsActive" = true;
+
+        -- Sidebar keys the app checks (Requests, Reports, Workflow Inbox). Older tenants got these
+        -- via the Roles screen; new signups never had them, so those menus stayed hidden for the
+        -- tenant admin. Keep any existing row's Id/Name; only make sure it exists and is active.
+        INSERT INTO users."PermissionCategories" ("Id", "Key", "Name", "SortOrder", "IsActive")
+        VALUES
+            ('a1000001-0000-4000-8000-00000000000d'::uuid, 'request', 'Request', 11, true),
+            ('a1000001-0000-4000-8000-00000000000e'::uuid, 'report', 'Report', 12, true),
+            ('a1000001-0000-4000-8000-00000000000f'::uuid, 'workflow-inbox', 'Workflow Inbox', 13, true)
+        ON CONFLICT ("Key") DO UPDATE SET
+            "IsActive" = true
+        WHERE users."PermissionCategories"."IsActive" <> true;
         """;
 
     public static async Task EnsurePermissionCategoriesAsync(
