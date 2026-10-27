@@ -116,7 +116,6 @@ const AppLayout = ({ children }: Props) => {
     navigate,
   ])
 
-
   const [isWatchFoxSuccess] = useState(() => {
     if (typeof window === 'undefined') return false
     try {

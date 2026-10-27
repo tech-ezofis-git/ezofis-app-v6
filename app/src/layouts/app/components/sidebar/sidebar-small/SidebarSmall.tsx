@@ -12,9 +12,11 @@ import MenuItem from './components/MenuItem'
 
 interface Props {
   menus: Menus
+  /** Only the logo (shared-link sessions): no demo button or expand toggle. */
+  logoOnly?: boolean
 }
 
-const SidebarSmall = ({ menus }: Props) => {
+const SidebarSmall = ({ logoOnly = false, menus }: Props) => {
   const { t } = useLingui()
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
   const openDemoForm = useRequestDemoStore((s) => s.openDemoForm)
@@ -44,35 +46,36 @@ const SidebarSmall = ({ menus }: Props) => {
           </ScrollArea>
         </div>
 
-        <div className='flex flex-col items-center gap-3'>
-          <Tooltip
-            content={t`Automate Your Full AP Workflow — Request a Demo`}
-            position='right'
-          >
-            <button
-              aria-current={isDemoFormOpen ? 'page' : undefined}
-              aria-label={t`Request a Demo`}
-              type='button'
-              className={cn(
-                'group relative flex size-8 items-center justify-center rounded-lg transition-all duration-200 hover:bg-gray-2 active:scale-95',
-                isDemoFormOpen && 'bg-gray-3',
-              )}
-              onClick={() => openDemoForm()}
+        {logoOnly ? null : (
+          <div className='flex flex-col items-center gap-3'>
+            <Tooltip
+              content={t`Automate Your Full AP Workflow — Request a Demo`}
+              position='right'
             >
-              <AiBrandIcon
-                className='relative size-4'
-                variant='outline-purple'
-              />
-            </button>
-          </Tooltip>
+              <button
+                aria-current={isDemoFormOpen ? 'page' : undefined}
+                aria-label={t`Request a Demo`}
+                type='button'
+                className={cn(
+                  'group relative flex size-8 items-center justify-center rounded-lg transition-all duration-200 hover:bg-gray-2 active:scale-95',
+                  isDemoFormOpen && 'bg-gray-3',
+                )}
+                onClick={() => openDemoForm()}
+              >
+                <AiBrandIcon
+                  className='relative size-4'
+                  variant='outline-purple'
+                />
+              </button>
+            </Tooltip>
 
-          <SidebarToggle tooltipPosition='right' />
-        </div>
+            <SidebarToggle tooltipPosition='right' />
+          </div>
+        )}
       </div>
     </aside>
   )
 }
-
 
 SidebarSmall.displayName = 'SidebarSmall'
 export default SidebarSmall

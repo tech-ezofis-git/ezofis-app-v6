@@ -3,6 +3,7 @@ import { useLocation } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+import useIsGuestShare from '@/hooks/useIsGuestShare'
 import useSettingsTopbarStore from '@/pages/settings/stores/useSettingsTopbarStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import SidebarToggle from '../sidebar/SidebarToggle'
@@ -21,6 +22,8 @@ const Topbar = () => {
   const openPlayground = usePlaygroundStore((state) => state.open)
   const closePlayground = usePlaygroundStore((state) => state.close)
   const topbarAction = useSettingsTopbarStore((state) => state.action)
+  // Shared-link sessions show only the page title and the user menu.
+  const isGuestShare = useIsGuestShare()
 
   const handleOpenAskAI = () => {
     // Read from store directly so HMR / stale closures can't block open.
@@ -36,55 +39,65 @@ const Topbar = () => {
     // other overlays.
     <header className='relative z-30 flex h-14 items-center justify-between border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-4 has-[[data-global-search-open]]:z-50'>
       <div className='flex items-center gap-2'>
-        <div className='flex items-center xl:hidden'>
-          <SidebarToggle />
-        </div>
+        {isGuestShare ? null : (
+          <div className='flex items-center xl:hidden'>
+            <SidebarToggle />
+          </div>
+        )}
         {!isAskAIMaximized && <PageTitle />}
       </div>
 
       <div className='flex items-center'>
-        {!isSearchPage && <GlobalSearch />}
-        <IconButton
-          ariaLabel={t`Ask AI`}
-          color='gray'
-          icon='lucide:bot'
-          tooltip={t`Ask AI`}
-          variant='ghost'
-          className={
-            isAskAIOpen
-              ? 'text-primary-11 hover:text-primary-12'
-              : 'text-gray-11 hover:text-gray-13'
-          }
-          onClick={handleOpenAskAI}
-        />
-        <IconButton
-          ariaLabel={t`Quick Help`}
-          className='text-gray-11 hover:text-gray-13'
-          color='gray'
-          icon='lucide:help-circle'
-          tooltip={t`Quick Help`}
-          variant='ghost'
-          onClick={() =>
-            globalThis.open('https://help.ezofis.com/', '_blank', 'noopener')
-          }
-        />
-        <IconButton
-          ariaLabel={t`API Playground`}
-          color='gray'
-          icon='tabler:plug-connected'
-          tooltip={t`API Playground`}
-          variant='ghost'
-          className={
-            isPlaygroundOpen
-              ? 'text-primary-11 hover:text-primary-12'
-              : 'text-gray-11 hover:text-gray-13'
-          }
-          onClick={() =>
-            isPlaygroundOpen ? closePlayground() : openPlayground()
-          }
-        />
-        <Notifications />
-        {topbarAction ? (
+        {isGuestShare ? null : (
+          <>
+            {!isSearchPage && <GlobalSearch />}
+            <IconButton
+              ariaLabel={t`Ask AI`}
+              color='gray'
+              icon='lucide:bot'
+              tooltip={t`Ask AI`}
+              variant='ghost'
+              className={
+                isAskAIOpen
+                  ? 'text-primary-11 hover:text-primary-12'
+                  : 'text-gray-11 hover:text-gray-13'
+              }
+              onClick={handleOpenAskAI}
+            />
+            <IconButton
+              ariaLabel={t`Quick Help`}
+              className='text-gray-11 hover:text-gray-13'
+              color='gray'
+              icon='lucide:help-circle'
+              tooltip={t`Quick Help`}
+              variant='ghost'
+              onClick={() =>
+                globalThis.open(
+                  'https://help.ezofis.com/',
+                  '_blank',
+                  'noopener',
+                )
+              }
+            />
+            <IconButton
+              ariaLabel={t`API Playground`}
+              color='gray'
+              icon='tabler:plug-connected'
+              tooltip={t`API Playground`}
+              variant='ghost'
+              className={
+                isPlaygroundOpen
+                  ? 'text-primary-11 hover:text-primary-12'
+                  : 'text-gray-11 hover:text-gray-13'
+              }
+              onClick={() =>
+                isPlaygroundOpen ? closePlayground() : openPlayground()
+              }
+            />
+            <Notifications />
+          </>
+        )}
+        {topbarAction && !isGuestShare ? (
           <Button
             className='ml-2'
             color={topbarAction.color ?? 'primary'}
