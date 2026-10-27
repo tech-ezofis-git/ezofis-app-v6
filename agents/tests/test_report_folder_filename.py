@@ -158,6 +158,24 @@ def test_folder_rows_keep_item_and_repository_ids():
     assert shaped[0]["repositoryId"] == "a6169a5c-1468-4fb5-90a9-220082a89f2a"
 
 
+def test_folder_file_name_ignores_grouped_totals():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.catalog_execute import wants_instance_execute
+
+    spec = ReportSpec(
+        title="Folder Summary (Accounts Payable)",
+        report_type="specific_repository",
+        group_by=["status", "MatchedStatus"],
+        columns=[
+            ReportSpecColumn(key="FileName", label="File Name"),
+            ReportSpecColumn(key="CreatedBy", label="Created By"),
+            ReportSpecColumn(key="MatchedStatus", label="Matched Status", kind="userdefined"),
+            ReportSpecColumn(key="file_size", label="Total File Size (bytes)", kind="agent", formula="SUM(file_size)"),
+        ],
+    )
+    assert wants_instance_execute(spec, "specific_repository") is True
+
+
 def test_file_name_alias_is_copied_onto_the_report_column():
     rows = fill_filename_aliases([{"file_name": "INV-2026-3005.pdf", "PONumber": "PO-30005"}])
     assert rows[0]["File Name"] == "INV-2026-3005.pdf"

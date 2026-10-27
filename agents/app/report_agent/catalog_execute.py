@@ -671,6 +671,11 @@ def wants_instance_execute(spec: ReportSpec, report_type: Optional[str] = None) 
             return False
         return bool(keys & _INSTANCE_DEFAULT_KEYS)
     if rt == "specific_repository":
+        # The report page sends File Name together with groupBy and SUM/COUNT.
+        # Those totals cannot share a row with each file, and the grouped query
+        # returns nothing. A file name means return one row per file.
+        if "filename" in keys:
+            return True
         if has_form_columns(spec):
             return False
         return bool(keys & _REPO_DEFAULT_KEYS)
