@@ -13,6 +13,7 @@ import {
   parseSubmissionFormData,
   type PortalSubmission,
 } from '../helpers/portalSubmissions'
+import { getPortalRequestTabs, submissionInTab } from '../helpers/portalTabs'
 import {
   portalWorkflowIcon,
   portalWorkflowKind,
@@ -65,6 +66,65 @@ type PortalHomeProps = {
   onSignOut?: () => void
 }
 
+type StatCard = {
+  chipLabel: string
+  dot: string
+  filterId: string
+  icon: string
+  iconWrap: string
+  isActive: boolean
+  label: string
+  value: string
+  onSelect: () => void
+}
+
+// Request Views tab card colors: by meaning when the label says it
+// (approved / rejected / pending…), else a rotating palette.
+const TAB_CARD_PALETTE = [
+  {
+    dot: 'bg-blue-9',
+    icon: 'lucide:inbox',
+    iconWrap: 'bg-blue-3 text-blue-11',
+  },
+  {
+    dot: 'bg-yellow-9',
+    icon: 'lucide:clock',
+    iconWrap: 'bg-yellow-3 text-yellow-11',
+  },
+  {
+    dot: 'bg-orange-9',
+    icon: 'lucide:alert-circle',
+    iconWrap: 'bg-orange-3 text-orange-11',
+  },
+  {
+    dot: 'bg-secondary-9',
+    icon: 'lucide:layers',
+    iconWrap: 'bg-secondary-3 text-secondary-11',
+  },
+]
+const tabCardTone = (label: string, index: number) => {
+  const text = label.toLowerCase()
+  if (
+    text.includes('approv') ||
+    text.includes('complete') ||
+    text.includes('closed')
+  ) {
+    return {
+      dot: 'bg-green-9',
+      icon: 'lucide:check-circle',
+      iconWrap: 'bg-green-3 text-green-11',
+    }
+  }
+  if (text.includes('reject') || text.includes('cancel')) {
+    return {
+      dot: 'bg-red-9',
+      icon: 'lucide:x-circle',
+      iconWrap: 'bg-red-3 text-red-11',
+    }
+  }
+  return TAB_CARD_PALETTE[index % TAB_CARD_PALETTE.length]
+}
+
 export default function PortalHome({
   canCreateSubmission = true,
   displayName,
@@ -113,6 +173,31 @@ export default function PortalHome({
     [t],
   )
   const [statusFilter, setStatusFilter] = useState<Option>(statusOptions[0])
+
+  // List tabs from the workflow's Request Views setting, as on the Requests
+  // page; none when the workflow has no tabs configured.
+  const requestTabs = useMemo(
+    () =>
+      workflowId
+        ? getPortalRequestTabs(
+            workflows.find((workflow) => workflow.id === workflowId)?.workflow,
+          )
+        : [],
+    [workflowId, workflows],
+  )
+  // '' = Total (every submission); otherwise a Request Views tab's id
+  const [activeTabId, setActiveTabId] = useState('')
+  const activeTab = requestTabs.find((tab) => tab.id === activeTabId) || null
+  const tabCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        requestTabs.map((tab) => [
+          tab.id,
+          submissions.filter((row) => submissionInTab(row, tab)).length,
+        ]),
+      ),
+    [requestTabs, submissions],
+  )
 
   const stats = useMemo(() => {
     if (showingWorkflows) {
@@ -197,6 +282,45 @@ export default function PortalHome({
   const loadingStats =
     loadingWorkflows || (loadingSubmissions && !showingWorkflows)
 
+  // Cards above the list: Total plus one per Request Views tab when the
+  // workflow has tabs configured; otherwise the status cards.
+  const useTabCards = !showingWorkflows && requestTabs.length > 0
+  const cards: StatCard[] = useTabCards
+    ? [
+        {
+          ...statCards[0],
+          isActive: !activeTab,
+          onSelect: () => {
+            setActiveTabId('')
+            setStatusFilter(statusOptions[0])
+          },
+        },
+        ...requestTabs.map((tab, index) => ({
+          ...tabCardTone(tab.label, index),
+          chipLabel: tab.label,
+          filterId: `tab:${tab.id}`,
+          isActive: activeTab?.id === tab.id,
+          label: tab.label,
+          value: String(tabCounts[tab.id] ?? 0),
+          onSelect: () => {
+            setActiveTabId(tab.id)
+            setStatusFilter(statusOptions[0])
+          },
+        })),
+      ]
+    : statCards.map((stat) => ({
+        ...stat,
+        isActive: String(statusFilter.id) === stat.filterId,
+        onSelect: () => applyStatusFilter(stat.filterId),
+      }))
+  const chips: StatCard[] = useTabCards
+    ? cards
+    : statChips.map((stat) => ({
+        ...stat,
+        isActive: String(statusFilter.id) === stat.filterId,
+        onSelect: () => applyStatusFilter(stat.filterId),
+      }))
+
   const applyStatusFilter = (filterId: string) => {
     const next =
       statusOptions.find((option) => String(option.id) === filterId) ||
@@ -219,6 +343,7 @@ export default function PortalHome({
     const needle = query.trim().toLowerCase()
     const statusId = String(statusFilter.id)
     return submissions.filter((row) => {
+      if (activeTab && !submissionInTab(row, activeTab)) return false
       if (statusId !== 'all' && row.status !== statusId) return false
       if (!needle) return true
       const summaryMatch = [
@@ -240,7 +365,7 @@ export default function PortalHome({
         .toLowerCase()
         .includes(needle)
     })
-  }, [query, statusFilter, submissions])
+  }, [activeTab, query, statusFilter, submissions])
 
   // Phones: app-style list (no greeting / KPI cards / status select); the
   // workflow picker keeps the shared layout below.
@@ -250,6 +375,7 @@ export default function PortalHome({
         canCreateSubmission={canCreateSubmission}
         email={email}
         loading={loadingSubmissions}
+        requestTabs={requestTabs}
         submissions={submissions}
         submissionsError={submissionsError}
         tenantId={tenantId}
@@ -302,24 +428,26 @@ export default function PortalHome({
         delay={0.05}
       >
         <InputText
-          placeholder={
-            showingWorkflows ? t`Search workflows…` : t`Search submissions…`
-          }
           value={query}
-          leftSection={<Icon className='size-4 text-gray-9' name='lucide:search' />}
           classNames={{
             input:
               '!h-11 !rounded-full !border-gray-3 !bg-surface !pl-10 !text-14 shadow-2xs transition focus:!border-primary-7',
             section: '!w-10',
           }}
+          leftSection={
+            <Icon className='size-4 text-gray-9' name='lucide:search' />
+          }
+          placeholder={
+            showingWorkflows ? t`Search workflows…` : t`Search submissions…`
+          }
           onChange={setQuery}
         />
         {loadingStats ? (
           <PortalStatChipsSkeleton />
         ) : (
-          <div className='-mx-4 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] sm:-mx-6 sm:scroll-px-6 sm:px-6 [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_80%,transparent)]'>
-            {statChips.map((stat, index) => {
-              const isActive = String(statusFilter.id) === stat.filterId
+          <div className='-mx-4 flex snap-x scroll-px-4 gap-2 overflow-x-auto [mask-image:linear-gradient(to_right,black_80%,transparent)] px-4 pb-0.5 [scrollbar-width:none] sm:-mx-6 sm:scroll-px-6 sm:px-6 [&::-webkit-scrollbar]:hidden'>
+            {chips.map((stat, index) => {
+              const { isActive } = stat
               return (
                 <motion.button
                   animate={{ opacity: 1, x: 0 }}
@@ -334,7 +462,7 @@ export default function PortalHome({
                       ? 'border-primary-9 bg-primary-9 text-text-on-accent'
                       : 'border-gray-4 bg-surface text-gray-11 hover:bg-gray-3 active:bg-gray-4',
                   )}
-                  onClick={() => applyStatusFilter(stat.filterId)}
+                  onClick={stat.onSelect}
                 >
                   {!isActive ? (
                     <span className={cn('size-1.5 rounded-full', stat.dot)} />
@@ -363,15 +491,20 @@ export default function PortalHome({
         </div>
       ) : (
         <AnimateStagger
-          className='grid grid-cols-2 gap-2.5 max-md:hidden sm:gap-3.5 lg:grid-cols-4 [&>div]:w-full [&>div]:min-w-0'
           staggerDelay={0.05}
+          className={cn(
+            'grid grid-cols-2 gap-2.5 max-md:hidden sm:gap-3.5 [&>div]:w-full [&>div]:min-w-0',
+            cards.length === 4
+              ? 'lg:grid-cols-4'
+              : 'lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]',
+          )}
         >
-          {statCards.map((stat) => {
-            const isActive = String(statusFilter.id) === stat.filterId
+          {cards.map((stat) => {
+            const { isActive } = stat
             return (
               <button
                 aria-pressed={isActive}
-                key={stat.label}
+                key={stat.filterId}
                 type='button'
                 className={cn(
                   'flex h-full min-h-[76px] w-full min-w-0 items-center gap-2.5 rounded-2xl border bg-surface px-3 py-3 text-left shadow-2xs transition outline-none focus-visible:ring-2 focus-visible:ring-primary-7 motion-reduce:transition-none sm:gap-3.5 sm:px-[18px] sm:py-4',
@@ -380,7 +513,7 @@ export default function PortalHome({
                     ? 'border-primary-7 ring-1 ring-primary-5'
                     : 'border-gray-4',
                 )}
-                onClick={() => applyStatusFilter(stat.filterId)}
+                onClick={stat.onSelect}
               >
                 <span
                   className={cn(
