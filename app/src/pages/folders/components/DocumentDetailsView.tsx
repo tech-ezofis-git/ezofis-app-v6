@@ -45,6 +45,7 @@ import {
   selectedFieldsIncludeOrg,
 } from '@/components/common/document-preview/pii'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
+import useIsGuestShare from '@/hooks/useIsGuestShare'
 import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import RelatedDocumentsFinder from '@/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder'
@@ -520,6 +521,8 @@ export function DocumentDetailsView({
     String(initialSignRequestId || ''),
   )
   const [activeInviteToken] = useState(String(inviteToken || ''))
+  // Opened from a share link: only the file — no Back or AI Summary.
+  const isGuestShare = useIsGuestShare()
   const [showDeclineForm, setShowDeclineForm] = useState(false)
   const [declineReason, setDeclineReason] = useState('')
   const [isDeclining, setIsDeclining] = useState(false)
@@ -2404,7 +2407,7 @@ export function DocumentDetailsView({
         }`}
       >
         <div className='mr-2 flex min-w-0 flex-1 items-center gap-2 sm:mr-4 sm:gap-3'>
-          {!forceSigning && onBack ? (
+          {!forceSigning && !isGuestShare && onBack ? (
             <Button
               className='h-8 shrink-0 border-transparent px-2.5 text-[13px] shadow-none sm:px-3'
               onClick={onBack}
@@ -2533,16 +2536,18 @@ export function DocumentDetailsView({
                   <span className='hidden sm:inline'>{t`Start Workflow`}</span>
                 </button>
               ) : null}
-              <button
-                aria-label={t`AI Summary`}
-                className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'
-                disabled={!onAiSummary}
-                type='button'
-                onClick={() => onAiSummary?.()}
-              >
-                <DynamicIcon className='h-4 w-4 text-violet-9' name='bot' />
-                <span className='hidden sm:inline'>{t`AI Summary`}</span>
-              </button>
+              {isGuestShare ? null : (
+                <button
+                  aria-label={t`AI Summary`}
+                  className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'
+                  disabled={!onAiSummary}
+                  type='button'
+                  onClick={() => onAiSummary?.()}
+                >
+                  <DynamicIcon className='h-4 w-4 text-violet-9' name='bot' />
+                  <span className='hidden sm:inline'>{t`AI Summary`}</span>
+                </button>
+              )}
               {canSendForSignature ? (
                 <button
                   aria-label={isSigning ? t`Exit Signing` : t`Sign Document`}

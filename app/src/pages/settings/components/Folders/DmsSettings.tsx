@@ -1058,10 +1058,6 @@ export default function DmsFolderConfiguration({
           }
         } else if (key === 'storage') {
           if (!matchesCategoryFilterValue(repo.storage, value)) matches = false
-        } else if (key === 'documents') {
-          if (!matchesCategoryFilterValue(String(repo.documents), value)) {
-            matches = false
-          }
         } else if (key === 'status') {
           if (!matchesCategoryFilterValue(repo.status, value)) matches = false
         } else if (key === 'createdAt') {
@@ -1121,14 +1117,6 @@ export default function DmsFolderConfiguration({
       )
         .sort((a, b) => a.localeCompare(b))
         .map((storage) => ({ label: storage, value: storage })),
-    [repositories],
-  )
-
-  const documentCountOptions = useMemo(
-    () =>
-      Array.from(new Set(repositories.map((r) => String(r.documents))))
-        .sort((a, b) => Number(a) - Number(b))
-        .map((count) => ({ label: count, value: count })),
     [repositories],
   )
 
@@ -2343,11 +2331,6 @@ export default function DmsFolderConfiguration({
                 options: descriptionOptions,
                 searchable: true,
                 searchPlaceholder: t`Search description...`,
-              },
-              {
-                id: 'documents',
-                label: t`Documents`,
-                options: documentCountOptions,
               },
               {
                 id: 'createdAt',
@@ -4140,23 +4123,6 @@ function useRepositoryTable(
             </span>
           )
         },
-      }),
-      columnHelper.accessor('documents', {
-        enableSorting: false,
-        header: t`Documents`,
-        id: 'documents',
-        meta: {
-          ...settingsHeaderMeta.start,
-          disableEllipsis: true,
-          label: t`Documents`,
-        },
-        minSize: 40,
-        size: 110,
-        cell: ({ getValue }) => (
-          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
-            {getValue().toLocaleString()}
-          </span>
-        ),
       }),
       columnHelper.accessor('status', {
         enableSorting: false,

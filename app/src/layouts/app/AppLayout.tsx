@@ -5,6 +5,7 @@ import authApi from '@/api/auth'
 import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import ApiPlaygroundPanel from '@/components/playground/ApiPlaygroundPanel'
+import useIsGuestShare from '@/hooks/useIsGuestShare'
 import BrandingSync from '@/lib/branding/BrandingSync'
 import { resolveSignInPath } from '@/lib/branding/session'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
@@ -13,6 +14,7 @@ import { useIsMobile } from '@/pages/mobile'
 import authUserStore from '@/stores/authUserStore'
 import useGeoStore from '@/stores/useGeoStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
+import cn from '@/utils/cn'
 import requestStore from '../../pages/requests/stores/useRequestStore'
 import NewRequest from './components/NewRequest'
 import RequestDemoForm from './components/RequestDemoForm'
@@ -42,6 +44,7 @@ const AppLayout = ({ children }: Props) => {
   )
   const isAuthenticated = authUserStore((state) => state.isAuthenticated)
   const isMobile = useIsMobile()
+  const isGuestShare = useIsGuestShare()
   const prevPathRef = useRef(pathname)
 
   useEffect(() => {
@@ -116,7 +119,6 @@ const AppLayout = ({ children }: Props) => {
     navigate,
   ])
 
-
   const [isWatchFoxSuccess] = useState(() => {
     if (typeof window === 'undefined') return false
     try {
@@ -151,10 +153,14 @@ const AppLayout = ({ children }: Props) => {
   return (
     <>
       <BrandingSync />
-      <Sidebar />
+      {/* Shared-link sessions: no app navigation */}
+      {isGuestShare ? null : <Sidebar />}
 
       <div
-        className='flex h-svh flex-col transition-[margin-right] duration-200 xl:ml-[56px]'
+        className={cn(
+          'flex h-svh flex-col transition-[margin-right] duration-200',
+          !isGuestShare && 'xl:ml-[56px]',
+        )}
         style={{
           marginRight:
             (isAskAIOpen && !isAskAIMaximized) || isPlaygroundOpen
