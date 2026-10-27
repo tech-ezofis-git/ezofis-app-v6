@@ -278,6 +278,9 @@ interface Props {
   readOnlyFieldIds?: Set<string>
   repoFieldHints?: string[]
   repositoryId?: string
+  // Field ids the current stage explicitly lets this user edit (Editable
+  // Fields = Custom). They override the form's read-only settings/rules.
+  stageEditableFieldIds?: Set<string>
   stages?: {
     id: string
     label: string
@@ -326,6 +329,7 @@ const WorkflowFormRenderer = ({
   readOnlyFieldIds,
   repoFieldHints,
   repositoryId,
+  stageEditableFieldIds,
   stages,
   viewOnly,
   getPanelValue,
@@ -413,7 +417,18 @@ const WorkflowFormRenderer = ({
       nextModel,
       formRules,
     )
+    const afterStates = stageEditableFieldIds?.size
+      ? evaluateFormRules(panels, cleaned, formRules)
+      : {}
     for (const key of Object.keys(cleaned)) {
+      // A rule lock doesn't clear a field this stage opens for editing;
+      // a field the rule hides is still cleared.
+      if (
+        stageEditableFieldIds?.has(key) &&
+        afterStates[key]?.visible !== false
+      ) {
+        continue
+      }
       if (key !== fieldId && cleaned[key] !== nextModel[key]) {
         onFieldChange(key, cleaned[key])
       }
@@ -458,12 +473,19 @@ const WorkflowFormRenderer = ({
 
   const resolveEffectiveReadOnly = (field: any) => {
     if (viewOnly) return true
+    // Form first, then workflow: the form's settings + rules give the
+    // default; a field the stage explicitly opens for editing overrides a
+    // form lock (calculated fields always stay read-only).
+    if (
+      stageEditableFieldIds?.has(String(field.id)) &&
+      resolveRuntimeFieldType(field) !== 'CALCULATED'
+    ) {
+      return false
+    }
     const state = evaluatedFieldStates[field.id]
     const isReadOnlyByRule = Boolean(state?.disabled)
     const baseReadOnly = isFieldReadOnly(field) || isReadOnlyByRule
 
-    // Editable only when the form (settings + rules) and the stage's
-    // Security & Form Access both allow it.
     return baseReadOnly || Boolean(readOnlyFieldIds?.has(String(field.id)))
   }
 

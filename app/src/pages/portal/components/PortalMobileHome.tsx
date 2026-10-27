@@ -19,6 +19,7 @@ import {
   parseSubmissionFormData,
   type PortalSubmission,
 } from '../helpers/portalSubmissions'
+import { type PortalRequestTab, submissionInTab } from '../helpers/portalTabs'
 import {
   type PortalFilterField,
   usePortalFilterOptions,
@@ -35,6 +36,8 @@ type PortalMobileHomeProps = {
   canCreateSubmission: boolean
   email: string
   loading?: boolean
+  /** Tabs from the workflow's Request Views setting (none when unset). */
+  requestTabs?: PortalRequestTab[]
   submissions: PortalSubmission[]
   submissionsError?: string | null
   tenantId?: string
@@ -137,6 +140,7 @@ export default function PortalMobileHome({
   canCreateSubmission,
   email,
   loading,
+  requestTabs = [],
   submissions,
   submissionsError,
   tenantId,
@@ -161,6 +165,19 @@ export default function PortalMobileHome({
   const [optionSearch, setOptionSearch] = useState('')
 
   const filters = usePortalFilters(workflowId, tenantId)
+  const [activeTabId, setActiveTabId] = useState('')
+  // '' = Total (every request); otherwise a Request Views tab's id
+  const activeTab = requestTabs.find((tab) => tab.id === activeTabId) || null
+  const tabCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        requestTabs.map((tab) => [
+          tab.id,
+          submissions.filter((row) => submissionInTab(row, tab)).length,
+        ]),
+      ),
+    [requestTabs, submissions],
+  )
   const optionsQuery = usePortalFilterOptions(workflowId, sheetField, tenantId)
 
   const datePresets = useMemo(
@@ -183,7 +200,9 @@ export default function PortalMobileHome({
 
   // Server-filtered (when filters are active), then searched on the device.
   const visible = useMemo(() => {
-    let rows = submissions
+    let rows = activeTab
+      ? submissions.filter((row) => submissionInTab(row, activeTab))
+      : submissions
     if (filters.isFiltering) {
       const ids = filters.matchIds
       rows = ids ? rows.filter((row) => ids.has(row.id)) : []
@@ -208,7 +227,13 @@ export default function PortalMobileHome({
           .includes(needle)
       )
     })
-  }, [deferredQuery, filters.isFiltering, filters.matchIds, submissions])
+  }, [
+    activeTab,
+    deferredQuery,
+    filters.isFiltering,
+    filters.matchIds,
+    submissions,
+  ])
 
   const hasCriteria = filters.isFiltering || Boolean(query.trim())
   const isLoading = loading || filters.matchLoading
@@ -348,6 +373,46 @@ export default function PortalMobileHome({
           </motion.div>
         ) : null}
       </AnimatePresence>
+
+      {/* Request Views tabs, as on the Requests page */}
+      {requestTabs.length > 0 ? (
+        <div
+          aria-label={t`Request views`}
+          className='-mx-4 flex gap-1 overflow-x-auto border-b border-gray-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+          role='tablist'
+        >
+          {[{ id: '', label: t`Total` }, ...requestTabs].map((tab) => {
+            const selected = tab.id === (activeTab?.id ?? '')
+            return (
+              <button
+                aria-selected={selected}
+                key={tab.id}
+                role='tab'
+                type='button'
+                className={cn(
+                  '-mb-px flex h-11 shrink-0 items-center gap-1.5 border-b-2 px-2 text-14 whitespace-nowrap transition-colors active:scale-95',
+                  selected
+                    ? 'border-primary-9 font-semibold text-primary-11'
+                    : 'border-transparent font-medium text-gray-10',
+                )}
+                onClick={() => setActiveTabId(tab.id)}
+              >
+                {tab.label}
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-px text-11 font-bold tabular-nums',
+                    selected
+                      ? 'bg-primary-3 text-primary-11'
+                      : 'bg-gray-3 text-gray-10',
+                  )}
+                >
+                  {tab.id ? (tabCounts[tab.id] ?? 0) : submissions.length}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
 
       {/* Filter chips from the workflow's filter-fields API */}
       {filters.chipFields.length || filters.addableFields.length ? (

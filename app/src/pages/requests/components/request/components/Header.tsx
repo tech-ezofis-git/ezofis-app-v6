@@ -30,7 +30,7 @@ interface HeaderProps {
   isLoading: boolean
   raisedAt: any
   requestNo: string
-  rightView: 'overview' | 'history' | 'attachments' | 'comments'
+  rightView: 'overview' | 'history' | 'attachments' | 'comments' | 'subProcess'
   actions?: any[]
   activeAction?: string | null
   agentData?: any
@@ -42,11 +42,15 @@ interface HeaderProps {
   commentsCount?: number
   currency?: string
   enableAIInsights?: boolean
+  /** Extra buttons shown before the step actions (e.g. Initiate sub-workflow). */
+  extraActions?: React.ReactNode
   hideActions?: boolean
   isEditing?: boolean
   isFourthItem?: boolean
   isProcessing?: boolean
   lastActionAt?: any
+  /** Link back to the parent request when this request is a sub-process. */
+  parentLink?: React.ReactNode
   percent?: number
   poNumber?: string
   poValue?: string | number
@@ -64,10 +68,12 @@ interface HeaderProps {
   /** Compact previous / current / next workflow steps (generic requests). */
   stageTrail?: StageTrailItem[]
   status?: string
+  /** Sub Process tab count; the tab is hidden while undefined. */
+  subProcessCount?: number
   ticketUserId?: string
   totalAmount?: string
   setRightView: (
-    view: 'overview' | 'history' | 'attachments' | 'comments',
+    view: 'overview' | 'history' | 'attachments' | 'comments' | 'subProcess',
   ) => void
   onApprove?: (action: string) => void
   onBack?: () => void
@@ -304,12 +310,14 @@ const Header: React.FC<HeaderProps> = ({
   commentsCount = 0,
   currency,
   enableAIInsights = true,
+  extraActions,
   hideActions = false,
   isEditing = false,
   isFourthItem,
   isLoading: _isLoading,
   isProcessing = false,
   lastActionAt,
+  parentLink,
   percent,
   poNumber,
   poValue,
@@ -324,6 +332,7 @@ const Header: React.FC<HeaderProps> = ({
   stageSince,
   stageTrail = [],
   status = 'Pending Review',
+  subProcessCount,
   ticketUserId,
   totalAmount,
   setRightView,
@@ -930,7 +939,7 @@ const Header: React.FC<HeaderProps> = ({
     const rightViewTabs: {
       count: number
       icon: string
-      id: 'overview' | 'history' | 'attachments' | 'comments'
+      id: 'overview' | 'history' | 'attachments' | 'comments' | 'subProcess'
       label: string
     }[] = [
       {
@@ -947,6 +956,14 @@ const Header: React.FC<HeaderProps> = ({
       },
       { count: 0, icon: 'tabler:history', id: 'history', label: t`History` },
     ]
+    if (subProcessCount !== undefined) {
+      rightViewTabs.push({
+        count: subProcessCount,
+        icon: 'tabler:sitemap',
+        id: 'subProcess',
+        label: t`Sub Process`,
+      })
+    }
 
     return (
       <OverlayHeaderWrapper className='relative min-h-14 w-full min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2 md:flex-nowrap'>
@@ -999,6 +1016,9 @@ const Header: React.FC<HeaderProps> = ({
               </Tooltip>
               <span className='mx-1 shrink-0'>{listTabBadge}</span>
               {renderStageInfoGroup()}
+              {parentLink ? (
+                <span className='ml-1 shrink-0'>{parentLink}</span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -1141,6 +1161,12 @@ const Header: React.FC<HeaderProps> = ({
               </AnimatePresence>
             </div>
           )}
+
+          {!isProcessing && extraActions ? (
+            <div className='flex shrink-0 items-center border-l border-gray-3 pl-3'>
+              {extraActions}
+            </div>
+          ) : null}
 
           {!isProcessing && actions && actions.length > 0 && (
             <div className='flex shrink-0 items-center gap-2 border-l border-gray-3 pl-3'>

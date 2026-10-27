@@ -84,9 +84,25 @@ export const getStageHiddenFieldIds = (
 }
 
 /**
+ * Field ids this stage explicitly lets the user edit (Editable Fields =
+ * Custom, the user's rule). These override a form read-only setting/rule, so
+ * a form can lock a field everywhere and one stage can open it up. "All
+ * fields" grants nothing explicit and never overrides the form.
+ */
+export const getStageEditableFieldIds = (
+  settings: StageSettings,
+  userId: string,
+): Set<string> | undefined => {
+  if (formAccessMode(settings.formEditAccess) !== 'CUSTOM') return undefined
+  const rule = findStageAccessRule(settings.formEditControls, settings, userId)
+  const ids = ruleFieldIds(rule)
+  return ids.size > 0 ? ids : undefined
+}
+
+/**
  * Field ids this user may see but not edit at this stage; undefined = the
  * stage adds no restriction. The form's own read-only settings still apply
- * on top of this.
+ * on top of this, except for fields from getStageEditableFieldIds.
  */
 export const getStageReadOnlyFieldIds = (
   settings: StageSettings,

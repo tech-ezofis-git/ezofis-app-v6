@@ -12,6 +12,7 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Skeleton from '@/components/base/Skeleton'
 import Tooltip from '@/components/base/Tooltip'
+import { extractWorkflowGeneral } from '@/pages/requests/utils/workflow.utils'
 import { getDefaultShortName } from '@/pages/workflows/utils/workflowShortName'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
@@ -135,24 +136,34 @@ export default function AllWorkflowsInbox({
 
   // "Open <short name>" uses each workflow's Short Name setting
   // (settings.general.shortName), else the first word of its name.
-  const settingsQueries = useQueries({
-    queries: groups.map((group) => ({
-      queryKey: ['workflow-detail-short-name', group.workflowId],
-      staleTime: 5 * 60_000,
-      queryFn: async () => {
-        const res = await workflowsApiV6.getWorkflowById(group.workflowId)
-        const wf = res.data as {
-          settings?: { general?: { shortName?: string } }
-          workflowJson?: { settings?: { general?: { shortName?: string } } }
-        } | null
-        return String(
-          wf?.settings?.general?.shortName ||
-            wf?.workflowJson?.settings?.general?.shortName ||
-            '',
-        ).trim()
-      },
-    })),
-  })
+const settingsQueries = useQueries({
+  queries: groups.map((group) => ({
+    queryKey: ['workflow-short-name', group.workflowId],
+
+    enabled: Boolean(group.workflowId),
+
+    staleTime: 5 * 60_000,
+
+    retry: 2,
+    retryDelay: (attempt:any) => Math.min(1000 * 2 ** attempt, 5000),
+
+    queryFn: async () => {
+      const res = await workflowsApiV6.getWorkflowById(
+        group.workflowId
+      );
+
+      if (res.error || !res.data) {
+        throw new Error(
+          res.error || 'Failed to fetch workflow'
+        );
+      }
+
+      const general = extractWorkflowGeneral(res.data);
+
+      return String(general?.shortName ?? '').trim();
+    },
+  })),
+});
   const shortNameFor = (group: AllWorkflowsInboxGroup, index: number) =>
     settingsQueries[index]?.data ||
     getDefaultShortName(group.workflowName) ||

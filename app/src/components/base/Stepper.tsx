@@ -48,15 +48,16 @@ const Stepper = ({
       size='xs'
       classNames={{
         separator: 'rounded-full bg-gray-3',
-        step: 'disabled:opacity-50 data-[allow-click]:cursor-pointer transition-opacity hover:opacity-90',
+        step: 'transition-opacity hover:opacity-90 disabled:opacity-50 data-[allow-click]:cursor-pointer',
         stepBody: 'ml-3',
-        stepCompletedIcon: 'text-primary-11 [&>svg]:!size-3.5',
+        stepCompletedIcon: 'text-white [&>svg]:!size-3.5',
         stepDescription: 'text-xs/5 text-gray-10',
         stepIcon:
-          'border border-gray-5 bg-transparent text-13 font-semibold text-gray-9 data-[completed]:border-transparent data-[completed]:bg-primary-4 data-[completed]:text-primary-11 data-[progress]:border-transparent data-[progress]:bg-primary-9 data-[progress]:text-white',
+          'border border-gray-5 bg-transparent text-13 font-semibold text-gray-9 data-[completed]:border-transparent data-[completed]:bg-primary-9 data-[completed]:text-white data-[progress]:border-transparent data-[progress]:bg-primary-9 data-[progress]:text-white',
         stepLabel: 'm-0 text-13/6 font-medium text-gray-12',
         stepLoader: 'after:border-gray-11 after:border-t-transparent',
-        verticalSeparator: 'rounded-full border-gray-3 bg-gray-3',
+        verticalSeparator:
+          'rounded-full border-gray-3 bg-gray-3 data-[active]:border-primary-9 data-[active]:bg-primary-9',
       }}
       onStepClick={setActive}
     >

@@ -54,6 +54,32 @@ const STATUS_FILTERS: Array<'all' | DelegationStatus> = [
 
 const DELEGATIONS_KEY = ['workflow-delegations']
 
+// Avatar tones, picked from the user id so a person keeps one color.
+const AVATAR_TONES = [
+  'bg-green-3 text-green-11',
+  'bg-primary-3 text-primary-11',
+  'bg-blue-3 text-blue-11',
+  'bg-orange-3 text-orange-11',
+  'bg-red-3 text-red-11',
+  'bg-secondary-3 text-secondary-11',
+  'bg-yellow-3 text-yellow-11',
+]
+const avatarTone = (id: string) => {
+  let hash = 0
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) | 0
+  return AVATAR_TONES[Math.abs(hash) % AVATAR_TONES.length]
+}
+const initialsOf = (name: string) => {
+  const parts = name
+    .replace(/@.*/, '')
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+  return (
+    (parts[0]?.[0] || '') +
+    (parts.length > 1 ? parts[1][0] : parts[0]?.[1] || '')
+  ).toUpperCase()
+}
+
 /**
  * Settings › Delegations: the tenant's delegations (GET /workflow-delegations)
  * and a wizard to create or edit one. Saving, ending and deleting call the
@@ -111,6 +137,8 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
     const user = usersQuery.data?.find((item) => item.id === id)
     return user?.displayName || user?.email || id || '-'
   }
+  const userRole = (id: string) =>
+    usersQuery.data?.find((item) => item.id === id)?.role || ''
   const workflowName = (id: string) =>
     workflowsQuery.data?.find((item) => String(item.id) === id)?.name || id
 
@@ -372,14 +400,47 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
                       if (event.key === 'Enter') setEditing(item)
                     }}
                   >
-                    <span className='truncate font-medium text-gray-13'>
-                      {userName(item.assigneeUserId)}
+                    <span className='flex min-w-0 items-center gap-2.5'>
+                      <UserAvatar
+                        id={item.assigneeUserId}
+                        name={userName(item.assigneeUserId)}
+                      />
+                      <span className='min-w-0'>
+                        <span className='block truncate font-medium text-gray-13'>
+                          {userName(item.assigneeUserId)}
+                        </span>
+                        {userRole(item.assigneeUserId) ? (
+                          <span className='block truncate text-12 text-gray-10'>
+                            {userRole(item.assigneeUserId)}
+                          </span>
+                        ) : null}
+                      </span>
                     </span>
-                    <span className='truncate text-gray-12'>
-                      {delegates.length
-                        ? delegates.map(userName).join(', ')
-                        : t`Not set`}
-                    </span>
+                    {delegates.length ? (
+                      <span className='flex min-w-0 items-center gap-2.5'>
+                        {/* Up to three overlapping avatars */}
+                        <span className='flex shrink-0 -space-x-2'>
+                          {delegates.slice(0, 3).map((id) => (
+                            <UserAvatar id={id} key={id} name={userName(id)} />
+                          ))}
+                        </span>
+                        <span className='min-w-0'>
+                          <span className='block truncate font-medium text-gray-13'>
+                            {userName(delegates[0])}
+                            {delegates.length > 1
+                              ? ` +${delegates.length - 1}`
+                              : ''}
+                          </span>
+                          <span className='block truncate text-12 text-gray-10'>
+                            {delegates.length > 1
+                              ? delegates.slice(1).map(userName).join(', ')
+                              : userRole(delegates[0])}
+                          </span>
+                        </span>
+                      </span>
+                    ) : (
+                      <span className='text-gray-8'>{t`Not set`}</span>
+                    )}
                     <span className='flex min-w-0 gap-1.5 overflow-hidden'>
                       {item.delegations[0]?.workflowId ? (
                         <span className='truncate rounded-md bg-secondary-3 px-2 py-0.5 font-medium text-secondary-11'>
@@ -498,5 +559,29 @@ export default function DelegationSettings({ onBack }: { onBack: () => void }) {
         }}
       />
     </div>
+  )
+}
+
+function UserAvatar({
+  className,
+  id,
+  name,
+}: {
+  className?: string
+  id: string
+  name: string
+}) {
+  return (
+    <span
+      title={name}
+      aria-hidden
+      className={cn(
+        'flex size-8 shrink-0 items-center justify-center rounded-full text-11 font-semibold ring-2 ring-surface',
+        avatarTone(id || name),
+        className,
+      )}
+    >
+      {initialsOf(name) || '?'}
+    </span>
   )
 }
