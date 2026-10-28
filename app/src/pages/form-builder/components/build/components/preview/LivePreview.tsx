@@ -465,6 +465,8 @@ const LivePreview = () => {
                         )
                         const effectiveDesc =
                           getEffectiveFieldDescription(field)
+                        const isDivider =
+                          resolveRuntimeFieldType(field) === 'DIVIDER'
 
                         return (
                           <div
@@ -482,7 +484,7 @@ const LivePreview = () => {
                                 'md:col-span-3',
                             )}
                           >
-                            {!isFieldLabelHidden(field) && (
+                            {!isDivider && !isFieldLabelHidden(field) && (
                               <div className='mb-1.5 flex items-center justify-between'>
                                 <label className='block text-xs font-semibold text-gray-12'>
                                   {effectiveLabel}
@@ -499,7 +501,7 @@ const LivePreview = () => {
                                 )}
                               </div>
                             )}
-                            {effectiveDesc && (
+                            {!isDivider && effectiveDesc && (
                               <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
                                 {effectiveDesc}
                               </p>
