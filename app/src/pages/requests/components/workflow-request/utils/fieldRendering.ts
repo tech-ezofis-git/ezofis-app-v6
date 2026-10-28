@@ -239,7 +239,10 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
         } else if (
           (specific.dateDefaultValueType === 'CUSTOM' ||
             specific.defaultValue) &&
-          specific.defaultValue
+          specific.defaultValue &&
+          // Older payloads store the mode name ("CUSTOM") here instead of a
+          // date; seeding that would show "Invalid Date".
+          dayjs(specific.defaultValue).isValid()
         ) {
           model[field.id] = String(specific.defaultValue).replace('T', ' ')
         }

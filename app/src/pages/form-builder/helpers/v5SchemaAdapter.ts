@@ -743,6 +743,11 @@ export function normalizeFieldSchema(
       } else if (spec.dateDefaultValueType === 'PARENT_FIELD_OPTIONS') {
         spec.defaultValue = 'PARENT_FIELD_OPTIONS'
       } else if (spec.dateDefaultValueType === 'CUSTOM') {
+        // V5 keeps the mode in defaultValue, so park the picked date in
+        // customDefaultValue or it is lost on save.
+        if (spec.defaultValue && spec.defaultValue !== 'CUSTOM') {
+          spec.customDefaultValue = spec.defaultValue
+        }
         spec.defaultValue = 'CUSTOM'
       }
       if (spec.parentDateFieldId !== undefined) {
@@ -765,6 +770,14 @@ export function normalizeFieldSchema(
         spec.dateDefaultValueType = 'PARENT_FIELD'
       } else if (spec.defaultValue === 'PARENT_FIELD_OPTIONS') {
         spec.dateDefaultValueType = 'PARENT_FIELD_OPTIONS'
+      } else if (spec.defaultValue === 'CUSTOM') {
+        // Legacy/onboarding forms store the mode name here, not a date.
+        spec.dateDefaultValueType = 'CUSTOM'
+        spec.defaultValue = /^\d{4}-\d{2}-\d{2}/.test(
+          String(spec.customDefaultValue || ''),
+        )
+          ? spec.customDefaultValue
+          : ''
       } else if (spec.dateDefaultValueType === 'TODAY' && !spec.defaultValue) {
         spec.defaultValue =
           field.type === 'DATE_TIME' ? 'CURRENT_DATE_TIME' : 'CURRENT_DATE'
