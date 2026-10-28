@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using Npgsql;
 using NpgsqlTypes;
 using SaaSApp.Repository.Application.Contracts;
@@ -17,7 +19,8 @@ internal static class RepositoryItemMetadataUpdateHelper
 
     /// <summary>
     /// <c>UpdatedFieldCount</c> = fields written (-1 when the item was not found);
-    /// <c>Changes</c> = fields whose value actually differed, also saved to metadata history.
+    /// <c>Changes</c> = fields whose value actually differed; saved to metadata history only when
+    /// <c>recordHistory</c> is true (<c>ChangeId</c> is then set).
     /// </summary>
     public sealed record UpdateResult(
         int UpdatedFieldCount,
@@ -32,6 +35,7 @@ internal static class RepositoryItemMetadataUpdateHelper
         Guid itemId,
         IReadOnlyDictionary<string, string> metadata,
         Guid? userId,
+        bool recordHistory,
         CancellationToken cancellationToken)
     {
         if (metadata.Count == 0)
@@ -48,7 +52,8 @@ internal static class RepositoryItemMetadataUpdateHelper
                 "No valid metadata fields to update. Use GET .../items/filter-fields for allowed keys that exist on this repository table.");
         }
 
-        await RepositoryItemMetadataHistoryStore.EnsureTableAsync(connection, null, cancellationToken);
+        if (recordHistory)
+            await RepositoryItemMetadataHistoryStore.EnsureTableAsync(connection, null, cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
         var oldValues = await LoadCurrentValuesAsync(
@@ -98,7 +103,7 @@ internal static class RepositoryItemMetadataUpdateHelper
             return new UpdateResult(-1, Array.Empty<RepositoryItemMetadataChangeDto>(), null);
 
         Guid? changeId = null;
-        if (changes.Count > 0)
+        if (recordHistory && changes.Count > 0)
         {
             changeId = Guid.NewGuid();
             await RepositoryItemMetadataHistoryStore.InsertAsync(
@@ -148,7 +153,7 @@ internal static class RepositoryItemMetadataUpdateHelper
     private static string? FormatValue(object? value) => value switch
     {
         null or DBNull => null,
-        string s => string.IsNullOrWhiteSpace(s) ? null : s.Trim(),
+        string s => string.IsNullOrWhiteSpace(s) ? null : NormalizeJsonText(s.Trim()),
         decimal d => d.ToString("0.############################", CultureInfo.InvariantCulture),
         double d => d.ToString("0.############", CultureInfo.InvariantCulture),
         float f => f.ToString("0.######", CultureInfo.InvariantCulture),
@@ -160,6 +165,32 @@ internal static class RepositoryItemMetadataUpdateHelper
         IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
         _ => value.ToString()
     };
+
+    private static readonly JsonSerializerOptions CompactJson = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
+    /// <summary>
+    /// JSON object/array text (e.g. line items) rewritten in one compact form, so the same data
+    /// with different spacing (<c>"qty": 6</c> vs <c>"qty":6</c>) is not seen as an edit.
+    /// Non-JSON text is returned unchanged.
+    /// </summary>
+    private static string NormalizeJsonText(string text)
+    {
+        if (text.Length < 2 || (text[0] != '{' && text[0] != '['))
+            return text;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(text);
+            return JsonSerializer.Serialize(doc.RootElement, CompactJson);
+        }
+        catch (JsonException)
+        {
+            return text;
+        }
+    }
 
     /// <summary>Repository field display name for a column (e.g. "Billing Address"), else the column.</summary>
     private static string ResolveFieldName(RepositoryDetailDto repo, string column)

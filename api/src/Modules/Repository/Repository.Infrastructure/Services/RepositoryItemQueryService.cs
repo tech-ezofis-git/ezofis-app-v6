@@ -431,7 +431,8 @@ public sealed class RepositoryItemQueryService : IRepositoryItemQueryService
         Guid itemId,
         IReadOnlyDictionary<string, string> metadata,
         Guid? userId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool recordHistory = false)
     {
         var repo = await _provisioner.GetRepositoryAsync(repositoryId, tenantId, cancellationToken)
             ?? throw new InvalidOperationException("Repository not found.");
@@ -443,13 +444,13 @@ public sealed class RepositoryItemQueryService : IRepositoryItemQueryService
         await connection.OpenAsync(cancellationToken);
 
         var update = await RepositoryItemMetadataUpdateHelper.UpdateAsync(
-            connection, repo, tenantId, repositoryId, itemId, metadata, userId, cancellationToken);
+            connection, repo, tenantId, repositoryId, itemId, metadata, userId, recordHistory, cancellationToken);
 
         if (update.UpdatedFieldCount < 0)
             return null;
 
-        // Old/new values go to repository."ItemMetadataHistory" (shown on the timeline as one
-        // "metadata" event per save) -- no separate "Metadata updated" timeline row.
+        // User saves: old/new values go to repository."ItemMetadataHistory" (one "metadata"
+        // timeline event per save). System updates are not recorded.
         return new UpdateRepositoryItemMetadataResult(itemId, update.UpdatedFieldCount, update.Changes, update.ChangeId);
     }
 

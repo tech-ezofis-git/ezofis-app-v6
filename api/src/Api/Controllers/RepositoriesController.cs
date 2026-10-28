@@ -1131,7 +1131,8 @@ public sealed class RepositoriesController : ControllerBase
             if (metadata.Count == 0)
                 return BadRequest(new { error = "metadata JSON object with at least one field is required." });
 
-            var result = await _items.UpdateItemMetadataAsync(id, tenantId, itemId, metadata, GetUserId(), cancellationToken);
+            var result = await _items.UpdateItemMetadataAsync(
+                id, tenantId, itemId, metadata, GetUserId(), cancellationToken, recordHistory: true);
             if (result == null)
                 return NotFound();
 

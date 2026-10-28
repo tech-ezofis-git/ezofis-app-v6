@@ -77,13 +77,19 @@ public interface IRepositoryItemQueryService
     Task<RepositoryItemDetailDto?> GetItemAsync(Guid repositoryId, Guid tenantId, Guid itemId, CancellationToken cancellationToken = default);
     Task<RepositoryItemWorkspaceDto?> GetItemWorkspaceAsync(Guid repositoryId, Guid tenantId, Guid itemId, CancellationToken cancellationToken = default);
     Task<Guid> CreateItemAsync(Guid repositoryId, Guid tenantId, CreateRepositoryItemRequest request, Guid? userId, CancellationToken cancellationToken = default);
+    /// <param name="recordHistory">
+    /// True only for a user's Save in the metadata panel (PATCH .../metadata): changed fields are
+    /// written to metadata history and shown on the timeline. System updates (AP agent, workflow
+    /// sync) leave it false so they don't flood the timeline.
+    /// </param>
     Task<UpdateRepositoryItemMetadataResult?> UpdateItemMetadataAsync(
         Guid repositoryId,
         Guid tenantId,
         Guid itemId,
         IReadOnlyDictionary<string, string> metadata,
         Guid? userId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        bool recordHistory = false);
 
     /// <summary>
     /// Marks the item row <c>is_deleted = true</c>. The row and stored file are kept.
