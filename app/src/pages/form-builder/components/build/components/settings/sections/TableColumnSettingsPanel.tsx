@@ -404,7 +404,7 @@ const TableColumnSettingsPanel = ({
           />
 
           <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-            <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+            <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
               Options Source
             </label>
             <InputRadioGroup
@@ -435,7 +435,7 @@ const TableColumnSettingsPanel = ({
 
             {optionsSource === 'LOOKUP' ? (
               <>
-                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
                   Lookup
                 </label>
                 <InputSelect
@@ -482,7 +482,7 @@ const TableColumnSettingsPanel = ({
                   }
                 />
 
-                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
                   Filter by column (cascade, optional)
                 </label>
                 <InputSelect
@@ -501,14 +501,14 @@ const TableColumnSettingsPanel = ({
                     })
                   }
                 />
-                <div className='text-[10px] text-gray-6 italic'>
+                <div className='text-11 text-gray-9'>
                   When set, this column only shows options matching the selected
                   row&apos;s value in that other column.
                 </div>
               </>
             ) : optionsSource === 'MASTER' ? (
               <>
-                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
                   Master Table
                 </label>
                 <InputSelect
@@ -564,7 +564,7 @@ const TableColumnSettingsPanel = ({
                     onUpdate({ specific: { isSameMaster: checked } })
                   }
                 />
-                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
                   Filter by column (cascade, optional)
                 </label>
                 <InputSelect
@@ -583,7 +583,7 @@ const TableColumnSettingsPanel = ({
                     })
                   }
                 />
-                <div className='text-[10px] text-gray-6 italic'>
+                <div className='text-11 text-gray-9'>
                   The selected column&apos;s master column is matched against
                   this row&apos;s value in that column.
                 </div>
@@ -620,7 +620,7 @@ const TableColumnSettingsPanel = ({
 
       {isCalculated && (
         <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-          <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+          <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
             Formula (uses this row&apos;s other columns)
           </label>
           <FormulaBuilder
@@ -635,7 +635,7 @@ const TableColumnSettingsPanel = ({
 
       {isCalculated && (
         <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-          <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+          <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
             Validation
           </label>
           <InputSelect
@@ -728,7 +728,7 @@ const TableColumnSettingsPanel = ({
                 }
               />
               {fillSourceSelect('Match on column')}
-              <div className='text-[10px] text-gray-6 italic'>
+              <div className='text-11 text-gray-9'>
                 The row of the master table whose column equals this row&apos;s
                 value in the chosen column is used.
               </div>
@@ -747,7 +747,7 @@ const TableColumnSettingsPanel = ({
           {defaultValueType !== 'CUSTOM' &&
             defaultValueType !== 'ASSIGN_PARENT_FIELD' &&
             defaultValueType !== 'MASTER' && (
-              <div className='text-[10px] text-gray-6 italic'>
+              <div className='text-11 text-gray-9'>
                 {
                   DEFAULT_VALUE_TYPE_OPTIONS.find(
                     (o) => o.id === defaultValueType,
@@ -772,7 +772,7 @@ const TableColumnSettingsPanel = ({
 
       {isValidatable && (
         <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-          <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+          <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
             Validation
           </label>
           <InputSelect
@@ -829,7 +829,7 @@ const TableColumnSettingsPanel = ({
 
       {isNumericColumn && (
         <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-          <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+          <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
             Number Format
           </label>
           <InputNumber

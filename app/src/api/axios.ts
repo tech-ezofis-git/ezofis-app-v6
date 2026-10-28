@@ -3,7 +3,7 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios'
-import { isAuthEntryPath, resolveSignInPath } from '../lib/branding/session'
+import { isAuthEntryPath, reloadToSignIn } from '../lib/branding/session'
 import usePortalSessionStore, {
   getActivePortalAccessToken,
   getPortalIdFromPathname,
@@ -152,15 +152,14 @@ const handleResponseError = (error: AxiosError) => {
     }
 
     const store = authUserStore.getState()
-    const signInPath = resolveSignInPath()
-    store.resetAuthState()
     if (
       globalThis.window !== undefined &&
       !isAuthEntryPath(pathname) &&
       !pathname.startsWith('/sign-request')
     ) {
-      window.location.href = signInPath
+      reloadToSignIn()
     }
+    store.resetAuthState()
   }
   return Promise.reject(error)
 }

@@ -65,13 +65,13 @@ const MasterPreselectSettings = ({
   })()
 
   return (
-    <div className='space-y-3 rounded-xl border border-gray-1 bg-surface-muted/50 p-3'>
-      <div className='flex items-center justify-between'>
+    <div className='space-y-3 rounded-xl border border-gray-3 bg-surface p-3'>
+      <div className='flex items-center justify-between gap-3'>
         <div>
           <div className='text-xs font-bold text-gray-13'>
             Pre-select from Master
           </div>
-          <div className='text-[10px] text-gray-6'>
+          <div className='text-11 text-gray-9'>
             Tick options automatically based on another field's master record
           </div>
         </div>
@@ -116,7 +116,7 @@ const MasterPreselectSettings = ({
                 onUpdate({ masterPreselectColumn: val?.id || '' })
               }
             />
-            <div className='mt-1 text-[10px] text-gray-6 italic'>
+            <div className='mt-1 text-11 text-gray-9'>
               Values in that column (comma separated) are matched to this
               field's options.
             </div>

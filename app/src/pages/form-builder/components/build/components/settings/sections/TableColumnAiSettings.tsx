@@ -85,7 +85,7 @@ function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
 }
 
 const SectionLabel = ({ children }: { children: string }) => (
-  <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+  <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
     {children}
   </label>
 )

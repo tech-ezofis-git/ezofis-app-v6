@@ -4,7 +4,7 @@ import Menu from '@/components/base/menu/Menu'
 import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
 import useIsGuestShare from '@/hooks/useIsGuestShare'
-import { resolveSignInPath } from '@/lib/branding/session'
+import { reloadToSignIn, resolveSignInPath } from '@/lib/branding/session'
 import { clearClassicRuntimeCookie } from '@/lib/classic-gateway'
 import authUserStore from '@/stores/authUserStore'
 import Language from './components/Language'
@@ -31,9 +31,9 @@ const UserMenu = () => {
       // ignore
     }
     clearClassicRuntimeCookie()
-    resetAuthState()
     // Hard redirect avoids SPA guard bounce and returns to the branded URL when used
-    globalThis.location.replace(signInPath)
+    reloadToSignIn(signInPath)
+    resetAuthState()
   }
 
   return (

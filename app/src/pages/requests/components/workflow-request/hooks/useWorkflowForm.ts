@@ -15,6 +15,7 @@ import { uploadInstanceAttachment } from '@/pages/requests/utils/instanceAttachm
 import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
+import { resolveFormLayout } from '../utils/formLayout'
 import {
   applyFilenamePreFillToFormModel,
   buildInitialFormModel,
@@ -27,7 +28,7 @@ import {
   fillRepoMetadataFromTableRow,
   getDependentChildFieldIds,
   getMissingMandatoryFieldIds,
-  getMissingMandatoryFields,
+  getMissingMandatoryFieldsList,
   hydrateFormModel,
   mapOcrFieldsToModel,
   resolveRuntimeFieldType,
@@ -101,6 +102,8 @@ export const useWorkflowForm = (
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null as string | null)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+  // Bumped on every submit click so the form can reopen sections with errors.
+  const [submitAttempt, setSubmitAttempt] = useState(0)
   const [attachments, setAttachments] = useState<AttachmentEntry[]>([])
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false)
   const [comments, setComments] = useState<LocalComment[]>([])
@@ -182,6 +185,7 @@ export const useWorkflowForm = (
                   {}),
                 panels: normalizedJson.panels,
                 settings: {
+                  ...normalizedJson.settings,
                   ...((typeof fallbackWorkflowForm === 'object' &&
                     fallbackWorkflowForm?.settings) ||
                     {}),
@@ -225,6 +229,7 @@ export const useWorkflowForm = (
                   {}),
                 panels: normalizedJson.panels,
                 settings: {
+                  ...normalizedJson.settings,
                   ...((typeof fallbackWorkflowForm === 'object' &&
                     fallbackWorkflowForm?.settings) ||
                     {}),
@@ -256,6 +261,7 @@ export const useWorkflowForm = (
           ...((typeof rawFormSource === 'object' && rawFormSource) || {}),
           panels: normalizedJson.panels,
           settings: {
+            ...normalizedJson.settings,
             ...((typeof rawFormSource === 'object' &&
               rawFormSource?.settings) ||
               {}),
@@ -301,6 +307,7 @@ export const useWorkflowForm = (
 
   const panels = useMemo(() => form?.formJson?.panels || [], [form])
   const formRules = useMemo(() => form?.formJson?.settings?.rules || [], [form])
+  const formLayout = useMemo(() => resolveFormLayout(form?.formJson), [form])
   const repoFieldHints = useMemo(
     () => buildRepoFieldHints(repositoryFields),
     [repositoryFields],
@@ -811,6 +818,7 @@ export const useWorkflowForm = (
 
   const submit = async () => {
     setHasAttemptedSubmit(true)
+    setSubmitAttempt((n) => n + 1)
 
     if (!workflow?.id) {
       const errorMsg = 'Workflow ID is missing. Cannot start workflow.'
@@ -818,16 +826,24 @@ export const useWorkflowForm = (
       return { error: errorMsg, success: false }
     }
 
-    const missing = getMissingMandatoryFields(
+    const missingList = getMissingMandatoryFieldsList(
       repoFieldDescriptors,
       panels,
       formModel,
       { formRules, hasUploadedFile },
     )
-    if (missing.length > 0) {
+    if (missingList.length > 0) {
+      // A repo field and the form field it maps to share one label — count
+      // them once.
+      const missing = Array.from(new Set(missingList.map((m) => m.label)))
       const errorMsg = `Please fill in required field(s): ${missing.join(', ')}`
       setSubmitError(errorMsg)
-      return { error: errorMsg, success: false }
+      return {
+        error: errorMsg,
+        missingFieldIds: missingList.map((m) => m.id),
+        missingFieldLabels: missing,
+        success: false,
+      }
     }
 
     // Table columns have rules beyond "required" (content rules, ranges, date /
@@ -1024,6 +1040,7 @@ export const useWorkflowForm = (
     form,
     formModel,
     formRules,
+    formLayout,
     hasAttemptedSubmit,
     hasUploadedFile,
     isExtractingOcr,
@@ -1039,6 +1056,7 @@ export const useWorkflowForm = (
     repoFieldDescriptors,
     repoFieldHints,
     submit,
+    submitAttempt,
     submitError,
     uploadedFiles,
     setCommentDraft,

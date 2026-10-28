@@ -70,7 +70,7 @@ const TableColumnChoiceSettings = ({ column, onUpdate }: Props) => {
 
   return (
     <div className={sectionClass}>
-      <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+      <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
         Choice Settings
       </label>
       <InputSelect
