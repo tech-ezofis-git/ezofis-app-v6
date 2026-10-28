@@ -6,6 +6,7 @@ import type {
 } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
+import { mapV5LayoutToV6 } from '@/pages/form-builder/helpers/v5SchemaAdapter'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
@@ -46,12 +47,6 @@ const LAYOUT_OPTIONS: {
     icon: 'tabler:layout-grid',
     name: 'Classic Grid',
     value: 'CLASSIC',
-  },
-  {
-    desc: 'One section open at a time',
-    icon: 'tabler:layout-list',
-    name: 'Accordion',
-    value: 'ACCORDION',
   },
 ]
 
@@ -151,7 +146,7 @@ const GeneralSettings = () => {
         </div>
         <div className='flex flex-col gap-2'>
           {LAYOUT_OPTIONS.map((l) => {
-            const active = layout === l.value
+            const active = mapV5LayoutToV6(layout) === l.value
             return (
               <UnstyledButton
                 key={l.value}

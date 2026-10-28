@@ -270,9 +270,9 @@ interface Props {
   // Overview only — scopes the local field↔attachment map to this request.
   instanceId?: string | number
   // The form's configured layout (Form Settings → Form Layout). CLASSIC:
-  // every section open; ACCORDION: one section open at a time; SINGLE: one
-  // section per step with Back/Next. Ignored for `exclusive` and the
-  // extracted presentation, whose open state the parent owns.
+  // every section open; SINGLE: one section per step with Back/Next.
+  // Ignored for `exclusive` and the extracted presentation, whose open state
+  // the parent owns.
   layout?: FormRuntimeLayout
   missingMandatoryFieldIds?: Set<string>
   openValue?: string | null
@@ -562,16 +562,6 @@ const WorkflowFormRenderer = ({
     }))
     .filter(({ visibleFields }) => visibleFields.length > 0)
 
-  // ACCORDION: one section open at a time, the first one to start with.
-  const [accordionOpen, setAccordionOpen] = useState<string | null>(null)
-  const accordionInitRef = useRef(false)
-  useEffect(() => {
-    if (accordionInitRef.current || visiblePanels.length === 0) return
-    accordionInitRef.current = true
-    setAccordionOpen(visiblePanels[0].value)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visiblePanels.length])
-
   // SINGLE: index into visiblePanels. Clamped because rules can hide a
   // section while the user is on it.
   const [step, setStep] = useState(0)
@@ -592,7 +582,6 @@ const WorkflowFormRenderer = ({
       .map(({ value }) => value)
     if (withErrors.length === 0) return
     if (exclusive) onOpenChange?.(withErrors[0])
-    else if (effectiveLayout === 'ACCORDION') setAccordionOpen(withErrors[0])
     else if (effectiveLayout === 'SINGLE') {
       const errorStep = visiblePanels.findIndex(
         ({ value }) => value === withErrors[0],
@@ -959,15 +948,9 @@ const WorkflowFormRenderer = ({
       {hiddenFillSyncs}
       <AnimateFadeIn delay={0.1}>
         <Accordion
-          multiple={!exclusive && effectiveLayout !== 'ACCORDION'}
+          multiple={!exclusive}
           radius='md'
-          value={
-            exclusive
-              ? openValue || null
-              : effectiveLayout === 'ACCORDION'
-                ? accordionOpen
-                : openPanels
-          }
+          value={exclusive ? openValue || null : openPanels}
           variant='separated'
           classNames={{
             chevron: 'text-gray-10',
@@ -978,10 +961,6 @@ const WorkflowFormRenderer = ({
             panel: 'h-auto min-w-0 overflow-hidden border-t border-gray-3 px-4 py-3',
           }}
           onChange={(value) => {
-            if (!exclusive && effectiveLayout === 'ACCORDION') {
-              setAccordionOpen(typeof value === 'string' ? value : null)
-              return
-            }
             if (!exclusive) {
               setOpenPanels(Array.isArray(value) ? value : [])
               return

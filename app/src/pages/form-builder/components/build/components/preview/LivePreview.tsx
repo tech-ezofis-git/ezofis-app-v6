@@ -83,9 +83,8 @@ import cn from '@/utils/cn'
 const LivePreview = () => {
   const { isPreviewOpen, layout, name, panels, rules, setIsPreviewOpen } =
     useFormStore()
-  // Same three layouts as the request page (WorkflowFormRenderer).
+  // Same layouts as the request page (WorkflowFormRenderer).
   const previewLayout = mapV5LayoutToV6(layout)
-  const [openSectionId, setOpenSectionId] = useState<string | null>(null)
   const [step, setStep] = useState(0)
   const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>(
     'desktop',
@@ -123,13 +122,6 @@ const LivePreview = () => {
     (panel.fields || []).filter((field: any) => validationErrors[field.id])
       .length
 
-  // ACCORDION starts on the first section.
-  useEffect(() => {
-    if (!isPreviewOpen) return
-    setOpenSectionId((prev) => prev ?? shownPanels[0]?.id ?? null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPreviewOpen, shownPanels[0]?.id])
-
   // Test Validation: bring the first section with errors into view.
   useEffect(() => {
     if (!hasAttemptedSubmit) return
@@ -138,7 +130,6 @@ const LivePreview = () => {
     )
     if (firstWithErrors < 0) return
     setStep(firstWithErrors)
-    setOpenSectionId(shownPanels[firstWithErrors].id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasAttemptedSubmit])
 
@@ -522,8 +513,6 @@ const LivePreview = () => {
                 if (previewLayout === 'SINGLE' && panel.id !== activeStepId) {
                   return null
                 }
-                const isCollapsible = previewLayout === 'ACCORDION'
-                const isOpen = !isCollapsible || openSectionId === panel.id
                 const errorCount = panelErrorCount(panel)
                 return (
                   <div
@@ -531,25 +520,11 @@ const LivePreview = () => {
                     className={cn(
                       'animate-in fade-in space-y-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-2xs duration-300',
                       panelStates[panel.id]?.disabled && 'opacity-70',
-                      isCollapsible && !isOpen && 'space-y-0 py-3.5',
                       errorCount > 0 && 'border-red-6',
                     )}
                   >
                     {/* Section Title & Description Header */}
-                    <div
-                      className={cn(
-                        'flex items-center justify-between gap-3',
-                        isOpen && 'border-b border-gray-3 pb-3',
-                        isCollapsible &&
-                          'group -mx-2 cursor-pointer rounded-lg px-2 transition-colors select-none hover:bg-surface-hover',
-                      )}
-                      onClick={
-                        isCollapsible
-                          ? () =>
-                              setOpenSectionId(isOpen ? null : panel.id)
-                          : undefined
-                      }
-                    >
+                    <div className='flex items-center justify-between gap-3 border-b border-gray-3 pb-3'>
                       <div>
                         <h3 className='text-base font-bold text-gray-12'>
                           {panel.settings.title || `Section ${idx + 1}`}
@@ -560,36 +535,22 @@ const LivePreview = () => {
                           </p>
                         )}
                       </div>
-                      <div className='flex shrink-0 items-center gap-2'>
-                        {errorCount > 0 && (
-                          <span className='flex items-center gap-1 text-11 font-semibold text-red-9'>
-                            <Icon
-                              height={14}
-                              name='tabler:alert-circle'
-                              width={14}
-                            />
-                            {errorCount === 1
-                              ? '1 field needs attention'
-                              : `${errorCount} fields need attention`}
-                          </span>
-                        )}
-                        {isCollapsible && (
+                      {errorCount > 0 && (
+                        <span className='flex shrink-0 items-center gap-1 text-11 font-semibold text-red-9'>
                           <Icon
-                            height={16}
-                            name='lucide:chevron-down'
-                            width={16}
-                            className={cn(
-                              'text-gray-10 transition-transform duration-300',
-                              isOpen && 'rotate-180 text-primary-9',
-                            )}
+                            height={14}
+                            name='tabler:alert-circle'
+                            width={14}
                           />
-                        )}
-                      </div>
+                          {errorCount === 1
+                            ? '1 field needs attention'
+                            : `${errorCount} fields need attention`}
+                        </span>
+                      )}
                     </div>
 
                     {/* Section Fields Grid */}
-                    {isOpen && (
-                    <div className='animate-in fade-in slide-in-from-top-1 grid grid-cols-12 gap-x-4 gap-y-4 duration-200'>
+                    <div className='grid grid-cols-12 gap-x-4 gap-y-4'>
                       {panel.fields.map((field) => {
                         const state = fieldStates[field.id]
                         if (state && !state.visible) return null
@@ -696,7 +657,6 @@ const LivePreview = () => {
                         )
                       })}
                     </div>
-                    )}
                   </div>
                 )
               })}

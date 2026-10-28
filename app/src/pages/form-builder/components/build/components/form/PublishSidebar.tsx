@@ -11,6 +11,7 @@ import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import { mapV5LayoutToV6 } from '@/pages/form-builder/helpers/v5SchemaAdapter'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
@@ -65,12 +66,6 @@ const PublishSidebar = () => {
       icon: 'tabler:layout-grid',
       id: 'CLASSIC',
       name: 'Classic Grid',
-    },
-    {
-      description: 'One section open at a time',
-      icon: 'tabler:layout-list',
-      id: 'ACCORDION',
-      name: 'Accordion',
     },
   ]
 
@@ -137,7 +132,7 @@ const PublishSidebar = () => {
           </div>
           <div className='flex flex-col gap-2'>
             {layouts.map((l) => {
-              const isActive = layout === l.id
+              const isActive = mapV5LayoutToV6(layout) === l.id
               return (
                 <UnstyledButton
                   key={l.id}

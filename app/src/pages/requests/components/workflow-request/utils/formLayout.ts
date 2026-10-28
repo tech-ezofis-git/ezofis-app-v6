@@ -1,9 +1,9 @@
 import { mapV5LayoutToV6 } from '@/pages/form-builder/helpers/v5SchemaAdapter'
 
-export type FormRuntimeLayout = 'ACCORDION' | 'CLASSIC' | 'SINGLE'
+export type FormRuntimeLayout = 'CLASSIC' | 'SINGLE'
 
 // Reads Form Settings → Form Layout from a saved form JSON (object or JSON
-// string, V5 'CLASSIC' | 'CARD' | 'TAB' or V6 names). Forms without one are
+// string, V5 or V6 names). Forms without one, and old Accordion forms, are
 // CLASSIC, the builder's default.
 export function resolveFormLayout(formJson: any): FormRuntimeLayout {
   let root = formJson
