@@ -100,7 +100,8 @@ function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onF
     input = <Control kind={f.kind} id={id} value={value} readOnly={ro} error={!!error} settings={f.settings} label={f.kind === 'consent' ? undefined : f.label} placeholder={f.placeholder || (f.fill ? 'Filled from master data' : '')} onChange={onChange} />;
   }
   if (f.kind === 'divider') return input;
-  return <div className="field" data-err={error ? '1' : undefined}>{label}{input}<HelpText settings={f.settings} />{error ? <span className="err" role="alert">{error}</span> : null}</div>;
+  const wide = (f.choice && f.type !== 'SINGLE_SELECT') || FILE_TYPES.has(f.type) || ['long', 'signature', 'scale', 'rating', 'consent'].includes(f.kind);
+  return <div className={'field' + (wide ? ' wide' : '')} data-err={error ? '1' : undefined}>{label}{input}<HelpText settings={f.settings} />{error ? <span className="err" role="alert">{error}</span> : null}</div>;
 }
 
 function StartForm({ workflowId }) {
@@ -301,10 +302,31 @@ function StartForm({ workflowId }) {
     return { filled, total: cols.length, missing };
   };
 
+  const reqTotal = sections.reduce((n, x) => n + x.req, 0);
+  const reqDone = sections.reduce((n, x) => n + x.done, 0);
+  const goSection = (id) => { setSecOpen((o) => ({ ...o, [id]: true })); setTimeout(() => { const el = document.getElementById('sec-' + id); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30); };
+  const headed = sections.filter((x) => x.header);
   return (
     <div className="screen">
-      <TopBar title={meta.name} sub="New request" back="/app/new" right={budgetField ? <span className="budget-chip"><small>Budget</small>{Number(vals[budgetField.id]).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span> : <span />} />
-      <div className="content" style={{ gap: 16 }}>
+      <header className="nr-head">
+        <div className="nr-head-row">
+          <button type="button" className="circle-btn" aria-label="Back" onClick={() => nav('/app/new')}><Icon name="back" size={20} stroke={2.2} /></button>
+          <div className="nr-head-t"><small>New request</small><h1>{meta.name}</h1></div>
+          {budgetField ? <span className="budget-chip"><small>Budget</small>{Number(vals[budgetField.id]).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span> : null}
+        </div>
+        {reqTotal ? (
+          <div className="nr-prog" aria-label={`${reqDone} of ${reqTotal} required fields completed`}>
+            <span className="bar"><i style={{ width: `${Math.round((reqDone / reqTotal) * 100)}%` }} /></span>
+            <span className="txt"><b>{reqDone}</b>/{reqTotal} required</span>
+          </div>
+        ) : null}
+        {headed.length > 1 ? (
+          <nav className="nr-jump" aria-label="Sections">
+            {headed.map((x) => <button key={x.id} type="button" className={x.req && x.done === x.req ? 'done' : ''} onClick={() => goSection(x.id)}>{x.req && x.done === x.req ? <Icon name="check" size={13} stroke={3} /> : null}<span>{x.title}</span>{x.req && x.done < x.req ? <em>{x.done}/{x.req}</em> : null}</button>)}
+          </nav>
+        ) : null}
+      </header>
+      <div className="content nr-form" style={{ gap: 16 }}>
         {unsupported.length ? <div className="notice warn" role="alert"><Icon name="warn" size={18} /><span className="grow">This form has required fields the app can't fill yet ({unsupported.map((f) => f.label).join(', ')}). Start this request on cloud.ezofis.com.</span></div> : null}
         {masterErr ? <div className="notice warn"><Icon name="warn" size={18} /><span className="grow">{masterErr}</span></div> : null}
         {loadingLists ? <div className="notice info"><span className="spinner" /><span className="grow">Loading your details and lists…</span></div> : null}
@@ -351,11 +373,15 @@ function StartForm({ workflowId }) {
           if (!sec.header) return <React.Fragment key={sec.id}>{body}</React.Fragment>;
           const isOpen = secOpen[sec.id] !== false;
           return (
-            <section key={sec.id} className="nr-sec" aria-label={sec.title}>
+            <section key={sec.id} id={'sec-' + sec.id} className="nr-sec" aria-label={sec.title}>
               <button type="button" className="nr-sec-h" aria-expanded={isOpen} onClick={() => setSecOpen((o) => ({ ...o, [sec.id]: !isOpen }))}>
                 <span className="ic"><Icon name="doc" size={18} color="#643094" /></span>
-                <span className="tt"><b>{sec.title}</b>{sec.description ? <small>{sec.description}</small> : null}{sec.req ? <small className={'cnt' + (sec.done === sec.req ? ' ok' : '')}><b>{sec.done}</b>{' '}of {sec.req} mandatory fields completed</small> : null}</span>
-                <Icon name="chevD" size={18} color="#8A84A0" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+                <span className="tt"><b>{sec.title}</b>{sec.description ? <small>{sec.description}</small> : null}</span>
+                {sec.req ? (sec.done === sec.req
+                  ? <span className="sec-badge ok" aria-label={`${sec.done} of ${sec.req} mandatory fields completed`}><Icon name="check" size={12} stroke={3} />Done</span>
+                  : <span className="sec-badge" aria-label={`${sec.done} of ${sec.req} mandatory fields completed`}>{sec.done}/{sec.req}</span>) : null}
+                <Icon name="chevD" size={18} color="#8A84A0" style={{ flex: 'none', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+                {sec.req ? <span className="sec-line" aria-hidden="true"><i className={sec.done === sec.req ? 'ok' : ''} style={{ width: `${Math.round((sec.done / sec.req) * 100)}%` }} /></span> : null}
               </button>
               {isOpen ? <div className="nr-sec-b">{body}</div> : null}
             </section>

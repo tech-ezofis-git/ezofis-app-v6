@@ -46,7 +46,7 @@ async def main():
         await pg.goto(URL+'#/welcome'); await pg.evaluate(f"localStorage.setItem('ezofis.session', {json.dumps(SESSION)})")
         await pg.goto(URL+'#/app/new/'+M.EXP); await pg.wait_for_timeout(1500)
         secs=[await x.inner_text() for x in await pg.locator('.nr-sec-h .tt b:first-child').all()]
-        print('SECTIONS:', secs, '| counts:', [await x.inner_text() for x in await pg.locator('.nr-sec-h .cnt').all()])
+        print('SECTIONS:', secs, '| counts:', [await x.get_attribute('aria-label') for x in await pg.locator('.nr-sec-h .sec-badge').all()])
         print('HIDDEN at start:', await pg.locator('#nf-k-old').count() == 0, await pg.locator('#nf-k-combo').count() == 0, 'Obsolete Details' not in secs)
         await pg.screenshot(path=OUT+'sec-start.png', full_page=True)
         await pg.click('section[aria-label="New Packaging Requisition"] button[role=radio]:has-text("Change of Name")'); await pg.wait_for_timeout(200)
@@ -74,7 +74,8 @@ async def main():
         t=await pg.inner_text('.main')
         print('SUBMIT opens sections + errors:', await pg.locator('#nf-k-size').count() == 1, 'Size is required' in t, 'Reason for obsolete is required' in t, 'Previous Name is required' not in t, len(M.STATE['started']) == 0)
         await pg.fill('#nf-k-size', '100 g'); await pg.fill('#nf-k-why', 'Discontinued'); await pg.click('button[role=radio]:has-text("Amlion Toothpaste")'); await pg.wait_for_timeout(200)
-        print('PROGRESS:', [await x.inner_text() for x in await pg.locator('.nr-sec-h .cnt').all()])
+        print('HEADER progress + chips:', await pg.get_attribute('.nr-prog', 'aria-label'), [await x.inner_text() for x in await pg.locator('.nr-jump button').all()])
+        print('PROGRESS:', [await x.get_attribute('aria-label') for x in await pg.locator('.nr-sec-h .sec-badge').all()])
         await pg.screenshot(path=OUT+'sec-filled.png', full_page=True)
         await pg.click('.bottombar button:has-text("Submit")'); await pg.wait_for_timeout(1500)
         fd=M.STATE['started'][-1]['formData'] if M.STATE['started'] else {}
