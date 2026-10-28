@@ -8,6 +8,7 @@ internal enum ReportWorkflowIdentityKind
     Stage,
     Status,
     ActedBy,
+    ActedById,
     WorkflowName,
     CreatedAt,
     InstanceId,
@@ -43,6 +44,7 @@ internal static class ReportWorkflowIdentity
         ReportWorkflowIdentityKind.Stage => "Stage",
         ReportWorkflowIdentityKind.Status => "Status",
         ReportWorkflowIdentityKind.ActedBy => "ActedBy",
+        ReportWorkflowIdentityKind.ActedById => "ActedById",
         ReportWorkflowIdentityKind.WorkflowName => "WorkflowName",
         ReportWorkflowIdentityKind.CreatedAt => "CreatedAt",
         ReportWorkflowIdentityKind.InstanceId => "InstanceId",
@@ -80,9 +82,11 @@ internal static class ReportWorkflowIdentity
                   """
                 : "NULL::text",
             ReportWorkflowIdentityKind.ActedBy => Coalesce(
-                hasInbox ? "NULLIF(BTRIM(mb.transaction_created_by), '')" : null,
                 hasInbox ? "NULLIF(BTRIM(mb.created_by_name), '')" : null,
                 hasInbox ? "NULLIF(BTRIM(mb.activity_user_email), '')" : null) ?? "NULL::text",
+            ReportWorkflowIdentityKind.ActedById => hasInbox
+                ? "NULLIF(BTRIM(mb.transaction_created_by), '')"
+                : "NULL::text",
             ReportWorkflowIdentityKind.WorkflowName => hasInstances
                 ? "wi.workflow_name"
                 : "NULL::text",
@@ -163,7 +167,10 @@ internal static class ReportWorkflowIdentity
                 => ReportWorkflowIdentityKind.Stage,
             "status" or "instancestatus" or "wfstatus"
                 => ReportWorkflowIdentityKind.Status,
-            "actedby" or "startedby" or "updatedby" or "assignedto" or "transactioncreatedby"
+            "actedbyid" or "startedbyid" or "updatedbyid" or "assignedtoid"
+                or "transactioncreatedby"
+                => ReportWorkflowIdentityKind.ActedById,
+            "actedby" or "startedby" or "updatedby" or "assignedto"
                 => ReportWorkflowIdentityKind.ActedBy,
             "workflow" or "workflowname"
                 => ReportWorkflowIdentityKind.WorkflowName,
