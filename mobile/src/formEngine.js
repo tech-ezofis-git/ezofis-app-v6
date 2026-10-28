@@ -3,7 +3,8 @@
 // calculated fields (row formulas and table sums), conditional "required", OCR fill from file uploads.
 // Field settings come from GET /form/{formId}; master rows from GET /form/{masterFormId}/entry/all.
 import { authed } from './api.js';
-import { kindOf, isEmptyFor, formatError } from './controls.jsx';
+import { kindOf, isEmptyFor, ruleError } from './controls.jsx';
+import { fieldStates } from './formRules.js';
 
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CHOICE = new Set(['SINGLE_SELECT', 'SINGLE_CHOICE', 'MULTI_SELECT', 'MULTIPLE_CHOICE']);
@@ -112,6 +113,7 @@ export function defaultFor(f, user) {
   if (fv === 'LOGIN_NAME') return user.name;
   if (fv === 'CURRENT_YEAR') return String(new Date().getFullYear());
   if (fv === 'AUTO_GENERATE') { const d = new Date(); return `${f.autoGenerate.prefix || 'Form'}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
+  if (f.type === 'COUNTRY_CODE' && f.settings && f.settings.specific && f.settings.specific.defaultCountryCode) return String(f.settings.specific.defaultCountryCode);
   if (f.type === 'DATE' && (f.dateDefault === 'TODAY' || f.dateDefault === 'CURRENT_DATE' || f.defaultInSelect === 'CURRENT_DATE')) return today();
   if (f.choice) {
     if (f.defaultInSelect === 'USER_EMAIL') return user.email;
@@ -259,19 +261,25 @@ export function recompute(schema, vals0, masters, users, manual = new Set()) {
     schema.fields.filter((f) => f.formula && f.type !== 'TABLE').forEach((f) => set(vals, f.id, String(evalTokens(f.formula, (id) => vals[id], tableSum))));
     if (!changed) break;
   }
-  // required (static + "when X is value, these controls are required")
+  // show / read-only / mandatory rules from the field settings (web rule engine), then required:
+  // static + rule-driven, plus "when X is value, these controls are required" for table columns
+  const states = fieldStates(schema.fields.map((f) => ({ id: f.id, type: f.type, settings: f.settings })), vals);
   const required = new Set();
   const addReq = (f) => { if (f.required) required.add(f.id); };
   Object.values(schema.byId).forEach(addReq);
+  Object.entries(states).forEach(([id, s]) => { if (s.required) required.add(id); });
   Object.values(schema.byId).forEach((f) => f.mandatorySettings.forEach((m) => { if (!empty(vals[f.id]) && same(vals[f.id], m.value)) (m.controls || []).forEach((id) => required.add(String(id))); }));
-  return { vals, options, rowOptions, required };
+  return { vals, options, rowOptions, required, states };
 }
 
 // ---------- validation ----------
-export function validate(schema, vals, required) {
+// hidden fields (static or by a rule) and read-only fields are never blocking, as on the web
+export const shownBy = (f, states) => (states && states[f.id] ? states[f.id].visible : !f.hidden);
+export const lockedBy = (f, states) => f.readOnly || !!(states && states[f.id] && states[f.id].disabled);
+export function validate(schema, vals, required, states) {
   const errs = {};
   schema.fields.forEach((f) => {
-    if (f.hidden || NO_INPUT.has(f.type)) return;
+    if (!shownBy(f, states) || NO_INPUT.has(f.type)) return;
     if (f.type === 'TABLE') {
       const rows = vals[f.id] || [];
       if (required.has(f.id) && !rows.length) errs[f.id] = `Add at least one ${f.label} row`;
@@ -280,13 +288,13 @@ export function validate(schema, vals, required) {
         const v = r[c.id];
         if (FILE_TYPES.has(c.type) ? !(v && (v.file || v.fileId)) : isEmptyFor(c.kind, v)) errs[`${f.id}:${i}:${c.id}`] = `${c.label} is required`;
       }));
-      rows.forEach((r, i) => f.columns.forEach((c) => { const k = `${f.id}:${i}:${c.id}`; const fe = !c.hidden && !c.readOnly && !errs[k] && !c.choice && !FILE_TYPES.has(c.type) && formatError(c.kind, r[c.id]); if (fe) errs[k] = fe; }));
+      rows.forEach((r, i) => f.columns.forEach((c) => { const k = `${f.id}:${i}:${c.id}`; const fe = !c.hidden && !c.readOnly && !errs[k] && !c.choice && !FILE_TYPES.has(c.type) && ruleError(c.type, c.kind, r[c.id], c.settings, { ...vals, ...r }); if (fe) errs[k] = fe; }));
       return;
     }
-    if (f.readOnly) return;
+    if (lockedBy(f, states)) return;
     const v = vals[f.id];
     if (required.has(f.id) && (FILE_TYPES.has(f.type) ? !(v && (v.file || v.fileId)) : isEmptyFor(f.kind, v))) errs[f.id] = f.kind === 'consent' ? `Turn on ${f.label} to continue` : `${f.label} is required`;
-    else if (!f.choice && !FILE_TYPES.has(f.type)) { const fe = formatError(f.kind, v); if (fe) errs[f.id] = fe; }
+    else if (!f.choice && !FILE_TYPES.has(f.type)) { const fe = ruleError(f.type, f.kind, v, f.settings, vals); if (fe) errs[f.id] = fe; }
   });
   return errs;
 }
@@ -339,10 +347,11 @@ export function ocrTargets(f, schema) {
 }
 
 // ---------- payload (§9.3) ----------
-export function toPayload(schema, vals) {
+export function toPayload(schema, vals, states) {
   const out = {};
   schema.fields.forEach((f) => {
     if (NO_INPUT.has(f.type)) return;
+    if (!f.hidden && !shownBy(f, states)) return; // hidden by a rule: not sent (the web clears these values)
     const v = vals[f.id];
     if (f.type === 'TABLE') {
       const rows = (v || []).map((r) => {
@@ -355,7 +364,7 @@ export function toPayload(schema, vals) {
     }
     if (empty(v) || (!FILE_TYPES.has(f.type) && f.kind !== 'consent' && isEmptyFor(f.kind, v))) return;
     // booleans (toggle, consent) and structured values (V5 currency / phone objects) keep their shape, as on the web
-    out[f.id] = v && typeof v === 'object' && v.fileId ? { fileId: v.fileId, fileName: v.fileName, itemId: v.fileId, repositoryId: v.repositoryId } : Array.isArray(v) || typeof v === 'boolean' || (v && typeof v === 'object' && !v.file) ? v : String(v);
+    out[f.id] = v && typeof v === 'object' && v.fileId ? { fileId: v.fileId, fileName: v.fileName, itemId: v.fileId, repositoryId: v.repositoryId } : Array.isArray(v) || typeof v === 'boolean' || typeof v === 'number' || (v && typeof v === 'object' && !v.file) ? v : String(v);
   });
   return out;
 }

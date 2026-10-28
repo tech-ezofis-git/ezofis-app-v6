@@ -6,9 +6,9 @@ import { useStore } from '../store.jsx';
 import { Icon, TopBar, FileThumb, Sparkle } from '../ui.jsx';
 import { apiErrorMessage } from '../api.js';
 import { wfApi, getWorkflows, getMeta, getForm, canStart, isTechnicalLabel, MAX_FILE_MB, tooBig } from '../wf.js';
-import { buildSchema, initialValues, newRow, recompute, loadMaster, validate, fileProblem, ocrExtract, ocrTargets, uploadWithOcr, toPayload, empty, NO_INPUT, FILE_TYPES } from '../formEngine.js';
+import { buildSchema, initialValues, newRow, recompute, loadMaster, validate, fileProblem, ocrExtract, ocrTargets, uploadWithOcr, toPayload, empty, shownBy, lockedBy, NO_INPUT, FILE_TYPES } from '../formEngine.js';
 import { Skeleton, ErrorNote } from './LiveWorkflow.jsx';
-import { Control, KNOWN_TYPES } from '../controls.jsx';
+import { Control, KNOWN_TYPES, TipButton, HelpText, labelHidden } from '../controls.jsx';
 
 function PickWorkflow() {
   const nav = useNavigate();
@@ -64,14 +64,15 @@ function initials(name) {
 }
 
 // One control, rendered the way the web form does (options from master data / custom lists / people).
-function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onFile }) {
+function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onFile, locked }) {
   const id = 'nf-' + f.id + (f.table ? '-' + Math.random().toString(36).slice(2, 6) : '');
-  const ro = f.readOnly;
-  const label = <label htmlFor={id}>{f.label} {required ? <span className="req">*</span> : null}{ro && f.type !== 'CALCULATED' ? <Icon name="lock" size={12} color="#9C96AB" style={{ marginLeft: 4 }} /> : null}</label>;
+  const ro = f.readOnly || !!locked;
+  const label = labelHidden(f.settings) ? null : <label htmlFor={id}>{f.label} {required ? <span className="req">*</span> : null}{ro && f.type !== 'CALCULATED' ? <Icon name="lock" size={12} color="#9C96AB" style={{ marginLeft: 4 }} /> : null}<TipButton settings={f.settings} label={f.label} /></label>;
   let input;
   const opts = (options || []).map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
   if (FILE_TYPES.has(f.type)) {
     const v = value || null;
+    const multi = f.type === 'FILE_UPLOAD' && !f.table && !!(f.settings && f.settings.specific && f.settings.specific.allowMultipleFiles);
     input = (
       <div className="file-field">
         {v && (v.file || v.fileId) ? (
@@ -79,9 +80,9 @@ function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onF
             {ocrBusy ? <span className="ocr-pill"><span className="spinner" />Reading…</span> : v.ocrCount ? <span className="ocr-pill done"><Sparkle size={12} color="#0A6E7A" />{v.ocrCount} filled</span> : null}
             <button type="button" className="icon-btn" aria-label={'Remove ' + v.fileName} onClick={() => onChange(null)}><Icon name="close" size={18} /></button></div>
         ) : (
-          <label className="upload-btn" htmlFor={id}><Icon name="upload" size={18} />Upload file<span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> · max 20 MB</span>{f.assignOtherControls.length ? <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> · AI fills {f.assignOtherControls.length} fields</span> : null}</label>
+          <label className="upload-btn" htmlFor={id}><Icon name="upload" size={18} />{multi ? 'Upload files' : 'Upload file'}<span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> · max 20 MB</span>{f.assignOtherControls.length ? <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> · AI fills {f.assignOtherControls.length} fields</span> : null}</label>
         )}
-        <input id={id} type="file" hidden accept={f.allowedFileTypes.length ? f.allowedFileTypes.map((x) => '.' + String(x).replace(/^\./, '')).join(',') : undefined} onChange={(e) => { const file = e.target.files && e.target.files[0]; e.target.value = ''; if (file) onFile(file); }} />
+        <input id={id} type="file" hidden multiple={multi} accept={f.allowedFileTypes.length ? f.allowedFileTypes.map((x) => '.' + String(x).replace(/^\./, '')).join(',') : undefined} onChange={(e) => { const l = [...(e.target.files || [])]; e.target.value = ''; if (l[0]) onFile(l[0], l.slice(1)); }} />
       </div>
     );
   } else if (f.type === 'CALCULATED') {
@@ -98,7 +99,7 @@ function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onF
     input = <Control kind={f.kind} id={id} value={value} readOnly={ro} error={!!error} settings={f.settings} label={f.kind === 'consent' ? undefined : f.label} placeholder={f.placeholder || (f.fill ? 'Filled from master data' : '')} onChange={onChange} />;
   }
   if (f.kind === 'divider') return input;
-  return <div className="field" data-err={error ? '1' : undefined}>{label}{input}{error ? <span className="err" role="alert">{error}</span> : null}</div>;
+  return <div className="field" data-err={error ? '1' : undefined}>{label}{input}<HelpText settings={f.settings} />{error ? <span className="err" role="alert">{error}</span> : null}</div>;
 }
 
 function StartForm({ workflowId }) {
@@ -159,9 +160,14 @@ function StartForm({ workflowId }) {
   const removeRow = (t, i) => apply({ ...valsRef.current, [t.id]: (valsRef.current[t.id] || []).filter((_, j) => j !== i) });
 
   // File control: check type/size, then OCR → fill the assigned controls that are still empty (as the web form does)
-  const pickFile = async (f, file, t, i) => {
+  const pickFile = async (f, file, t, i, extra = []) => {
     const problem = fileProblem(f, file);
     if (problem) { showToast(problem, { tone: 'bad' }); return; }
+    if (extra.length) {
+      const ok = extra.filter((x) => !fileProblem(f, x));
+      if (ok.length) setFiles((l) => [...l, ...ok]);
+      showToast(`${file.name} is in ${f.label}. ${ok.length} more file${ok.length === 1 ? '' : 's'} added to Attachments${ok.length < extra.length ? ` (${extra.length - ok.length} skipped)` : ''}.`);
+    }
     const entry = { file, fileName: file.name };
     const key = t ? `${t.id}:${i}:${f.id}` : f.id;
     if (t) setCell(t, i, f, entry); else setField(f, entry);
@@ -195,14 +201,14 @@ function StartForm({ workflowId }) {
   if (err) return <div className="screen"><TopBar title="New request" back="/app/new" /><div className="content"><ErrorNote text={err} /></div></div>;
   if (!meta || !schema || !state) return <div className="screen"><TopBar title="New request" back="/app/new" /><div className="content"><Skeleton n={6} h={64} /></div></div>;
 
-  const { vals, options, rowOptions, required } = state;
-  const visible = schema.fields.filter((f) => !f.hidden && (!NO_INPUT.has(f.type) || f.type === 'DIVIDER') && !isTechnicalLabel(f.label));
+  const { vals, options, rowOptions, required, states } = state;
+  const visible = schema.fields.filter((f) => shownBy(f, states) && (!NO_INPUT.has(f.type) || f.type === 'DIVIDER') && !isTechnicalLabel(f.label));
   const unsupported = visible.filter((f) => !SUPPORTED.has(f.type) && required.has(f.id));
   const budgetField = schema.fields.find((f) => /budget/i.test(f.label) && !empty(vals[f.id]));
   const loadingLists = Object.keys(schema.need).some((k) => !masters[k]);
 
   const submit = async () => {
-    const e = validate(schema, vals, required);
+    const e = validate(schema, vals, required, states);
     setErrs(e); setSubmitErr('');
     if (Object.keys(e).length) {
       showToast(`${Object.keys(e).length} required field${Object.keys(e).length > 1 ? 's are' : ' is'} missing`, { tone: 'bad' });
@@ -229,7 +235,7 @@ function StartForm({ workflowId }) {
         if (at) { cur = { ...cur, [at.t.id]: cur[at.t.id].map((r, j) => (j === at.i ? { ...r, [f.id]: done } : r)) }; staged.push({ fieldId: f.id, fieldName: f.label, fileId: up.fileId, fileName: entry.fileName, jsonId: f.id, repositoryId: up.repositoryId }); } else cur = { ...cur, [f.id]: done };
       }
       valsRef.current = cur;
-      const formData = toPayload(schema, cur);
+      const formData = toPayload(schema, cur, states);
       setBusy(files.length ? 'Uploading and starting…' : 'Starting request…');
       const res = files.length ? await wfApi.startWithFile(workflowId, files[0], formData, staged) : await wfApi.startJson(workflowId, formData, staged);
       const instanceId = res && (res.instanceId || res.workflowInstanceId || res.id);
@@ -303,7 +309,7 @@ function StartForm({ workflowId }) {
               </section>
             );
           }
-          return <FieldInput key={f.id} f={f} value={vals[f.id]} options={options[f.id] !== undefined ? options[f.id] : f.customOptions} required={required.has(f.id)} error={errs[f.id]} ocrBusy={ocrBusy[f.id]} onChange={(v) => setField(f, v)} onFile={(file) => pickFile(f, file)} />;
+          return <FieldInput key={f.id} f={f} locked={lockedBy(f, states)} value={vals[f.id]} options={options[f.id] !== undefined ? options[f.id] : f.customOptions} required={required.has(f.id)} error={errs[f.id]} ocrBusy={ocrBusy[f.id]} onChange={(v) => setField(f, v)} onFile={(file, extra) => pickFile(f, file, undefined, undefined, extra)} />;
         })}
         <section className="nr-card">
           <b style={{ fontSize: 15 }}>Attachments <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></b>

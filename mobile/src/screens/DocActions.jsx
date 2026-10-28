@@ -8,6 +8,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../store.jsx';
 import { FileThumb, Icon, Sheet, Sparkle, TopBar } from '../ui.jsx';
+import { SignaturePad } from '../controls.jsx';
 import { apiErrorMessage } from '../api.js';
 import { ago, fmtDate, isTechnicalLabel, prettyName } from '../wf.js';
 import FileViewer, { loadPdfjs } from './FileViewer.jsx';
@@ -225,38 +226,6 @@ export function ToSign() {
 }
 
 // Draw a signature (transparent PNG).
-function SignaturePad({ onDone, onCancel }) {
-  const c = useRef(null);
-  const [empty, setEmpty] = useState(true);
-  const last = useRef(null);
-  useEffect(() => {
-    const cv = c.current; const r = cv.getBoundingClientRect(); const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    cv.width = r.width * dpr; cv.height = r.height * dpr;
-    const g = cv.getContext('2d'); g.scale(dpr, dpr); g.lineWidth = 2.6; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#14101F';
-  }, []);
-  const pt = (e) => { const r = c.current.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  const down = (e) => { e.preventDefault(); c.current.setPointerCapture(e.pointerId); last.current = pt(e); };
-  const move = (e) => { if (!last.current) return; const g = c.current.getContext('2d'); const p = pt(e); g.beginPath(); g.moveTo(...last.current); g.lineTo(...p); g.stroke(); last.current = p; setEmpty(false); };
-  const up = () => { last.current = null; };
-  const clear = () => { const cv = c.current; cv.getContext('2d').clearRect(0, 0, cv.width, cv.height); setEmpty(true); };
-  // crop to the drawn area so the stamp isn't mostly empty space
-  const use = () => {
-    const cv = c.current; const g = cv.getContext('2d'); const { data, width, height } = g.getImageData(0, 0, cv.width, cv.height);
-    let x0 = width; let y0 = height; let x1 = 0; let y1 = 0;
-    for (let y = 0; y < height; y += 2) for (let x = 0; x < width; x += 2) if (data[(y * width + x) * 4 + 3] > 0) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-    const pad = 8; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(width, x1 + pad); y1 = Math.min(height, y1 + pad);
-    const out = document.createElement('canvas'); out.width = Math.max(1, x1 - x0); out.height = Math.max(1, y1 - y0);
-    out.getContext('2d').drawImage(cv, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
-    onDone({ dataUrl: out.toDataURL('image/png'), ratio: out.width / out.height });
-  };
-  return (
-    <>
-      <div className="sigpad-wrap"><canvas ref={c} className="sigpad" aria-label="Draw your signature" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} /><span className="sigpad-line" aria-hidden="true" />{empty ? <span className="sigpad-hint">Sign here with your finger</span> : null}</div>
-      <div className="grid2"><button type="button" className="btn outline-grey" onClick={empty ? onCancel : clear}>{empty ? 'Cancel' : 'Clear'}</button><button type="button" className="btn primary" disabled={empty} onClick={use}>Use signature</button></div>
-    </>
-  );
-}
-
 // Render the PDF; tapping a page places the signature there (stored in PDF points from the page's top-left).
 function SignPdf({ blob, sig, place, onPlace }) {
   const box = useRef(null);

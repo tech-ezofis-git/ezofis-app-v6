@@ -165,7 +165,7 @@ export function ago(s) {
 export const isToday = (s) => { if (!s) return false; const d = new Date(s), n = new Date(); return d.toDateString() === n.toDateString(); };
 export const ageDays = (s) => (s ? Math.max(0, Math.floor((Date.now() - new Date(s).getTime()) / 86400000)) : 0);
 
-const SHAPED = new Set(['currency', 'phone', 'time', 'datetime', 'toggle', 'consent', 'password']);
+const SHAPED = new Set(['currency', 'phone', 'time', 'datetime', 'toggle', 'consent', 'password', 'rating', 'scale', 'signature']);
 export function fmtValue(v, type, settings) {
   if (v === null || v === undefined) return '';
   if (type && SHAPED.has(kindOf(type))) return displayValue(kindOf(type), v, settings);

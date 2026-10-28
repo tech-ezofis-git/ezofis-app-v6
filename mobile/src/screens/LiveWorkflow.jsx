@@ -9,7 +9,8 @@ import {
   lineItems, fmtNum, MAX_FILE_MB, tooBig, tabsFor, wfApi, getWorkflows, getMeta, getForm, toCard, formView, actionsFor, pathFromHistory, agentInsight, repoFields,
   ago, fmtDate, initials, prettyName, MILESTONE_DOT, EDITABLE_TYPES, drafts, mapLimit, toneFor,
 } from '../wf.js';
-import { Control, kindOf, formatError, displayValue } from '../controls.jsx';
+import { Control, kindOf, ruleError, isEmptyFor, displayValue, TipButton, HelpText, labelHidden } from '../controls.jsx';
+import { fieldStates } from '../formRules.js';
 
 const PAGE = 20;
 const BOXES = [['inbox', 'Inbox', 'Inbox'], ['sent', 'Sent', 'Sent'], ['completed', 'Completed', 'Done']];
@@ -552,9 +553,20 @@ export function LiveEdit() {
   if (t.error || !t.row) return <div className="screen"><TopBar title="Edit form" back="/app/inbox" /><div className="content"><ErrorNote text={t.error || "This request can't be edited."} /></div></div>;
   const key = (v) => (v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v));
   const base = t.row.formData || {};
+  // show / read-only / mandatory rules from the form settings, evaluated on the request's values plus these edits
+  const all = { ...base, ...(drafts.get(id) || {}), ...(vals || {}) };
+  const st = t.form ? fieldStates(t.form.fields.map((f) => ({ id: f.id, type: f.type, settings: f.settings })), all) : {};
+  const shown = fields.filter((f) => !st[f.id] || st[f.id].visible);
+  const locked = (f) => f.readOnly || !!(st[f.id] && st[f.id].disabled);
   const save = () => {
     const e = {};
-    fields.forEach((f) => { const fe = !f.readOnly && formatError(kindOf(f.type), vals[f.id]); if (fe) e[f.id] = fe; });
+    // only the fields the approver changed are checked; values already on the request aren't theirs to fix here
+    shown.forEach((f) => {
+      if (locked(f) || key(vals[f.id]) === key(f.raw)) return;
+      const k = kindOf(f.type);
+      const fe = st[f.id] && st[f.id].required && isEmptyFor(k, vals[f.id]) ? `${f.label} is required` : ruleError(f.type, k, vals[f.id], f.settings, all);
+      if (fe) e[f.id] = fe;
+    });
     setErrs(e);
     if (Object.keys(e).length) { showToast('Check the highlighted fields', { tone: 'bad' }); return; }
     const changed = {};
@@ -567,13 +579,15 @@ export function LiveEdit() {
     <div className="screen">
       <TopBar title="Edit form" sub={`${t.row.referenceNumber} · ${t.row.stage}`} back={'/app/inbox/' + encodeURIComponent(id)} right={<span />} />
       <div className="content" style={{ gap: 16 }}>
-        {fields.map((f) => {
+        {shown.map((f) => {
           const k = kindOf(f.type);
           const v = vals ? vals[f.id] : '';
+          const ro = locked(f);
           return (
             <div key={f.id} className="field" data-err={errs[f.id] ? '1' : undefined}>
-              <label htmlFor={'f-' + f.id}>{f.label}{f.readOnly ? <Icon name="lock" size={12} color="#9C96AB" style={{ marginLeft: 4 }} /> : null}</label>
-              <Control kind={k} id={'f-' + f.id} value={v} readOnly={f.readOnly} error={!!errs[f.id]} settings={f.settings} label={k === 'consent' ? undefined : f.label} onChange={(x) => { setErrs((e) => ({ ...e, [f.id]: '' })); setVals({ ...vals, [f.id]: x }); }} />
+              {labelHidden(f.settings) ? null : <label htmlFor={'f-' + f.id}>{f.label}{st[f.id] && st[f.id].required ? <span className="req"> *</span> : null}{ro ? <Icon name="lock" size={12} color="#9C96AB" style={{ marginLeft: 4 }} /> : null}<TipButton settings={f.settings} label={f.label} /></label>}
+              <Control kind={k} id={'f-' + f.id} value={v} readOnly={ro} error={!!errs[f.id]} settings={f.settings} label={k === 'consent' ? undefined : f.label} onChange={(x) => { setErrs((e) => ({ ...e, [f.id]: '' })); setVals({ ...vals, [f.id]: x }); }} />
+              <HelpText settings={f.settings} />
               {errs[f.id] ? <span className="err" role="alert">{errs[f.id]}</span> : vals && key(v) !== key(f.raw) ? <span className="hint">Changed from {displayValue(k, f.raw, f.settings) || 'empty'}</span> : null}
             </div>
           );

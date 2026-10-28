@@ -813,3 +813,27 @@ b.hl { color: var(--deep); background: linear-gradient(transparent 62%, rgba(92,
 .ctl-money input, .ctl-counter input { flex: 1; min-width: 0; height: 100%; border: 0; outline: none; padding: 0 14px; font-size: 15px; background: transparent; }
 .ctl-counter { padding: 0 4px; gap: 4px; }
 .ctl-counter input { text-align: center; font-weight: 600; }
+.ctl-money .cur.suf { background: var(--tint-p); }
+.ctl-tip { display: inline; }
+.ctl-tip-btn { border: 0; background: none; color: var(--deep); padding: 0 4px; vertical-align: -2px; display: inline-flex; }
+.ctl-tip-text { display: block; margin-top: 6px; background: #1E1A2B; color: #fff; font-size: 13px; font-weight: 400; line-height: 1.45; border-radius: 10px; padding: 8px 12px; }
+.ctl-help { font-size: 13px; color: var(--muted); line-height: 1.45; margin-top: -2px; }
+.ctl-rating { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.ctl-rating .star { border: 0; background: none; padding: 4px; color: #DCD5E8; display: inline-flex; }
+.ctl-rating .star.on { color: #F2B01E; }
+.ctl-rating .star.half { color: #F2B01E; opacity: .5; }
+.ctl-rating .val { margin-left: 8px; font-size: 13px; color: var(--muted); }
+.ctl-rating.error .star:not(.on) { color: #F3B9C6; }
+.ctl-scale .nums { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.ctl-scale .nums button { height: 44px; border-radius: 10px; border: 1.5px solid var(--field); background: #fff; font-weight: 600; font-size: 15px; color: var(--ink); }
+.ctl-scale .nums button.on { background: var(--purple); border-color: var(--purple); color: #fff; }
+.ctl-scale.error .nums button { border-color: var(--bad); }
+.ctl-scale .labs { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 6px; gap: 8px; }
+@media (min-width: 600px) { .ctl-scale .nums { grid-template-columns: repeat(11, minmax(0, 1fr)); } }
+.ctl-sign { min-height: 72px; border: 1.5px solid var(--deep); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; background: #fff; flex-wrap: wrap; }
+.ctl-sign img { max-height: 56px; max-width: 60%; }
+.ctl-sign .tx { flex: 1; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.ctl-sign .acts { margin-left: auto; display: flex; gap: 6px; }
+.ctl-sign.error { border-color: var(--bad); }
+.ctl-sign.locked { background: #F4F1F8; border-color: var(--field); }
+.ctl-sign-pad { display: flex; flex-direction: column; gap: 10px; }
