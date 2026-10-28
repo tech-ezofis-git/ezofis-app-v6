@@ -1367,8 +1367,6 @@ class ReportAgentService:
                     )
                 except Exception as exc:
                     warnings.append(f"Could not attach workflow Request No / Stage: {exc}")
-                spec, rows, listing_cols = _keep_valued_columns(spec, rows)
-                columns_out = listing_cols
             if needs_repository_fields(spec):
                 try:
                     rows = await attach_repository_fields_to_form_rows(
@@ -1388,6 +1386,9 @@ class ReportAgentService:
             )
         except Exception:
             pass
+        if spec is not None and needs_listing_fields(spec) and has_form_columns(spec):
+            spec, rows, listing_cols = _keep_valued_columns(spec, rows)
+            columns_out = listing_cols
         rows = fill_filename_aliases(rows)
         from app.report_agent.json_cells import finish_structured_cells
 

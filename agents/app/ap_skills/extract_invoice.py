@@ -307,6 +307,35 @@ _INVOICE_DATE_BLOCK = re.compile(
     r"(?:^|\n)\s*(?:Invoice\s*Date|Document\s*Date|Inv\.?\s*Date|Invoice\s*Dt|Date)\s*(?:\n|:)\s*([^\n]+)",
     re.I | re.MULTILINE,
 )
+_DUE_DATE_BLOCK = re.compile(
+    r"(?:^|\n)\s*Due\s*Date\s*(?:\n|:)\s*([^\n]+)",
+    re.I | re.MULTILINE,
+)
+# "Oct 19 2026", "May 20, 2026", "05/20/26", "2026-05-20" on the same line as the label.
+_DATE_VALUE = (
+    r"([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}"
+    r"|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"
+    r"|\d{4}-\d{2}-\d{2})"
+)
+_INVOICE_DATE_INLINE = re.compile(
+    r"\b(?:Invoice\s*Date|Document\s*Date|Inv\.?\s*Date|Invoice\s*Dt)\s*[:\-]?\s*" + _DATE_VALUE,
+    re.I,
+)
+_DUE_DATE_INLINE = re.compile(
+    r"\bDue\s*Date\s*[:\-]?\s*" + _DATE_VALUE,
+    re.I,
+)
+_INVOICE_DATE_LABEL = re.compile(
+    r"\b(?:Invoice\s*Date|Document\s*Date|Inv\.?\s*Date|Invoice\s*Dt)\b",
+    re.I,
+)
+_ANY_DATE = re.compile(
+    r"\b(?:[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}-\d{2}-\d{2})\b"
+)
+_CLAIMED_DATE_LABEL = re.compile(
+    r"\b(?:Date\s*Ordered|PO\s*Date|Due\s*Date|Shipped\s*Date)\b",
+    re.I,
+)
 # "Tax (13%)" / "Tax 13%" is a tax total. "Tax ID" is not.
 _TAX_RATE = r"(?:\(\s*)?\d+(?:\.\d+)?\s*%\s*\)?"
 _TAX_LABEL = re.compile(
@@ -551,6 +580,60 @@ def _tax_amount(src: dict[str, Any]) -> Any:
     return None
 
 
+def _first_parsed_date(match: Optional[re.Match[str]]) -> str:
+    if not match:
+        return ""
+    raw = match.group(1).strip()
+    return raw if _normalize_date(raw) else ""
+
+
+def _guess_invoice_date(text: str) -> str:
+    """Invoice date on its own line or on the same line as the label."""
+    found = _first_parsed_date(_INVOICE_DATE_INLINE.search(text or ""))
+    if found:
+        return found
+    found = _first_parsed_date(_INVOICE_DATE_BLOCK.search(text or ""))
+    if found:
+        return found
+    return _orphan_invoice_date(text)
+
+
+def _orphan_invoice_date(text: str) -> str:
+    """Date left over when OCR splits a two-column Invoice Date row.
+
+    The label is present, the value is elsewhere, and dates already tied to
+    Date Ordered, PO Date, or Due Date are not reused.
+    """
+    raw = text or ""
+    if not _INVOICE_DATE_LABEL.search(raw):
+        return ""
+    claimed: set[str] = set()
+    for label in _CLAIMED_DATE_LABEL.finditer(raw):
+        window = raw[label.end() : label.end() + 180]
+        nxt = _ANY_DATE.search(window)
+        if not nxt:
+            continue
+        normalized = _normalize_date(nxt.group(0))
+        if normalized:
+            claimed.add(normalized)
+    leftovers: list[str] = []
+    for match in _ANY_DATE.finditer(raw):
+        normalized = _normalize_date(match.group(0))
+        if not normalized or normalized in claimed or normalized in leftovers:
+            continue
+        leftovers.append(normalized)
+    if len(leftovers) == 1:
+        return leftovers[0]
+    return ""
+
+
+def _guess_due_date(text: str) -> str:
+    found = _first_parsed_date(_DUE_DATE_INLINE.search(text or ""))
+    if found:
+        return found
+    return _first_parsed_date(_DUE_DATE_BLOCK.search(text or ""))
+
+
 def _guess_tax(text: str) -> Any:
     match = _TAX_LABEL.search(text or "")
     if match:
@@ -627,14 +710,14 @@ def _heuristic_from_text(text: str) -> dict[str, Any]:
         found = _CURRENCY_TOKEN.search(text or "")
         if found:
             currency = found.group(1).upper()
-    due_date = field_text(merged, "Due Date", "due_date")
+    due_date = field_text(merged, "Due Date", "due_date") or _guess_due_date(text)
     invoice_date = field_text(
         merged, "Invoice Date", "invoice_date", "Shipped", "Document Date", "Inv Date", "Date"
     )
-    if not invoice_date:
-        date_match = _INVOICE_DATE_BLOCK.search(text or "")
-        if date_match:
-            invoice_date = date_match.group(1).strip()
+    if not invoice_date or _normalize_date(invoice_date) is None:
+        guessed_invoice_date = _guess_invoice_date(text)
+        if guessed_invoice_date:
+            invoice_date = guessed_invoice_date
     if invoice_date and _normalize_date(invoice_date) is None and not field_text(
         merged, "Invoice Date", "Document Date", "Inv Date"
     ):

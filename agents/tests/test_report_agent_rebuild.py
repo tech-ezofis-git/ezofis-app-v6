@@ -2533,6 +2533,109 @@ async def test_form_sql_user_guids_do_not_block_acted_by_name():
     assert not _is_guid_like(rows[0].get("actedBy"))
 
 
+@pytest.mark.asyncio
+async def test_form_rows_load_request_and_user_name_from_sql_when_ezofis_is_empty(monkeypatch):
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent import catalog_execute as ce
+    from app.report_agent.catalog_execute import _keep_valued_columns, attach_listing_fields_to_form_rows, finish_user_columns
+
+    item_id = "fd5cf44a-3d6f-4e6e-9e44-2fc5a6814b1f"
+    user_id = "346b77f6-4548-4800-b7be-598615b54a15"
+    workflow_id = "452859c2-9bbe-4e17-acd2-f11524a0650e"
+
+    async def _find_table(db, names, prefer_schemas=()):
+        first = names[0]
+        if first in ("Workflows", "workflows", "wworkflow", "wworkflows"):
+            return ("workflow", "Workflows")
+        if first.startswith("inbox_"):
+            return ("workflow", first)
+        return None
+
+    async def _fetch_columns(db, schema, table):
+        if table == "Workflows":
+            return {"id": "Id", "name": "Name"}, {}
+        return {
+            "item_id": "item_id",
+            "workflow_instance_id": "workflow_instance_id",
+            "reference_number": "reference_number",
+            "stage": "stage",
+            "status": "status",
+            "started_by": "started_by",
+            "updated_by": "updated_by",
+            "workflow_id": "workflow_id",
+        }, {}
+
+    monkeypatch.setattr(ce, "find_table", _find_table)
+    monkeypatch.setattr(ce, "fetch_columns", _fetch_columns)
+
+    class _Db:
+        async def fetch(self, sql, *args):
+            if "Workflows" in sql:
+                return [{"id": workflow_id, "name": "Accounts Payable"}]
+            return [
+                {
+                    "item_id": item_id,
+                    "instance_id": "42b14d32-2a2b-4e1f-a472-d2f7faeae63f",
+                    "request_no": "REQ-212",
+                    "stage": "Verifier",
+                    "status": "Running",
+                    "started_by": user_id,
+                    "acted_by": user_id,
+                    "workflow_id": workflow_id,
+                }
+            ]
+
+    class _Ez:
+        async def list_workflows(self, tenant_id):
+            return []
+
+        async def get_user(self, *, tenant_id, user_id):
+            return {"id": user_id, "displayName": "Muthu Perumal"}
+
+    spec = ReportSpec(
+        title="Accounts Payable Workflow Summary",
+        report_type="specific_workflow",
+        columns=[
+            ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
+            ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
+            ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
+            ReportSpecColumn(key="startedBy", label="Started by", kind="default", selected=True),
+            ReportSpecColumn(key="startedById", label="Started by Id", kind="default", selected=True),
+            ReportSpecColumn(key="actedBy", label="Acted by", kind="default", selected=True),
+            ReportSpecColumn(key="actedById", label="Acted by Id", kind="default", selected=True),
+            ReportSpecColumn(key="workflowName", label="Workflow", kind="default", selected=True),
+            ReportSpecColumn(key="workflowId", label="Workflow Id", kind="default", selected=True),
+            ReportSpecColumn(key="instanceId", label="Instance Id", kind="default", selected=True),
+            ReportSpecColumn(key="Invoice_Amount", label="Invoice Amount", kind="userdefined", selected=True),
+            ReportSpecColumn(key="is_marked", label="Is Marked", kind="userdefined", selected=True),
+        ],
+    )
+    rows = await attach_listing_fields_to_form_rows(
+        _Ez(),
+        spec,
+        [{"item_id": item_id, "Invoice_Amount": "6326.87", "is_marked": False}],
+        tenant_id="tenant-1",
+        workflow_name="Accounts Payable",
+        db=_Db(),
+    )
+    rows = await finish_user_columns(_Ez(), rows, tenant_id="tenant-1")
+    spec, rows, columns = _keep_valued_columns(spec, rows)
+    row = rows[0]
+    keys = [col.key for col in columns]
+    assert row.get("RequestNo") == "REQ-212"
+    assert row.get("Stage") == "Verifier"
+    assert row.get("startedBy") == "Muthu Perumal"
+    assert row.get("actedBy") == "Muthu Perumal"
+    assert row.get("startedById") == user_id
+    assert row.get("actedById") == user_id
+    assert row.get("workflowId") == workflow_id
+    assert row.get("instanceId") == "42b14d32-2a2b-4e1f-a472-d2f7faeae63f"
+    assert "startedBy" in keys
+    assert "RequestNo" in keys
+    assert "is_marked" in keys
+    assert not _is_guid_like(row.get("startedBy"))
+
+
 def test_ensure_identity_columns_adds_item_id():
     from app.report_agent.definition_lock import ensure_identity_columns
 

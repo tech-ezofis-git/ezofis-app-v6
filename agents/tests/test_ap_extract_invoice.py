@@ -332,6 +332,49 @@ def test_heuristic_reads_tax_with_rate_on_the_next_line():
     assert invoice["invoice_header"]["Invoice Tax Amount"] == "598.65"
 
 
+def test_heuristic_uses_leftover_date_when_invoice_date_row_is_split():
+    text = """
+Invoice No.
+INV-2026-3101
+
+Invoice Date
+
+Order No.
+80311
+
+DATE ORDERED
+ENTERED BY
+PO-31001
+SURJIT
+June 30 2026
+ABISNAUTH
+
+TERMS:
+Net One Month
+
+NI
+Oct 18 2026
+"""
+    invoice = _heuristic_from_text(text)
+    assert invoice["invoice_date"] == "2026-10-18"
+    assert invoice["due_date"] == "2026-11-17"
+    assert invoice["invoice_header"]["Invoice Date"] == "2026-10-18"
+    assert invoice["invoice_header"]["Due Date"] == "2026-11-17"
+
+
+def test_heuristic_reads_dates_on_the_same_line_as_the_label():
+    text = (
+        "Invoice Date Oct 19 2026\n"
+        "DATE ORDERED July 04 2026\n"
+        "Due Date Jun 20 2026\n"
+    )
+    invoice = _heuristic_from_text(text)
+    assert invoice["invoice_date"] == "2026-10-19"
+    assert invoice["due_date"] == "2026-06-20"
+    assert invoice["invoice_header"]["Invoice Date"] == "2026-10-19"
+    assert invoice["invoice_header"]["Due Date"] == "2026-06-20"
+
+
 def test_heuristic_ignores_tax_id():
     text = "Tax ID: 874532198\nInvoice Total: 100.00\n"
     invoice = _heuristic_from_text(text)

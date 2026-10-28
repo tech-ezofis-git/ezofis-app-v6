@@ -818,7 +818,10 @@ def _keep_valued_columns(
 
     def _filled(col: Any) -> bool:
         for row in rows:
-            if str(_value_from_row(row or {}, col.key) or "").strip():
+            value = _value_from_row(row or {}, col.key)
+            if isinstance(value, bool) or value == 0:
+                return True
+            if str(value or "").strip():
                 return True
         return False
 
@@ -1134,6 +1137,161 @@ async def _sql_item_instance_map(
         if mapping:
             break
     return mapping
+
+
+def _merge_listing(existing: Optional[dict[str, Any]], incoming: dict[str, Any]) -> dict[str, Any]:
+    if not existing:
+        return dict(incoming)
+    merged = dict(existing)
+    for key, value in incoming.items():
+        if merged.get(key) in (None, "") and value not in (None, ""):
+            merged[key] = value
+    return merged
+
+
+def _listing_from_sql_row(row: Any, workflow_name: str) -> dict[str, Any]:
+    request_no = str(row_get(row, "request_no") or "").strip()
+    stage = str(row_get(row, "stage") or "").strip()
+    started_id, started_name = _split_user_ref(row_get(row, "started_by"))
+    acted_id, acted_name = _split_user_ref(row_get(row, "acted_by"))
+    if not acted_id and not acted_name:
+        acted_id, acted_name = started_id, started_name
+    return {
+        "RequestNo": request_no,
+        "requestNo": request_no,
+        "Stage": stage,
+        "stage": stage,
+        "status": _status_label(row_get(row, "status")),
+        "startedBy": started_name,
+        "startedById": started_id,
+        "actedBy": acted_name,
+        "actedById": acted_id,
+        "workflowName": workflow_name or str(row_get(row, "workflow_name") or "").strip(),
+        "workflowId": str(row_get(row, "workflow_id") or "").strip(),
+        "instanceId": str(row_get(row, "instance_id") or "").strip(),
+        "itemId": str(row_get(row, "item_id") or "").strip(),
+        "createdAtUtc": row_get(row, "created_at"),
+    }
+
+
+async def _sql_workflow_ids(db: Any, workflow_name: str) -> list[str]:
+    """Resolve a workflow id from the tenant Workflows table when EZOFIS did not."""
+    needle = (workflow_name or "").strip().lower()
+    if db is None or not needle:
+        return []
+    located = await find_table(
+        db,
+        ("Workflows", "workflows", "wworkflow", "wworkflows"),
+        prefer_schemas=("workflow", "dbo", "public"),
+    )
+    if located is None:
+        return []
+    schema, table = located
+    by_lower, _ = await fetch_columns(db, schema, table)
+    id_col = pick_id_column(by_lower) or _sql_col(by_lower, "id", "workflowid", "wworkflowid")
+    name_col = _sql_col(by_lower, "name", "workflowname", "workflow_name")
+    if not id_col or not name_col:
+        return []
+    sql = (
+        f"SELECT CAST({quote_ident(id_col)} AS text) AS id, "
+        f"CAST({quote_ident(name_col)} AS text) AS name "
+        f"FROM {qualified(schema, table)}"
+    )
+    try:
+        rows = await db.fetch(sql)
+    except Exception:
+        return []
+    exact: list[str] = []
+    partial: list[str] = []
+    for row in rows or []:
+        name = str(row_get(row, "name") or "").strip()
+        wid = str(row_get(row, "id") or "").strip()
+        if not wid or not name:
+            continue
+        if name.lower() == needle:
+            exact.append(wid)
+        elif needle in name.lower():
+            partial.append(wid)
+    return exact or partial
+
+
+async def _sql_listing_by_items(
+    db: Any, suffix: str, item_ids: list[str], workflow_name: str
+) -> dict[str, dict[str, Any]]:
+    """Map compact form item id → Request No, Stage, and user ids from workflow SQL."""
+    found: dict[str, dict[str, Any]] = {}
+    compact_ids = [_compact_id(item) for item in item_ids if _compact_id(item)]
+    if db is None or not suffix or not compact_ids:
+        return found
+
+    async def _ingest(sql: str) -> None:
+        rows = await db.fetch(sql, compact_ids)
+        for row in rows or []:
+            item = _compact_id(row_get(row, "item_id"))
+            if not item:
+                continue
+            found[item] = _merge_listing(found.get(item), _listing_from_sql_row(row, workflow_name))
+
+    for names in (
+        (f"inbox_{suffix}",),
+        (f"sent_{suffix}",),
+        (f"completed_{suffix}",),
+        (f"workflow_instances_{suffix}", f"workflowinstances_{suffix}"),
+    ):
+        located = await find_table(db, names, prefer_schemas=("workflow", "dbo", "public"))
+        if located is None:
+            continue
+        schema, table = located
+        by_lower, _ = await fetch_columns(db, schema, table)
+        item_col = _sql_col(
+            by_lower,
+            "item_id",
+            "itemid",
+            "form_entry_id",
+            "formentryid",
+            "repository_item_id",
+            "repositoryitemid",
+        )
+        if names[0].startswith("workflow_instances"):
+            inst_col = pick_id_column(by_lower) or _sql_col(by_lower, "id")
+        else:
+            inst_col = _sql_col(
+                by_lower,
+                "workflow_instance_id",
+                "workflowinstanceid",
+                "instance_id",
+                "instanceid",
+                "process_id",
+                "processid",
+            )
+        if not item_col or not inst_col or item_col == inst_col:
+            continue
+        parts = [
+            f"CAST({quote_ident(item_col)} AS text) AS item_id",
+            f"CAST({quote_ident(inst_col)} AS text) AS instance_id",
+        ]
+        for alias, candidates in (
+            ("request_no", ("reference_number", "referencenumber", "request_no", "requestno", "requestnumber")),
+            ("stage", ("stage", "current_stage", "currentstage", "activity", "step_name", "current_step_name")),
+            ("status", ("status", "instance_status", "instancestatus")),
+            ("started_by", ("started_by", "startedby", "created_by", "createdby")),
+            ("acted_by", ("updated_by", "updatedby", "acted_by", "actedby", "assigned_to", "assignedto")),
+            ("workflow_id", ("workflow_id", "workflowid", "wworkflowid")),
+            ("workflow_name", ("workflow_name", "workflowname")),
+            ("created_at", ("created_at_utc", "createdatutc", "created_at", "createdat", "started_at")),
+        ):
+            col = _sql_col(by_lower, *candidates)
+            if col and col not in (item_col, inst_col):
+                parts.append(f"CAST({quote_ident(col)} AS text) AS {alias}")
+        sql = (
+            f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
+            f"WHERE lower(replace(CAST({quote_ident(item_col)} AS text), '-', '')) = ANY($1::text[])"
+        )
+        try:
+            await _ingest(sql)
+        except Exception:
+            continue
+    return found
 
 
 async def execute_catalog_spec(
@@ -1635,7 +1793,13 @@ async def attach_listing_fields_to_form_rows(
         instances, wf_ids = [], []
     by_item, by_inst = _index_instances(instances)
     item_ids = [cid for row in rows for cid in _form_row_ids(row)]
+    if not wf_ids and workflow_name:
+        try:
+            wf_ids = await _sql_workflow_ids(db, workflow_name)
+        except Exception:
+            wf_ids = []
     item_to_inst: dict[str, str] = {}
+    sql_by_item: dict[str, dict[str, Any]] = {}
     for wf_id in wf_ids:
         suffix = _compact_id(wf_id)[:8]
         if not suffix:
@@ -1643,22 +1807,33 @@ async def attach_listing_fields_to_form_rows(
         try:
             item_to_inst.update(await _sql_item_instance_map(db, suffix, item_ids))
         except Exception:
-            continue
-        if item_to_inst:
+            pass
+        try:
+            listed = await _sql_listing_by_items(db, suffix, item_ids, workflow_name or "")
+        except Exception:
+            listed = {}
+        for key, value in listed.items():
+            sql_by_item[key] = _merge_listing(sql_by_item.get(key), value)
+        if item_to_inst and sql_by_item:
             break
     out: list[dict[str, Any]] = []
     for row in rows:
         item = dict(row)
         _split_user_fields_on_row(item)
         inst = None
+        sql_listing = None
         for cid in _form_row_ids(item):
             inst = by_item.get(cid) or by_inst.get(cid)
             if inst is None and cid in item_to_inst:
                 inst = by_inst.get(item_to_inst[cid])
+            if sql_listing is None and cid in sql_by_item:
+                sql_listing = sql_by_item[cid]
             if inst is not None:
                 break
         if inst is not None:
             _fill_listing_fields(item, inst, spec)
+        elif sql_listing is not None:
+            _fill_listing_fields(item, sql_listing, spec)
         out.append(item)
     out = await resolve_user_names(ezofis, out, tenant_id=tenant_id, db=db)
     return _shape_rows(spec, out)
