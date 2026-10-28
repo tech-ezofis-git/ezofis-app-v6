@@ -102,7 +102,7 @@ const NewRequestSheet = ({ onClose }: Props) => {
     <div className='flex h-full w-full min-w-0'>
       <div className='flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-surface-muted'>
         {newRequestMeta !== 'po' && isAccountsPayable && (
-          <Header title={t`New Request`} onClose={onClose} />
+          <Header title={t`New Submission`} onClose={onClose} />
         )}
 
         {newRequestMeta === 'po' ? (

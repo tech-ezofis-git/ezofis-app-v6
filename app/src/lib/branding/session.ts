@@ -184,6 +184,18 @@ export const resolveSignInPath = () => {
   return '/sign-in'
 }
 
+let signInReloadPending = false
+
+// Full reload to sign-in (drops all in-memory state). Call it before
+// resetAuthState so the app layout doesn't also SPA-navigate to sign-in and
+// render it twice.
+export const reloadToSignIn = (path = resolveSignInPath()) => {
+  signInReloadPending = true
+  globalThis.location.replace(path)
+}
+
+export const isSignInReloadPending = () => signInReloadPending
+
 export const isAuthEntryPath = (pathname: string) => {
   const path = pathname.replace(/\/+$/, '') || '/'
   if (path === '/sign-in' || path === '/login') return true

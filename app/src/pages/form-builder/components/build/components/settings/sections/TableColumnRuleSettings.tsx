@@ -56,10 +56,10 @@ const RuleList = ({
     <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
       <div className='flex items-start justify-between gap-2'>
         <div>
-          <div className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+          <div className='text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
             {title}
           </div>
-          <div className='text-[10px] text-gray-6'>{description}</div>
+          <div className='text-11 text-gray-9'>{description}</div>
         </div>
         <button
           className='flex shrink-0 cursor-pointer items-center gap-1 text-11 font-medium text-primary-9 hover:text-primary-10 hover:underline'

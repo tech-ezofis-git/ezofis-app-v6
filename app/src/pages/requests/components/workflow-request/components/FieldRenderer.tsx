@@ -158,7 +158,7 @@ const ChoiceRadioGroupField = ({
 
   const allOptions = [...baseOptions, ...customList]
 
-  const optionsPerLine = specific.optionsPerLine ?? 0
+  const optionsPerLine = specific.optionsPerLine ?? 3
   const isAutoFlex = optionsPerLine === 0
   const effectiveCols = isAutoFlex
     ? 0
@@ -235,7 +235,7 @@ const ChoiceRadioGroupField = ({
       >
         <div
           className={cn(
-            'w-full gap-2',
+            'w-full gap-x-4 gap-y-1',
             isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
           )}
           style={
@@ -252,18 +252,12 @@ const ChoiceRadioGroupField = ({
               <div
                 key={i}
                 className={cn(
-                  'flex min-h-[38px] min-w-0 flex-1 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
-                  isAutoFlex ? 'min-w-[100px]' : '',
+                  'flex min-h-8 min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-13 transition-colors',
+                  isAutoFlex ? 'shrink-0' : '',
                   readOnly
-                    ? 'cursor-not-allowed bg-gray-3 text-gray-10 opacity-100'
-                    : 'cursor-pointer active:scale-[0.99]',
-                  isSelected
-                    ? readOnly
-                      ? 'border-gray-4 bg-gray-3 font-semibold text-gray-11'
-                      : 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
-                    : readOnly
-                      ? 'border-gray-3 bg-gray-3 text-gray-10'
-                      : 'border-gray-3 bg-surface text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+                    ? 'cursor-not-allowed text-gray-10'
+                    : 'cursor-pointer text-gray-12 hover:bg-gray-2 active:bg-gray-3',
+                  isSelected && !readOnly && 'font-medium text-gray-13',
                 )}
                 onClick={() => !readOnly && onChange(opt)}
               >
@@ -271,12 +265,14 @@ const ChoiceRadioGroupField = ({
                   className={cn(
                     'flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
                     isSelected
-                      ? 'border-primary-9 bg-primary-9 text-white'
-                      : 'border-gray-4 bg-surface',
+                      ? readOnly
+                        ? 'border-gray-8 bg-gray-8'
+                        : 'border-primary-9 bg-primary-9'
+                      : 'border-gray-5 bg-surface',
                   )}
                 >
                   {isSelected && (
-                    <Icon height={10} name='lucide:circle' width={10} />
+                    <span className='size-1.5 rounded-full bg-white' />
                   )}
                 </div>
                 <span className='truncate'>{opt}</span>
@@ -366,7 +362,7 @@ const ChoiceCheckboxGroupField = ({
 
   const allOptions = [...baseOptions, ...customList]
 
-  const optionsPerLine = specific.optionsPerLine ?? 0
+  const optionsPerLine = specific.optionsPerLine ?? 3
   const isAutoFlex = optionsPerLine === 0
   const effectiveCols = isAutoFlex
     ? 0
@@ -456,7 +452,7 @@ const ChoiceCheckboxGroupField = ({
       >
         <div
           className={cn(
-            'w-full gap-2',
+            'w-full gap-x-4 gap-y-1',
             isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
           )}
           style={
@@ -473,18 +469,12 @@ const ChoiceCheckboxGroupField = ({
               <div
                 key={i}
                 className={cn(
-                  'flex min-h-[38px] min-w-0 flex-1 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
-                  isAutoFlex ? 'min-w-[100px]' : '',
+                  'flex min-h-8 min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-13 transition-colors',
+                  isAutoFlex ? 'shrink-0' : '',
                   readOnly
-                    ? 'cursor-not-allowed bg-gray-3 text-gray-10 opacity-100'
-                    : 'cursor-pointer active:scale-[0.99]',
-                  isSelected
-                    ? readOnly
-                      ? 'border-gray-4 bg-gray-3 font-semibold text-gray-11'
-                      : 'border-primary-9 bg-primary-9 font-semibold text-white shadow-2xs'
-                    : readOnly
-                      ? 'border-gray-3 bg-gray-3 text-gray-10'
-                      : 'border-gray-3 bg-surface text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+                    ? 'cursor-not-allowed text-gray-10'
+                    : 'cursor-pointer text-gray-12 hover:bg-gray-2 active:bg-gray-3',
+                  isSelected && !readOnly && 'font-medium text-gray-13',
                 )}
                 onClick={() => handleToggle(opt)}
               >
@@ -492,8 +482,10 @@ const ChoiceCheckboxGroupField = ({
                   className={cn(
                     'flex size-4 shrink-0 items-center justify-center rounded border transition-colors',
                     isSelected
-                      ? 'border-primary-9 bg-primary-9 text-white'
-                      : 'border-gray-4 bg-surface',
+                      ? readOnly
+                        ? 'border-gray-8 bg-gray-8 text-white'
+                        : 'border-primary-9 bg-primary-9 text-white'
+                      : 'border-gray-5 bg-surface',
                   )}
                 >
                   {isSelected && (

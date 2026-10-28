@@ -656,7 +656,7 @@ const QuestionSettings = ({
   )
 
   const renderMasterFillConfig = () => (
-    <div className='space-y-3 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
+    <div className='space-y-3 rounded-lg border border-gray-3 bg-surface p-3'>
       <div>
         <label className='mb-1 block text-xs font-medium text-gray-11'>
           Parent Field
@@ -850,7 +850,7 @@ const QuestionSettings = ({
         </div>
         <div className='space-y-4 p-4'>
           <div className='space-y-1'>
-            <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+            <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
               Column width
             </label>
             <SegmentedControl
@@ -945,7 +945,7 @@ const QuestionSettings = ({
 
           <Tooltip label={activeQuestion.id} position='top' withArrow>
             <button
-              className='flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5 text-[10px] font-medium text-gray-6 transition-colors hover:bg-gray-1 hover:text-gray-9'
+              className='flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5 text-[10px] font-medium text-gray-9 transition-colors hover:bg-surface-hover hover:text-gray-9'
               type='button'
               onClick={() => {
                 navigator.clipboard?.writeText(activeQuestion.id)
@@ -1046,11 +1046,11 @@ const QuestionSettings = ({
 
           {/* Secondary controls - collapsed by default */}
           <button
-            className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'
+            className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors outline-none hover:text-accent-primary focus-visible:ring-2 focus-visible:ring-primary-6'
             type='button'
             onClick={() => setShowMoreSetup(!showMoreSetup)}
           >
-            <span className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+            <span className='text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
               More Options
             </span>
             <Icon
@@ -1058,7 +1058,7 @@ const QuestionSettings = ({
               name='lucide:chevron-down'
               width={14}
               className={cn(
-                'text-gray-5 transition-transform duration-200',
+                'text-gray-9 transition-transform duration-200',
                 showMoreSetup && 'rotate-180',
               )}
             />
@@ -1084,8 +1084,8 @@ const QuestionSettings = ({
                 />
               )}
 
-              <div className='flex items-center justify-between rounded-lg border border-gray-1 bg-surface-muted/50 px-3 py-2'>
-                <div className='text-xs font-semibold text-gray-7'>
+              <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
+                <div className='text-xs font-semibold text-gray-10'>
                   Hide Label
                 </div>
                 <InputSwitch
@@ -1102,7 +1102,7 @@ const QuestionSettings = ({
                 </label>
                 <div className='relative'>
                   <textarea
-                    className='min-h-[80px] w-full resize-none rounded-md border border-gray-1 bg-surface px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
+                    className='min-h-[80px] w-full resize-none rounded-md border border-gray-3 bg-surface px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
                     placeholder='Add extra instructions...'
                     value={localDesc}
                     onBlur={() =>
@@ -1138,12 +1138,12 @@ const QuestionSettings = ({
                 isTime ||
                 isDateTime ||
                 isSelect) && (
-                <div className='flex items-center justify-between rounded-lg border border-gray-1 bg-surface-muted/50 px-3 py-2'>
+                <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                   <div>
                     <div className='text-xs font-bold text-gray-13'>
                       Answer Status Indicator
                     </div>
-                    <div className='text-[10px] text-gray-9'>
+                    <div className='text-11 text-gray-9'>
                       Track progress for this field
                     </div>
                   </div>
@@ -1161,7 +1161,7 @@ const QuestionSettings = ({
                 </div>
               )}
 
-              <Divider className='border-gray-1' />
+              <Divider className='border-gray-3' />
 
               {(isShortText ||
                 isLongText ||
@@ -1198,7 +1198,7 @@ const QuestionSettings = ({
                 !isDateTime &&
                 !isSelect && (
                   <div className='grid grid-cols-2 gap-2'>
-                    <div className='flex flex-col gap-2 rounded-xl border border-gray-1 bg-surface-muted/30 p-3'>
+                    <div className='flex flex-col gap-2 rounded-xl border border-gray-3 bg-surface p-3'>
                       <div className='text-xs font-bold text-gray-13'>
                         Read Only
                       </div>
@@ -1211,7 +1211,7 @@ const QuestionSettings = ({
                         }
                       />
                     </div>
-                    <div className='flex flex-col gap-2 rounded-xl border border-gray-1 bg-surface-muted/30 p-3'>
+                    <div className='flex flex-col gap-2 rounded-xl border border-gray-3 bg-surface p-3'>
                       <div className='text-xs font-bold text-gray-13'>
                         Hidden Field
                       </div>
@@ -1418,7 +1418,7 @@ const QuestionSettings = ({
                 ].includes(
                   activeQuestion.settings.specific.fillValueType || '',
                 ) && (
-                  <div className='text-[10px] text-gray-6 italic'>
+                  <div className='text-11 text-gray-9'>
                     {
                       fillValueOptions.find(
                         (o) =>
@@ -1431,14 +1431,14 @@ const QuestionSettings = ({
                   </div>
                 )}
 
-                <Divider className='border-dashed border-gray-1' />
+                <Divider className='border-dashed border-gray-3' />
 
-                <div className='flex items-center justify-between'>
+                <div className='flex items-center justify-between gap-3'>
                   <div>
                     <div className='text-xs font-bold text-gray-13'>
                       Address Autocomplete
                     </div>
-                    <div className='text-[10px] text-gray-6'>
+                    <div className='text-11 text-gray-9'>
                       Geocode typed address, split into other fields
                     </div>
                   </div>
@@ -1453,8 +1453,8 @@ const QuestionSettings = ({
                 </div>
 
                 {activeQuestion.settings.specific.isAddressField && (
-                  <div className='space-y-2 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
-                    <div className='text-[11px] font-bold text-gray-8 uppercase'>
+                  <div className='space-y-2 rounded-lg border border-gray-3 bg-surface p-3'>
+                    <div className='text-[11px] font-bold text-gray-10 uppercase'>
                       Address Matching Fields
                     </div>
                     {(
@@ -1503,14 +1503,14 @@ const QuestionSettings = ({
                   </div>
                 )}
 
-                <Divider className='border-dashed border-gray-1' />
+                <Divider className='border-dashed border-gray-3' />
 
-                <div className='flex items-center justify-between'>
+                <div className='flex items-center justify-between gap-3'>
                   <div>
                     <div className='text-xs font-bold text-gray-13'>
                       Read Values from QR Code
                     </div>
-                    <div className='text-[10px] text-gray-6'>
+                    <div className='text-11 text-gray-9'>
                       Show a scan button beside the field
                     </div>
                   </div>
@@ -1536,12 +1536,12 @@ const QuestionSettings = ({
                     updateNested('specific', { defaultCountryCode: val })
                   }
                 />
-                <div className='flex items-center justify-between px-1 py-2'>
+                <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                   <div>
                     <div className='text-xs font-bold text-gray-13'>
                       Enable Search
                     </div>
-                    <div className='text-[10px] text-gray-6'>
+                    <div className='text-11 text-gray-9'>
                       Allow users to search by name/code
                     </div>
                   </div>
@@ -1617,7 +1617,7 @@ const QuestionSettings = ({
                   </div>
                 )}
 
-                <Divider className='border-dashed border-gray-1' />
+                <Divider className='border-dashed border-gray-3' />
 
                 <div>
                   <label className='mb-2 block text-13 font-medium text-gray-11'>
@@ -1644,7 +1644,7 @@ const QuestionSettings = ({
                       })
                     }
                   />
-                  <div className='mt-1 text-[10px] text-gray-6 italic'>
+                  <div className='mt-1 text-11 text-gray-9'>
                     Automatically match units with the parent field.
                   </div>
                 </div>
@@ -1682,7 +1682,7 @@ const QuestionSettings = ({
                 {(activeQuestion.settings.specific.optionsType === 'MASTER' ||
                   activeQuestion.settings.specific.optionsType ===
                     'MASTER_TABLE') && (
-                  <div className='space-y-4 rounded-lg border border-gray-2 bg-surface-muted/40 p-3.5'>
+                  <div className='space-y-4 rounded-lg border border-gray-2 bg-surface p-3.5'>
                     <label className='block text-xs font-semibold tracking-wider text-primary-9 uppercase'>
                       Master Table Configuration
                     </label>
@@ -1740,7 +1740,7 @@ const QuestionSettings = ({
                       />
                     </div>
 
-                    <div className='flex items-center justify-between py-1'>
+                    <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                       <div>
                         <div className='text-xs font-medium text-gray-11'>
                           Same Master Evaluation
@@ -1825,7 +1825,7 @@ const QuestionSettings = ({
                                 }}
                               />
                             </div>
-                            <span className='text-xs font-bold text-gray-5'>
+                            <span className='text-xs font-bold text-gray-9'>
                               &rarr;
                             </span>
                             <div className='flex-1'>
@@ -1912,7 +1912,7 @@ const QuestionSettings = ({
                           />
                         </div>
 
-                        <div className='flex items-center justify-between py-1'>
+                        <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                           <div>
                             <div className='text-xs font-medium text-gray-11'>
                               Display All Data When Parent Empty
@@ -2061,7 +2061,7 @@ const QuestionSettings = ({
                         />
                       </div>
 
-                      <div className='flex items-center justify-between py-1'>
+                      <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                         <div>
                           <div className='text-xs font-medium text-gray-11'>
                             Has Same Form
@@ -2090,7 +2090,7 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.optionsType ===
                   'REPOSITORY' && (
-                  <div className='space-y-3 rounded-lg border border-gray-2 bg-surface-muted/40 p-3.5'>
+                  <div className='space-y-3 rounded-lg border border-gray-2 bg-surface p-3.5'>
                     <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Repository Source Builder
                     </label>
@@ -2188,7 +2188,7 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.optionsType ===
                   'PREDEFINED' && (
-                  <div className='space-y-3.5 rounded-lg border border-gray-2 bg-surface-muted/40 p-3.5'>
+                  <div className='space-y-3.5 rounded-lg border border-gray-2 bg-surface p-3.5'>
                     <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Predefined Entity Configuration
                     </label>
@@ -2366,7 +2366,7 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.optionsType ===
                   'EXISTING' && (
-                  <div className='space-y-3.5 rounded-lg border border-gray-2 bg-surface-muted/40 p-3.5'>
+                  <div className='space-y-3.5 rounded-lg border border-gray-2 bg-surface p-3.5'>
                     <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Unique Column Values
                     </label>
@@ -2396,7 +2396,7 @@ const QuestionSettings = ({
                           })
                         }
                       />
-                      <div className='mt-1 text-[10px] text-gray-6 italic'>
+                      <div className='mt-1 text-11 text-gray-9'>
                         Options will be dynamically collected from unique values
                         of submitted entries for this field.
                       </div>
@@ -2406,7 +2406,7 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.optionsType ===
                   'ASSIGN_PARENT_FIELD' && (
-                  <div className='space-y-3 rounded-lg border border-gray-2 bg-surface-muted/40 p-3.5'>
+                  <div className='space-y-3 rounded-lg border border-gray-2 bg-surface p-3.5'>
                     <label className='block text-[11px] font-bold tracking-wider text-primary-9 uppercase'>
                       Assign Control Field
                     </label>
@@ -2435,7 +2435,7 @@ const QuestionSettings = ({
                           })
                         }
                       />
-                      <div className='mt-1 text-[10px] text-gray-6 italic'>
+                      <div className='mt-1 text-11 text-gray-9'>
                         Options will dynamically match the selected control
                         field's choices.
                       </div>
@@ -2471,7 +2471,7 @@ const QuestionSettings = ({
                       />
                     </div>
                     <textarea
-                      className='min-h-[100px] w-full resize-none rounded-md border border-gray-1 bg-surface px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
+                      className='min-h-[100px] w-full resize-none rounded-md border border-gray-3 bg-surface px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
                       placeholder={
                         activeQuestion.settings.specific
                           .separateOptionsUsing === 'COMMA'
@@ -2533,7 +2533,7 @@ const QuestionSettings = ({
                 )}
 
                 {/* Allow to Add New Options (Available for all option sources) */}
-                <div className='flex items-center justify-between py-1'>
+                <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                   <div>
                     <div className='text-xs font-medium text-gray-11'>
                       Allow to Add New Options
@@ -2556,11 +2556,11 @@ const QuestionSettings = ({
                 </div>
 
                 <button
-                  className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'
+                  className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors outline-none hover:text-accent-primary focus-visible:ring-2 focus-visible:ring-primary-6'
                   type='button'
                   onClick={() => setShowSelectAdvanced(!showSelectAdvanced)}
                 >
-                  <span className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                  <span className='text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
                     Advanced Options
                   </span>
                   <Icon
@@ -2568,7 +2568,7 @@ const QuestionSettings = ({
                     name='lucide:chevron-down'
                     width={14}
                     className={cn(
-                      'text-gray-5 transition-transform duration-200',
+                      'text-gray-9 transition-transform duration-200',
                       showSelectAdvanced && 'rotate-180',
                     )}
                   />
@@ -2577,13 +2577,13 @@ const QuestionSettings = ({
                 {showSelectAdvanced && (
                   <>
                     {isMulti && (
-                      <div className='space-y-4 rounded-xl border border-gray-1 bg-surface-muted/50 p-3'>
-                        <div className='flex items-center justify-between'>
+                      <div className='space-y-4 rounded-xl border border-gray-3 bg-surface p-3'>
+                        <div className='flex items-center justify-between gap-3'>
                           <div>
-                            <div className='text-xs font-bold text-gray-8'>
+                            <div className='text-xs font-bold text-gray-10'>
                               Bulk Actions
                             </div>
-                            <div className='text-[10px] text-gray-6'>
+                            <div className='text-11 text-gray-9'>
                               Select All / Unselect All
                             </div>
                           </div>
@@ -2607,15 +2607,15 @@ const QuestionSettings = ({
                             'CUSTOM' ||
                             !activeQuestion.settings.specific.optionsType) && (
                             <>
-                              <Divider className='border-dashed border-gray-1' />
+                              <Divider className='border-dashed border-gray-3' />
 
                               <div className='space-y-3'>
-                                <div className='flex items-center justify-between'>
+                                <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                                   <div>
                                     <div className='text-xs font-bold text-gray-13'>
                                       Allow Custom Entries
                                     </div>
-                                    <div className='text-[10px] text-gray-6'>
+                                    <div className='text-11 text-gray-9'>
                                       Users can type in new options
                                     </div>
                                   </div>
@@ -2635,7 +2635,7 @@ const QuestionSettings = ({
                                 {activeQuestion.settings.specific
                                   .allowCustomEntries && (
                                   <div className='animate-in fade-in slide-in-from-top-1 space-y-2 duration-200'>
-                                    <label className='block text-[10px] font-bold tracking-wider text-gray-8 uppercase'>
+                                    <label className='block text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
                                       Entry Validation
                                     </label>
                                     <InputSelect
@@ -2665,13 +2665,13 @@ const QuestionSettings = ({
                     )}
 
                     {isChoice && (
-                      <div className='bg-secondary-subtle/10 border-secondary-subtle/20 space-y-4 rounded-xl border p-3'>
-                        <div className='flex items-center justify-between'>
+                      <div className='space-y-4 rounded-xl border border-gray-3 bg-surface p-3'>
+                        <div className='flex items-center justify-between gap-3'>
                           <div>
                             <div className='text-xs font-bold text-gray-13'>
                               Show Options Wrapper
                             </div>
-                            <div className='text-[10px] text-gray-6'>
+                            <div className='text-11 text-gray-9'>
                               Add border and padding to group
                             </div>
                           </div>
@@ -2690,13 +2690,13 @@ const QuestionSettings = ({
 
                         {activeQuestion.type === 'SINGLE_CHOICE' && (
                           <>
-                            <Divider className='border-dashed border-gray-1' />
-                            <div className='flex items-center justify-between'>
+                            <Divider className='border-dashed border-gray-3' />
+                            <div className='flex items-center justify-between gap-3'>
                               <div>
                                 <div className='text-xs font-bold text-gray-13'>
                                   QR Code Value Scan
                                 </div>
-                                <div className='text-[10px] text-gray-6'>
+                                <div className='text-11 text-gray-9'>
                                   Display barcode/QR scan button beside label
                                 </div>
                               </div>
@@ -2715,7 +2715,7 @@ const QuestionSettings = ({
                           </>
                         )}
 
-                        <Divider className='border-dashed border-gray-1' />
+                        <Divider className='border-dashed border-gray-3' />
 
                         <div className='space-y-2'>
                           <label className='block text-13 font-medium text-gray-11'>
@@ -2739,7 +2739,7 @@ const QuestionSettings = ({
                               })
                             }
                           />
-                          <div className='text-[10px] text-gray-6 italic'>
+                          <div className='text-11 text-gray-9'>
                             Control layout grid (0 = Auto Flex, 1 = Vertical
                             List).
                           </div>
@@ -2747,7 +2747,7 @@ const QuestionSettings = ({
                       </div>
                     )}
 
-                    <Divider className='border-dashed border-gray-1' />
+                    <Divider className='border-dashed border-gray-3' />
 
                     <div>
                       <label className='mb-2 block text-13 font-medium text-gray-11'>
@@ -2813,7 +2813,7 @@ const QuestionSettings = ({
                           />
                         )
                       })()}
-                      <div className='mt-1 text-[10px] text-gray-6 italic'>
+                      <div className='mt-1 text-11 text-gray-9'>
                         Options will change based on parent selection.
                       </div>
                     </div>
@@ -2919,10 +2919,10 @@ const QuestionSettings = ({
 
                     {activeQuestion.type === 'SINGLE_SELECT' && (
                       <>
-                        <Divider className='border-dashed border-gray-1' />
+                        <Divider className='border-dashed border-gray-3' />
 
                         <div className='space-y-3'>
-                          <div className='flex items-center justify-between'>
+                          <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                             <div>
                               <div className='text-xs font-medium text-gray-11'>
                                 Option Type: Year-Based
@@ -2950,7 +2950,7 @@ const QuestionSettings = ({
 
                           {(activeQuestion.settings.specific.hasYearType ||
                             activeQuestion.settings.specific.yearType) && (
-                            <div className='animate-in fade-in slide-in-from-top-1 space-y-1.5 rounded-lg border border-gray-2 bg-surface-muted/40 p-3 duration-200'>
+                            <div className='animate-in fade-in slide-in-from-top-1 space-y-1.5 rounded-lg border border-gray-2 bg-surface p-3 duration-200'>
                               <label className='block text-xs font-medium text-gray-11'>
                                 Year Types
                               </label>
@@ -2993,7 +2993,7 @@ const QuestionSettings = ({
                             </div>
                           )}
 
-                          <div className='flex items-center justify-between pt-1'>
+                          <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                             <div>
                               <div className='text-xs font-medium text-gray-11'>
                                 Read Values From QR
@@ -3026,13 +3026,13 @@ const QuestionSettings = ({
 
             {isNumber && (
               <div className='space-y-4'>
-                <div className='space-y-3 rounded-xl border border-gray-1 bg-surface-muted/50 p-3'>
-                  <div className='flex items-center justify-between'>
+                <div className='space-y-3 rounded-xl border border-gray-3 bg-surface p-3'>
+                  <div className='flex items-center justify-between gap-3'>
                     <div>
                       <div className='text-xs font-bold text-gray-13'>
                         Enforce Integer
                       </div>
-                      <div className='text-[10px] text-gray-6'>
+                      <div className='text-11 text-gray-9'>
                         Discard decimals
                       </div>
                     </div>
@@ -3049,13 +3049,13 @@ const QuestionSettings = ({
 
                   {isCounter && (
                     <>
-                      <Divider className='border-dashed border-gray-1' />
-                      <div className='flex items-center justify-between'>
+                      <Divider className='border-dashed border-gray-3' />
+                      <div className='flex items-center justify-between gap-3'>
                         <div>
                           <div className='text-xs font-bold text-gray-13'>
                             Prevent Negative
                           </div>
-                          <div className='text-[10px] text-gray-6'>
+                          <div className='text-11 text-gray-9'>
                             Safety check for 0
                           </div>
                         </div>
@@ -3084,8 +3084,8 @@ const QuestionSettings = ({
                   ])}
 
                 {isFillCustom && (
-                  <div className='space-y-3 rounded-lg border border-gray-2 bg-surface-muted/40 p-3'>
-                    <div className='flex items-center justify-between'>
+                  <div className='space-y-3 rounded-lg border border-gray-2 bg-surface p-3'>
+                    <div className='flex items-center justify-between gap-3'>
                       <div className='text-xs font-bold text-gray-12'>
                         Auto-Generate Number
                       </div>
@@ -3218,14 +3218,14 @@ const QuestionSettings = ({
 
                     {activeQuestion.settings.specific.dateDefaultValueType ===
                       'CUSTOM' && (
-                      <div className='rounded-lg border border-gray-1 bg-surface-muted p-3'>
-                        <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
+                      <div className='rounded-lg border border-gray-3 bg-surface p-3'>
+                        <label className='mb-2 block text-[11px] font-bold text-gray-10 uppercase'>
                           {isDateTime
                             ? 'Pick Fixed Date & Time'
                             : 'Pick Fixed Date'}
                         </label>
                         <input
-                          className='w-full rounded border border-gray-1 bg-surface px-2 py-1 text-sm outline-none focus:border-primary-8'
+                          className='w-full rounded border border-gray-3 bg-surface px-2 py-1 text-sm outline-none focus:border-primary-8'
                           type={isDateTime ? 'datetime-local' : 'date'}
                           value={
                             activeQuestion.settings.specific.defaultValue || ''
@@ -3241,7 +3241,7 @@ const QuestionSettings = ({
 
                     {activeQuestion.settings.specific.dateDefaultValueType ===
                       'PARENT_FIELD' && (
-                      <div className='space-y-3 rounded-lg border border-gray-2 bg-surface-muted/40 p-3'>
+                      <div className='space-y-3 rounded-lg border border-gray-2 bg-surface p-3'>
                         <label className='block text-[11px] font-bold text-gray-12 uppercase'>
                           Parent Date Link
                         </label>
@@ -3268,7 +3268,7 @@ const QuestionSettings = ({
                               updateNested('specific', { parentDateOffset: v })
                             }
                           />
-                          <div className='mt-5 text-xs text-gray-6 italic'>
+                          <div className='mt-5 text-xs text-gray-9 italic'>
                             (+ For Future, - For Past)
                           </div>
                         </div>
@@ -3306,12 +3306,12 @@ const QuestionSettings = ({
 
                 {activeQuestion.settings.specific.timeDefaultValueType ===
                   'CUSTOM' && (
-                  <div className='rounded-lg border border-gray-1 bg-surface-muted p-3'>
-                    <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
+                  <div className='rounded-lg border border-gray-3 bg-surface p-3'>
+                    <label className='mb-2 block text-[11px] font-bold text-gray-10 uppercase'>
                       Pick Fixed Time
                     </label>
                     <input
-                      className='w-full rounded border border-gray-1 bg-surface px-2 py-1 text-sm outline-none focus:border-primary-8'
+                      className='w-full rounded border border-gray-3 bg-surface px-2 py-1 text-sm outline-none focus:border-primary-8'
                       type='time'
                       value={
                         activeQuestion.settings.specific.defaultValue || ''
@@ -3362,22 +3362,22 @@ const QuestionSettings = ({
                     Default Content
                   </label>
                   <div className='overflow-hidden rounded-lg border bg-surface'>
-                    <div className='flex items-center gap-1 border-b border-gray-1 bg-surface-muted p-1'>
+                    <div className='flex items-center gap-1 border-b border-gray-3 bg-surface p-1'>
                       <Icon
-                        className='rounded p-1 text-gray-4 hover:bg-surface'
+                        className='rounded p-1 text-gray-8 hover:bg-surface-hover'
                         height={14}
                         name='lucide:bold'
                         width={14}
                       />
                       <Icon
-                        className='rounded p-1 text-gray-4 hover:bg-surface'
+                        className='rounded p-1 text-gray-8 hover:bg-surface-hover'
                         height={14}
                         name='lucide:italic'
                         width={14}
                       />
                       <div className='mx-1 h-3 w-px bg-gray-2' />
                       <Icon
-                        className='rounded p-1 text-gray-4 hover:bg-surface'
+                        className='rounded p-1 text-gray-8 hover:bg-surface-hover'
                         height={14}
                         name='lucide:list'
                         width={14}
@@ -3474,14 +3474,14 @@ const QuestionSettings = ({
                               >
                                 <div
                                   className={cn(
-                                    'group/col flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border bg-surface-muted/80 p-1.5 transition-colors',
+                                    'group/col flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border bg-surface p-1.5 transition-colors',
                                     expandedColumnId === col.id
                                       ? 'border-primary-5 bg-primary-1/40'
                                       : 'border-gray-2 hover:border-gray-3',
                                   )}
                                 >
                                   <input
-                                    className='min-w-0 flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface focus:border-accent-primary focus:bg-surface focus:outline-none'
+                                    className='min-w-0 flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface-hover focus:border-accent-primary focus:bg-surface focus:outline-none'
                                     placeholder='Column name...'
                                     type='text'
                                     value={col.name}
@@ -3552,14 +3552,14 @@ const QuestionSettings = ({
                       )}
                     </div>
 
-                    <Divider className='border-dashed border-gray-1' />
+                    <Divider className='border-dashed border-gray-3' />
 
                     <button
-                      className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'
+                      className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors outline-none hover:text-accent-primary focus-visible:ring-2 focus-visible:ring-primary-6'
                       type='button'
                       onClick={() => setShowTableAdvanced(!showTableAdvanced)}
                     >
-                      <span className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                      <span className='text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
                         Row & Export Options
                       </span>
                       <Icon
@@ -3567,7 +3567,7 @@ const QuestionSettings = ({
                         name='lucide:chevron-down'
                         width={14}
                         className={cn(
-                          'text-gray-5 transition-transform duration-200',
+                          'text-gray-9 transition-transform duration-200',
                           showTableAdvanced && 'rotate-180',
                         )}
                       />
@@ -3582,7 +3582,7 @@ const QuestionSettings = ({
                               Table Entry Type
                             </label>
                             <SegmentedControl
-                              className='bg-surface-muted'
+                              className='bg-surface'
                               size='xs'
                               fullWidth
                               data={[
@@ -3618,11 +3618,11 @@ const QuestionSettings = ({
                                 }
                               />
 
-                              <div className='space-y-2 rounded-lg border border-dashed border-gray-1 p-2.5'>
-                                <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                              <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
+                                <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
                                   Row Labels (optional)
                                 </label>
-                                <div className='text-[10px] text-gray-6 italic'>
+                                <div className='text-11 text-gray-9'>
                                   Pre-fill a static label for each frozen row
                                   (e.g. "Director Approval", "Finance Review")
                                   instead of just a row number.
@@ -3710,7 +3710,7 @@ const QuestionSettings = ({
                               Table View
                             </label>
                             <SegmentedControl
-                              className='bg-surface-muted'
+                              className='bg-surface'
                               size='xs'
                               fullWidth
                               data={[
@@ -3728,7 +3728,7 @@ const QuestionSettings = ({
                                 updateNested('specific', { tableViewMode: v })
                               }
                             />
-                            <div className='text-[10px] text-gray-6 italic'>
+                            <div className='text-11 text-gray-9'>
                               Advance view switches each row to a vertical card
                               form — better for mobile or many columns.
                               Automatically used when a column is a File/Image
@@ -3737,7 +3737,7 @@ const QuestionSettings = ({
                           </div>
                         </div>
 
-                        <Divider className='border-dashed border-gray-1' />
+                        <Divider className='border-dashed border-gray-3' />
 
                         {/* Bulk Actions & View */}
                         <div className='space-y-3'>
@@ -3775,7 +3775,7 @@ const QuestionSettings = ({
                           />
                         </div>
 
-                        <Divider className='border-dashed border-gray-1' />
+                        <Divider className='border-dashed border-gray-3' />
 
                         {/* Master Table Sync */}
                         <div className='space-y-3'>
@@ -3795,7 +3795,7 @@ const QuestionSettings = ({
 
                           {activeQuestion.settings.specific.fillValueType ===
                             'MASTER' && (
-                            <div className='space-y-3 rounded-lg border border-gray-1 bg-surface-muted/40 p-3'>
+                            <div className='space-y-3 rounded-lg border border-gray-3 bg-surface p-3'>
                               <div>
                                 <label className='mb-1 block text-xs font-medium text-gray-11'>
                                   Parent Field
@@ -3977,7 +3977,7 @@ const QuestionSettings = ({
                           )}
                         </div>
 
-                        <Divider className='border-dashed border-gray-1' />
+                        <Divider className='border-dashed border-gray-3' />
 
                         {/* AI Line-Item Extraction */}
                         <div className='space-y-2'>
@@ -4044,7 +4044,7 @@ const QuestionSettings = ({
                     Icon Type
                   </label>
                   <SegmentedControl
-                    className='bg-surface-muted drop-shadow-sm'
+                    className='bg-surface drop-shadow-sm'
                     size='xs'
                     value={activeQuestion.settings.specific.iconType || 'STAR'}
                     fullWidth
@@ -4080,11 +4080,11 @@ const QuestionSettings = ({
               <div className='space-y-4'>
                 <div className='grid grid-cols-3 gap-2'>
                   <div className='space-y-1'>
-                    <label className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                    <label className='text-[10px] font-bold tracking-wider text-gray-9 uppercase'>
                       Min Label
                     </label>
                     <input
-                      className='w-full rounded border border-gray-1 bg-surface-muted px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
+                      className='w-full rounded border border-gray-3 bg-surface px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
                       type='text'
                       value={
                         activeQuestion.settings.specific.opinionLabels?.min ||
@@ -4101,11 +4101,11 @@ const QuestionSettings = ({
                     />
                   </div>
                   <div className='space-y-1'>
-                    <label className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                    <label className='text-[10px] font-bold tracking-wider text-gray-9 uppercase'>
                       Mid Label
                     </label>
                     <input
-                      className='w-full rounded border border-gray-1 bg-surface-muted px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
+                      className='w-full rounded border border-gray-3 bg-surface px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
                       type='text'
                       value={
                         activeQuestion.settings.specific.opinionLabels?.mid ||
@@ -4122,11 +4122,11 @@ const QuestionSettings = ({
                     />
                   </div>
                   <div className='space-y-1'>
-                    <label className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                    <label className='text-[10px] font-bold tracking-wider text-gray-9 uppercase'>
                       Max Label
                     </label>
                     <input
-                      className='w-full rounded border border-gray-1 bg-surface-muted px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
+                      className='w-full rounded border border-gray-3 bg-surface px-2 py-1 text-xs transition-all outline-none focus:border-accent-primary'
                       type='text'
                       value={
                         activeQuestion.settings.specific.opinionLabels?.max ||
@@ -4148,7 +4148,7 @@ const QuestionSettings = ({
                     Scale Range
                   </label>
                   <SegmentedControl
-                    className='bg-surface-muted drop-shadow-sm'
+                    className='bg-surface drop-shadow-sm'
                     size='xs'
                     fullWidth
                     data={[
@@ -4211,7 +4211,7 @@ const QuestionSettings = ({
                     Matrix Columns (One per line)
                   </label>
                   <textarea
-                    className='min-h-[80px] w-full resize-none rounded-lg border border-gray-1 p-3 text-sm transition-all outline-none focus:border-accent-primary'
+                    className='min-h-[80px] w-full resize-none rounded-lg border border-gray-3 p-3 text-sm transition-all outline-none focus:border-accent-primary'
                     placeholder='Column 1\nColumn 2'
                     value={
                       activeQuestion.settings.specific.matrixColumns?.join(
@@ -4232,7 +4232,7 @@ const QuestionSettings = ({
                     Matrix Rows (One per line)
                   </label>
                   <textarea
-                    className='min-h-[80px] w-full resize-none rounded-lg border border-gray-1 p-3 text-sm transition-all outline-none focus:border-accent-primary'
+                    className='min-h-[80px] w-full resize-none rounded-lg border border-gray-3 p-3 text-sm transition-all outline-none focus:border-accent-primary'
                     placeholder='Row 1\nRow 2'
                     value={
                       activeQuestion.settings.specific.matrixRows?.join('\n') ||
@@ -4307,8 +4307,8 @@ const QuestionSettings = ({
 
             {isFullName && (
               <div className='space-y-4'>
-                <div className='space-y-3 rounded-xl border border-gray-1 bg-surface-muted p-3'>
-                  <div className='text-xs font-bold tracking-wider text-gray-8 uppercase'>
+                <div className='space-y-3 rounded-xl border border-gray-3 bg-surface p-3'>
+                  <div className='text-xs font-bold tracking-wider text-gray-10 uppercase'>
                     Field Options
                   </div>
                   <div className='grid grid-cols-2 gap-2'>
@@ -4351,14 +4351,14 @@ const QuestionSettings = ({
                     Blanks Mapping (e.g. {1})
                   </label>
                   <textarea
-                    className='min-h-[100px] w-full resize-none rounded-lg border border-gray-1 p-3 font-mono text-sm transition-all outline-none focus:border-accent-primary'
+                    className='min-h-[100px] w-full resize-none rounded-lg border border-gray-3 p-3 font-mono text-sm transition-all outline-none focus:border-accent-primary'
                     placeholder='{1}: field_id_1\n{2}: field_id_2'
                     value={activeQuestion.settings.specific.fibMapping || ''}
                     onChange={(e) =>
                       updateNested('specific', { fibMapping: e.target.value })
                     }
                   />
-                  <div className='text-[10px] text-gray-6'>
+                  <div className='text-11 text-gray-9'>
                     Map bracketed numbers to other form fields for dynamic
                     substitution.
                   </div>
@@ -4392,8 +4392,8 @@ const QuestionSettings = ({
                     }
                   />
                 </div>
-                <div className='space-y-3 rounded-xl border border-gray-1 bg-surface-muted p-3'>
-                  <div className='text-xs font-bold tracking-wider text-gray-8 uppercase'>
+                <div className='space-y-3 rounded-xl border border-gray-3 bg-surface p-3'>
+                  <div className='text-xs font-bold tracking-wider text-gray-10 uppercase'>
                     Required Fields
                   </div>
                   <div className='grid grid-cols-2 gap-2'>
@@ -4458,12 +4458,12 @@ const QuestionSettings = ({
           >
             <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
               <div className='space-y-3 rounded-lg border border-accent-soft/10 bg-accent-soft/5 p-2'>
-                <div className='flex items-center justify-between'>
+                <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                   <div>
-                    <div className='text-xs font-bold text-gray-8'>
+                    <div className='text-xs font-bold text-gray-10'>
                       Mandatory
                     </div>
-                    <div className='text-[10px] text-gray-6'>
+                    <div className='text-11 text-gray-9'>
                       Field cannot be empty
                     </div>
                   </div>
@@ -4481,8 +4481,8 @@ const QuestionSettings = ({
                   {activeQuestion.settings.validation.fieldRule ===
                     'REQUIRED' && (
                     <>
-                      <Divider className='border-dashed border-gray-1' />
-                      <div className='flex items-center justify-between py-1'>
+                      <Divider className='border-dashed border-gray-3' />
+                      <div className='flex items-center justify-between gap-3'>
                         <div>
                           <div className='text-xs font-medium text-gray-11'>
                             Answer Indicator
@@ -4513,9 +4513,9 @@ const QuestionSettings = ({
                   activeQuestion.settings.validation.fieldRule ===
                     'REQUIRED' && (
                     <>
-                      <Divider className='border-dashed border-gray-1' />
+                      <Divider className='border-dashed border-gray-3' />
                       <div className='space-y-2'>
-                        <label className='block text-[11px] font-bold text-gray-8 uppercase'>
+                        <label className='block text-[11px] font-bold text-gray-10 uppercase'>
                           Requirement Mode
                         </label>
                         <SegmentedControl
@@ -4535,7 +4535,7 @@ const QuestionSettings = ({
                             })
                           }
                         />
-                        <div className='text-[10px] text-gray-6 italic'>
+                        <div className='text-11 text-gray-9'>
                           {activeQuestion.settings.validation
                             .requiredValidation === 'ALL'
                             ? 'User must check all options to proceed (e.g. compliance checklists).'
@@ -4547,13 +4547,13 @@ const QuestionSettings = ({
 
                 {isCurrency && (
                   <>
-                    <Divider className='border-dashed border-gray-1' />
-                    <div className='flex items-center justify-between'>
+                    <Divider className='border-dashed border-gray-3' />
+                    <div className='flex items-center justify-between gap-3'>
                       <div>
-                        <div className='text-xs font-bold text-gray-8'>
+                        <div className='text-xs font-bold text-gray-10'>
                           Require Currency Unit
                         </div>
-                        <div className='text-[10px] text-gray-6'>
+                        <div className='text-11 text-gray-9'>
                           Both currency and amount are needed
                         </div>
                       </div>
@@ -4574,13 +4574,13 @@ const QuestionSettings = ({
 
                 {isCalculated && (
                   <>
-                    <Divider className='border-dashed border-gray-1' />
-                    <div className='flex items-center justify-between'>
+                    <Divider className='border-dashed border-gray-3' />
+                    <div className='flex items-center justify-between gap-3'>
                       <div>
-                        <div className='text-xs font-bold text-gray-8'>
+                        <div className='text-xs font-bold text-gray-10'>
                           Live Formula
                         </div>
-                        <div className='text-[10px] text-gray-6'>
+                        <div className='text-11 text-gray-9'>
                           Recalculate when source fields change
                         </div>
                       </div>
@@ -4692,7 +4692,7 @@ const QuestionSettings = ({
                   {activeQuestion.type === 'SINGLE_SELECT' &&
                     activeQuestion.settings.validation.contentRule ===
                       'INTEGER' && (
-                      <div className='flex items-center justify-between py-1'>
+                      <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                         <div>
                           <div className='text-xs font-medium text-gray-11'>
                             Calculated Field Participation
@@ -4771,7 +4771,7 @@ const QuestionSettings = ({
                           updateNested('validation', { minDateOffset: v })
                         }
                       />
-                      <div className='pb-2 text-[10px] text-gray-6 italic'>
+                      <div className='pb-2 text-11 text-gray-9'>
                         Current date is default min.
                       </div>
                     </div>
@@ -4791,7 +4791,7 @@ const QuestionSettings = ({
                           updateNested('validation', { maxDateOffset: v })
                         }
                       />
-                      <div className='pb-2 text-[10px] text-gray-6 italic'>
+                      <div className='pb-2 text-11 text-gray-9'>
                         Current date is default max.
                       </div>
                     </div>
@@ -4799,9 +4799,9 @@ const QuestionSettings = ({
 
                   {activeQuestion.settings.validation.dateLimitType ===
                     'RANGE' && (
-                    <div className='grid grid-cols-2 gap-2 rounded-lg border border-gray-1 bg-surface-muted p-3'>
+                    <div className='grid grid-cols-2 gap-2 rounded-lg border border-gray-3 bg-surface p-3'>
                       <div>
-                        <label className='mb-1 block text-[10px] font-bold text-gray-8 uppercase'>
+                        <label className='mb-1 block text-[10px] font-bold text-gray-10 uppercase'>
                           Start Date
                         </label>
                         <input
@@ -4819,7 +4819,7 @@ const QuestionSettings = ({
                         />
                       </div>
                       <div>
-                        <label className='mb-1 block text-[10px] font-bold text-gray-8 uppercase'>
+                        <label className='mb-1 block text-[10px] font-bold text-gray-10 uppercase'>
                           End Date
                         </label>
                         <input
@@ -4877,7 +4877,7 @@ const QuestionSettings = ({
                           updateNested('validation', { minTimeOffset: v })
                         }
                       />
-                      <div className='pb-2 text-[10px] text-gray-6 italic'>
+                      <div className='pb-2 text-11 text-gray-9'>
                         Current time is default min.
                       </div>
                     </div>
@@ -4897,7 +4897,7 @@ const QuestionSettings = ({
                           updateNested('validation', { maxTimeOffset: v })
                         }
                       />
-                      <div className='pb-2 text-[10px] text-gray-6 italic'>
+                      <div className='pb-2 text-11 text-gray-9'>
                         Current time is default max.
                       </div>
                     </div>
@@ -4905,9 +4905,9 @@ const QuestionSettings = ({
 
                   {activeQuestion.settings.validation.timeLimitType ===
                     'RANGE' && (
-                    <div className='grid grid-cols-2 gap-2 rounded-lg border border-gray-1 bg-surface-muted p-3'>
+                    <div className='grid grid-cols-2 gap-2 rounded-lg border border-gray-3 bg-surface p-3'>
                       <div>
-                        <label className='mb-1 block text-[10px] font-bold text-gray-8 uppercase'>
+                        <label className='mb-1 block text-[10px] font-bold text-gray-10 uppercase'>
                           Start Time
                         </label>
                         <input
@@ -4925,7 +4925,7 @@ const QuestionSettings = ({
                         />
                       </div>
                       <div>
-                        <label className='mb-1 block text-[10px] font-bold text-gray-8 uppercase'>
+                        <label className='mb-1 block text-[10px] font-bold text-gray-10 uppercase'>
                           End Time
                         </label>
                         <input
@@ -5113,7 +5113,7 @@ const QuestionSettings = ({
               {isFileUpload && (
                 <div className='space-y-4'>
                   <div className='space-y-1.5'>
-                    <div className='text-xs font-bold text-gray-8'>
+                    <div className='text-xs font-bold text-gray-10'>
                       Allowed File Types
                     </div>
                     <div className='flex flex-wrap gap-2'>
@@ -5223,7 +5223,7 @@ const QuestionSettings = ({
               {/* Conditional Rules (mandatorySettings & readonlySettings) */}
               <div className='space-y-4 border-t border-gray-2 pt-4'>
                 {/* Conditional Mandatory Rules */}
-                <div className='space-y-3 rounded-xl border border-gray-2 bg-surface-muted/40 p-3.5'>
+                <div className='space-y-3 rounded-xl border border-gray-2 bg-surface p-3.5'>
                   <div className='flex items-center justify-between'>
                     <div>
                       <div className='text-xs font-medium text-gray-11'>
@@ -5390,7 +5390,7 @@ const QuestionSettings = ({
                 </div>
 
                 {/* Conditional Read-Only Rules */}
-                <div className='space-y-3 rounded-xl border border-gray-2 bg-surface-muted/40 p-3.5'>
+                <div className='space-y-3 rounded-xl border border-gray-2 bg-surface p-3.5'>
                   <div className='flex items-center justify-between'>
                     <div>
                       <div className='text-xs font-medium text-gray-11'>
@@ -5440,7 +5440,7 @@ const QuestionSettings = ({
                           className='space-y-2 rounded-lg border border-gray-2 bg-surface p-2.5 shadow-2xs'
                           key={rule.id || rIdx}
                         >
-                          <div className='flex items-center justify-between'>
+                          <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                             <div className='flex items-center gap-2'>
                               <span className='text-[10px] font-medium tracking-wider text-gray-9 uppercase'>
                                 Condition:
@@ -5580,7 +5580,7 @@ const QuestionSettings = ({
                 </div>
 
                 {/* Conditional Enable / Show Rules */}
-                <div className='space-y-3 rounded-xl border border-gray-2 bg-surface-muted/40 p-3.5'>
+                <div className='space-y-3 rounded-xl border border-gray-2 bg-surface p-3.5'>
                   <div className='flex items-center justify-between'>
                     <div>
                       <div className='text-xs font-medium text-gray-11'>
@@ -5859,7 +5859,7 @@ const QuestionSettings = ({
                 }
               />
 
-              <div className='space-y-3 rounded-xl border border-gray-1 bg-surface-muted/50 p-3'>
+              <div className='space-y-3 rounded-xl border border-gray-3 bg-surface p-3'>
                 <div className='text-xs font-bold text-gray-12'>
                   Column Mappings
                 </div>
@@ -5897,7 +5897,7 @@ const QuestionSettings = ({
               </div>
 
               {/* Sync Fields for API Input Parameters */}
-              <div className='space-y-2.5 border-t border-gray-1 pt-3'>
+              <div className='space-y-2.5 border-t border-gray-3 pt-3'>
                 <div className='flex items-center justify-between'>
                   <label className='block text-xs font-bold text-gray-11'>
                     Sync Input Fields (Form Field &rarr; API Param)
@@ -5953,7 +5953,7 @@ const QuestionSettings = ({
                         }}
                       />
                     </div>
-                    <span className='text-xs font-bold text-gray-5'>
+                    <span className='text-xs font-bold text-gray-9'>
                       &rarr;
                     </span>
                     <div className='flex-1'>
@@ -5995,7 +5995,7 @@ const QuestionSettings = ({
               </div>
 
               {/* Cascading Lookup Dependent Conditions */}
-              <div className='space-y-3 border-t border-gray-1 pt-3'>
+              <div className='space-y-3 border-t border-gray-3 pt-3'>
                 <div className='text-xs font-bold text-gray-12'>
                   Cascading Dependent Lookup
                 </div>
@@ -6035,12 +6035,12 @@ const QuestionSettings = ({
                     updateNested('lookupSettings', { mappingField: val })
                   }
                 />
-                <div className='flex items-center justify-between py-1'>
+                <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                   <div>
                     <div className='text-xs font-bold text-gray-12'>
                       Same Connection Context
                     </div>
-                    <div className='text-[10px] text-gray-6'>
+                    <div className='text-11 text-gray-9'>
                       Inherit target connection from parent field lookup
                     </div>
                   </div>
@@ -6094,7 +6094,7 @@ const QuestionSettings = ({
             </div>
 
             {activeQuestion.settings.specific.isSearchField === 'YES' && (
-              <div className='space-y-4 rounded-lg border border-border-default bg-surface-muted/40 p-3.5'>
+              <div className='space-y-4 rounded-lg border border-border-default bg-surface p-3.5'>
                 <div>
                   <label className='mb-1.5 block text-xs font-medium text-gray-11'>
                     Same Form
@@ -6157,7 +6157,7 @@ const QuestionSettings = ({
                         })
                       }
                     />
-                    <div className='mt-1 text-[10px] text-gray-6 italic'>
+                    <div className='mt-1 text-11 text-gray-9'>
                       Matches previous entries of current form and populates
                       selected fields.
                     </div>
@@ -6427,7 +6427,7 @@ const QuestionSettings = ({
                 Visual Style
               </label>
               <SegmentedControl
-                className='w-full border border-gray-1 bg-surface-muted'
+                className='w-full border border-gray-3 bg-surface'
                 size='xs'
                 value={activeQuestion.settings.specific.variant || 'default'}
                 data={[
@@ -6441,13 +6441,13 @@ const QuestionSettings = ({
 
             {isDivider && (
               <div className='space-y-4 pt-2'>
-                <Divider className='border-gray-1' />
+                <Divider className='border-gray-3' />
                 <div>
                   <label className='mb-2 block text-13 font-medium tracking-tight text-gray-11 uppercase'>
                     Divider Style
                   </label>
                   <SegmentedControl
-                    className='border border-gray-1 bg-surface-muted'
+                    className='border border-gray-3 bg-surface'
                     size='xs'
                     fullWidth
                     data={[
@@ -6468,12 +6468,12 @@ const QuestionSettings = ({
             )}
 
             {!isDivider && !isCalculated && (
-              <div className='flex items-center justify-between px-1 py-2'>
+              <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
                 <div>
                   <div className='text-xs font-bold text-gray-13'>
                     Read Only
                   </div>
-                  <div className='text-[10px] text-gray-6'>
+                  <div className='text-11 text-gray-9'>
                     User cannot edit this field
                   </div>
                 </div>
@@ -6498,17 +6498,17 @@ const QuestionSettings = ({
         onToggle={() => setOpenAdvanced(!openAdvanced)}
       >
         <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
-          <div className='rounded-lg border border-gray-1 bg-surface-muted p-3'>
+          <div className='rounded-lg border border-gray-3 bg-surface p-3'>
             <div className='mb-1 text-xs font-bold tracking-wider text-gray-11 uppercase'>
               Field ID / Key
             </div>
-            <div className='font-mono text-xs break-all text-gray-6'>
+            <div className='font-mono text-xs break-all text-gray-9'>
               {activeQuestion.id}
             </div>
           </div>
 
           <div className='space-y-2'>
-            <div className='flex items-center justify-between py-1'>
+            <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
               <div className='text-xs font-semibold text-gray-11'>
                 Pre-fill from URL
               </div>
@@ -6522,7 +6522,7 @@ const QuestionSettings = ({
               />
             </div>
 
-            <div className='flex items-center justify-between py-1'>
+            <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
               <div className='text-xs font-semibold text-gray-11'>
                 Unique Value Check
               </div>
@@ -6548,15 +6548,15 @@ const QuestionSettings = ({
         >
           <div className='animate-in fade-in slide-in-from-bottom-2 space-y-3 duration-300'>
             {logicRules.length === 0 ? (
-              <div className='rounded-xl border border-gray-2 bg-surface-muted/50 p-4 text-center'>
+              <div className='rounded-xl border border-gray-2 bg-surface p-4 text-center'>
                 <div className='mb-1 text-sm font-semibold text-gray-9'>
                   Visibility Logic
                 </div>
-                <div className='mb-3 text-[11px] text-gray-5'>
+                <div className='mb-3 text-[11px] text-gray-9'>
                   Set rules to show or hide this field based on other responses.
                 </div>
                 {logicFieldOptions.length === 0 ? (
-                  <div className='text-[11px] text-gray-5 italic'>
+                  <div className='text-[11px] text-gray-9 italic'>
                     Add another field to this form to create a rule.
                   </div>
                 ) : (
@@ -6598,15 +6598,15 @@ const QuestionSettings = ({
                       : []
                   return (
                     <div
-                      className='space-y-2 rounded-xl border border-gray-1 bg-surface p-3 shadow-sm'
+                      className='space-y-2 rounded-xl border border-gray-3 bg-surface p-3 shadow-sm'
                       key={rule.id}
                     >
                       <div className='flex items-center justify-between'>
-                        <span className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                        <span className='text-[10px] font-bold tracking-wider text-gray-9 uppercase'>
                           {idx === 0 ? 'If' : 'And if'}
                         </span>
                         <button
-                          className='text-gray-4 transition-colors hover:text-red-9'
+                          className='text-gray-8 transition-colors hover:text-red-9'
                           title='Remove rule'
                           onClick={() => removeLogicRule(rule.id)}
                         >
@@ -6680,8 +6680,8 @@ const QuestionSettings = ({
                           ))}
                       </div>
 
-                      <div className='flex items-center gap-2 border-t border-dashed border-gray-1 pt-2'>
-                        <span className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                      <div className='flex items-center gap-2 border-t border-dashed border-gray-3 pt-2'>
+                        <span className='text-[10px] font-bold tracking-wider text-gray-9 uppercase'>
                           Then
                         </span>
                         <div className='flex-1'>
@@ -6700,7 +6700,7 @@ const QuestionSettings = ({
                             }
                           />
                         </div>
-                        <span className='shrink-0 text-[11px] text-gray-6'>
+                        <span className='shrink-0 text-[11px] text-gray-9'>
                           this field
                         </span>
                       </div>

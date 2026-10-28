@@ -434,6 +434,7 @@ const WorkflowRequest = ({
     commentDraft,
     comments,
     confirmUpload,
+    formLayout,
     formModel,
     hasAttemptedSubmit,
     isExtractingOcr,
@@ -449,6 +450,7 @@ const WorkflowRequest = ({
     repoFieldDescriptors,
     repoFieldHints,
     submit,
+    submitAttempt,
     submitError,
     uploadedFiles,
     setCommentDraft,
@@ -598,22 +600,53 @@ const WorkflowRequest = ({
   const handleSubmit = async () => {
     const result = await submit()
     if (!result.success) {
-      // A missing-required-field(s) message is guidance, not a failure —
-      // show it as info so it doesn't read like something broke.
-      const isMissingFieldsMessage = missingMandatoryFieldIds.size > 0
+      const missingLabels =
+        ('missingFieldLabels' in result && result.missingFieldLabels) || []
+      const missingIds =
+        ('missingFieldIds' in result && result.missingFieldIds) || []
+      if (missingLabels.length > 0) {
+        const firstLabel = missingLabels[0]
+        const count = missingLabels.length
+        showToast({
+          keepVariant: true,
+          message:
+            count === 1
+              ? t`"${firstLabel}" is mandatory. Please fill it in to submit.`
+              : t`${count} mandatory fields are missing, starting with "${firstLabel}". Please fill them in to submit.`,
+          variant: 'error',
+        })
+        // Scroll to and focus the first missing field that is on screen
+        // (a repo field may not be rendered in every layout).
+        const focusFirstMissing = () => {
+          const target = missingIds
+            .map((id) => document.querySelector(`[data-field-id="${id}"]`))
+            .find(Boolean)
+          target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          target
+            ?.querySelector<HTMLElement>(
+              'input:not([type="hidden"]), select, textarea, [tabindex]',
+            )
+            ?.focus({ preventScroll: true })
+        }
+        // A field in a closed section is reopened by the form renderer —
+        // wait for the section to expand before scrolling to it.
+        const firstTarget = missingIds
+          .map((id) => document.querySelector(`[data-field-id="${id}"]`))
+          .find(Boolean)
+        if (firstTarget && firstTarget.getClientRects().length > 0) {
+          focusFirstMissing()
+        } else {
+          setTimeout(focusFirstMissing, 300)
+        }
+        return
+      }
       showToast({
         message:
-          submitError || t`Failed to start the workflow. Please try again.`,
-        variant: isMissingFieldsMessage ? 'info' : 'error',
+          ('error' in result && result.error) ||
+          submitError ||
+          t`Failed to start the workflow. Please try again.`,
+        variant: 'error',
       })
-      const firstMissingId = missingMandatoryFieldIds.values().next().value
-      if (firstMissingId) {
-        const target = document.querySelector(
-          `[data-field-id="${firstMissingId}"]`,
-        )
-        target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        target?.querySelector<HTMLElement>('input, select, textarea')?.focus()
-      }
       return
     }
 
@@ -859,7 +892,7 @@ const WorkflowRequest = ({
           }
           isSubmitting={isSubmitting}
           stageTrail={stageTrail}
-          title={title ?? t`New Request`}
+          title={title ?? t`New Submission`}
           onClose={onClose}
           onTogglePanel={
             isFormInitiated
@@ -1083,6 +1116,7 @@ const WorkflowRequest = ({
                           presentation='extracted'
                           repoFieldHints={repoFieldHints}
                           repositoryId={workflowRepositoryId}
+                          submitAttempt={submitAttempt}
                           onFieldChange={setFieldValue}
                           onAddAttachments={addAttachment}
                           onOcrFieldList={applyOcrFieldList}
@@ -1101,6 +1135,7 @@ const WorkflowRequest = ({
                           panels={panels}
                           repoFieldHints={repoFieldHints}
                           repositoryId={workflowRepositoryId}
+                          submitAttempt={submitAttempt}
                           onFieldChange={setFieldValue}
                           onAddAttachments={addAttachment}
                           onOcrFieldList={applyOcrFieldList}
@@ -1144,10 +1179,12 @@ const WorkflowRequest = ({
                   formModel={formModel}
                   hasAttemptedSubmit={hasAttemptedSubmit}
                   hiddenFieldIds={stageHiddenFieldIds}
+                  layout={formLayout}
                   missingMandatoryFieldIds={missingMandatoryFieldIds}
                   panels={panels}
                   repoFieldHints={repoFieldHints}
                   repositoryId={workflowRepositoryId}
+                  submitAttempt={submitAttempt}
                   onFieldChange={setFieldValue}
                   onAddAttachments={addAttachment}
                   onOcrFieldList={applyOcrFieldList}

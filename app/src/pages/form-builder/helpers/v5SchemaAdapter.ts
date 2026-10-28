@@ -310,11 +310,12 @@ export function convertV6TokensToV5Formula(
 }
 
 /**
- * Maps V5 form layout ('CLASSIC' | 'CARD' | 'TAB') to V6 store layout ('CLASSIC' | 'SINGLE' | 'ACCORDION').
+ * Maps V5 form layout ('CLASSIC' | 'CARD' | 'TAB') to V6 store layout ('CLASSIC' | 'SINGLE').
+ * The Accordion layout was dropped: 'TAB' / 'ACCORDION' forms open as CLASSIC.
  */
 export function mapV5LayoutToV6(
   rawLayout?: string,
-): 'CLASSIC' | 'SINGLE' | 'ACCORDION' {
+): 'CLASSIC' | 'SINGLE' {
   const upper = String(rawLayout || 'CLASSIC').toUpperCase()
   if (
     upper === 'CARD' ||
@@ -323,9 +324,6 @@ export function mapV5LayoutToV6(
     upper === 'STEPPER'
   ) {
     return 'SINGLE'
-  }
-  if (upper === 'TAB' || upper === 'ACCORDION' || upper === 'FULL') {
-    return 'ACCORDION'
   }
   return 'CLASSIC'
 }

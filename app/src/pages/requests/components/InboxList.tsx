@@ -41,6 +41,8 @@ import RefreshButton from './buttons/RefreshButton'
 import UploadPoButton from './buttons/UploadPoButton'
 import {
   buildFormDataExportColumns,
+  getFormPanels,
+  resolveFormJson,
   useDynamicColumns,
 } from './columns/useDynamicColumns'
 import GridView from './GridView'
@@ -1549,21 +1551,51 @@ const InboxList: React.FC<InboxListProps> = ({
     }
 
     return fields
-  }, [filterFields, columns])
+  }, [filterFields, columns, controlOptionsMap])
 
   // The 5 AP quick-filter chips (Due Date/Matched/Discrepancies/High
   // Value/Supplier) don't mean anything for a generic workflow. For those,
   // default to showing the workflow's own first two filterable fields as
   // chips instead, with the rest still reachable via the "+" picker.
   const isAccountsPayable = isAccountsPayableWorkflow(workflow)
+  // The filter-fields API does not return fields in the form's layout order,
+  // so "first two" is taken from the form definition (top to bottom); fields
+  // the form does not list keep their API order after it.
+  const genericOrderedFilterFields = useMemo<DynamicFilterField[]>(() => {
+    if (isAccountsPayable) return optionalFilterFields
+    const normalizeKey = (value: unknown) =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase()
+    const position = new Map<string, number>()
+    let index = 0
+    for (const panel of getFormPanels(resolveFormJson(workflow))) {
+      for (const field of Array.isArray(panel?.fields) ? panel.fields : []) {
+        for (const key of [field?.label, field?.name, field?.id]) {
+          const normalized = normalizeKey(key)
+          if (normalized && !position.has(normalized)) {
+            position.set(normalized, index)
+          }
+        }
+        index += 1
+      }
+    }
+    const rankOf = (f: DynamicFilterField) =>
+      position.get(normalizeKey(f.label)) ??
+      position.get(normalizeKey(f.id)) ??
+      Number.MAX_SAFE_INTEGER
+    return [...optionalFilterFields].sort((a, b) => rankOf(a) - rankOf(b))
+  }, [isAccountsPayable, optionalFilterFields, workflow])
   const genericDefaultFilterFields = useMemo<DynamicFilterField[]>(
-    () => (isAccountsPayable ? [] : optionalFilterFields.slice(0, 2)),
-    [isAccountsPayable, optionalFilterFields],
+    () => (isAccountsPayable ? [] : genericOrderedFilterFields.slice(0, 2)),
+    [genericOrderedFilterFields, isAccountsPayable],
   )
   const genericPickerFilterFields = useMemo<DynamicFilterField[]>(
     () =>
-      isAccountsPayable ? optionalFilterFields : optionalFilterFields.slice(2),
-    [isAccountsPayable, optionalFilterFields],
+      isAccountsPayable
+        ? optionalFilterFields
+        : genericOrderedFilterFields.slice(2),
+    [genericOrderedFilterFields, isAccountsPayable, optionalFilterFields],
   )
 
   const handleFilterChange = (id: string, values: string | string[]) => {

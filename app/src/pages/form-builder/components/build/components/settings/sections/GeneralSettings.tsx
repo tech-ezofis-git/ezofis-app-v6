@@ -6,6 +6,7 @@ import type {
 } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
+import { mapV5LayoutToV6 } from '@/pages/form-builder/helpers/v5SchemaAdapter'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
@@ -36,22 +37,16 @@ const LAYOUT_OPTIONS: {
   value: FormLayout
 }[] = [
   {
-    desc: 'One question at a time',
+    desc: 'One section per step, Back / Next',
     icon: 'tabler:square-rotated',
     name: 'Single Page',
     value: 'SINGLE',
   },
   {
-    desc: 'Multi-column layout',
+    desc: 'All sections open on one page',
     icon: 'tabler:layout-grid',
     name: 'Classic Grid',
     value: 'CLASSIC',
-  },
-  {
-    desc: 'Expandable section stack',
-    icon: 'tabler:layout-list',
-    name: 'Accordion',
-    value: 'ACCORDION',
   },
 ]
 
@@ -110,7 +105,7 @@ const GeneralSettings = () => {
                   'group flex h-[90px] flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-all',
                   active
                     ? 'border-primary-9 bg-primary-1/60 shadow-xs ring-2 ring-primary-6/20'
-                    : 'border-gray-4 bg-transparent hover:bg-gray-1',
+                    : 'border-gray-4 bg-transparent hover:bg-surface-hover',
                 )}
                 onClick={() => setFormType(t.value)}
               >
@@ -151,7 +146,7 @@ const GeneralSettings = () => {
         </div>
         <div className='flex flex-col gap-2'>
           {LAYOUT_OPTIONS.map((l) => {
-            const active = layout === l.value
+            const active = mapV5LayoutToV6(layout) === l.value
             return (
               <UnstyledButton
                 key={l.value}
@@ -159,7 +154,7 @@ const GeneralSettings = () => {
                   'flex items-center gap-3 rounded-xl border p-2.5 transition-all duration-200',
                   active
                     ? 'border-primary-9 bg-primary-1/60 shadow-xs ring-2 ring-primary-6/20'
-                    : 'border-gray-4 bg-transparent hover:bg-gray-1',
+                    : 'border-gray-4 bg-transparent hover:bg-surface-hover',
                 )}
                 onClick={() => setLayout(l.value)}
               >

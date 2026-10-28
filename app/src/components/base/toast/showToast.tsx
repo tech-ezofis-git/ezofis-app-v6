@@ -59,13 +59,16 @@ function isMandatoryValidationMessage(
 
 const showToast = ({
   autoClose,
+  keepVariant,
   message,
   toastTitle,
   variant = 'default',
 }: Toast) => {
   // Any mandatory not filling message must only be in info toast, not error toast
   const isMandatoryNotice =
-    variant === 'error' && isMandatoryValidationMessage(message, toastTitle)
+    !keepVariant &&
+    variant === 'error' &&
+    isMandatoryValidationMessage(message, toastTitle)
   const resolvedVariant: ToastVariant = isMandatoryNotice ? 'info' : variant
 
   const variantConfig = variants[resolvedVariant] || variants.default

@@ -129,7 +129,7 @@ const FILE_TYPE_OPTIONS = [
 ].map((ext) => ({ id: ext, name: ext.toUpperCase() }))
 
 const SectionLabel = ({ children }: { children: string }) => (
-  <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+  <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
     {children}
   </label>
 )
@@ -361,7 +361,7 @@ const TableColumnFormatSettings = ({
               />
             ))
           ) : (
-            <p className='text-[10px] text-gray-6 italic'>
+            <p className='text-11 text-gray-9'>
               Add other text columns to fill address parts into.
             </p>
           ))}

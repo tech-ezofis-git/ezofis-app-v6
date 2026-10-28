@@ -84,7 +84,7 @@ const Header = ({
 
         <div className='flex items-center gap-2'>
           <h1 className='m-0 text-15 font-semibold text-gray-13'>
-            {title ?? t`New Request`}
+            {title ?? t`New Submission`}
           </h1>
 
           {badge ? (

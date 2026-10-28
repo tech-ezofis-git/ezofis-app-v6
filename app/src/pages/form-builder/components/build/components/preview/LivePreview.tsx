@@ -34,6 +34,7 @@ import {
   evaluatePanelRules,
 } from '@/pages/form-builder/helpers/ruleEngine'
 import { executeSearchFieldSync } from '@/pages/form-builder/helpers/searchFieldSync'
+import { mapV5LayoutToV6 } from '@/pages/form-builder/helpers/v5SchemaAdapter'
 import {
   type Question,
   useFormStore,
@@ -80,8 +81,11 @@ import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
 const LivePreview = () => {
-  const { isPreviewOpen, name, panels, rules, setIsPreviewOpen } =
+  const { isPreviewOpen, layout, name, panels, rules, setIsPreviewOpen } =
     useFormStore()
+  // Same layouts as the request page (WorkflowFormRenderer).
+  const previewLayout = mapV5LayoutToV6(layout)
+  const [step, setStep] = useState(0)
   const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>(
     'desktop',
   )
@@ -108,6 +112,26 @@ const LivePreview = () => {
       formRules: rules as any[],
     }).errors
   }, [hasAttemptedSubmit, panels, previewModel, rules])
+
+  const shownPanels = panels.filter(
+    (panel) => panelStates[panel.id]?.visible !== false,
+  )
+  const currentStep = Math.min(step, Math.max(shownPanels.length - 1, 0))
+  const activeStepId = shownPanels[currentStep]?.id
+  const panelErrorCount = (panel: any) =>
+    (panel.fields || []).filter((field: any) => validationErrors[field.id])
+      .length
+
+  // Test Validation: bring the first section with errors into view.
+  useEffect(() => {
+    if (!hasAttemptedSubmit) return
+    const firstWithErrors = shownPanels.findIndex(
+      (panel) => panelErrorCount(panel) > 0,
+    )
+    if (firstWithErrors < 0) return
+    setStep(firstWithErrors)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAttemptedSubmit])
 
   // Fetch repositories for OCR target context
   useEffect(() => {
@@ -422,24 +446,106 @@ const LivePreview = () => {
                 </div>
               </div>
             ) : (
-              panels.map((panel, idx) =>
-                panelStates[panel.id]?.visible === false ? null : (
+              <>
+              {previewLayout === 'SINGLE' && shownPanels.length > 1 && (
+                <div className='flex flex-col gap-2.5'>
+                  <div className='flex items-center justify-between gap-3'>
+                    <span className='text-11 font-semibold tracking-wider text-gray-10 uppercase'>
+                      Step {currentStep + 1} of {shownPanels.length}
+                    </span>
+                    <span className='text-11 font-medium text-gray-9'>
+                      {Math.round(
+                        ((currentStep + 1) / shownPanels.length) * 100,
+                      )}
+                      %
+                    </span>
+                  </div>
+                  <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-3'>
+                    <div
+                      className='h-full rounded-full bg-primary-9 transition-all duration-500'
+                      style={{
+                        width: `${((currentStep + 1) / shownPanels.length) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <div className='custom-scrollbar flex gap-1.5 overflow-x-auto pb-1'>
+                    {shownPanels.map((panel, idx) => {
+                      const isActive = idx === currentStep
+                      const hasErrors = panelErrorCount(panel) > 0
+                      return (
+                        <button
+                          key={panel.id}
+                          type='button'
+                          className={cn(
+                            'flex shrink-0 cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-12 font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary-6 active:scale-[0.98]',
+                            isActive
+                              ? 'border-primary-6 bg-primary-1 text-primary-11'
+                              : hasErrors
+                                ? 'border-red-6 bg-surface text-red-9 hover:bg-red-1'
+                                : 'border-gray-3 bg-surface text-gray-11 hover:border-primary-5 hover:text-gray-13',
+                          )}
+                          onClick={() => setStep(idx)}
+                        >
+                          <span
+                            className={cn(
+                              'flex size-5 items-center justify-center rounded-full text-11 font-bold',
+                              isActive
+                                ? 'bg-primary-9 text-white'
+                                : hasErrors
+                                  ? 'bg-red-9 text-white'
+                                  : 'bg-gray-3 text-gray-11',
+                            )}
+                          >
+                            {hasErrors && !isActive ? '!' : idx + 1}
+                          </span>
+                          <span className='max-w-40 truncate'>
+                            {panel.settings.title ||
+                              `Section ${panels.indexOf(panel) + 1}`}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              {panels.map((panel, idx) => {
+                if (panelStates[panel.id]?.visible === false) return null
+                if (previewLayout === 'SINGLE' && panel.id !== activeStepId) {
+                  return null
+                }
+                const errorCount = panelErrorCount(panel)
+                return (
                   <div
-                    className={cn(
-                      'space-y-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-2xs',
-                      panelStates[panel.id]?.disabled && 'opacity-70',
-                    )}
                     key={panel.id}
+                    className={cn(
+                      'animate-in fade-in space-y-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-2xs duration-300',
+                      panelStates[panel.id]?.disabled && 'opacity-70',
+                      errorCount > 0 && 'border-red-6',
+                    )}
                   >
                     {/* Section Title & Description Header */}
-                    <div className='border-b border-gray-3 pb-3'>
-                      <h3 className='text-base font-bold text-gray-12'>
-                        {panel.settings.title || `Section ${idx + 1}`}
-                      </h3>
-                      {panel.settings.description && (
-                        <p className='mt-1 text-xs font-normal text-gray-10'>
-                          {panel.settings.description}
-                        </p>
+                    <div className='flex items-center justify-between gap-3 border-b border-gray-3 pb-3'>
+                      <div>
+                        <h3 className='text-base font-bold text-gray-12'>
+                          {panel.settings.title || `Section ${idx + 1}`}
+                        </h3>
+                        {panel.settings.description && (
+                          <p className='mt-1 text-xs font-normal text-gray-10'>
+                            {panel.settings.description}
+                          </p>
+                        )}
+                      </div>
+                      {errorCount > 0 && (
+                        <span className='flex shrink-0 items-center gap-1 text-11 font-semibold text-red-9'>
+                          <Icon
+                            height={14}
+                            name='tabler:alert-circle'
+                            width={14}
+                          />
+                          {errorCount === 1
+                            ? '1 field needs attention'
+                            : `${errorCount} fields need attention`}
+                        </span>
                       )}
                     </div>
 
@@ -465,6 +571,8 @@ const LivePreview = () => {
                         )
                         const effectiveDesc =
                           getEffectiveFieldDescription(field)
+                        const isDivider =
+                          resolveRuntimeFieldType(field) === 'DIVIDER'
 
                         return (
                           <div
@@ -482,7 +590,7 @@ const LivePreview = () => {
                                 'md:col-span-3',
                             )}
                           >
-                            {!isFieldLabelHidden(field) && (
+                            {!isDivider && !isFieldLabelHidden(field) && (
                               <div className='mb-1.5 flex items-center justify-between'>
                                 <label className='block text-xs font-semibold text-gray-12'>
                                   {effectiveLabel}
@@ -499,7 +607,7 @@ const LivePreview = () => {
                                 )}
                               </div>
                             )}
-                            {effectiveDesc && (
+                            {!isDivider && effectiveDesc && (
                               <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
                                 {effectiveDesc}
                               </p>
@@ -550,8 +658,44 @@ const LivePreview = () => {
                       })}
                     </div>
                   </div>
-                ),
-              )
+                )
+              })}
+              {previewLayout === 'SINGLE' && shownPanels.length > 1 && (
+                <div className='flex items-center justify-between gap-3'>
+                  <Button
+                    className='h-9 cursor-pointer rounded-xl font-medium'
+                    color='gray'
+                    disabled={currentStep === 0}
+                    leftSection={
+                      <Icon height={14} name='tabler:arrow-left' width={14} />
+                    }
+                    size='sm'
+                    variant='outline'
+                    onClick={() => setStep(currentStep - 1)}
+                  >
+                    Back
+                  </Button>
+                  {currentStep >= shownPanels.length - 1 ? (
+                    <span className='text-12 font-medium text-gray-9'>
+                      Last section — review and submit
+                    </span>
+                  ) : (
+                    <Button
+                      className='h-9 cursor-pointer rounded-xl font-medium'
+                      color='primary'
+                      size='sm'
+                      variant='filled'
+                      rightSection={
+                        <Icon height={14} name='tabler:arrow-right' width={14} />
+                      }
+                      onClick={() => setStep(currentStep + 1)}
+                    >
+                      Next
+                    </Button>
+                  )}
+                </div>
+              )}
+              </>
             )}
           </div>
         </div>

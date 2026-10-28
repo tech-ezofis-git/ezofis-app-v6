@@ -6,7 +6,10 @@ import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import ApiPlaygroundPanel from '@/components/playground/ApiPlaygroundPanel'
 import BrandingSync from '@/lib/branding/BrandingSync'
-import { resolveSignInPath } from '@/lib/branding/session'
+import {
+  isSignInReloadPending,
+  resolveSignInPath,
+} from '@/lib/branding/session'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { clearAskAiFolderExplorerQuery } from '@/pages/folders/utils/folderExplorerSession'
 import { useIsMobile } from '@/pages/mobile'
@@ -97,6 +100,8 @@ const AppLayout = ({ children }: Props) => {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      // Logout / 401 is already reloading the page to sign-in.
+      if (isSignInReloadPending()) return
       const signInPath = resolveSignInPath()
       navigate({ replace: true, to: signInPath })
       return
