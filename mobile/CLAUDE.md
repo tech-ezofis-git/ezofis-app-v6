@@ -14,7 +14,7 @@ tests/e2e/run_all.sh              # mock end-to-end checks (Playwright + Python)
 python3 apk-shell/build_apk.py dist-single/index.html apk-shell/ic_launcher.png /tmp/u.apk && \
 python3 apk-shell/sign_v2.py /tmp/u.apk EZOFIS-Mobile-test.apk apk-shell     # SDK-free test APK
 ```
-Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 28 / 0.5.3.
+Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 29 / 0.5.4.
 
 ## Code map
 - `src/api.js`: sign-in (`loggedFrom: "MOBILE"`, 2FA, tenants), session storage, `authed()` (Bearer + `X-Tenant-Id`). A 401 dispatches `SESSION_EXPIRED`, which sends the user back to login.
@@ -24,7 +24,7 @@ Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py
   - `tabsFor` (`settings.general.requestTabs`), line items, hidden technical fields, `canStart`.
 - `src/controls.jsx`: shared field controls (type → kind, value shapes as the web stores them, display, empty / format checks). Used by New request, the approver's Edit form and MetaForm; add new field types here first. Also the settings rules (`ruleError`, `limits`: content rule, length, number range / decimals, date and time limits), prefix / suffix, help text and tooltip, and the shared `SignaturePad` (also used for signing PDFs).
 - `src/scan.js`: QR / barcode from a camera photo (BarcodeDetector, else `@zxing/library` loaded on demand) and `forKind` to fit the scanned text to the field. `tests/e2e/fixtures/make_qr.cjs` writes test QR images.
-- `src/formRules.js`: show / read-only / mandatory conditions from the field settings (`enableSettings`, `readonlySettings`, `mandatorySettings`, `settings.logic`), ported from the web `ruleEngine.ts`.
+- `src/formRules.js`: show / read-only / mandatory conditions from the field settings (`enableSettings`, `readonlySettings`, `mandatorySettings`, `settings.logic`, form `settings.rules`), ported from the web `ruleEngine.ts`, for fields and sections (panels); rules may name fields by id, `jsonId` or `name`.
 - `src/formEngine.js`: New-request form with web-form parity: defaults, master-data options, cascades, formulas, conditional required, OCR fill, payload.
 - `src/store.jsx`: app state. `live` = signed in, otherwise sample data from `src/data.js`. `bumpLive()` refreshes live screens.
 - `src/repo.js`: repository (Folders) client `repoApi`: browse tree, items query, metadata/delete, staged files (index list, save, export, delete), bulk upload jobs (tracked on the device per tenant). `docApi` (MOBILE_APP_REPOSITORY_API): intelligent upload (classify → OCR → stage → archive), AI summary + `parseSummary`, share / revoke / shared with me, sign requests and signing.

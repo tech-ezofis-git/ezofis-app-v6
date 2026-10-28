@@ -2,7 +2,10 @@
 // settings.validation.enableSettings ("show"), readonlySettings, mandatorySettings (source-driven arrays
 // [{ value, controls, operator?, notEqual? }] and target-driven objects { show|readonly|mandatory, conditions }) and
 // settings.logic (SHOW / HIDE / ENABLE / DISABLE / REQUIRE with conditions). Hidden fields don't feed other rules.
-// fieldStates(fields, values) → { [id]: { visible, disabled, required, lockedByRule } }
+// Sections (panels) take part too: a rule can show / hide a section, a hidden section hides its fields, and the first
+// section is never hidden. Form-level declarative rules (form settings.rules with conditions + actions) are applied.
+// Rules may name a field by id, jsonId or name (V5 forms), as the web resolves them.
+// fieldStates(fields, values, { panels, rules }) → { [id]: { visible, disabled, required, lockedByRule } }
 
 const str = (v) => (v === undefined || v === null ? '' : String(v));
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -70,7 +73,10 @@ export function valueMatches(v, ruleValue, operator) {
   return !isEmpty(v) && equals(v, ruleValue, true);
 }
 
-const valueOf = (id, vals) => (id && id in vals ? vals[id] : undefined);
+// id aliases (jsonId / name → id) for the evaluation in progress
+let IDS = new Map();
+const resolve = (id) => IDS.get(String(id)) || String(id);
+const valueOf = (id, vals) => { if (!id) return undefined; if (id in vals) return vals[id]; const r = resolve(id); return r in vals ? vals[r] : undefined; };
 export function conditionMet(c, vals) {
   if (!isObj(c)) return true;
   if (Array.isArray(c.conditions) && c.conditions.length) return conditionsMet(c.conditions, vals, c.groupLogic || c.logic || c.condition || 'ALL');
@@ -111,7 +117,7 @@ export function conditionsMet(list, vals, group = 'ALL') {
 }
 function enableMatch(srcId, rule, vals) {
   const has = rule.value !== undefined && rule.value !== null && str(rule.value).trim() !== '';
-  const primary = has ? valueMatches(vals[srcId], rule.value, rule.operator || rule.logic) : !isEmpty(vals[srcId]);
+  const primary = has ? valueMatches(valueOf(srcId, vals), rule.value, rule.operator || rule.logic) : !isEmpty(valueOf(srcId, vals));
   const extra = rule.compoundCondition && Array.isArray(rule.otherConditions) && rule.otherConditions.length ? rule.otherConditions : Array.isArray(rule.conditions) && rule.conditions.length ? rule.conditions : null;
   if (!extra) return primary;
   const any = /^(OR|ANY)$/i.test(str(rule.condition || rule.groupLogic || 'AND'));
@@ -129,10 +135,40 @@ function logicResult(rules, vals) {
   return out;
 }
 
-// fields: [{ id, type, settings }] (top-level fields; table columns are passed with their own ids too)
-export function fieldStates(fields, values) {
+// form-level rule actions (web FormRuleEngine.applyAction)
+function applyAction(a, st) {
+  const raw = a.targetFieldIds || (a.targetFieldId ? [a.targetFieldId] : null) || (a.field ? [a.field] : null) || a.controls || [];
+  (Array.isArray(raw) ? raw : [raw]).forEach((rid) => {
+    const s = st[resolve(rid)]; if (!s) return;
+    const t = str(a.type || a.action).toUpperCase();
+    if (t === 'SET_ENABLED') s.disabled = !a.value;
+    else if (t === 'ENABLE_FIELD' || t === 'ENABLE') s.disabled = false;
+    else if (t === 'DISABLE_FIELD' || t === 'DISABLE') s.disabled = true;
+    else if (t === 'SET_VISIBLE' || t === 'SHOW') s.visible = a.value !== false;
+    else if (t === 'HIDE') s.visible = false;
+    else if (t === 'SET_REQUIRED' || t === 'REQUIRE' || t === 'MANDATORY') s.required = a.value !== false;
+  });
+}
+const VIS = /^(SET_VISIBLE|SHOW|HIDE)$/;
+function runRules(rules, vals, st, visibility) {
+  (rules || []).forEach((r) => {
+    if (!r || !(Array.isArray(r.actions) || Array.isArray(r.then) || Array.isArray(r.elseActions) || Array.isArray(r.else))) return;
+    const met = !Array.isArray(r.conditions) || !r.conditions.length || conditionsMet(r.conditions, vals, r.groupLogic || 'ALL');
+    const acts = (met ? r.actions || r.then : r.elseActions || r.else) || [];
+    acts.forEach((a) => { if (VIS.test(str(a.type || a.action).toUpperCase()) === visibility) applyAction(a, st); });
+  });
+}
+
+// fields: [{ id, type, settings, jsonId?, name?, panel? }] (top-level fields; panel = the section id they sit in)
+// opts.panels: [{ id, settings }] in form order (panels, then secondary panels); opts.rules: form settings.rules
+export function fieldStates(fields, values, opts = {}) {
+  const panels = opts.panels || []; const rules = opts.rules || [];
+  IDS = new Map();
+  fields.forEach((f) => { IDS.set(String(f.id), String(f.id)); if (f.jsonId) IDS.set(String(f.jsonId), String(f.id)); if (f.name) IDS.set(String(f.name), String(f.id)); });
   const st = {};
   const v0 = (f) => (f.settings && f.settings.validation) || {};
+  const firstPanel = panels[0] && panels[0].id;
+  panels.forEach((p, i) => { const ps = p.settings || {}; st[p.id] = { visible: i === 0 || !(ps.hidden || ps.visibility === 'HIDDEN' || p.hidden), disabled: !!ps.readOnly, required: false, panel: true }; });
   fields.forEach((f) => {
     const g = (f.settings && f.settings.general) || {}; const val = v0(f); const ro = val.readonlySettings;
     st[f.id] = {
@@ -145,26 +181,30 @@ export function fieldStates(fields, values) {
   const controlled = new Set();
   fields.forEach((f) => {
     const en = v0(f).enableSettings;
-    if (Array.isArray(en)) en.forEach((r) => (r && Array.isArray(r.controls) ? r.controls : []).forEach((id) => controlled.add(String(id))));
+    if (Array.isArray(en)) en.forEach((r) => (r && Array.isArray(r.controls) ? r.controls : []).forEach((id) => { const t = resolve(id); if (t !== firstPanel) controlled.add(t); }));
     else if (isObj(en) && en.enable && Array.isArray(en.conditions) && en.conditions.length) controlled.add(String(f.id));
   });
-  const effective = () => { const e = { ...values }; fields.forEach((f) => { if (st[f.id] && !st[f.id].visible) e[f.id] = undefined; }); return e; };
+  const shown = (f) => st[f.id] && st[f.id].visible && !(f.panel && f.panel !== firstPanel && st[f.panel] && !st[f.panel].visible);
+  const effective = () => { const e = { ...values }; fields.forEach((f) => { if (!shown(f)) e[f.id] = undefined; }); return e; };
   for (let pass = 0; pass < fields.length + 2; pass += 1) {
     const before = JSON.stringify(Object.values(st).map((x) => x.visible));
     controlled.forEach((id) => { if (st[id]) st[id].visible = false; });
     const vals = effective();
+    runRules(rules, vals, st, true);
+    panels.forEach((p) => { const lr = (p.settings && p.settings.logic) || []; if (lr.length && p.id !== firstPanel) { const r = logicResult(lr.filter((x) => x.action === 'SHOW' || x.action === 'HIDE'), vals); if (r.visible !== undefined) st[p.id].visible = r.visible; } });
     fields.forEach((f) => {
       const lr = (f.settings && f.settings.logic) || [];
       if (lr.length) { const r = logicResult(lr.filter((x) => x.action === 'SHOW' || x.action === 'HIDE'), vals); if (r.visible !== undefined) st[f.id].visible = r.visible; }
     });
     fields.forEach((f) => {
       const en = v0(f).enableSettings;
-      if (Array.isArray(en) && st[f.id].visible) en.forEach((r) => { if (r && Array.isArray(r.controls) && r.controls.length && enableMatch(f.id, r, vals)) r.controls.forEach((id) => { if (st[id]) st[id].visible = true; }); });
+      if (Array.isArray(en) && shown(f)) en.forEach((r) => { if (r && Array.isArray(r.controls) && r.controls.length && enableMatch(f.id, r, vals)) r.controls.forEach((id) => { const t = resolve(id); if (st[t]) st[t].visible = true; }); });
       else if (isObj(en) && en.enable && Array.isArray(en.conditions) && en.conditions.length && conditionsMet(en.conditions, vals, 'ALL')) st[f.id].visible = true;
     });
     if (JSON.stringify(Object.values(st).map((x) => x.visible)) === before) break;
   }
   const vals = effective();
+  runRules(rules, vals, st, false);
   fields.forEach((f) => {
     const lr = (f.settings && f.settings.logic) || [];
     if (lr.length) { const r = logicResult(lr, vals); if (r.visible !== undefined) st[f.id].visible = r.visible; if (r.disabled !== undefined) st[f.id].disabled = r.disabled; if (r.required) st[f.id].required = true; }
@@ -173,18 +213,20 @@ export function fieldStates(fields, values) {
     const val = v0(f); const man = val.mandatorySettings; const ro = val.readonlySettings;
     if (isObj(man) && man.mandatory && Array.isArray(man.conditions) && man.conditions.length && conditionsMet(man.conditions, vals, 'ALL')) st[f.id].required = true;
     if (isObj(ro) && ro.readonly && Array.isArray(ro.conditions) && ro.conditions.length) { const m = conditionsMet(ro.conditions, vals, 'ALL'); if (ro.notEqual ? !m : m) Object.assign(st[f.id], { disabled: true, lockedByRule: true }); }
-    if (!st[f.id].visible) return;
+    if (!shown(f)) return;
     const v = vals[f.id];
-    if (Array.isArray(man)) man.forEach((r) => { if (r && Array.isArray(r.controls) && r.controls.length && (Array.isArray(r.conditions) && r.conditions.length ? enableMatch(f.id, r, vals) : valueMatches(v, r.value, r.operator || r.logic))) r.controls.forEach((id) => { if (st[id]) st[id].required = true; }); });
+    if (Array.isArray(man)) man.forEach((r) => { if (r && Array.isArray(r.controls) && r.controls.length && (Array.isArray(r.conditions) && r.conditions.length ? enableMatch(f.id, r, vals) : valueMatches(v, r.value, r.operator || r.logic))) r.controls.forEach((id) => { const t = resolve(id); if (st[t]) st[t].required = true; }); });
     if (Array.isArray(ro)) {
       const notEq = new Map();
       ro.forEach((r) => {
         if (!r || !Array.isArray(r.controls)) return;
         const m = valueMatches(v, r.value, r.operator || r.logic);
-        r.controls.forEach((id) => { if (!st[id]) return; if (r.notEqual) notEq.set(id, (notEq.has(id) ? notEq.get(id) : true) && !m); else if (m) Object.assign(st[id], { disabled: true, lockedByRule: true }); });
+        r.controls.map(resolve).forEach((id) => { if (!st[id]) return; if (r.notEqual) notEq.set(id, (notEq.has(id) ? notEq.get(id) : true) && !m); else if (m) Object.assign(st[id], { disabled: true, lockedByRule: true }); });
       });
       notEq.forEach((lock, id) => { if (lock) Object.assign(st[id], { disabled: true, lockedByRule: true }); });
     }
   });
+  // a hidden section hides and un-requires its fields; a read-only section locks them
+  fields.forEach((f) => { const p = f.panel && st[f.panel]; if (p && f.panel !== firstPanel && !p.visible) Object.assign(st[f.id], { visible: false, required: false }); if (p && p.disabled) st[f.id].disabled = true; });
   return st;
 }

@@ -25,7 +25,10 @@ function normField(x, parentTableId) {
   const optionsType = String(sp.optionsType || lk.optionsSource || sp.optionsSource || '').toUpperCase();
   const sep = sp.separateOptionsUsing === 'NEWLINE' ? /\r?\n/ : ',';
   return {
-    id: x.id, label: x.label || x.name || 'Field', type, kind: kindOf(type), settings: st, table: parentTableId || null, raw: x,
+    id: x.id, label: x.label || x.name || 'Field', type, kind: kindOf(type), settings: st, table: parentTableId || null, raw: x, jsonId: x.jsonId || '', name: x.name || '',
+    // "Pre-select from master": tick the options listed in a master column for the value picked in another field
+    preselect: (type === 'MULTIPLE_CHOICE' || type === 'MULTI_SELECT') && sp.masterPreselectEnabled && sp.masterPreselectSourceFieldId && sp.masterPreselectColumn
+      ? { source: String(sp.masterPreselectSourceFieldId), column: String(sp.masterPreselectColumn) } : null,
     hidden: !!gen.hidden || gen.visibility === 'HIDDEN',
     readOnly: !!gen.readOnly || gen.visibility === 'READ_ONLY' || type === 'CALCULATED',
     placeholder: gen.placeholder || '',
@@ -59,9 +62,16 @@ function normField(x, parentTableId) {
 export function buildSchema(formJson) {
   let fj = formJson || {};
   if (typeof fj === 'string') { try { fj = JSON.parse(fj); } catch (e) { fj = {}; } }
-  const fields = [...(fj.panels || []), ...(fj.secondaryPanels || [])].flatMap((p) => p.fields || []).map((f) => normField(f));
+  // sections: panels then secondary panels, as the web lists them; each field remembers its section
+  const raw = [...(fj.panels || []).map((p) => ({ p, secondary: false })), ...(fj.secondaryPanels || []).map((p) => ({ p, secondary: true }))];
+  const panels = raw.map(({ p, secondary }, i) => ({ id: String(p.id || `panel-${i}`), settings: p.settings || {}, title: (p.settings && p.settings.title) || '', description: (p.settings && p.settings.description) || '', secondary }));
+  const fields = raw.flatMap(({ p }, i) => (p.fields || []).map((f) => ({ ...normField(f), panel: panels[i].id })));
   const byId = {};
   fields.forEach((f) => { byId[f.id] = f; f.columns.forEach((c) => { byId[c.id] = c; }); });
+  // form-level declarative rules (settings.rules with conditions + actions; calculation rules are ignored here)
+  const rules = (Array.isArray(fj.settings && fj.settings.rules) ? fj.settings.rules : []).filter((r) => r && (r.actions || r.then || r.elseActions || r.else));
+  // pre-select sources: resolve the source field (id or jsonId) and its master form
+  fields.forEach((f) => { if (f.preselect) { const s = byId[f.preselect.source] || fields.find((x) => x.jsonId === f.preselect.source); f.preselect.src = s && s.master ? s : null; } });
   // master columns this form actually needs, per master form (everything else is dropped from master rows)
   const need = {};
   const want = (formId, col) => { if (formId && col) (need[formId] = need[formId] || new Set()).add(col); };
@@ -74,7 +84,26 @@ export function buildSchema(formJson) {
     const src = (f.master && f.master.formId) || (f.fill && f.fill.formId);
     if (p && src && p.master) want(src, p.master.column);
   });
-  return { fields, byId, need };
+  fields.forEach((f) => { if (f.preselect && f.preselect.src) { want(f.preselect.src.master.formId, f.preselect.src.master.column); if (GUID.test(f.preselect.column)) want(f.preselect.src.master.formId, f.preselect.column); } });
+  return { fields, byId, need, panels, rules };
+}
+// pre-select columns given as a master column label: map them to the column id from the master form's fields
+export function resolvePreselectColumns(schema, masterFields) {
+  schema.fields.forEach((f) => {
+    const p = f.preselect;
+    if (!p || !p.src || GUID.test(p.column)) return;
+    const list = masterFields[p.src.master.formId] || [];
+    const hit = list.find((x) => same(x.label, p.column) || same(x.id, p.column));
+    if (hit) { p.column = String(hit.id); (schema.need[p.src.master.formId] = schema.need[p.src.master.formId] || new Set()).add(p.column); }
+  });
+}
+// master cell → the option names it lists (arrays, objects or comma / newline separated text)
+function cellNames(v) {
+  if (v === undefined || v === null) return [];
+  if (Array.isArray(v)) return v.flatMap(cellNames);
+  if (typeof v === 'object') return cellNames(v.value ?? v.name ?? v.label);
+  const s = String(v).trim();
+  return s ? [s, ...s.split(/\r?\n|,/).map((x) => x.trim()).filter(Boolean)] : [];
 }
 
 // ---------- master rows ----------
@@ -320,7 +349,23 @@ export function recompute(schema, vals0, masters, users, manual = new Set(), fac
   }
   // show / read-only / mandatory rules from the field settings (web rule engine), then required:
   // static + rule-driven, plus "when X is value, these controls are required" for table columns
-  const states = fieldStates(schema.fields.map((f) => ({ id: f.id, type: f.type, settings: f.settings })), vals);
+  // linked multi-choice: when the source value changes, tick the options its master row lists (web MasterPreselectSync);
+  // the source value last handled is kept under "__pre:<id>" (not sent), so the user's own changes stay
+  schema.fields.forEach((f) => {
+    const p = f.preselect;
+    if (!p || !p.src) return;
+    const rows = masters[p.src.master.formId];
+    const src = vals[p.src.id]; const key = str(Array.isArray(src) ? src[0] : src && typeof src === 'object' ? src.value : src);
+    const mark = '__pre:' + f.id; const handled = vals[mark];
+    if (!key) { if (handled) vals[f.id] = []; vals[mark] = ''; return; }
+    if (!rows || handled === key) return;
+    if (handled === undefined && !empty(vals[f.id])) { vals[mark] = key; return; } // a saved selection stays
+    const wanted = new Set(rows.filter((r) => same(r[p.src.master.column], key)).flatMap((r) => cellNames(r[p.column])).map((x) => x.toLowerCase()));
+    const opts = (f.customOptions || []).map((o) => (typeof o === 'object' ? o.label : o));
+    vals[f.id] = opts.filter((o) => wanted.has(String(o).trim().toLowerCase()));
+    vals[mark] = key;
+  });
+  const states = fieldStates(schema.fields.map((f) => ({ id: f.id, type: f.type, settings: f.settings, jsonId: f.jsonId, name: f.name, panel: f.panel })), vals, { panels: schema.panels || [], rules: schema.rules || [] });
   const required = new Set();
   const addReq = (f) => { if (f.required) required.add(f.id); };
   Object.values(schema.byId).forEach(addReq);

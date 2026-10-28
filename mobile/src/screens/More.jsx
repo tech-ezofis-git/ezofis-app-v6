@@ -137,7 +137,7 @@ export function Settings() {
           <button type="button" className="setting-row" onClick={() => showToast('Opening help.ezofis.com')}><span className="ic"><Icon name="help" size={20} /></span><span className="tx">Help center<small>Guides for inbox, folders and uploads</small></span><Icon name="chevR" size={18} color="#5E5873" /></button>
           <button type="button" className="setting-row" onClick={signOut}><span className="ic" style={{ background: 'var(--tint-r)', color: 'var(--bad)' }}><Icon name="logout" size={20} /></span><span className="tx" style={{ color: 'var(--bad)' }}>Sign out</span></button>
         </div>
-        <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 10 }}>EZOFIS Mobile · V6 · 0.5.3</p>
+        <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 10 }}>EZOFIS Mobile · V6 · 0.5.4</p>
       </div>
       <Sheet open={lang} onClose={() => setLang(false)} title="Language">
         <div className="sheet-list">{['English', 'Tamil', 'Hindi', 'Arabic', 'French'].map((l) => <button key={l} type="button" className={'opt' + (l === language ? ' on' : '')} onClick={() => { setLanguage(l); setLang(false); }}>{l}</button>)}</div>

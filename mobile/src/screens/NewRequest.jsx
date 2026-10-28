@@ -6,10 +6,10 @@ import { useStore } from '../store.jsx';
 import { Icon, TopBar, FileThumb, Sparkle } from '../ui.jsx';
 import { apiErrorMessage } from '../api.js';
 import { wfApi, getWorkflows, getMeta, getForm, canStart, isTechnicalLabel, MAX_FILE_MB, tooBig } from '../wf.js';
-import { buildSchema, initialValues, newRow, recompute, loadMaster, validate, fileProblem, ocrExtract, ocrTargets, uploadWithOcr, toPayload, empty, shownBy, lockedBy, repoSources, rowLabel, columnTotals, NO_INPUT, FILE_TYPES } from '../formEngine.js';
+import { buildSchema, initialValues, newRow, recompute, loadMaster, validate, fileProblem, ocrExtract, ocrTargets, uploadWithOcr, toPayload, empty, shownBy, lockedBy, repoSources, rowLabel, columnTotals, resolvePreselectColumns, NO_INPUT, FILE_TYPES } from '../formEngine.js';
 import { repoApi } from '../repo.js';
 import { Skeleton, ErrorNote } from './LiveWorkflow.jsx';
-import { Control, KNOWN_TYPES, TipButton, HelpText, labelHidden } from '../controls.jsx';
+import { Control, KNOWN_TYPES, TipButton, HelpText, labelHidden, isEmptyFor } from '../controls.jsx';
 
 function PickWorkflow() {
   const nav = useNavigate();
@@ -122,6 +122,7 @@ function StartForm({ workflowId }) {
   const [submitErr, setSubmitErr] = useState('');
   const [ocrBusy, setOcrBusy] = useState({});
   const [open, setOpen] = useState({});
+  const [secOpen, setSecOpen] = useState({}); // section id → false when collapsed
   const manual = useRef(new Set());
   const fileRef = useRef(null);
   const valsRef = useRef({});
@@ -135,6 +136,13 @@ function StartForm({ workflowId }) {
         const f = await getForm(m.formId);
         if (off) return;
         const sc = buildSchema(f && f.json);
+        // pre-select columns named by label: read those master forms' fields to find the column ids
+        const byLabel = [...new Set(sc.fields.filter((x) => x.preselect && x.preselect.src && !/^[0-9a-f-]{36}$/i.test(x.preselect.column)).map((x) => x.preselect.src.master.formId))];
+        if (byLabel.length) {
+          const defs = await Promise.all(byLabel.map((id) => getForm(id).catch(() => null)));
+          resolvePreselectColumns(sc, Object.fromEntries(byLabel.map((id, i) => [id, (defs[i] && defs[i].fields) || []])));
+        }
+        if (off) return;
         setMeta(m); setSchema(sc);
         valsRef.current = initialValues(sc, me, session);
         setState(recompute(sc, valsRef.current, {}, null, manual.current, {}, m.repositoryId));
@@ -227,6 +235,7 @@ function StartForm({ workflowId }) {
     setErrs(e); setSubmitErr('');
     if (Object.keys(e).length) {
       showToast(`${Object.keys(e).length} required field${Object.keys(e).length > 1 ? 's are' : ' is'} missing`, { tone: 'bad' });
+      setSecOpen({}); // open every section so the highlighted fields can be seen
       const firstTable = Object.keys(e).find((k) => k.includes(':'));
       if (firstTable) { const [tid, idx] = firstTable.split(':'); const r = (vals[tid] || [])[Number(idx)]; if (r) setOpen((o) => ({ ...o, [r._key]: true })); }
       setTimeout(() => { const el = document.querySelector('[data-err="1"]'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 50);
@@ -276,6 +285,15 @@ function StartForm({ workflowId }) {
     }
   };
 
+  // sections as on the web: a card per visible section with its mandatory-fields progress; a section a rule hides, or
+  // whose fields are all hidden, isn't shown. A single untitled section is drawn without a card.
+  const filled = (f) => (FILE_TYPES.has(f.type) ? !!(vals[f.id] && (vals[f.id].file || vals[f.id].fileId)) : f.type === 'TABLE' ? !!(vals[f.id] || []).length : !isEmptyFor(f.kind, vals[f.id]));
+  const sections = (schema.panels.length ? schema.panels : [{ id: undefined, title: '' }]).map((p, i) => {
+    const fs = visible.filter((f) => f.panel === p.id);
+    const req = fs.filter((f) => !NO_INPUT.has(f.type) && required.has(f.id) && !lockedBy(f, states));
+    return { id: p.id || 'all', title: p.title || `Section ${i + 1}`, description: p.description, header: schema.panels.length > 1 || !!p.title, fields: fs, req: req.length, done: req.filter(filled).length, shown: !(p.id && states[p.id] && !states[p.id].visible) && fs.some((f) => f.type !== 'DIVIDER') };
+  }).filter((x) => x.shown);
+
   const rowStats = (t, r) => {
     const cols = t.columns.filter((c) => !c.hidden && !NO_INPUT.has(c.type));
     const filled = cols.filter((c) => (FILE_TYPES.has(c.type) ? r[c.id] && (r[c.id].file || r[c.id].fileId) : !empty(r[c.id]))).length;
@@ -290,7 +308,8 @@ function StartForm({ workflowId }) {
         {unsupported.length ? <div className="notice warn" role="alert"><Icon name="warn" size={18} /><span className="grow">This form has required fields the app can't fill yet ({unsupported.map((f) => f.label).join(', ')}). Start this request on cloud.ezofis.com.</span></div> : null}
         {masterErr ? <div className="notice warn"><Icon name="warn" size={18} /><span className="grow">{masterErr}</span></div> : null}
         {loadingLists ? <div className="notice info"><span className="spinner" /><span className="grow">Loading your details and lists…</span></div> : null}
-        {visible.map((f) => {
+        {sections.map((sec) => {
+          const body = sec.fields.map((f) => {
           if (f.type === 'TABLE') {
             const rows = vals[f.id] || [];
             const fixed = f.rowsType === 'FIXED';
@@ -328,6 +347,19 @@ function StartForm({ workflowId }) {
             );
           }
           return <FieldInput key={f.id} f={f} locked={lockedBy(f, states)} value={vals[f.id]} options={options[f.id] !== undefined ? options[f.id] : f.customOptions} required={required.has(f.id)} error={errs[f.id]} ocrBusy={ocrBusy[f.id]} onChange={(v) => setField(f, v)} onFile={(file, extra) => pickFile(f, file, undefined, undefined, extra)} />;
+          });
+          if (!sec.header) return <React.Fragment key={sec.id}>{body}</React.Fragment>;
+          const isOpen = secOpen[sec.id] !== false;
+          return (
+            <section key={sec.id} className="nr-sec" aria-label={sec.title}>
+              <button type="button" className="nr-sec-h" aria-expanded={isOpen} onClick={() => setSecOpen((o) => ({ ...o, [sec.id]: !isOpen }))}>
+                <span className="ic"><Icon name="doc" size={18} color="#643094" /></span>
+                <span className="tt"><b>{sec.title}</b>{sec.description ? <small>{sec.description}</small> : null}{sec.req ? <small className={'cnt' + (sec.done === sec.req ? ' ok' : '')}><b>{sec.done}</b>{' '}of {sec.req} mandatory fields completed</small> : null}</span>
+                <Icon name="chevD" size={18} color="#8A84A0" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+              </button>
+              {isOpen ? <div className="nr-sec-b">{body}</div> : null}
+            </section>
+          );
         })}
         <section className="nr-card">
           <b style={{ fontSize: 15 }}>Attachments <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></b>
