@@ -5318,7 +5318,7 @@
                 "separateOptionsUsing": "COMMA",
                 "allowToAddNewOptions": false,
                 "optionsPerLine": 0,
-                "defaultValue": "CUSTOM",
+                "defaultValue": "",
                 "autoGenerateValue": {
                   "prefix": "Form",
                   "suffix": "DATE_TIME"
@@ -6219,7 +6219,7 @@
                 "separateOptionsUsing": "COMMA",
                 "allowToAddNewOptions": false,
                 "optionsPerLine": 0,
-                "defaultValue": "CUSTOM",
+                "defaultValue": "",
                 "autoGenerateValue": {
                   "prefix": "Form",
                   "suffix": "DATE_TIME"
@@ -7202,7 +7202,7 @@
                 "separateOptionsUsing": "COMMA",
                 "allowToAddNewOptions": false,
                 "optionsPerLine": 0,
-                "defaultValue": "CUSTOM",
+                "defaultValue": "",
                 "autoGenerateValue": {
                   "prefix": "Form",
                   "suffix": "DATE_TIME"
@@ -11956,7 +11956,7 @@
                         "separateOptionsUsing": "COMMA",
                         "allowToAddNewOptions": false,
                         "optionsPerLine": 0,
-                        "defaultValue": "CUSTOM",
+                        "defaultValue": "",
                         "autoGenerateValue": {
                           "prefix": "Form",
                           "suffix": "DATE_TIME"
@@ -17812,7 +17812,7 @@
                 "separateOptionsUsing": "COMMA",
                 "allowToAddNewOptions": false,
                 "optionsPerLine": 0,
-                "defaultValue": "CUSTOM",
+                "defaultValue": "",
                 "autoGenerateValue": {
                   "prefix": "Form",
                   "suffix": "DATE_TIME"
@@ -18677,7 +18677,7 @@
                 "separateOptionsUsing": "COMMA",
                 "allowToAddNewOptions": false,
                 "optionsPerLine": 0,
-                "defaultValue": "CUSTOM",
+                "defaultValue": "",
                 "autoGenerateValue": {
                   "prefix": "Form",
                   "suffix": "DATE_TIME"
@@ -25024,7 +25024,7 @@
                         "separateOptionsUsing": "COMMA",
                         "allowToAddNewOptions": false,
                         "optionsPerLine": 0,
-                        "defaultValue": "CUSTOM",
+                        "defaultValue": "",
                         "autoGenerateValue": {
                           "prefix": "Form",
                           "suffix": "DATE_TIME"

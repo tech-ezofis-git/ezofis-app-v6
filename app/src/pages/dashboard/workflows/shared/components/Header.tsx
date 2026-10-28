@@ -6,6 +6,7 @@ import {
   ClipboardList,
   // ChevronRight,
   DollarSign,
+  RefreshCw,
   X,
 } from 'lucide-react'
 import React from 'react'
@@ -16,8 +17,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ComposedChart,
-  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -195,6 +194,8 @@ export default function DashboardCharts() {
   // API response storage
   const [dashboardData, setDashboardData] = React.useState<any>(null)
   const [_isLoading, setIsLoading] = React.useState(true)
+  // Bumped by the refresh icon to re-run the fetch with the same filters
+  const [refreshKey, setRefreshKey] = React.useState(0)
 
   // Map store timeframe key to API period key
   const periodMap: Record<string, string> = {
@@ -433,6 +434,7 @@ export default function DashboardCharts() {
     department,
     requestStatus,
     poAmountTier,
+    refreshKey,
   ])
 
   const filteredInvoices = React.useMemo(() => {
@@ -583,9 +585,6 @@ export default function DashboardCharts() {
   const profitabilityKpis = React.useMemo(() => {
     return dashboardData?.profitabilityCashPosition?.kpis || []
   }, [dashboardData])
-  const profitMarginKpi = React.useMemo(() => {
-    return profitabilityKpis.find((k: any) => k.key === 'profit_margin')
-  }, [profitabilityKpis])
   const next4WeeksKpi = React.useMemo(() => {
     return profitabilityKpis.find((k: any) => k.key === 'next_4_weeks_forecast')
   }, [profitabilityKpis])
@@ -720,11 +719,10 @@ export default function DashboardCharts() {
     )
   }, [dashboardData])
 
-  const profitVsApData = React.useMemo(() => {
+  const apSpendingData = React.useMemo(() => {
     return (dashboardData?.profitVsApSpending?.points || []).map((pt: any) => ({
       AP: pt.primary,
       name: pt.label,
-      Profit: pt.secondary,
     }))
   }, [dashboardData])
 
@@ -1212,27 +1210,13 @@ export default function DashboardCharts() {
             >
               <div>
                 <h3 className='font-poppins text-14 font-semibold'>
-                  {dashboardData?.profitabilityCashPosition?.title ||
-                    'Profitability & Cash Position'}
+                  {t`AP Spending & Cash Position`}
                 </h3>
                 <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  {dashboardData?.profitabilityCashPosition?.subtitle ||
-                    'Is payables growth eating margin · future liquidity needs'}
+                  {t`AP spending trend · upcoming cash needs`}
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-6'>
-                <div className='flex flex-col gap-0.5 text-center md:text-right'>
-                  <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
-                    {profitMarginKpi?.label || 'Profit Margin'}
-                  </span>
-                  <span className='text-15 font-semibold text-cyan-9'>
-                    {_isLoading ? (
-                      <span className='inline-block h-5 w-12 animate-pulse rounded bg-gray-3' />
-                    ) : (
-                      profitMarginKpi?.displayValue || 'No data available'
-                    )}
-                  </span>
-                </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase'>
                     {next4WeeksKpi?.label || 'Next 4 Weeks'}
@@ -1259,7 +1243,22 @@ export default function DashboardCharts() {
                     )}
                   </span>
                 </div>
-                <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
+                <button
+                  aria-label={t`Refresh data`}
+                  className='z-20 cursor-pointer rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-gray-3 hover:text-primary-9 disabled:cursor-not-allowed disabled:opacity-60'
+                  disabled={_isLoading}
+                  title={t`Refresh data`}
+                  type='button'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setRefreshKey((k) => k + 1)
+                  }}
+                >
+                  <RefreshCw
+                    className={cn('h-4 w-4', _isLoading && 'animate-spin')}
+                  />
+                </button>
+                <div className='z-20 rounded-lg p-1.5 text-text-secondary transition-colors'>
                   {isProfitabilityExpanded ? (
                     <ChevronUp className='h-5 w-5 text-primary-9' />
                   ) : (
@@ -1280,16 +1279,14 @@ export default function DashboardCharts() {
                 <div className='grid grid-cols-12 gap-4'>
                   <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
                     <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                      {dashboardData?.profitVsApSpending?.title ||
-                        'AP spending'}
+                      {t`AP spending`}
                     </h3>
                     <div className='mb-4 font-inter text-11 text-text-muted'>
-                      {dashboardData?.profitVsApSpending?.subtitle ||
-                        'Dual axis spending trend comparison'}
+                      {t`AP spending by period`}
                     </div>
                     <div className='h-64'>
                       <ResponsiveContainer height='100%' width='100%'>
-                        <ComposedChart data={profitVsApData}>
+                        <BarChart data={apSpendingData}>
                           <CartesianGrid
                             strokeDasharray='3 3'
                             vertical={false}
@@ -1297,7 +1294,6 @@ export default function DashboardCharts() {
                           <XAxis dataKey='name' tick={{ fontSize: 11 }} />
                           <YAxis
                             tick={{ fontSize: 11 }}
-                            yAxisId='left'
                             label={{
                               angle: -90,
                               position: 'insideLeft',
@@ -1305,40 +1301,19 @@ export default function DashboardCharts() {
                               value: 'AP Amount',
                             }}
                           />
-                          <YAxis
-                            orientation='right'
-                            tick={{ fontSize: 11 }}
-                            yAxisId='right'
-                            label={{
-                              angle: 90,
-                              position: 'insideRight',
-                              style: { fontSize: 10 },
-                              value: 'Profit %',
-                            }}
-                          />
                           <Tooltip
-                            formatter={(v: any, name?: string) =>
-                              name === 'Profit'
-                                ? [`${v}%`, name]
-                                : [fmtMoney(v), name || '']
-                            }
+                            formatter={(v: any, name?: string) => [
+                              fmtMoney(v),
+                              name || '',
+                            ]}
                           />
                           <Bar
                             barSize={20}
                             dataKey='AP'
                             fill='#8300e6'
                             radius={[4, 4, 0, 0]}
-                            yAxisId='left'
                           />
-                          <Line
-                            dataKey='Profit'
-                            dot={{ r: 4 }}
-                            stroke='#19c1d4'
-                            strokeWidth={2.5}
-                            type='monotone'
-                            yAxisId='right'
-                          />
-                        </ComposedChart>
+                        </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>

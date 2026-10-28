@@ -190,32 +190,32 @@ const DocumentApprovalSplitLayout = ({
 
   const previewAttachment = firstAttachment
     ? {
-      ...firstAttachment,
-      itemId: targetItemId,
-      repositoryId: targetRepoId,
-    }
+        ...firstAttachment,
+        itemId: targetItemId,
+        repositoryId: targetRepoId,
+      }
     : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-        _localFileUrl: selectedItem?._localFileUrl,
-        fileExtension:
-          (
+          _localFileUrl: selectedItem?._localFileUrl,
+          fileExtension:
+            (
+              selectedItem?.repositoryItem?.fileName ||
+              selectedItem?._localFileName
+            )
+              ?.split('.')
+              .pop() || 'pdf',
+          fileName:
             selectedItem?.repositoryItem?.fileName ||
-            selectedItem?._localFileName
-          )
-            ?.split('.')
-            .pop() || 'pdf',
-        fileName:
-          selectedItem?.repositoryItem?.fileName ||
-          selectedItem?.name ||
-          selectedItem?._localFileName,
-        itemId: selectedItem?.itemId,
-        name:
-          selectedItem?.repositoryItem?.fileName ||
-          selectedItem?.name ||
-          selectedItem?._localFileName,
-        repositoryId: selectedItem?.repositoryId,
-        type: selectedItem?._localFileType || undefined,
-      }
+            selectedItem?.name ||
+            selectedItem?._localFileName,
+          itemId: selectedItem?.itemId,
+          name:
+            selectedItem?.repositoryItem?.fileName ||
+            selectedItem?.name ||
+            selectedItem?._localFileName,
+          repositoryId: selectedItem?.repositoryId,
+          type: selectedItem?._localFileType || undefined,
+        }
       : null
 
   // This layout always shows the first received file, so the uploaded copy
@@ -432,10 +432,10 @@ const DocumentFormSplitLayout = ({
 
   const requestIdentity = String(
     selectedItem?.itemId ||
-    selectedItem?.id ||
-    selectedItem?.requestId ||
-    selectedItem?.transactionId ||
-    '',
+      selectedItem?.id ||
+      selectedItem?.requestId ||
+      selectedItem?.transactionId ||
+      '',
   )
 
   // Same request keeps the same key when ids arrive later (an upload starts as
@@ -467,9 +467,7 @@ const DocumentFormSplitLayout = ({
 
   // Seed existing docs on first load; only mark later arrivals as New.
   useEffect(() => {
-    const keys = (attachments || [])
-      .map(attachmentKeyOf)
-      .filter(Boolean)
+    const keys = (attachments || []).map(attachmentKeyOf).filter(Boolean)
 
     if (!hasSeededAttachmentKeysRef.current) {
       // Wait until the initial attachment list arrives so open-time docs
@@ -651,10 +649,10 @@ const DocumentFormSplitLayout = ({
         { icon: 'tabler:file-text', id: 'summary', label: t`Extracted Data` },
         lineItemsNode
           ? {
-            icon: 'tabler:layers-linked',
-            id: 'line_items',
-            label: t`Line Items`,
-          }
+              icon: 'tabler:layers-linked',
+              id: 'line_items',
+              label: t`Line Items`,
+            }
           : null,
         {
           count: attachmentsCount,
@@ -744,34 +742,34 @@ const DocumentFormSplitLayout = ({
   const previewAttachment = waitingForAttachments
     ? null
     : viewerAttachment
-    ? {
-      ...viewerAttachment,
-      itemId: targetItemId,
-      repositoryId: targetRepoId,
-    }
-    : selectedItem?.itemId || selectedItem?._localFileUrl
       ? {
-        _localFileUrl: selectedItem?._localFileUrl,
-        fileExtension:
-          (
-            selectedItem?.repositoryItem?.fileName ||
-            selectedItem?._localFileName
-          )
-            ?.split('.')
-            .pop() || 'pdf',
-        fileName:
-          selectedItem?.repositoryItem?.fileName ||
-          selectedItem?.name ||
-          selectedItem?._localFileName,
-        itemId: selectedItem?.itemId,
-        name:
-          selectedItem?.repositoryItem?.fileName ||
-          selectedItem?.name ||
-          selectedItem?._localFileName,
-        repositoryId: selectedItem?.repositoryId,
-        type: selectedItem?._localFileType || undefined,
-      }
-      : null
+          ...viewerAttachment,
+          itemId: targetItemId,
+          repositoryId: targetRepoId,
+        }
+      : selectedItem?.itemId || selectedItem?._localFileUrl
+        ? {
+            _localFileUrl: selectedItem?._localFileUrl,
+            fileExtension:
+              (
+                selectedItem?.repositoryItem?.fileName ||
+                selectedItem?._localFileName
+              )
+                ?.split('.')
+                .pop() || 'pdf',
+            fileName:
+              selectedItem?.repositoryItem?.fileName ||
+              selectedItem?.name ||
+              selectedItem?._localFileName,
+            itemId: selectedItem?.itemId,
+            name:
+              selectedItem?.repositoryItem?.fileName ||
+              selectedItem?.name ||
+              selectedItem?._localFileName,
+            repositoryId: selectedItem?.repositoryId,
+            type: selectedItem?._localFileType || undefined,
+          }
+        : null
 
   const {
     isLoading: previewLoading,
@@ -789,6 +787,10 @@ const DocumentFormSplitLayout = ({
       ? `file.${previewAttachment.fileExtension}`
       : undefined)
   const viewerKind = resolveDocumentPreviewKind(previewMimeType, viewerFileName)
+  // With the attachment strip on the left, the tab labels are centred in the
+  // same-height bar so they line up with the strip's cards.
+  const tabsCenteredOnStrip =
+    summaryAgentBlocks.length === 0 && viewerStripAttachments.length > 1
   return (
     <div className='flex h-full min-h-0 w-full flex-row overflow-hidden bg-gray-1'>
       <div className='relative flex h-full w-[42%] max-w-[800px] min-w-[280px] shrink-0 flex-col overflow-hidden border-r border-gray-3 bg-gray-1'>
@@ -799,7 +801,14 @@ const DocumentFormSplitLayout = ({
           onOpenAttachmentsTab={() => selectTab('attachments')}
           onSelect={handleSelectViewerAttachment}
         />
-        <div className='min-h-0 flex-1 p-4'>
+        <div
+          className={cn(
+            'min-h-0 flex-1 p-4',
+            // Under the attachment strip, start level with the right pane's
+            // tab content (p-3 inset) instead of leaving a larger gap.
+            viewerStripAttachments.length > 1 && 'pt-3',
+          )}
+        >
           <div className='relative h-full min-h-0 overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xs'>
             {previewAttachment || waitingForAttachments ? (
               <DocumentPreviewViewer
@@ -836,11 +845,25 @@ const DocumentFormSplitLayout = ({
             'no-scrollbar scrollbar-none sticky top-0 z-10 shrink-0 overflow-x-auto border-b border-[var(--gray-3)] bg-[var(--surface-primary)] px-4',
             summaryAgentBlocks.length > 0
               ? 'pt-1.5'
-              : 'flex min-h-[60px] items-end',
+              : viewerStripAttachments.length > 1
+                ? 'flex min-h-[60px] items-stretch'
+                : // No strip on the left: the tab text starts level with the
+                  // top of the viewer card (its p-4 inset).
+                  'flex items-end pt-3',
           )}
         >
-          <div className='flex min-w-0 flex-1 items-end justify-between gap-4'>
-            <div className='no-scrollbar flex min-w-0 items-end gap-6 overflow-x-auto'>
+          <div
+            className={cn(
+              'flex min-w-0 flex-1 justify-between gap-4',
+              tabsCenteredOnStrip ? 'items-stretch' : 'items-end',
+            )}
+          >
+            <div
+              className={cn(
+                'no-scrollbar flex min-w-0 gap-6 overflow-x-auto',
+                tabsCenteredOnStrip ? 'items-stretch' : 'items-end',
+              )}
+            >
               {tabs.map((tab) => (
                 <button
                   aria-selected={activeTab === tab.id}
@@ -848,7 +871,8 @@ const DocumentFormSplitLayout = ({
                   role='tab'
                   type='button'
                   className={cn(
-                    'flex shrink-0 items-center border-b-2 pt-1 pb-3 text-13 font-medium whitespace-nowrap outline-none transition-colors focus-visible:underline active:scale-95',
+                    'flex shrink-0 items-center border-b-2 text-13 font-medium whitespace-nowrap transition-colors outline-none focus-visible:underline active:scale-95',
+                    tabsCenteredOnStrip ? 'pt-0.5' : 'pt-1 pb-3',
                     activeTab === tab.id
                       ? 'border-accent-primary text-gray-13'
                       : 'border-transparent text-gray-10 hover:border-primary-4 hover:text-gray-12',
@@ -978,7 +1002,14 @@ const GenericRequestOverview = ({
     Boolean(selectedItem?.isCompleted) ||
     Boolean(selectedItem?.completedAtUtc) ||
     Boolean(selectedItem?.completedAt) ||
-    ['completed', 'approved', 'closed', 'paid', 'success', 'succeeded'].includes(
+    [
+      'completed',
+      'approved',
+      'closed',
+      'paid',
+      'success',
+      'succeeded',
+    ].includes(
       String(selectedItem?.status || '')
         .toLowerCase()
         .trim(),
@@ -1024,7 +1055,7 @@ const GenericRequestOverview = ({
     if (!kanbanMissingFieldIds?.length) return []
     const byId = new Map<string, string>()
     panels.forEach((panel: any) => {
-      ; (panel.fields || []).forEach((field: any) => {
+      ;(panel.fields || []).forEach((field: any) => {
         byId.set(
           String(field.id),
           String(field.label || field.name || field.id),
@@ -1164,7 +1195,13 @@ const GenericRequestOverview = ({
 
   const agentBlocks: AgentBlock[] = useMemo(() => {
     const blocks = rawWorkflowData?.workflowJson?.blocks || []
-    return blocks.filter((b: any) => b.type && b.type.includes('AGENT') && b.type !== 'FTP_AGENT' && b.type !== 'CLASSIFICATION_AGENT')
+    return blocks.filter(
+      (b: any) =>
+        b.type &&
+        b.type.includes('AGENT') &&
+        b.type !== 'FTP_AGENT' &&
+        b.type !== 'CLASSIFICATION_AGENT',
+    )
   }, [rawWorkflowData])
 
   // Status cards at the top only for agents with "Show agent on request page".
@@ -1325,9 +1362,9 @@ const GenericRequestOverview = ({
           String(repositoryId),
           existingItem
             ? {
-              itemId: existingItem.itemId,
-              repositoryId: existingItem.repositoryId || repositoryId,
-            }
+                itemId: existingItem.itemId,
+                repositoryId: existingItem.repositoryId || repositoryId,
+              }
             : undefined,
         )
         const formMeta = buildRepoMetadata(
@@ -1475,155 +1512,30 @@ const GenericRequestOverview = ({
 
   return (
     <div className='relative flex h-full min-h-0 flex-1 overflow-hidden'>
-      <div
-        aria-hidden={showIndexing}
-        className={
-          showIndexing
-            ? 'pointer-events-none invisible absolute inset-0 flex h-full min-h-0 overflow-hidden'
-            : 'flex h-full min-h-0 flex-1 overflow-hidden'
-        }
-      >
-        {rawWorkflowData?.name === 'Document Approval' ? (
-          <DocumentApprovalSplitLayout
-            attachments={attachments}
-            formModel={formModel}
-            repositoryId={repositoryId}
-            selectedItem={selectedItem || storeSelectedItem}
-            formNode={
-              <WorkflowFormRenderer
-                attachments={attachments}
-                currentActivityId={currentActivityId}
-                disableOwnScroll={true}
-                formModel={formModel}
-                hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-                hiddenFieldIds={hiddenFieldIds}
-                hidePanels={true}
-                instanceId={instanceId}
-                panels={panels}
-                preparePhase={preparePhase}
-                preparingFieldId={preparingFieldId}
-                readOnlyFieldIds={readOnlyFieldIds}
-                repositoryId={repositoryId}
-                stageEditableFieldIds={stageEditableFieldIds}
-                viewOnly={viewOnly}
-                missingMandatoryFieldIds={
-                  missingMandatoryFieldIds.size > 0
-                    ? missingMandatoryFieldIds
-                    : undefined
-                }
-                onFieldChange={onFieldChange}
-                onOpenAttachment={setOpenedAttachment}
-                onRequestUpload={viewOnly ? undefined : handleRequestUpload}
-              />
-            }
-            taskNode={
-              <TaskRequirements
-                attachmentCount={attachments.length}
-                checklistChecked={checklistChecked}
-                checklistItems={checklistItems}
-                documentRequired={documentRequired}
-                signatureConfirmed={signatureConfirmed}
-                userSignatureRequired={userSignatureRequired}
-                onChecklistToggle={onChecklistToggle}
-                onSignatureToggle={onSignatureToggle}
-              />
-            }
-          />
-        ) : rawWorkflowData?.settings?.general?.initiateUsing?.type ===
-          'DOCUMENT_FORM' ||
-          rawWorkflowData?.workflowJson?.settings?.general?.initiateUsing
-            ?.type === 'DOCUMENT_FORM' ? (
-          <DocumentFormSplitLayout
-            attachments={attachments}
-            attachmentsCount={attachments.length}
-            attachmentsLoading={attachmentsLoading}
-            commentsCount={comments.length}
-            formModel={formModel}
-            hiddenFieldIds={hiddenFieldIds}
-            rawWorkflowData={rawWorkflowData}
-            readOnlyFieldIds={readOnlyFieldIds}
-            repositoryId={repositoryId}
-            selectedItem={selectedItem || storeSelectedItem}
-            viewOnly={viewOnly}
-            attachmentsNode={
-              <Attachments
-                canUpload={!viewOnly}
-                initialData={attachments}
-                instanceId={instanceId}
-                processId={processId}
-                repositoryId={repositoryId}
-                workflowId={workflowId}
-                enabled
-                onAttachmentsChanged={onAttachmentsChanged}
-                onSelect={setOpenedAttachment}
-              />
-            }
-            commentsNode={
-              <Comments
-                comments={comments}
-                instanceId={instanceId}
-                processId={processId}
-                refetch={onCommentsChanged}
-                workflowId={workflowId}
-                enabled
-              />
-            }
-            formNode={
-              <WorkflowFormRenderer
-                attachments={attachments}
-                currentActivityId={currentActivityId}
-                disableOwnScroll={true}
-                formModel={formModel}
-                hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-                hiddenFieldIds={summaryHiddenFieldIds}
-                hidePanels={agentBlocks.length > 0}
-                instanceId={instanceId}
-                panels={panels}
-                preparePhase={preparePhase}
-                preparingFieldId={preparingFieldId}
-                presentation='extracted'
-                readOnlyFieldIds={readOnlyFieldIds}
-                repositoryId={repositoryId}
-                stageEditableFieldIds={stageEditableFieldIds}
-                viewOnly={viewOnly}
-                missingMandatoryFieldIds={
-                  missingMandatoryFieldIds.size > 0
-                    ? missingMandatoryFieldIds
-                    : undefined
-                }
-                onFieldChange={onFieldChange}
-                onOpenAttachment={setOpenedAttachment}
-                onRequestUpload={viewOnly ? undefined : handleRequestUpload}
-              />
-            }
-            historyNode={
-              <History
-                instanceId={instanceId}
-                processId={processId}
-                workflowId={workflowId}
-                enabled
-                isCompleted={
-                  selectedItem?.isCompleted ||
-                  Boolean(selectedItem?.completedAtUtc) ||
-                  Boolean(selectedItem?.completedAt) ||
-                  ['completed', 'approved', 'closed', 'paid'].includes(
-                    String(selectedItem?.status || '')
-                      .toLowerCase()
-                      .trim(),
-                  )
-                }
-              />
-            }
-            lineItemsNode={
-              lineItemsHiddenFieldIds.hasLineItems ? (
+      <div className='relative flex h-full min-h-0 min-w-0 flex-1 overflow-hidden'>
+        <div
+          aria-hidden={showIndexing}
+          className={
+            showIndexing
+              ? 'pointer-events-none invisible absolute inset-0 flex h-full min-h-0 overflow-hidden'
+              : 'flex h-full min-h-0 flex-1 overflow-hidden'
+          }
+        >
+          {rawWorkflowData?.name === 'Document Approval' ? (
+            <DocumentApprovalSplitLayout
+              attachments={attachments}
+              formModel={formModel}
+              repositoryId={repositoryId}
+              selectedItem={selectedItem || storeSelectedItem}
+              formNode={
                 <WorkflowFormRenderer
                   attachments={attachments}
                   currentActivityId={currentActivityId}
                   disableOwnScroll={true}
                   formModel={formModel}
                   hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-                  hiddenFieldIds={lineItemsHiddenFieldIds.ids}
-                  hidePanels={agentBlocks.length > 0}
+                  hiddenFieldIds={hiddenFieldIds}
+                  hidePanels={true}
                   instanceId={instanceId}
                   panels={panels}
                   preparePhase={preparePhase}
@@ -1641,89 +1553,114 @@ const GenericRequestOverview = ({
                   onOpenAttachment={setOpenedAttachment}
                   onRequestUpload={viewOnly ? undefined : handleRequestUpload}
                 />
-              ) : undefined
-            }
-            taskNode={
-              <TaskRequirements
-                attachmentCount={attachments.length}
-                checklistChecked={checklistChecked}
-                checklistItems={checklistItems}
-                documentRequired={documentRequired}
-                signatureConfirmed={signatureConfirmed}
-                userSignatureRequired={userSignatureRequired}
-                onChecklistToggle={onChecklistToggle}
-                onSignatureToggle={onSignatureToggle}
-              />
-            }
-            onFieldChange={onFieldChange}
-            onFieldsChange={onFieldsChange}
-          />
-        ) : (
-          <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-            {showAgentProcess && (
-              <div className='px-6 pt-5 pb-1'>
-                <AgentSummaryBoxes
-                  agentBlocks={summaryAgentBlocks}
-                  requestData={selectedItem}
-                  workflow={rawWorkflowData}
+              }
+              taskNode={
+                <TaskRequirements
+                  attachmentCount={attachments.length}
+                  checklistChecked={checklistChecked}
+                  checklistItems={checklistItems}
+                  documentRequired={documentRequired}
+                  signatureConfirmed={signatureConfirmed}
+                  userSignatureRequired={userSignatureRequired}
+                  onChecklistToggle={onChecklistToggle}
+                  onSignatureToggle={onSignatureToggle}
                 />
-              </div>
-            )}
-
-            <ScrollArea className='flex-1' height='100%'>
-              {selectedAgentBlock ? (
-                <div className='p-6 pt-2'>
-                  <AgentDetailPlaceholder
-                    agentBlock={selectedAgentBlock}
-                    attachments={attachments}
-                    formModel={formModel}
-                    hiddenFieldIds={hiddenFieldIds}
-                    rawWorkflowData={rawWorkflowData}
-                    readOnlyFieldIds={readOnlyFieldIds}
-                    repositoryId={repositoryId}
-                    requestData={selectedItem}
-                    viewOnly={viewOnly}
-                    onBack={() => setSelectedAgentBlockId(null)}
-                    onFieldChange={onFieldChange}
-                    onFieldsChange={onFieldsChange}
-                  />
-                </div>
-              ) : (
-                <div
-                  className={cn(
-                    'flex flex-col',
-                    agentBlocks.length > 0 && 'px-6 pt-4 pb-6',
-                  )}
-                >
-                  <TaskRequirements
-                    attachmentCount={attachments.length}
-                    checklistChecked={checklistChecked}
-                    checklistItems={checklistItems}
-                    documentRequired={documentRequired}
-                    signatureConfirmed={signatureConfirmed}
-                    userSignatureRequired={userSignatureRequired}
-                    onChecklistToggle={onChecklistToggle}
-                    onSignatureToggle={onSignatureToggle}
-                  />
-                  {/* {missingRequiredLabels.length > 0 ? (
-                    <div className='mx-6 mt-3 rounded-lg border border-red-4 bg-red-1 px-3 py-2 text-12 font-medium text-red-11'>
-                      {t`Please fill required field(s): ${missingRequiredLabels.join(', ')}`}
-                    </div>
-                  ) : null} */}
+              }
+            />
+          ) : rawWorkflowData?.settings?.general?.initiateUsing?.type ===
+              'DOCUMENT_FORM' ||
+            rawWorkflowData?.workflowJson?.settings?.general?.initiateUsing
+              ?.type === 'DOCUMENT_FORM' ? (
+            <DocumentFormSplitLayout
+              attachments={attachments}
+              attachmentsCount={attachments.length}
+              attachmentsLoading={attachmentsLoading}
+              commentsCount={comments.length}
+              formModel={formModel}
+              hiddenFieldIds={hiddenFieldIds}
+              rawWorkflowData={rawWorkflowData}
+              readOnlyFieldIds={readOnlyFieldIds}
+              repositoryId={repositoryId}
+              selectedItem={selectedItem || storeSelectedItem}
+              viewOnly={viewOnly}
+              attachmentsNode={
+                <Attachments
+                  canUpload={!viewOnly}
+                  initialData={attachments}
+                  instanceId={instanceId}
+                  processId={processId}
+                  repositoryId={repositoryId}
+                  workflowId={workflowId}
+                  enabled
+                  onAttachmentsChanged={onAttachmentsChanged}
+                  onSelect={setOpenedAttachment}
+                />
+              }
+              commentsNode={
+                <Comments
+                  comments={comments}
+                  instanceId={instanceId}
+                  processId={processId}
+                  refetch={onCommentsChanged}
+                  workflowId={workflowId}
+                  enabled
+                />
+              }
+              formNode={
+                <WorkflowFormRenderer
+                  attachments={attachments}
+                  currentActivityId={currentActivityId}
+                  disableOwnScroll={true}
+                  formModel={formModel}
+                  hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
+                  hiddenFieldIds={summaryHiddenFieldIds}
+                  hidePanels={agentBlocks.length > 0}
+                  instanceId={instanceId}
+                  panels={panels}
+                  preparePhase={preparePhase}
+                  preparingFieldId={preparingFieldId}
+                  presentation='extracted'
+                  readOnlyFieldIds={readOnlyFieldIds}
+                  repositoryId={repositoryId}
+                  stageEditableFieldIds={stageEditableFieldIds}
+                  viewOnly={viewOnly}
+                  missingMandatoryFieldIds={
+                    missingMandatoryFieldIds.size > 0
+                      ? missingMandatoryFieldIds
+                      : undefined
+                  }
+                  onFieldChange={onFieldChange}
+                  onOpenAttachment={setOpenedAttachment}
+                  onRequestUpload={viewOnly ? undefined : handleRequestUpload}
+                />
+              }
+              historyNode={
+                <History
+                  instanceId={instanceId}
+                  processId={processId}
+                  workflowId={workflowId}
+                  enabled
+                  isCompleted={
+                    selectedItem?.isCompleted ||
+                    Boolean(selectedItem?.completedAtUtc) ||
+                    Boolean(selectedItem?.completedAt) ||
+                    ['completed', 'approved', 'closed', 'paid'].includes(
+                      String(selectedItem?.status || '')
+                        .toLowerCase()
+                        .trim(),
+                    )
+                  }
+                />
+              }
+              lineItemsNode={
+                lineItemsHiddenFieldIds.hasLineItems ? (
                   <WorkflowFormRenderer
                     attachments={attachments}
                     currentActivityId={currentActivityId}
                     disableOwnScroll={true}
                     formModel={formModel}
                     hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
-                    // Table controls are only held back when agent steps show
-                    // them in their own detail view; a plain workflow has no
-                    // other place to render them.
-                    hiddenFieldIds={
-                      agentBlocks.length > 0
-                        ? summaryHiddenFieldIds
-                        : hiddenFieldIds
-                    }
+                    hiddenFieldIds={lineItemsHiddenFieldIds.ids}
                     hidePanels={agentBlocks.length > 0}
                     instanceId={instanceId}
                     panels={panels}
@@ -1742,119 +1679,222 @@ const GenericRequestOverview = ({
                     onOpenAttachment={setOpenedAttachment}
                     onRequestUpload={viewOnly ? undefined : handleRequestUpload}
                   />
+                ) : undefined
+              }
+              taskNode={
+                <TaskRequirements
+                  attachmentCount={attachments.length}
+                  checklistChecked={checklistChecked}
+                  checklistItems={checklistItems}
+                  documentRequired={documentRequired}
+                  signatureConfirmed={signatureConfirmed}
+                  userSignatureRequired={userSignatureRequired}
+                  onChecklistToggle={onChecklistToggle}
+                  onSignatureToggle={onSignatureToggle}
+                />
+              }
+              onFieldChange={onFieldChange}
+              onFieldsChange={onFieldsChange}
+            />
+          ) : (
+            <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+              {showAgentProcess && (
+                <div className='px-6 pt-5 pb-1'>
+                  <AgentSummaryBoxes
+                    agentBlocks={summaryAgentBlocks}
+                    requestData={selectedItem}
+                    workflow={rawWorkflowData}
+                  />
                 </div>
               )}
-            </ScrollArea>
-          </div>
-        )}
 
-        {showSidePanel && (
-          <div className='flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-gray-3 bg-gray-1'>
-            {rightView === 'history' && (
-              <div className='flex h-full min-h-0 flex-col'>
-                <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
-                  <span className='text-xs font-semibold text-gray-12'>
-                    {t`History`}
-                  </span>
-                  <IconButton
-                    ariaLabel={t`Close`}
-                    icon='tabler:x'
-                    size='sm'
-                    variant='ghost'
-                    onClick={() => setRightView('overview')}
-                  />
-                </div>
-                <div className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
-                  <History
-                    instanceId={instanceId}
-                    processId={processId}
-                    workflowId={workflowId}
-                    enabled
-                    isCompleted={
-                      selectedItem?.isCompleted ||
-                      Boolean(selectedItem?.completedAtUtc) ||
-                      Boolean(selectedItem?.completedAt) ||
-                      ['completed', 'approved', 'closed', 'paid'].includes(
-                        String(selectedItem?.status || '')
-                          .toLowerCase()
-                          .trim(),
-                      )
-                    }
-                  />
-                </div>
+              <ScrollArea className='flex-1' height='100%'>
+                {selectedAgentBlock ? (
+                  <div className='p-6 pt-2'>
+                    <AgentDetailPlaceholder
+                      agentBlock={selectedAgentBlock}
+                      attachments={attachments}
+                      formModel={formModel}
+                      hiddenFieldIds={hiddenFieldIds}
+                      rawWorkflowData={rawWorkflowData}
+                      readOnlyFieldIds={readOnlyFieldIds}
+                      repositoryId={repositoryId}
+                      requestData={selectedItem}
+                      viewOnly={viewOnly}
+                      onBack={() => setSelectedAgentBlockId(null)}
+                      onFieldChange={onFieldChange}
+                      onFieldsChange={onFieldsChange}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      'flex flex-col',
+                      agentBlocks.length > 0 && 'px-6 pt-4 pb-6',
+                    )}
+                  >
+                    <TaskRequirements
+                      attachmentCount={attachments.length}
+                      checklistChecked={checklistChecked}
+                      checklistItems={checklistItems}
+                      documentRequired={documentRequired}
+                      signatureConfirmed={signatureConfirmed}
+                      userSignatureRequired={userSignatureRequired}
+                      onChecklistToggle={onChecklistToggle}
+                      onSignatureToggle={onSignatureToggle}
+                    />
+                    {/* {missingRequiredLabels.length > 0 ? (
+                    <div className='mx-6 mt-3 rounded-lg border border-red-4 bg-red-1 px-3 py-2 text-12 font-medium text-red-11'>
+                      {t`Please fill required field(s): ${missingRequiredLabels.join(', ')}`}
+                    </div>
+                  ) : null} */}
+                    <WorkflowFormRenderer
+                      attachments={attachments}
+                      currentActivityId={currentActivityId}
+                      disableOwnScroll={true}
+                      formModel={formModel}
+                      hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
+                      // Table controls are only held back when agent steps show
+                      // them in their own detail view; a plain workflow has no
+                      // other place to render them.
+                      hiddenFieldIds={
+                        agentBlocks.length > 0
+                          ? summaryHiddenFieldIds
+                          : hiddenFieldIds
+                      }
+                      hidePanels={agentBlocks.length > 0}
+                      instanceId={instanceId}
+                      panels={panels}
+                      preparePhase={preparePhase}
+                      preparingFieldId={preparingFieldId}
+                      readOnlyFieldIds={readOnlyFieldIds}
+                      repositoryId={repositoryId}
+                      stageEditableFieldIds={stageEditableFieldIds}
+                      viewOnly={viewOnly}
+                      missingMandatoryFieldIds={
+                        missingMandatoryFieldIds.size > 0
+                          ? missingMandatoryFieldIds
+                          : undefined
+                      }
+                      onFieldChange={onFieldChange}
+                      onOpenAttachment={setOpenedAttachment}
+                      onRequestUpload={
+                        viewOnly ? undefined : handleRequestUpload
+                      }
+                    />
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          )}
+        </div>
+
+        {pendingUpload ? (
+          <div className='flex h-full min-h-0 min-w-0 flex-1 overflow-hidden'>
+            <AttachmentSplitView
+              file={pendingUpload.file}
+              folderFields={folderFields}
+              isSubmitting={isUploading}
+              metadata={pendingUpload.baseMetadata}
+              repositoryId={repositoryId}
+              title={pendingUpload.file.name}
+              onClose={() => setPendingUpload(null)}
+              onConfirm={handleConfirmUpload}
+            />
+          </div>
+        ) : null}
+
+        {openedAttachment && !pendingUpload ? (
+          <div className='flex h-full min-h-0 min-w-0 flex-1 overflow-hidden'>
+            <AttachmentSplitView
+              attachment={openedAttachment}
+              folderFields={folderFields}
+              repositoryId={repositoryId}
+              title={openedAttachment.name || t`Attachment`}
+              onClose={() => setOpenedAttachment(null)}
+            />
+          </div>
+        ) : null}
+      </div>
+      {showSidePanel && (
+        <div className='flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-gray-3 bg-gray-1'>
+          {rightView === 'history' && (
+            <div className='flex h-full min-h-0 flex-col'>
+              <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
+                <span className='text-xs font-semibold text-gray-12'>
+                  {t`History`}
+                </span>
+                <IconButton
+                  ariaLabel={t`Close`}
+                  icon='tabler:x'
+                  size='sm'
+                  variant='ghost'
+                  onClick={() => setRightView('overview')}
+                />
               </div>
-            )}
-            {rightView === 'attachments' &&
-              (selectedAttachment ? (
-                <div className='flex h-full min-h-0 flex-col'>
-                  <AttachmentPreviewPanel
-                    file={selectedAttachment}
-                    repositoryId={repositoryId}
-                    onBack={() => setSelectedAttachment(null)}
-                  />
-                </div>
-              ) : (
-                <Attachments
-                  canUpload={!viewOnly}
-                  initialData={attachments}
+              <div className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
+                <History
                   instanceId={instanceId}
                   processId={processId}
-                  repositoryId={repositoryId}
                   workflowId={workflowId}
                   enabled
-                  onAttachmentsChanged={onAttachmentsChanged}
-                  onClose={() => setRightView('overview')}
-                  onSelect={setOpenedAttachment}
+                  isCompleted={
+                    selectedItem?.isCompleted ||
+                    Boolean(selectedItem?.completedAtUtc) ||
+                    Boolean(selectedItem?.completedAt) ||
+                    ['completed', 'approved', 'closed', 'paid'].includes(
+                      String(selectedItem?.status || '')
+                        .toLowerCase()
+                        .trim(),
+                    )
+                  }
                 />
-              ))}
-            {rightView === 'subProcess' && (
-              <SubProcessPanel
-                processId={instanceId}
-                workflowId={workflowId}
-                onClose={() => setRightView('overview')}
-              />
-            )}
-            {rightView === 'comments' && (
-              <Comments
-                comments={comments}
+              </div>
+            </div>
+          )}
+          {rightView === 'attachments' &&
+            (selectedAttachment ? (
+              <div className='flex h-full min-h-0 flex-col'>
+                <AttachmentPreviewPanel
+                  file={selectedAttachment}
+                  repositoryId={repositoryId}
+                  onBack={() => setSelectedAttachment(null)}
+                />
+              </div>
+            ) : (
+              <Attachments
+                canUpload={!viewOnly}
+                initialData={attachments}
                 instanceId={instanceId}
                 processId={processId}
-                refetch={onCommentsChanged}
+                repositoryId={repositoryId}
                 workflowId={workflowId}
                 enabled
+                onAttachmentsChanged={onAttachmentsChanged}
                 onClose={() => setRightView('overview')}
+                onSelect={setOpenedAttachment}
               />
-            )}
-          </div>
-        )}
-      </div>
-
-      {pendingUpload ? (
-        <div className='flex h-full min-h-0 min-w-0 flex-1 overflow-hidden'>
-          <AttachmentSplitView
-            file={pendingUpload.file}
-            folderFields={folderFields}
-            isSubmitting={isUploading}
-            metadata={pendingUpload.baseMetadata}
-            repositoryId={repositoryId}
-            title={pendingUpload.file.name}
-            onClose={() => setPendingUpload(null)}
-            onConfirm={handleConfirmUpload}
-          />
+            ))}
+          {rightView === 'subProcess' && (
+            <SubProcessPanel
+              processId={instanceId}
+              workflowId={workflowId}
+              onClose={() => setRightView('overview')}
+            />
+          )}
+          {rightView === 'comments' && (
+            <Comments
+              comments={comments}
+              instanceId={instanceId}
+              processId={processId}
+              refetch={onCommentsChanged}
+              workflowId={workflowId}
+              enabled
+              onClose={() => setRightView('overview')}
+            />
+          )}
         </div>
-      ) : null}
-
-      {openedAttachment && !pendingUpload ? (
-        <div className='flex h-full min-h-0 min-w-0 flex-1 overflow-hidden'>
-          <AttachmentSplitView
-            attachment={openedAttachment}
-            folderFields={folderFields}
-            repositoryId={repositoryId}
-            title={openedAttachment.name || t`Attachment`}
-            onClose={() => setOpenedAttachment(null)}
-          />
-        </div>
-      ) : null}
+      )}
     </div>
   )
 }

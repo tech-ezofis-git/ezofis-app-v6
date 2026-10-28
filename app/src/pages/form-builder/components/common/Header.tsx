@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
@@ -22,6 +22,18 @@ const Header = () => {
   const { formId } = useParams({ strict: false }) as { formId?: string }
   const navigate = useNavigate()
   const [isSaving, setIsSaving] = useState(false)
+  const isGoingBackRef = useRef(false)
+
+  // Rapid repeat clicks would each pop a history entry and land several
+  // routes back; only honour the first one until navigation settles.
+  const handleBack = () => {
+    if (isGoingBackRef.current) return
+    isGoingBackRef.current = true
+    globalThis.history.back()
+    globalThis.setTimeout(() => {
+      isGoingBackRef.current = false
+    }, 1000)
+  }
 
   const handleQuickSave = async () => {
     setIsSaving(true)
@@ -47,7 +59,7 @@ const Header = () => {
           icon='lucide:arrow-left'
           size='sm'
           variant='ghost'
-          onClick={() => globalThis.history.back()}
+          onClick={handleBack}
         />
 
         <div className='flex min-w-0 flex-col justify-center'>

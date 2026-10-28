@@ -9,8 +9,10 @@ import {
   type WorkflowBrowseFilter,
   type WorkflowBrowsePayload,
 } from '@/api/v6/workflows'
+import workflowsApiV6 from '@/api/v6/workflows'
 import { getWorkflowListQueryOptions } from '@/api/workflow/queries'
 import IconButton from '@/components/base/button/IconButton'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import TableColumns from '@/components/base/data-table/actions/TableColumns'
 import TableRows from '@/components/base/data-table/actions/TableRows'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
@@ -45,6 +47,8 @@ const Table = ({ onCreate }: TableProps) => {
   const loggedInUser = session?.firstName
     ? `${session.firstName} ${session.lastName || ''}`.trim()
     : session?.email || '-'
+  const [deletingWorkflow, setDeletingWorkflow] = useState<any | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const columns: Column[] = useMemo(
     () => [
@@ -53,7 +57,15 @@ const Table = ({ onCreate }: TableProps) => {
         label: t`Name`,
         size: 200,
         renderCell: (row) => (
-          <span className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'>
+          <span
+            className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
+            onClick={() =>
+              navigate({
+                params: { workflowId: String((row as any).id) },
+                to: '/workflow-builder/$workflowId',
+              })
+            }
+          >
             {String(row.name)}
           </span>
         ),
@@ -146,17 +158,14 @@ const Table = ({ onCreate }: TableProps) => {
                 icon='lucide:trash-2'
                 iconClass='text-red-11'
                 label={t`Delete`}
-                onClick={() => {
-                  const workflow = row as unknown as any
-                  showToast({ message: `Delete workflow ID: ${workflow.id}` })
-                }}
+                onClick={() => setDeletingWorkflow(row)}
               />
             </Menu>
           </div>
         ),
       },
     ],
-    [loggedInUser, navigate, t],
+    [loggedInUser, navigate, setDeletingWorkflow, t],
   )
 
   const initialVisibilityState = {
@@ -448,6 +457,8 @@ const Table = ({ onCreate }: TableProps) => {
     },
   })
 
+  const deletingWorkflowName = String(deletingWorkflow?.name || '')
+
   return (
     <div className='flex h-full min-h-0 flex-col'>
       <CustomFilter
@@ -560,6 +571,42 @@ const Table = ({ onCreate }: TableProps) => {
         totalItems={data?.meta?.totalItems || 0}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
+      />
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete`}
+        description={t`Are you sure you want to delete "${deletingWorkflowName}"? This action is permanent and cannot be undone.`}
+        isConfirming={isDeleting}
+        opened={Boolean(deletingWorkflow)}
+        title={t`Delete Workflow`}
+        variant='danger'
+        onCancel={() => {
+          if (!isDeleting) setDeletingWorkflow(null)
+        }}
+        onConfirm={async () => {
+          if (!deletingWorkflow) return
+          setIsDeleting(true)
+          const { error } = await workflowsApiV6.deleteWorkflow(
+            String(deletingWorkflow.id),
+          )
+          setIsDeleting(false)
+          setDeletingWorkflow(null)
+          if (error) {
+            showToast({
+              message:
+                typeof error === 'string' && error
+                  ? error
+                  : t`Failed to delete workflow`,
+              variant: 'error',
+            })
+          } else {
+            showToast({
+              message: t`Workflow deleted successfully`,
+              variant: 'success',
+            })
+            void refetch()
+          }
+        }}
       />
     </div>
   )

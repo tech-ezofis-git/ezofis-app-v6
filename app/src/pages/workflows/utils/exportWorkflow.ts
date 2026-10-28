@@ -442,7 +442,10 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       actionName = norm.includes('NOT') ? 'NOT SATISFIED' : 'SATISFIED'
     } else if (sourceToolType === NODE_TOOL_TYPE.AP_AGENT) {
       const norm = actionName.toUpperCase().replace(/[\s_-]+/g, ' ')
-      if (norm.includes('PARTIAL')) {
+      // Keep in sync with the AP options in ConnectionsRouting.
+      if (norm.includes('DUPLICATE')) {
+        actionName = 'DUPLICATE'
+      } else if (norm.includes('PARTIAL')) {
         actionName = 'PARTIALLY MATCHED'
       } else if (norm.includes('NOT') || norm.includes('UNMATCH')) {
         actionName = 'NOT MATCHED'

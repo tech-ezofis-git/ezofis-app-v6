@@ -21,7 +21,12 @@ const splitValue = (value: string | null | undefined) => {
   if (!value) return { datePart: null as string | null, timePart: '' }
 
   const trimmed = String(value).trim()
-  if (!trimmed || trimmed === '-' || trimmed.toLowerCase() === 'invalid date') {
+  if (
+    !trimmed ||
+    trimmed === '-' ||
+    trimmed.toLowerCase() === 'invalid date' ||
+    !/\d/.test(trimmed)
+  ) {
     return { datePart: null as string | null, timePart: '' }
   }
 

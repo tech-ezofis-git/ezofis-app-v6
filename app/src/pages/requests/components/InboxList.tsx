@@ -1713,10 +1713,21 @@ const InboxList: React.FC<InboxListProps> = ({
   }, [currentWorkflowId, processingProcesses])
 
   const finalData = useMemo(() => {
-    const existingIds = new Set()
+    const existingIds = new Set<string>()
     const outData = (filteredData || []).map((g) => {
       const updatedItems = (g.items || []).map((i: any) => {
-        existingIds.add(String(i.processId || i.id))
+        // API rows carry a numeric id and no processId, while a finished
+        // placeholder is keyed by the job's instanceId (= workflowInstanceId),
+        // so record every id a placeholder could match on.
+        ;[
+          i.processId,
+          i.id,
+          i.workflowInstanceId,
+          i.instanceId,
+          i.apAgentJobId,
+        ]
+          .filter(Boolean)
+          .forEach((id) => existingIds.add(String(id)))
 
         // Attach live Hangfire job id onto matching inbox rows so list
         // cards can resolve the processing status message.
@@ -1788,7 +1799,18 @@ const InboxList: React.FC<InboxListProps> = ({
     }
 
     const newProcessingItems = workflowProcessingProcesses
-      .filter((p) => !existingIds.has(String(p.processId || p.id)))
+      .filter(
+        (p) =>
+          ![
+            p.processId,
+            p.id,
+            p.instanceId,
+            p.workflowInstanceId,
+            p.apAgentJobId,
+          ]
+            .filter(Boolean)
+            .some((id) => existingIds.has(String(id))),
+      )
       .map((p) => {
         const rowId = p.processId || p.id
         const jobStatuses = requestStore.getState().jobStatuses || {}
@@ -1903,6 +1925,10 @@ const InboxList: React.FC<InboxListProps> = ({
           'workflowId': p.workflowId || currentWorkflowId || null,
         }
       })
+      // A placeholder only stands in while its job runs. Once finished, the
+      // real row comes from the API; a leftover tracker would otherwise show
+      // as an extra "JOB-…" row with no data and a fallback "Matched" status.
+      .filter((item) => item.isProcessing)
 
     if (newProcessingItems.length > 0) {
       const rootGroup = outData.find(

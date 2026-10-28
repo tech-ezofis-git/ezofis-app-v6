@@ -371,6 +371,17 @@ const RequestsPage = () => {
   useEffect(() => {
     if (pendingDeepLink || pendingOpenNewRequest) setShowAllWorkflows(false)
   }, [pendingDeepLink, pendingOpenNewRequest])
+  // The topbar title shows the workflow whose list is on screen.
+  const listWorkflowName = showAllWorkflows
+    ? null
+    : String(workflow?.name || selectedWorkflow?.name || '') || null
+  useEffect(() => {
+    requestStore.getState().setListWorkflowName(listWorkflowName)
+  }, [listWorkflowName])
+  useEffect(
+    () => () => requestStore.getState().setListWorkflowName(null),
+    [],
+  )
   // "New" from All Workflows: open the new-request screen once that
   // workflow has loaded.
   const [pendingNewWorkflowId, setPendingNewWorkflowId] = useState<

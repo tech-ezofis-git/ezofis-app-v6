@@ -496,3 +496,25 @@ export const isInboxRowOverdue = (row: any) => {
     return false
   }
 }
+
+/**
+ * Outcome of a finished request: the name of the END stage it closed on
+ * (a workflow can have several, e.g. "Paid" and "Rejected"), toned red when
+ * that name reads as a negative ending.
+ */
+export const getCompletedOutcome = (
+  row: any,
+): { label: string; tone: 'green' | 'red' } => {
+  const label =
+    String(
+      row?.stage ||
+        row?.stageName ||
+        row?.currentStage ||
+        row?.lastActionStageName ||
+        '',
+    ).trim() || 'Completed'
+  const tone = /reject|declin|cancel|fail|void|denied|deny/i.test(label)
+    ? 'red'
+    : 'green'
+  return { label, tone }
+}

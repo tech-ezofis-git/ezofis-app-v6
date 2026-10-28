@@ -413,23 +413,23 @@ export default function SearchPage() {
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface'>
-      <div className='bg-surface px-4 pt-4 pb-4'>
-        {/* Back to the page search was opened from, at the page's left edge */}
-        <button
-          className='group/back mb-3 flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-gray-4 bg-surface pr-3 pl-2.5 text-13 font-medium text-gray-12 shadow-xs transition-colors hover:border-primary-7 hover:bg-gray-2 hover:text-primary-11 active:scale-95'
-          type='button'
-          title={
-            returnTarget?.title ? t`Back to ${returnTarget.title}` : undefined
-          }
-          onClick={goBack}
-        >
-          <Icon
-            className='size-4 transition-transform duration-200 group-hover/back:-translate-x-0.5'
-            name='tabler:arrow-left'
-          />
-          {t`Back`}
-        </button>
-        <div className='mx-auto flex max-w-4xl flex-col items-start'>
+      <div className='bg-surface pt-4 pb-3'>
+        <div className='mx-auto flex max-w-4xl flex-col items-start px-4 md:px-6'>
+          {/* Back to the page search was opened from, in line with the search box */}
+          <button
+            className='group/back mb-3 flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-gray-4 bg-surface pr-3 pl-2.5 text-13 font-medium text-gray-12 shadow-xs transition-colors hover:border-primary-7 hover:bg-gray-2 hover:text-primary-11 active:scale-95'
+            type='button'
+            title={
+              returnTarget?.title ? t`Back to ${returnTarget.title}` : undefined
+            }
+            onClick={goBack}
+          >
+            <Icon
+              className='size-4 transition-transform duration-200 group-hover/back:-translate-x-0.5'
+              name='tabler:arrow-left'
+            />
+            {t`Back`}
+          </button>
           <div className='w-full'>
             <InputText
               leftSectionWidth={56}
@@ -484,7 +484,7 @@ export default function SearchPage() {
           </div>
 
           {results.length > 0 && query.trim() && (
-            <div className='mt-6 flex flex-wrap items-center gap-2'>
+            <div className='mt-4 flex flex-wrap items-center gap-2'>
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -514,7 +514,7 @@ export default function SearchPage() {
         </div>
       </div>
 
-      <div className='ez-scrollbar mx-auto w-full max-w-4xl flex-1 overflow-y-auto px-4 pt-0 pb-6'>
+      <div className='ez-scrollbar mx-auto w-full max-w-4xl flex-1 overflow-y-auto px-4 pt-1 pb-6 md:px-6'>
         {!query.trim() && !loading && (
           <div className='flex flex-col items-center justify-center py-20 text-center'>
             <div className='mb-6 flex items-center justify-center'>
@@ -547,8 +547,8 @@ export default function SearchPage() {
         )}
 
         {results.length > 0 && query.trim() && (
-          <div className='flex flex-col gap-4'>
-            <div className='mb-2 text-[13px] text-gray-11'>
+          <div className='flex flex-col gap-3'>
+            <div className='text-[13px] text-gray-11'>
               {filteredResults.length}{' '}
               {filteredResults.length === 1 ? 'result' : 'results'} for "{query}
               "
@@ -571,7 +571,7 @@ export default function SearchPage() {
 
                 return (
                   <div
-                    className='group flex w-full cursor-pointer items-start gap-4 rounded-xl border border-gray-4 bg-surface p-4 text-left transition hover:border-primary-7 hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:ring-2 focus-visible:ring-primary-7 focus-visible:outline-none active:scale-[0.995]'
+                    className='group flex w-full cursor-pointer items-start gap-3.5 rounded-xl border border-gray-4 bg-surface px-4 py-3 text-left transition hover:border-primary-7 hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:ring-2 focus-visible:ring-primary-7 focus-visible:outline-none active:scale-[0.995]'
                     key={
                       hit.id?.itemId ||
                       hit.id?.formEntryId ||
@@ -582,12 +582,12 @@ export default function SearchPage() {
                     }
                     onClick={() => openHit(hit)}
                   >
-                    <div className='flex size-10 shrink-0 items-center justify-center rounded-xl border border-gray-5 bg-primary-2 text-primary-9 transition-all'>
+                    <div className='flex size-9 shrink-0 items-center justify-center rounded-xl border border-gray-5 bg-primary-2 text-primary-9 transition-all'>
                       <Icon className='size-5' name={iconName} />
                     </div>
 
                     <div className='min-w-0 flex-1'>
-                      <div className='mb-1 flex flex-wrap items-center gap-2'>
+                      <div className='mb-1 flex min-h-6 flex-wrap items-center gap-2'>
                         <span
                           className='truncate text-[15px] font-medium text-primary-9'
                           dangerouslySetInnerHTML={{ __html: titleHtml }}
@@ -627,10 +627,9 @@ export default function SearchPage() {
                       </div>
 
                       {hit?.matchSource && (
-                        <div className='mt-2 flex items-center gap-2'>
-                          <div className='size-[5px] shrink-0 rounded-full bg-secondary-9' />
-
-                          <div className='line-clamp-1 text-[12.5px] text-gray-9 hover:line-clamp-none'>
+                        <div className='mt-1 flex items-start gap-2'>
+                          <div className='mt-[7px] size-[5px] shrink-0 rounded-full bg-secondary-9' />
+                          <div className='line-clamp-1 min-w-0 text-[13px] leading-5 text-gray-9 hover:line-clamp-none'>
                             <span className='font-medium text-gray-11'>
                               {query}
                             </span>{' '}
@@ -643,18 +642,18 @@ export default function SearchPage() {
                       )}
 
                       {hit.found && hit.found.length > 0 && (
-                        <div className='mt-1 flex flex-col gap-1.5'>
-                          <div className='flex items-center gap-1.5'>
-                            <div className='size-[4px] shrink-0 rounded-full bg-primary-9' />
+                        <div className='mt-1 flex flex-col gap-1'>
+                          <div className='flex items-start gap-2'>
+                            <div className='mt-[7px] size-[5px] shrink-0 rounded-full bg-primary-9' />
                             <div
-                              className='line-clamp-1 text-[13px] leading-relaxed text-gray-11 transition-all group-hover:line-clamp-none'
+                              className='line-clamp-1 min-w-0 text-[13px] leading-5 text-gray-11 transition-all group-hover:line-clamp-none'
                               dangerouslySetInnerHTML={{
                                 __html: foundLine(hit.found[0], hit.needles),
                               }}
                             />
                           </div>
                           {hit.found.length > 1 && (
-                            <div className='mt-1 cursor-pointer text-[12px] font-medium text-primary-9 hover:underline'>
+                            <div className='cursor-pointer pl-[13px] text-[12px] leading-5 font-medium text-primary-9 hover:underline'>
                               + {hit.found.length - 1} more place
                               {hit.found.length - 1 === 1 ? '' : 's'} it matched
                             </div>

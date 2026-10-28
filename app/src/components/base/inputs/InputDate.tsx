@@ -15,6 +15,8 @@ const normalizeDateInputValue = (
   const str = String(value).trim()
   if (!str || str === '-') return null
   if (str.toLowerCase() === 'invalid date') return null
+  // Mode names like "CUSTOM" saved into old entries aren't dates.
+  if (!/\d/.test(str)) return null
 
   return str
 }

@@ -32,7 +32,10 @@ import ListEmptyState from '@/components/common/ListEmptyState'
 import requestStore, {
   useProcessingStatusText,
 } from '@/pages/requests/stores/useRequestStore'
-import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
+import {
+  extractDueDate,
+  getCompletedOutcome,
+} from '@/pages/requests/utils/inboxItemDisplay'
 import { isAccountsPayableWorkflow } from '@/pages/requests/utils/workflow.utils'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
@@ -825,13 +828,25 @@ const TermsColumn = ({ activeTab, row }: TermsColumnProps) => {
     )
 
   if (isCompleted) {
+    // Show the END stage the request closed on, not a fixed "Paid".
+    const { label, tone } = getCompletedOutcome(row)
     return (
-      <span className='inline-flex items-center gap-1 rounded-full border border-[var(--green-4)] bg-[var(--green-2)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold',
+          tone === 'red'
+            ? 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+            : 'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]',
+        )}
+      >
         <Icon
-          className='size-3.5 text-[var(--green-9)]'
-          name='tabler:circle-check'
+          name={tone === 'red' ? 'tabler:circle-x' : 'tabler:circle-check'}
+          className={cn(
+            'size-3.5',
+            tone === 'red' ? 'text-[var(--red-9)]' : 'text-[var(--green-9)]',
+          )}
         />
-        Paid
+        {label}
       </span>
     )
   }

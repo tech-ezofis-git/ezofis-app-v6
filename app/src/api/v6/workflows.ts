@@ -503,7 +503,7 @@ const deleteWorkflow = async (workflowId: string) => {
     const { data, status } = await axiosV6({
       headers: getTenantHeaders(),
       method: 'DELETE',
-      url: `/workflows/${workflowId}`,
+      url: `/Workflows/${workflowId}`,
     })
     if (![200, 202, 204].includes(status))
       throw new Error('invalid status code')
