@@ -11,6 +11,8 @@ public sealed class ReportWorkflowIdentityTests
     [InlineData("today_task", null, "Pending Stage (today_task)", "Stage")]
     [InlineData("status", null, "Status", "Status")]
     [InlineData("startedBy", null, "Acted by", "ActedBy")]
+    [InlineData("startedById", null, "Started by Id", "ActedById")]
+    [InlineData("actedById", null, "Acted by Id", "ActedById")]
     [InlineData("workflowName", null, "Workflow", "WorkflowName")]
     [InlineData("Workflow", null, "Workflow", "WorkflowName")]
     public void TryMap_reads_mailbox_identity_keys(
@@ -66,6 +68,13 @@ public sealed class ReportWorkflowIdentityTests
         Assert.Equal(
             "NULL::text",
             ReportWorkflowIdentity.SelectExpr(ReportWorkflowIdentityKind.RequestNo, false, false, false));
+        var actedBy = ReportWorkflowIdentity.SelectExpr(
+            ReportWorkflowIdentityKind.ActedBy, true, true, false);
+        Assert.Contains("mb.created_by_name", actedBy, StringComparison.Ordinal);
+        Assert.DoesNotContain("transaction_created_by", actedBy, StringComparison.Ordinal);
+        Assert.Equal(
+            "NULLIF(BTRIM(mb.transaction_created_by), '')",
+            ReportWorkflowIdentity.SelectExpr(ReportWorkflowIdentityKind.ActedById, true, true, false));
     }
 
     [Fact]
