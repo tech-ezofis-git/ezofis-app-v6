@@ -257,6 +257,7 @@ export default function ConnectionsRouting({
     { id: 2, name: 'NOT MATCHED' },
     { id: 3, name: 'PARTIALLY MATCHED' },
     { id: 4, name: 'NON-INVOICE' },
+    { id: 5, name: 'DUPLICATE' },
   ]
 
   const ftpActionOptions = [
@@ -327,7 +328,9 @@ export default function ConnectionsRouting({
         const norm = String(rawAction)
           .toUpperCase()
           .replace(/[\s_-]+/g, ' ')
-        if (norm.includes('PARTIAL')) {
+        if (norm.includes('DUPLICATE')) {
+          action = 'DUPLICATE'
+        } else if (norm.includes('PARTIAL')) {
           action = 'PARTIALLY MATCHED'
         } else if (norm.includes('NOT') || norm.includes('UNMATCH')) {
           action = 'NOT MATCHED'
