@@ -9,6 +9,7 @@ import {
   lineItems, fmtNum, MAX_FILE_MB, tooBig, tabsFor, wfApi, getWorkflows, getMeta, getForm, toCard, formView, actionsFor, pathFromHistory, agentInsight, repoFields,
   ago, fmtDate, initials, prettyName, MILESTONE_DOT, EDITABLE_TYPES, drafts, mapLimit, toneFor,
 } from '../wf.js';
+import { Control, kindOf, formatError, displayValue } from '../controls.jsx';
 
 const PAGE = 20;
 const BOXES = [['inbox', 'Inbox', 'Inbox'], ['sent', 'Sent', 'Sent'], ['completed', 'Completed', 'Done']];
@@ -544,15 +545,20 @@ export function LiveEdit() {
   const { showToast, liveTick } = useStore();
   const [t] = useTicket(id, liveTick);
   const [vals, setVals] = useState(null);
+  const [errs, setErrs] = useState({});
   const fields = useMemo(() => (t.row ? formView(t.form, { ...(t.row.formData || {}), ...(drafts.get(id) || {}) }).filter((f) => EDITABLE_TYPES.has(f.type)) : []), [t.row, t.form, id]);
-  useEffect(() => { if (fields.length && !vals) setVals(Object.fromEntries(fields.map((f) => [f.id, f.raw == null ? '' : String(f.raw)]))); }, [fields, vals]);
+  useEffect(() => { if (fields.length && !vals) setVals(Object.fromEntries(fields.map((f) => [f.id, f.raw == null ? '' : f.raw]))); }, [fields, vals]);
   if (t.loading && !t.row) return <div className="screen"><TopBar title="Edit form" back={'/app/inbox/' + encodeURIComponent(id)} /><div className="content"><Skeleton n={4} h={64} /></div></div>;
   if (t.error || !t.row) return <div className="screen"><TopBar title="Edit form" back="/app/inbox" /><div className="content"><ErrorNote text={t.error || "This request can't be edited."} /></div></div>;
-  const orig = Object.fromEntries(fields.map((f) => [f.id, f.raw == null ? '' : String(f.raw)]));
+  const key = (v) => (v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v));
   const base = t.row.formData || {};
   const save = () => {
+    const e = {};
+    fields.forEach((f) => { const fe = !f.readOnly && formatError(kindOf(f.type), vals[f.id]); if (fe) e[f.id] = fe; });
+    setErrs(e);
+    if (Object.keys(e).length) { showToast('Check the highlighted fields', { tone: 'bad' }); return; }
     const changed = {};
-    Object.entries(vals || {}).forEach(([k, v]) => { if (String(base[k] == null ? '' : base[k]) !== v) changed[k] = v; });
+    Object.entries(vals || {}).forEach(([k, v]) => { if (key(base[k]) !== key(v)) changed[k] = v; });
     if (Object.keys(changed).length) drafts.set(id, changed); else drafts.delete(id);
     showToast(Object.keys(changed).length ? 'Changes kept. Take an action to save them.' : 'No changes');
     nav('/app/inbox/' + encodeURIComponent(id), { replace: true });
@@ -561,18 +567,18 @@ export function LiveEdit() {
     <div className="screen">
       <TopBar title="Edit form" sub={`${t.row.referenceNumber} · ${t.row.stage}`} back={'/app/inbox/' + encodeURIComponent(id)} right={<span />} />
       <div className="content" style={{ gap: 16 }}>
-        {fields.map((f) => (
-          <div key={f.id} className="field">
-            <label htmlFor={'f-' + f.id}>{f.label}</label>
-            {f.type === 'LONG_TEXT' ? (
-              <textarea id={'f-' + f.id} className="input strong" rows={3} value={(vals && vals[f.id]) || ''} onChange={(e) => setVals({ ...vals, [f.id]: e.target.value })} />
-            ) : (
-              <input id={'f-' + f.id} className="input strong" type={f.type === 'NUMBER' ? 'number' : f.type === 'DATE' ? 'date' : f.type === 'EMAIL' ? 'email' : 'text'} inputMode={f.type === 'NUMBER' ? 'decimal' : undefined} value={(vals && vals[f.id]) || ''} onChange={(e) => setVals({ ...vals, [f.id]: e.target.value })} />
-            )}
-            {vals && vals[f.id] !== orig[f.id] ? <span className="hint">Changed from {orig[f.id] || 'empty'}</span> : null}
-          </div>
-        ))}
-        <div className="card t" style={{ fontSize: 13 }}>Text, number and date fields can be edited here. Changes are saved to {t.row.referenceNumber} when you approve, reject or take another action.</div>
+        {fields.map((f) => {
+          const k = kindOf(f.type);
+          const v = vals ? vals[f.id] : '';
+          return (
+            <div key={f.id} className="field" data-err={errs[f.id] ? '1' : undefined}>
+              <label htmlFor={'f-' + f.id}>{f.label}{f.readOnly ? <Icon name="lock" size={12} color="#9C96AB" style={{ marginLeft: 4 }} /> : null}</label>
+              <Control kind={k} id={'f-' + f.id} value={v} readOnly={f.readOnly} error={!!errs[f.id]} settings={f.settings} label={k === 'consent' ? undefined : f.label} onChange={(x) => { setErrs((e) => ({ ...e, [f.id]: '' })); setVals({ ...vals, [f.id]: x }); }} />
+              {errs[f.id] ? <span className="err" role="alert">{errs[f.id]}</span> : vals && key(v) !== key(f.raw) ? <span className="hint">Changed from {displayValue(k, f.raw, f.settings) || 'empty'}</span> : null}
+            </div>
+          );
+        })}
+        <div className="card t" style={{ fontSize: 13 }}>Changes are saved to {t.row.referenceNumber} when you approve, reject or take another action.</div>
       </div>
       <div className="bottombar" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <button type="button" className="btn neutral" onClick={() => nav(-1)}>Cancel</button>

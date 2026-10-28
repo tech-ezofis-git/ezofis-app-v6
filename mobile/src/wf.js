@@ -2,6 +2,7 @@
 // Base: https://cloud.ezofis.com/api/Workflows. Every call sends Authorization: Bearer + X-Tenant-Id (see api.js `authed`).
 // Response shapes were checked read-only against the live cloud.ezofis.com app on 26 Oct 2026.
 import { authed, authedBlob } from './api.js';
+import { kindOf, isInputKind, displayValue, KNOWN_TYPES } from './controls.jsx';
 
 // Form file values store item ids without dashes ("293b1361fb9c...") — the repository API takes the GUID form.
 export const toGuid = (id) => { const s = String(id || '').trim(); return /^[0-9a-f]{32}$/i.test(s) ? `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}` : s; };
@@ -124,7 +125,7 @@ export function getForm(formId) {
           };
         }),
         required: (st.validation && st.validation.fieldRule) === 'REQUIRED',
-        hidden: !!gen.hidden || gen.visibility === 'HIDDEN', readOnly: !!gen.readOnly, placeholder: gen.placeholder || '',
+        hidden: !!gen.hidden || gen.visibility === 'HIDDEN', readOnly: !!gen.readOnly || gen.visibility === 'READ_ONLY', placeholder: gen.placeholder || '', settings: st,
         optionsType: spec.optionsType || '', options: spec.optionsType === 'CUSTOM' ? String(spec.customOptions || '').split(sep).map((o) => o.trim()).filter(Boolean) : [],
         defaultValue: spec.customDefaultValue || spec.defaultValue || '',
       };
@@ -138,7 +139,8 @@ export function getForm(formId) {
 
 // ---------- formatting ----------
 const NO_VALUE_TYPES = new Set(['DIVIDER', 'LABEL', 'PARAGRAPH', 'HEADING', 'IMAGE', 'SPACE', 'BUTTON']);
-export const EDITABLE_TYPES = new Set(['SHORT_TEXT', 'LONG_TEXT', 'NUMBER', 'DATE', 'EMAIL', 'PHONE']);
+// types the approver can edit on the phone: every shared control kind that takes input (src/controls.jsx)
+export const EDITABLE_TYPES = new Set([...KNOWN_TYPES].filter((t) => isInputKind(kindOf(t))));
 
 export function fmtDate(s, withTime) {
   if (!s) return '';
@@ -163,8 +165,10 @@ export function ago(s) {
 export const isToday = (s) => { if (!s) return false; const d = new Date(s), n = new Date(); return d.toDateString() === n.toDateString(); };
 export const ageDays = (s) => (s ? Math.max(0, Math.floor((Date.now() - new Date(s).getTime()) / 86400000)) : 0);
 
-export function fmtValue(v, type) {
+const SHAPED = new Set(['currency', 'phone', 'time', 'datetime', 'toggle', 'consent', 'password']);
+export function fmtValue(v, type, settings) {
   if (v === null || v === undefined) return '';
+  if (type && SHAPED.has(kindOf(type))) return displayValue(kindOf(type), v, settings);
   if (Array.isArray(v)) return v.map((x) => fmtValue(x)).filter(Boolean).join(', ');
   if (typeof v === 'object') return v.filename || v.fileName || v.name || v.label || v.value || '';
   if (typeof v === 'boolean') return v ? 'Yes' : 'No';
@@ -191,7 +195,7 @@ export function formView(form, formData) {
         .filter((c) => c.value));
       return { id: f.id, label: f.label, type: f.type, rows: rows.filter((r) => r.length), raw };
     }
-    return { id: f.id, label: f.label, type: f.type, value: fmtValue(raw, f.type), raw, hidden: f.hidden };
+    return { id: f.id, label: f.label, type: f.type, value: fmtValue(raw, f.type, f.settings), raw, hidden: f.hidden, readOnly: f.readOnly, settings: f.settings };
   }).filter((f) => !(f.hidden && !f.value)); // hidden form fields only show when the workflow filled them in
 }
 

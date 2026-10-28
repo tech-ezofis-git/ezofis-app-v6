@@ -3,6 +3,7 @@
 // calculated fields (row formulas and table sums), conditional "required", OCR fill from file uploads.
 // Field settings come from GET /form/{formId}; master rows from GET /form/{masterFormId}/entry/all.
 import { authed } from './api.js';
+import { kindOf, isEmptyFor, formatError } from './controls.jsx';
 
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CHOICE = new Set(['SINGLE_SELECT', 'SINGLE_CHOICE', 'MULTI_SELECT', 'MULTIPLE_CHOICE']);
@@ -23,7 +24,7 @@ function normField(x, parentTableId) {
   const optionsType = String(sp.optionsType || lk.optionsSource || sp.optionsSource || '').toUpperCase();
   const sep = sp.separateOptionsUsing === 'NEWLINE' ? /\r?\n/ : ',';
   return {
-    id: x.id, label: x.label || x.name || 'Field', type, table: parentTableId || null, raw: x,
+    id: x.id, label: x.label || x.name || 'Field', type, kind: kindOf(type), settings: st, table: parentTableId || null, raw: x,
     hidden: !!gen.hidden || gen.visibility === 'HIDDEN',
     readOnly: !!gen.readOnly || gen.visibility === 'READ_ONLY' || type === 'CALCULATED',
     placeholder: gen.placeholder || '',
@@ -277,15 +278,15 @@ export function validate(schema, vals, required) {
       rows.forEach((r, i) => f.columns.forEach((c) => {
         if (c.hidden || c.readOnly || !required.has(c.id)) return;
         const v = r[c.id];
-        if (FILE_TYPES.has(c.type) ? !(v && (v.file || v.fileId)) : empty(v)) errs[`${f.id}:${i}:${c.id}`] = `${c.label} is required`;
+        if (FILE_TYPES.has(c.type) ? !(v && (v.file || v.fileId)) : isEmptyFor(c.kind, v)) errs[`${f.id}:${i}:${c.id}`] = `${c.label} is required`;
       }));
+      rows.forEach((r, i) => f.columns.forEach((c) => { const k = `${f.id}:${i}:${c.id}`; const fe = !c.hidden && !c.readOnly && !errs[k] && !c.choice && !FILE_TYPES.has(c.type) && formatError(c.kind, r[c.id]); if (fe) errs[k] = fe; }));
       return;
     }
-    if (f.readOnly || !required.has(f.id)) return;
+    if (f.readOnly) return;
     const v = vals[f.id];
-    if (FILE_TYPES.has(f.type) ? !(v && (v.file || v.fileId)) : empty(v)) errs[f.id] = `${f.label} is required`;
-    else if (f.type === 'NUMBER' && !empty(v) && !Number.isFinite(Number(String(v).replace(/,/g, '')))) errs[f.id] = 'Enter a number';
-    else if (f.type === 'EMAIL' && !empty(v) && !/^\S+@\S+\.\S+$/.test(v)) errs[f.id] = 'Enter a valid email';
+    if (required.has(f.id) && (FILE_TYPES.has(f.type) ? !(v && (v.file || v.fileId)) : isEmptyFor(f.kind, v))) errs[f.id] = f.kind === 'consent' ? `Turn on ${f.label} to continue` : `${f.label} is required`;
+    else if (!f.choice && !FILE_TYPES.has(f.type)) { const fe = formatError(f.kind, v); if (fe) errs[f.id] = fe; }
   });
   return errs;
 }
@@ -352,8 +353,9 @@ export function toPayload(schema, vals) {
       if (rows.length) out[f.id] = rows;
       return;
     }
-    if (empty(v)) return;
-    out[f.id] = v && typeof v === 'object' && v.fileId ? { fileId: v.fileId, fileName: v.fileName, itemId: v.fileId, repositoryId: v.repositoryId } : Array.isArray(v) ? v : String(v);
+    if (empty(v) || (!FILE_TYPES.has(f.type) && f.kind !== 'consent' && isEmptyFor(f.kind, v))) return;
+    // booleans (toggle, consent) and structured values (V5 currency / phone objects) keep their shape, as on the web
+    out[f.id] = v && typeof v === 'object' && v.fileId ? { fileId: v.fileId, fileName: v.fileName, itemId: v.fileId, repositoryId: v.repositoryId } : Array.isArray(v) || typeof v === 'boolean' || (v && typeof v === 'object' && !v.file) ? v : String(v);
   });
   return out;
 }

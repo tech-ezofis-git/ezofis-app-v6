@@ -8,6 +8,7 @@ import { Icon, Sparkle } from '../ui.jsx';
 import { authed } from '../api.js';
 import { isTechnicalLabel } from '../wf.js';
 import { repoApi } from '../repo.js';
+import { Control, toTime, toDateTime, formatError } from '../controls.jsx';
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const str = (v) => (v == null ? '' : String(v));
@@ -27,7 +28,12 @@ function parseOptions(json) {
 const T = (dataType) => {
   const t = str(dataType).toUpperCase();
   if (/TABLE/.test(t)) return 'TABLE';
+  if (/^(CALCULATED|AUTO_?GENERATED|OMR)$/.test(t)) return 'COMPUTED';
+  if (/DATE_?TIME/.test(t)) return 'DATETIME';
   if (/DATE/.test(t)) return 'DATE';
+  if (/^TIME$/.test(t)) return 'TIME';
+  if (/^(LINK|URL)$/.test(t)) return 'LINK';
+  if (/CURRENCY/.test(t)) return 'CURRENCY';
   if (/BOOL|CHECK/.test(t)) return 'BOOLEAN';
   if (/NUM|DECIMAL|INT|CURRENCY|AMOUNT|MONEY|FLOAT/.test(t)) return 'NUMBER';
   if (/LONG|MULTI_?LINE|TEXTAREA/.test(t)) return 'LONG_TEXT';
@@ -46,7 +52,10 @@ export function toSchema(repo) {
       const opt = parseOptions(f.optionsJson);
       let type = T(f.dataType);
       if (type === 'TEXT' && (opt.kind === 'predefined' || opt.kind === 'master' || opt.kind === 'unique')) type = 'SELECT';
-      return { id: str(f.id), name: str(f.name || f.sqlColumnName), col: str(f.sqlColumnName || f.name), type, required: !!f.isMandatory, readOnly: !!f.isReadOnly, folder: !!f.includeInFolderStructure, level: Number(f.level) || 0, order: f.orderId != null ? Number(f.orderId) : 1000 + i, opt };
+      if (type === 'TEXT' && /address/i.test(str(f.name))) type = 'LONG_TEXT'; // address fields get a multi-line box, as on the web upload screen
+      const folder = !!f.includeInFolderStructure;
+      // a folder-structure field is always mandatory; computed values (calculated, auto-generated, OMR) are read-only
+      return { id: str(f.id), name: str(f.name || f.sqlColumnName), col: str(f.sqlColumnName || f.name), type, required: !!f.isMandatory || folder, readOnly: !!f.isReadOnly || type === 'COMPUTED', folder, level: Number(f.level) || 0, order: f.orderId != null ? Number(f.orderId) : 1000 + i, opt };
     });
   return fields.sort((a, b) => (b.folder - a.folder) || (a.level - b.level) || (a.order - b.order));
 }
@@ -73,7 +82,7 @@ export function toTable(v) {
   const rows = Array.isArray(x) ? x : isObj(x) ? (x.data || x.rows || x.items || x['Line Item'] || x.lineItems || []) : [];
   return { data: (Array.isArray(rows) ? rows : []).map((r) => (isObj(r) ? Object.fromEntries(Object.entries(r).filter(([k]) => k !== '_id').map(([k, y]) => [k, isObj(y) ? str(y.value ?? y['Invoice Value'] ?? JSON.stringify(y)) : str(y)])) : { Value: str(r) })) };
 }
-const norm = (f, v) => (f.type === 'DATE' ? toInputDate(v) : f.type === 'TABLE' ? JSON.stringify(toTable(v)) : f.type === 'BOOLEAN' ? (/^(true|1|yes)$/i.test(str(v)) ? 'true' : v === '' || v == null ? '' : 'false') : str(v));
+const norm = (f, v) => (f.type === 'DATE' ? toInputDate(v) : f.type === 'DATETIME' ? toDateTime(v) : f.type === 'TIME' ? toTime(v) : f.type === 'TABLE' ? JSON.stringify(toTable(v)) : f.type === 'BOOLEAN' ? (/^(true|1|yes)$/i.test(str(v)) ? 'true' : v === '' || v == null ? '' : 'false') : str(v));
 export const valuesFromItem = (schema, fields) => Object.fromEntries(schema.map((f) => [f.name, norm(f, find(fields, f.col, f.name) ?? '')]));
 // OCR results (ocrFieldList or stage fields) matched by field name or column; anything OCR returned outside the schema is kept as text
 export function valuesFromOcr(schema, list) {
@@ -95,7 +104,7 @@ export function validate(schema, values) {
   schema.forEach((f) => {
     if (f.readOnly) return;
     if (f.required && empty(f, values[f.name])) e[f.name] = f.folder ? `${f.name} is required to file the document in the right folder` : `${f.name} is required`;
-    else if (f.type === 'NUMBER' && str(values[f.name]).trim() && isNaN(Number(str(values[f.name]).replace(/,/g, '')))) e[f.name] = 'Enter a number';
+    else if (CONTROL[f.type]) { const fe = formatError(CONTROL[f.type], values[f.name]); if (fe) e[f.name] = fe; }
   });
   return e;
 }
@@ -184,6 +193,9 @@ function TableInput({ f, value, onChange, disabled, err }) {
   );
 }
 
+// folder types drawn by the shared controls (src/controls.jsx); TABLE, BOOLEAN and SELECT stay below
+const CONTROL = { NUMBER: 'number', DATE: 'date', DATETIME: 'datetime', TIME: 'time', LINK: 'url', CURRENCY: 'currency', COMPUTED: 'readonly' };
+
 // `found`: names AI/OCR filled (shown with an OCR tag until edited); `base`: values to compare for the Edited tag
 export default function MetaForm({ repoId, schema, values, onChange, errors = {}, found, base, disabled, idPrefix = 'mf' }) {
   const { optionsFor, master, failed } = useOptions(repoId, schema, values);
@@ -218,7 +230,7 @@ export default function MetaForm({ repoId, schema, values, onChange, errors = {}
             input = <select id={id} className={'input strong' + (errors[f.name] ? ' error' : '')} value={v} disabled={ro || (!list.length && !str(v))} onChange={(e) => set(f, e.target.value)}><option value="">{list.length ? 'Select…' : parentMissing ? 'Choose the field above first' : failed[f.opt.masterFormId] ? "Couldn't load the list" : 'No options'}</option>{list.map((o) => <option key={o} value={o}>{o}</option>)}</select>;
           }
         } else if (f.type === 'LONG_TEXT') input = <textarea id={id} className={'input strong' + (errors[f.name] ? ' error' : '')} rows={3} value={v} readOnly={ro} onChange={(e) => set(f, e.target.value)} />;
-        else input = <input id={id} className={'input ' + (ro ? 'locked' : 'strong') + (errors[f.name] ? ' error' : '')} type={f.type === 'DATE' ? 'date' : 'text'} inputMode={f.type === 'NUMBER' ? 'decimal' : undefined} value={v} readOnly={ro} placeholder={found && !found.has(f.name) && !v ? 'Not found · type a value' : ''} onChange={(e) => set(f, e.target.value)} />;
+        else input = <Control kind={CONTROL[f.type] || 'text'} id={id} value={v} readOnly={ro} error={!!errors[f.name]} placeholder={found && !found.has(f.name) && !v ? 'Not found · type a value' : ''} onChange={(x) => set(f, x)} />;
         return <div key={f.name} className="field" data-err={errors[f.name] ? '1' : undefined}>{lab}{input}{errors[f.name] ? <span className="err" role="alert">{errors[f.name]}</span> : null}</div>;
       })}
       {!schema.length ? <div className="muted" style={{ fontSize: 13 }}>This folder has no details to fill in.</div> : null}

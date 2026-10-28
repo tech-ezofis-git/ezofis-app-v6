@@ -8,6 +8,7 @@ import { apiErrorMessage } from '../api.js';
 import { wfApi, getWorkflows, getMeta, getForm, canStart, isTechnicalLabel, MAX_FILE_MB, tooBig } from '../wf.js';
 import { buildSchema, initialValues, newRow, recompute, loadMaster, validate, fileProblem, ocrExtract, ocrTargets, uploadWithOcr, toPayload, empty, NO_INPUT, FILE_TYPES } from '../formEngine.js';
 import { Skeleton, ErrorNote } from './LiveWorkflow.jsx';
+import { Control, KNOWN_TYPES } from '../controls.jsx';
 
 function PickWorkflow() {
   const nav = useNavigate();
@@ -93,12 +94,10 @@ function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onF
     else if (ro) input = <div className="input locked" id={id}>{value || '—'}</div>;
     else if (f.type === 'SINGLE_CHOICE' && opts.length && opts.length <= 5) input = <div className="choice-row" role="radiogroup">{opts.map((o) => <button key={o.value} type="button" role="radio" aria-checked={value === o.value} className={'chip' + (value === o.value ? ' on' : '')} onClick={() => onChange(value === o.value ? '' : o.value)}>{o.label}</button>)}</div>;
     else input = <select id={id} className="input strong" value={value || ''} onChange={(e) => onChange(e.target.value)} disabled={!opts.length}><option value="">{opts.length ? 'Select…' : f.parent ? 'Choose the field above first' : 'No options'}</option>{opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>;
-  } else if (f.type === 'LONG_TEXT') {
-    input = <textarea id={id} className="input strong" rows={3} placeholder={f.placeholder} value={value || ''} readOnly={ro} onChange={(e) => onChange(e.target.value)} />;
   } else {
-    const t = f.type === 'DATE' ? 'date' : f.type === 'EMAIL' ? 'email' : f.type === 'PHONE' ? 'tel' : 'text';
-    input = <input id={id} className={'input ' + (ro ? 'locked' : 'strong')} type={t} readOnly={ro} placeholder={f.placeholder || (f.fill ? 'Filled from master data' : '')} inputMode={f.type === 'NUMBER' ? 'decimal' : f.type === 'PHONE' ? 'tel' : undefined} value={value === undefined || value === null ? '' : value} onChange={(e) => onChange(e.target.value)} />;
+    input = <Control kind={f.kind} id={id} value={value} readOnly={ro} error={!!error} settings={f.settings} label={f.kind === 'consent' ? undefined : f.label} placeholder={f.placeholder || (f.fill ? 'Filled from master data' : '')} onChange={onChange} />;
   }
+  if (f.kind === 'divider') return input;
   return <div className="field" data-err={error ? '1' : undefined}>{label}{input}{error ? <span className="err" role="alert">{error}</span> : null}</div>;
 }
 
@@ -197,7 +196,7 @@ function StartForm({ workflowId }) {
   if (!meta || !schema || !state) return <div className="screen"><TopBar title="New request" back="/app/new" /><div className="content"><Skeleton n={6} h={64} /></div></div>;
 
   const { vals, options, rowOptions, required } = state;
-  const visible = schema.fields.filter((f) => !f.hidden && !NO_INPUT.has(f.type) && !isTechnicalLabel(f.label));
+  const visible = schema.fields.filter((f) => !f.hidden && (!NO_INPUT.has(f.type) || f.type === 'DIVIDER') && !isTechnicalLabel(f.label));
   const unsupported = visible.filter((f) => !SUPPORTED.has(f.type) && required.has(f.id));
   const budgetField = schema.fields.find((f) => /budget/i.test(f.label) && !empty(vals[f.id]));
   const loadingLists = Object.keys(schema.need).some((k) => !masters[k]);
@@ -328,8 +327,8 @@ function StartForm({ workflowId }) {
   );
 }
 
-// Controls the app can fill in on New request.
-const SUPPORTED = new Set(['SHORT_TEXT', 'LONG_TEXT', 'NUMBER', 'DATE', 'EMAIL', 'PHONE', 'SINGLE_SELECT', 'SINGLE_CHOICE', 'MULTI_SELECT', 'MULTIPLE_CHOICE', 'CALCULATED', 'TABLE', 'FILE_UPLOAD', 'IMAGE_UPLOAD', 'CURRENCY_AMOUNT', 'URL']);
+// Controls the app can fill in on New request: the shared control kinds plus choices, files and tables.
+const SUPPORTED = new Set([...KNOWN_TYPES, 'SINGLE_SELECT', 'SINGLE_CHOICE', 'MULTI_SELECT', 'MULTIPLE_CHOICE', 'TABLE', 'FILE_UPLOAD', 'IMAGE_UPLOAD']);
 
 export default function NewRequest() {
   const { wfId } = useParams();

@@ -794,3 +794,22 @@ b.hl { color: var(--deep); background: linear-gradient(transparent 62%, rgba(92,
 .flt-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .flt-tag { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--tint-p); color: var(--deep); font-size: 13px; font-weight: 600; max-width: 100%; }
 .flt-tag button { width: 24px; height: 24px; border: 0; border-radius: 999px; background: transparent; color: var(--deep); display: flex; align-items: center; justify-content: center; }
+
+/* shared field controls (src/controls.jsx) */
+.ctl-divider { border: 0; border-top: 1.5px solid #E6E0EF; margin: 4px 0; width: 100%; }
+.ctl-switch { min-height: 52px; border: 1.5px solid var(--deep); border-radius: 12px; padding: 8px 12px 8px 16px; display: flex; align-items: center; gap: 12px; background: #fff; }
+.ctl-switch .tx { flex: 1; min-width: 0; font-size: 15px; line-height: 1.4; }
+.ctl-switch.locked { background: #F4F1F8; border-color: var(--field); color: var(--muted); }
+.ctl-switch.error { border-color: var(--bad); }
+.ctl-switch .switch:disabled { opacity: .6; }
+.ctl-affix { display: flex; gap: 8px; align-items: center; }
+.ctl-btn { flex: none; width: 44px; height: 44px; border-radius: 12px; border: 0; background: var(--chip); color: var(--deep); display: inline-flex; align-items: center; justify-content: center; }
+.ctl-btn:disabled { opacity: .4; }
+.ctl-money, .ctl-counter { height: 52px; border: 1.5px solid var(--deep); border-radius: 12px; background: #fff; display: flex; align-items: center; overflow: hidden; }
+.ctl-money:focus-within, .ctl-counter:focus-within { border-color: var(--purple); box-shadow: 0 0 0 3px #EADCFD; }
+.ctl-money.error, .ctl-counter.error { border-color: var(--bad); }
+.ctl-money.locked { background: #F4F1F8; border-color: var(--field); }
+.ctl-money .cur { flex: none; height: 100%; display: flex; align-items: center; padding: 0 12px; background: var(--tint-p); color: var(--deep); font-weight: 600; font-size: 14px; }
+.ctl-money input, .ctl-counter input { flex: 1; min-width: 0; height: 100%; border: 0; outline: none; padding: 0 14px; font-size: 15px; background: transparent; }
+.ctl-counter { padding: 0 4px; gap: 4px; }
+.ctl-counter input { text-align: center; font-weight: 600; }
