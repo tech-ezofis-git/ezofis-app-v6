@@ -206,8 +206,14 @@ const requestStore = create<Store>()(
         }),
       removeProcessingProcess: (id) =>
         set((state) => ({
+          // Callers pass string or numeric ids, and a tracker's processId is
+          // swapped to the instanceId once the job reports one, so compare as
+          // strings and also match the job id it was registered with.
           processingProcesses: state.processingProcesses.filter(
-            (p) => (p.processId || p.id) !== id,
+            (p) =>
+              ![p.processId || p.id, p.apAgentJobId]
+                .filter((pid) => pid !== null && pid !== undefined)
+                .some((pid) => String(pid) === String(id)),
           ),
         })),
       stopRefresh: () => set({ reloadMeta: false }),

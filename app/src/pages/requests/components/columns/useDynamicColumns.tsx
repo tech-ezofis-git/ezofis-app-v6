@@ -22,7 +22,10 @@ import {
   isParentField,
   isTableType,
 } from '@/pages/requests/utils/dynamicTable.utils'
-import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
+import {
+  extractDueDate,
+  getCompletedOutcome,
+} from '@/pages/requests/utils/inboxItemDisplay'
 import {
   extractPreviewValues,
   getGenericStageInfo,
@@ -1566,7 +1569,7 @@ const getLastActionText = (row: any) => {
 }
 
 const getDecisionText = (row: any, activeTab: string | undefined) => {
-  if (activeTab === 'Processed') return 'Paid'
+  if (activeTab === 'Processed') return getCompletedOutcome(row).label
   if (row?.isProcessing) return 'Processing'
   const agentData = row._agentData?.[0] || row._agentData || {}
   const parsedForm = getParsedFormData(row)
@@ -1831,18 +1834,34 @@ const getBaseColumns = (
   columns.push(
     {
       id: 'matchStatus',
-      label: activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
+      label: activeTab === 'Processed' ? 'Status' : 'Match Status',
       size: 140,
       exportValue: (row: any) => getDecisionText(row, activeTab),
       renderCell: (row: any, _index = 0) => {
         if (activeTab === 'Processed') {
+          // Show the END stage the request closed on, not a fixed "Paid".
+          const { label, tone } = getCompletedOutcome(row)
           return (
-            <span className='inline-flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold',
+                tone === 'red'
+                  ? 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+                  : 'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]',
+              )}
+            >
               <Icon
-                className='size-3.5 text-[var(--green-9)]'
-                name='tabler:circle-check'
+                className={cn(
+                  'size-3.5',
+                  tone === 'red'
+                    ? 'text-[var(--red-9)]'
+                    : 'text-[var(--green-9)]',
+                )}
+                name={
+                  tone === 'red' ? 'tabler:circle-x' : 'tabler:circle-check'
+                }
               />
-              Paid
+              {label}
             </span>
           )
         }

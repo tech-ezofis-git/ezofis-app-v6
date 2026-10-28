@@ -396,6 +396,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -415,6 +416,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -434,6 +436,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -453,6 +456,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -472,6 +476,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -491,6 +496,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -510,6 +516,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -529,6 +536,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -548,6 +556,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -567,6 +576,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -586,6 +596,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -605,6 +616,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -627,6 +639,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -649,6 +662,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -668,6 +682,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
@@ -689,6 +704,7 @@ function PropertiesPanel({
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
+            key={node.id}
             fallback={
               <div className='p-6 text-gray-10'>Loading settings...</div>
             }
