@@ -2636,6 +2636,88 @@ async def test_form_rows_load_request_and_user_name_from_sql_when_ezofis_is_empt
     assert not _is_guid_like(row.get("startedBy"))
 
 
+@pytest.mark.asyncio
+async def test_completed_instance_fills_started_by_and_acted_by_from_completed_table(monkeypatch):
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent import catalog_execute as ce
+    from app.report_agent.catalog_execute import attach_listing_fields_to_form_rows
+
+    item_id = "fd5cf44a-3d6f-4e6e-9e44-2fc5a6814b1f"
+    instance_id = "67fb2a5a-87fb-4cf1-9beb-f87dc875af92"
+    workflow_id = "b3a82270-a543-4460-ae16-166f933da280"
+
+    async def _find_table(db, names, prefer_schemas=()):
+        first = names[0]
+        if first.startswith("completed_"):
+            return ("workflow", first)
+        return None
+
+    async def _fetch_columns(db, schema, table):
+        return {
+            "workflow_instance_id": "workflow_instance_id",
+            "item_id": "item_id",
+            "transaction_created_by_email": "transaction_created_by_email",
+            "activity_user_email": "activity_user_email",
+        }, {}
+
+    monkeypatch.setattr(ce, "find_table", _find_table)
+    monkeypatch.setattr(ce, "fetch_columns", _fetch_columns)
+
+    class _Db:
+        async def fetch(self, sql, *args):
+            return [
+                {
+                    "item_id": "a19cb07c-0e6d-48be-9122-08e2b88bbf09",
+                    "instance_id": instance_id,
+                    "started_by": "admin@ezofis.com",
+                    "acted_by": "admin@ezofis.com",
+                }
+            ]
+
+    class _Ez:
+        async def list_workflows(self, tenant_id):
+            return [{"id": workflow_id, "name": "Quote Request Process"}]
+
+        async def list_workflow_instances(self, *, tenant_id, workflow_id, limit=200):
+            return [
+                {
+                    "id": instance_id,
+                    "itemId": item_id,
+                    "workflowName": "Quote Request Process",
+                    "status": 2,
+                    "requestNo": "REQ-97",
+                    "currentStepName": "Quotation Approver",
+                    "startedBy": "",
+                    "updatedBy": "",
+                }
+            ]
+
+    spec = ReportSpec(
+        title="Quote Request Report",
+        report_type="specific_workflow",
+        columns=[
+            ReportSpecColumn(key="RequestNo", label="Request No", kind="default", selected=True),
+            ReportSpecColumn(key="Stage", label="Stage", kind="default", selected=True),
+            ReportSpecColumn(key="status", label="Status", kind="default", selected=True),
+            ReportSpecColumn(key="startedBy", label="Started by", kind="default", selected=True),
+            ReportSpecColumn(key="actedBy", label="Acted by", kind="default", selected=True),
+        ],
+    )
+    rows = await attach_listing_fields_to_form_rows(
+        _Ez(),
+        spec,
+        [{"item_id": item_id, "Project": "3040 Wonderland"}],
+        tenant_id="tenant-1",
+        workflow_name="Quote Request Process",
+        db=_Db(),
+    )
+    row = rows[0]
+    assert row.get("RequestNo") == "REQ-97"
+    assert row.get("status") == "Completed"
+    assert row.get("startedBy") == "admin@ezofis.com"
+    assert row.get("actedBy") == "admin@ezofis.com"
+
+
 def test_ensure_identity_columns_adds_item_id():
     from app.report_agent.definition_lock import ensure_identity_columns
 

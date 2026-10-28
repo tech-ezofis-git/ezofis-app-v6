@@ -503,6 +503,43 @@ def _sql_col(by_lower: dict[str, str], *names: str) -> str:
     return ""
 
 
+def _sql_id_in_clause(columns: list[str]) -> str:
+    """Match a form row id against mailbox item_id and/or form_entry_id."""
+    parts = [
+        f"lower(replace(CAST({quote_ident(col)} AS text), '-', '')) = ANY($1::text[])"
+        for col in columns
+        if col
+    ]
+    return " OR ".join(parts) if parts else "FALSE"
+
+
+def _mailbox_item_columns(by_lower: dict[str, str]) -> tuple[str, str]:
+    """Repository item_id column and optional form_entry_id (both may exist)."""
+    item_col = _sql_col(
+        by_lower,
+        "item_id",
+        "itemid",
+        "repository_item_id",
+        "repositoryitemid",
+    )
+    form_col = _sql_col(by_lower, "form_entry_id", "formentryid")
+    if not item_col and form_col:
+        item_col = form_col
+        form_col = ""
+    if form_col and form_col == item_col:
+        form_col = ""
+    return item_col, form_col
+
+
+def _listing_keys_from_sql_row(row: Any) -> list[str]:
+    keys: list[str] = []
+    for name in ("item_id", "form_entry_id"):
+        compact = _compact_id(row_get(row, name))
+        if compact and compact not in keys:
+            keys.append(compact)
+    return keys
+
+
 def _needs_request_no(spec: ReportSpec) -> bool:
     return bool(_keys(spec) & {"requestno", "id"})
 
@@ -1084,10 +1121,12 @@ async def _sql_item_instance_map(
     async def _ingest(sql: str) -> None:
         rows = await db.fetch(sql, compact_ids)
         for row in rows or []:
-            item = _compact_id(row_get(row, "item_id"))
             inst = _compact_id(row_get(row, "instance_id"))
-            if item and inst and item not in mapping:
-                mapping[item] = inst
+            if not inst:
+                continue
+            for key in _listing_keys_from_sql_row(row):
+                if key not in mapping:
+                    mapping[key] = inst
 
     for names in (
         (f"workflow_attachments_{suffix}", f"workflowattachments_{suffix}"),
@@ -1101,15 +1140,7 @@ async def _sql_item_instance_map(
             continue
         schema, table = located
         by_lower, _ = await fetch_columns(db, schema, table)
-        item_col = _sql_col(
-            by_lower,
-            "item_id",
-            "itemid",
-            "form_entry_id",
-            "formentryid",
-            "repository_item_id",
-            "repositoryitemid",
-        )
+        item_col, form_col = _mailbox_item_columns(by_lower)
         inst_col = _sql_col(
             by_lower,
             "workflow_instance_id",
@@ -1124,11 +1155,14 @@ async def _sql_item_instance_map(
             inst_col = pick_id_column(by_lower) or inst_col
         if not item_col or not inst_col or item_col == inst_col:
             continue
+        select_form = (
+            f", CAST({quote_ident(form_col)} AS text) AS form_entry_id" if form_col else ""
+        )
         sql = (
             f"SELECT CAST({quote_ident(item_col)} AS text) AS item_id, "
-            f"CAST({quote_ident(inst_col)} AS text) AS instance_id "
+            f"CAST({quote_ident(inst_col)} AS text) AS instance_id{select_form} "
             f"FROM {qualified(schema, table)} "
-            f"WHERE lower(replace(CAST({quote_ident(item_col)} AS text), '-', '')) = ANY($1::text[])"
+            f"WHERE {_sql_id_in_clause([item_col, form_col])}"
         )
         try:
             await _ingest(sql)
@@ -1147,6 +1181,90 @@ def _merge_listing(existing: Optional[dict[str, Any]], incoming: dict[str, Any])
         if merged.get(key) in (None, "") and value not in (None, ""):
             merged[key] = value
     return merged
+
+
+_COMPLETED_LISTING_KEYS = (
+    "RequestNo",
+    "requestNo",
+    "Stage",
+    "stage",
+    "status",
+    "startedBy",
+    "startedById",
+    "actedBy",
+    "actedById",
+    "instanceId",
+    "workflowName",
+    "workflowId",
+    "createdAtUtc",
+    "itemId",
+)
+
+
+def _merge_listing_completed(
+    existing: Optional[dict[str, Any]], incoming: dict[str, Any]
+) -> dict[str, Any]:
+    """Completed mailbox wins over inbox for status and people on the same form row."""
+    merged = _merge_listing(existing, incoming)
+    for key in _COMPLETED_LISTING_KEYS:
+        value = incoming.get(key)
+        if value not in (None, ""):
+            merged[key] = value
+    if str(incoming.get("status") or "").strip() == "Completed":
+        merged["status"] = "Completed"
+    return merged
+
+
+def _instance_ids_for_completed_lookup(
+    instances: list[dict[str, Any]],
+    item_to_inst: dict[str, str],
+    sql_by_item: dict[str, dict[str, Any]],
+) -> list[str]:
+    ids: list[str] = []
+    seen: set[str] = set()
+    for row in instances:
+        cid = _compact_id((row or {}).get("instanceId"))
+        if cid and cid not in seen:
+            seen.add(cid)
+            ids.append(str(row.get("instanceId") or cid))
+    for inst in item_to_inst.values():
+        cid = _compact_id(inst)
+        if cid and cid not in seen:
+            seen.add(cid)
+            ids.append(inst)
+    for listing in sql_by_item.values():
+        cid = _compact_id((listing or {}).get("instanceId"))
+        if cid and cid not in seen:
+            seen.add(cid)
+            ids.append(str(listing.get("instanceId") or cid))
+    return ids
+
+
+def _apply_completed_person_fields(
+    item: dict[str, Any],
+    *,
+    inst: Optional[dict[str, Any]],
+    sql_listing: Optional[dict[str, Any]],
+    completed_person: dict[str, dict[str, str]],
+) -> None:
+    inst_id = _compact_id(
+        item.get("instanceId")
+        or (inst or {}).get("instanceId")
+        or (sql_listing or {}).get("instanceId")
+    )
+    if not inst_id:
+        return
+    person = completed_person.get(inst_id)
+    if not person:
+        return
+    if _person_missing(item):
+        for key in ("startedBy", "startedById", "actedBy", "actedById"):
+            _assign_listing_value(item, key, person.get(key))
+    status = str(item.get("status") or "").strip()
+    if status in ("", "Cancelled", "Rejected") or (
+        sql_listing and str(sql_listing.get("status") or "").strip() == "Completed"
+    ):
+        _assign_listing_value(item, "status", "Completed")
 
 
 def _listing_from_sql_row(row: Any, workflow_name: str) -> dict[str, Any]:
@@ -1224,13 +1342,22 @@ async def _sql_listing_by_items(
     if db is None or not suffix or not compact_ids:
         return found
 
-    async def _ingest(sql: str) -> None:
+    async def _ingest(sql: str, default_status: str = "", *, from_completed: bool = False) -> None:
         rows = await db.fetch(sql, compact_ids)
         for row in rows or []:
-            item = _compact_id(row_get(row, "item_id"))
-            if not item:
-                continue
-            found[item] = _merge_listing(found.get(item), _listing_from_sql_row(row, workflow_name))
+            listing = _listing_from_sql_row(row, workflow_name)
+            if default_status and not str(listing.get("status") or "").strip():
+                listing["status"] = default_status
+            form_key = _compact_id(row_get(row, "form_entry_id"))
+            if form_key:
+                listing["itemId"] = str(row_get(row, "form_entry_id") or "").strip() or listing.get(
+                    "itemId"
+                )
+            merge = _merge_listing_completed if from_completed else _merge_listing
+            for key in _listing_keys_from_sql_row(row):
+                found[key] = merge(found.get(key), listing)
+            if form_key and form_key not in _listing_keys_from_sql_row(row):
+                found[form_key] = merge(found.get(form_key), listing)
 
     for names in (
         (f"inbox_{suffix}",),
@@ -1243,15 +1370,7 @@ async def _sql_listing_by_items(
             continue
         schema, table = located
         by_lower, _ = await fetch_columns(db, schema, table)
-        item_col = _sql_col(
-            by_lower,
-            "item_id",
-            "itemid",
-            "form_entry_id",
-            "formentryid",
-            "repository_item_id",
-            "repositoryitemid",
-        )
+        item_col, form_col = _mailbox_item_columns(by_lower)
         if names[0].startswith("workflow_instances"):
             inst_col = pick_id_column(by_lower) or _sql_col(by_lower, "id")
         else:
@@ -1266,31 +1385,232 @@ async def _sql_listing_by_items(
             )
         if not item_col or not inst_col or item_col == inst_col:
             continue
+        skip_cols = {item_col, inst_col, form_col}
         parts = [
             f"CAST({quote_ident(item_col)} AS text) AS item_id",
             f"CAST({quote_ident(inst_col)} AS text) AS instance_id",
         ]
+        if form_col:
+            parts.append(f"CAST({quote_ident(form_col)} AS text) AS form_entry_id")
         for alias, candidates in (
             ("request_no", ("reference_number", "referencenumber", "request_no", "requestno", "requestnumber")),
             ("stage", ("stage", "current_stage", "currentstage", "activity", "step_name", "current_step_name")),
             ("status", ("status", "instance_status", "instancestatus")),
-            ("started_by", ("started_by", "startedby", "created_by", "createdby")),
-            ("acted_by", ("updated_by", "updatedby", "acted_by", "actedby", "assigned_to", "assignedto")),
+            (
+                "started_by",
+                (
+                    "started_by",
+                    "startedby",
+                    "created_by",
+                    "createdby",
+                    "transaction_created_by_email",
+                    "created_by_name",
+                ),
+            ),
+            (
+                "acted_by",
+                (
+                    "updated_by",
+                    "updatedby",
+                    "acted_by",
+                    "actedby",
+                    "assigned_to",
+                    "assignedto",
+                    "activity_user_email",
+                ),
+            ),
             ("workflow_id", ("workflow_id", "workflowid", "wworkflowid")),
             ("workflow_name", ("workflow_name", "workflowname")),
             ("created_at", ("created_at_utc", "createdatutc", "created_at", "createdat", "started_at")),
         ):
             col = _sql_col(by_lower, *candidates)
-            if col and col not in (item_col, inst_col):
+            if col and col not in skip_cols:
                 parts.append(f"CAST({quote_ident(col)} AS text) AS {alias}")
         sql = (
             f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
-            f"WHERE lower(replace(CAST({quote_ident(item_col)} AS text), '-', '')) = ANY($1::text[])"
+            f"WHERE {_sql_id_in_clause([item_col, form_col])}"
         )
+        default_status = ""
+        from_completed = table.startswith("completed")
+        if from_completed:
+            default_status = "Completed"
+        elif table.startswith("inbox") or table.startswith("sent"):
+            default_status = "In Progress"
         try:
-            await _ingest(sql)
+            await _ingest(sql, default_status, from_completed=from_completed)
         except Exception:
             continue
+    return found
+
+
+async def _sql_completed_rows_missing_from_form(
+    db: Any, suffix: str, workflow_name: str, existing_row_keys: set[str], existing_request_nos: set[str]
+) -> list[dict[str, Any]]:
+    """Completed requests with no matching form row (same keys as form+workflow rows)."""
+    if db is None or not suffix:
+        return []
+    located = await find_table(
+        db, (f"completed_{suffix}",), prefer_schemas=("workflow", "dbo", "public")
+    )
+    if located is None:
+        return []
+    schema, table = located
+    by_lower, _ = await fetch_columns(db, schema, table)
+    item_col, form_col = _mailbox_item_columns(by_lower)
+    inst_col = _sql_col(
+        by_lower,
+        "workflow_instance_id",
+        "workflowinstanceid",
+        "instance_id",
+        "instanceid",
+    )
+    if not item_col or not inst_col:
+        return []
+    skip_cols = {item_col, inst_col, form_col}
+    parts = [
+        f"CAST({quote_ident(item_col)} AS text) AS item_id",
+        f"CAST({quote_ident(inst_col)} AS text) AS instance_id",
+    ]
+    if form_col:
+        parts.append(f"CAST({quote_ident(form_col)} AS text) AS form_entry_id")
+    for alias, candidates in (
+        ("request_no", ("reference_number", "referencenumber", "request_no", "requestno", "requestnumber")),
+        ("stage", ("stage", "current_stage", "currentstage", "activity", "step_name", "current_step_name")),
+        ("status", ("status", "instance_status", "instancestatus")),
+        (
+            "started_by",
+            (
+                "started_by",
+                "startedby",
+                "transaction_created_by_email",
+                "created_by_name",
+                "created_by",
+                "createdby",
+            ),
+        ),
+        (
+            "acted_by",
+            (
+                "updated_by",
+                "updatedby",
+                "acted_by",
+                "actedby",
+                "activity_user_email",
+            ),
+        ),
+        ("workflow_id", ("workflow_id", "workflowid", "wworkflowid")),
+        ("workflow_name", ("workflow_name", "workflowname")),
+        ("created_at", ("created_at_utc", "createdatutc", "created_at", "createdat", "started_at")),
+    ):
+        col = _sql_col(by_lower, *candidates)
+        if col and col not in skip_cols:
+            parts.append(f"CAST({quote_ident(col)} AS text) AS {alias}")
+    sql = f"SELECT {', '.join(parts)} FROM {qualified(schema, table)}"
+    try:
+        rows = await db.fetch(sql)
+    except Exception:
+        return []
+    extras: list[dict[str, Any]] = []
+    for row in rows or []:
+        listing = _listing_from_sql_row(row, workflow_name)
+        listing["status"] = "Completed"
+        req = str(listing.get("RequestNo") or "").strip()
+        if req and req in existing_request_nos:
+            continue
+        form_key = _compact_id(row_get(row, "form_entry_id"))
+        item_key = _compact_id(row_get(row, "item_id"))
+        anchor = form_key or item_key
+        if not anchor:
+            continue
+        if anchor in existing_row_keys or form_key in existing_row_keys or item_key in existing_row_keys:
+            continue
+        display_id = str(row_get(row, "form_entry_id") or row_get(row, "item_id") or "").strip()
+        if display_id:
+            listing["itemId"] = display_id
+        extras.append(listing)
+    return extras
+
+
+def _person_missing(row: dict[str, Any]) -> bool:
+    """True when Started by or Acted by has neither a name nor an id."""
+
+    def _present(name_key: str, id_key: str) -> bool:
+        return bool(str(row.get(name_key) or "").strip() or str(row.get(id_key) or "").strip())
+
+    return not _present("startedBy", "startedById") or not _present("actedBy", "actedById")
+
+
+async def _sql_completed_person_by_instance(
+    db: Any, suffix: str, instance_ids: list[str]
+) -> dict[str, dict[str, str]]:
+    """Started by and Acted by for a finished request, keyed by instance id.
+
+    The instance no longer carries a person after it leaves the inbox.
+    completed_<workflow> still has the starter and the last actor.
+    """
+    found: dict[str, dict[str, str]] = {}
+    compact_ids = [_compact_id(item) for item in instance_ids if _compact_id(item)]
+    if db is None or not suffix or not compact_ids:
+        return found
+    located = await find_table(
+        db, (f"completed_{suffix}",), prefer_schemas=("workflow", "dbo", "public")
+    )
+    if located is None:
+        return found
+    schema, table = located
+    by_lower, _ = await fetch_columns(db, schema, table)
+    inst_col = _sql_col(
+        by_lower,
+        "workflow_instance_id",
+        "workflowinstanceid",
+        "instance_id",
+        "instanceid",
+    )
+    if not inst_col:
+        return found
+    started_col = _sql_col(
+        by_lower,
+        "transaction_created_by_email",
+        "created_by_name",
+        "transaction_created_by",
+        "started_by",
+        "startedby",
+    )
+    acted_col = _sql_col(
+        by_lower,
+        "activity_user_email",
+        "user_id",
+        "assigned_to_user_id",
+    )
+    parts = [f"CAST({quote_ident(inst_col)} AS text) AS instance_id"]
+    if started_col:
+        parts.append(f"CAST({quote_ident(started_col)} AS text) AS started_by")
+    if acted_col and acted_col != started_col:
+        parts.append(f"CAST({quote_ident(acted_col)} AS text) AS acted_by")
+    sql = (
+        f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
+        f"WHERE lower(replace(CAST({quote_ident(inst_col)} AS text), '-', '')) = ANY($1::text[])"
+    )
+    try:
+        rows = await db.fetch(sql, compact_ids)
+    except Exception:
+        return found
+    for row in rows or []:
+        inst = _compact_id(row_get(row, "instance_id"))
+        if not inst:
+            continue
+        started_id, started_name = _split_user_ref(row_get(row, "started_by"))
+        acted_id, acted_name = _split_user_ref(row_get(row, "acted_by"))
+        if not acted_id and not acted_name:
+            acted_id, acted_name = started_id, started_name
+        if not any((started_id, started_name, acted_id, acted_name)):
+            continue
+        found[inst] = {
+            "startedBy": started_name,
+            "startedById": started_id,
+            "actedBy": acted_name,
+            "actedById": acted_id,
+        }
     return found
 
 
@@ -1816,6 +2136,51 @@ async def attach_listing_fields_to_form_rows(
             sql_by_item[key] = _merge_listing(sql_by_item.get(key), value)
         if item_to_inst and sql_by_item:
             break
+    existing_keys: set[str] = set()
+    existing_req: set[str] = set()
+    for row in rows:
+        for cid in _form_row_ids(row):
+            existing_keys.add(cid)
+        req = str(row.get("RequestNo") or row.get("requestNo") or "").strip()
+        if req:
+            existing_req.add(req)
+    extra_listings: list[dict[str, Any]] = []
+    for wf_id in wf_ids:
+        suffix = _compact_id(wf_id)[:8]
+        if not suffix:
+            continue
+        try:
+            added = await _sql_completed_rows_missing_from_form(
+                db, suffix, workflow_name or "", existing_keys, existing_req
+            )
+        except Exception:
+            continue
+        for listing in added:
+            req = str(listing.get("RequestNo") or "").strip()
+            if req:
+                existing_req.add(req)
+            iid = _compact_id(listing.get("itemId"))
+            if iid:
+                existing_keys.add(iid)
+            extra_listings.append(listing)
+    completed_person: dict[str, dict[str, str]] = {}
+    lookup_inst_ids = _instance_ids_for_completed_lookup(instances, item_to_inst, sql_by_item)
+    for listing in extra_listings:
+        iid = _compact_id(listing.get("instanceId"))
+        if iid and str(listing.get("instanceId") or iid) not in {
+            _compact_id(x) for x in lookup_inst_ids
+        }:
+            lookup_inst_ids.append(str(listing.get("instanceId") or iid))
+    for wf_id in wf_ids:
+        suffix = _compact_id(wf_id)[:8]
+        if not suffix:
+            continue
+        try:
+            completed_person.update(
+                await _sql_completed_person_by_instance(db, suffix, lookup_inst_ids)
+            )
+        except Exception:
+            continue
     out: list[dict[str, Any]] = []
     for row in rows:
         item = dict(row)
@@ -1823,17 +2188,26 @@ async def attach_listing_fields_to_form_rows(
         inst = None
         sql_listing = None
         for cid in _form_row_ids(item):
-            inst = by_item.get(cid) or by_inst.get(cid)
-            if inst is None and cid in item_to_inst:
-                inst = by_inst.get(item_to_inst[cid])
+            if inst is None:
+                inst = by_item.get(cid) or by_inst.get(cid)
+                if inst is None and cid in item_to_inst:
+                    inst = by_inst.get(item_to_inst[cid])
             if sql_listing is None and cid in sql_by_item:
                 sql_listing = sql_by_item[cid]
-            if inst is not None:
-                break
         if inst is not None:
             _fill_listing_fields(item, inst, spec)
-        elif sql_listing is not None:
+        if sql_listing is not None:
             _fill_listing_fields(item, sql_listing, spec)
+        _apply_completed_person_fields(
+            item, inst=inst, sql_listing=sql_listing, completed_person=completed_person
+        )
+        out.append(item)
+    for listing in extra_listings:
+        item = dict(listing)
+        _fill_listing_fields(item, listing, spec)
+        _apply_completed_person_fields(
+            item, inst=None, sql_listing=listing, completed_person=completed_person
+        )
         out.append(item)
     out = await resolve_user_names(ezofis, out, tenant_id=tenant_id, db=db)
     return _shape_rows(spec, out)
