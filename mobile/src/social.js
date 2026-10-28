@@ -5,7 +5,7 @@
 // does not verify identity yet (documented known gap), so only an email returned by the provider SDK is sent.
 //
 // Android: android/app/src/main/java/com/ezofis/mobile/EzofisSocialAuthPlugin.java — Google via Credential Manager,
-// Microsoft (Office 365 / Entra work accounts) via MSAL (res/raw/msal_config.json). iOS is not wired yet.
+// Microsoft (Office 365 work/school and personal accounts) via MSAL (res/raw/msal_config.json). iOS is not wired yet.
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
 const EzofisSocialAuth = registerPlugin('EzofisSocialAuth');

@@ -118,7 +118,7 @@ The server returns `Access-Control-Allow-Origin: *` but rejects the CORS preflig
 - Browser preview: calls are blocked; use "Explore with sample data", or allow the preflight on the server.
 
 ### Google and Microsoft sign-in
-Google is implemented natively for Android in `android/app/src/main/java/com/ezofis/mobile/EzofisSocialAuthPlugin.java` (Credential Manager, "Sign in with Google"), registered in `MainActivity.java`, with dependencies in `android/app/build.gradle`. The web layer calls it from `src/social.js`. Microsoft (Office 365 / Entra ID work accounts) uses MSAL 8.6 in the same plugin. iOS is not wired yet. MSAL needs Android 7.0+ (`minSdkVersion` 24 in `android/variables.gradle`).
+Google is implemented natively for Android in `android/app/src/main/java/com/ezofis/mobile/EzofisSocialAuthPlugin.java` (Credential Manager, "Sign in with Google"), registered in `MainActivity.java`, with dependencies in `android/app/build.gradle`. The web layer calls it from `src/social.js`. Microsoft (Office 365 work/school and personal Outlook/Hotmail accounts) uses MSAL 8.6 in the same plugin. iOS is not wired yet. MSAL needs Android 7.0+ (`minSdkVersion` 24 in `android/variables.gradle`).
 
 Google sign-in (verified on a device with the debug key), all in Google Cloud project 154003149422:
 1. **Android OAuth client** for package `com.ezofis.mobile` + the SHA-1 of the signing key. Debug key (`~/.android/debug.keystore`): `34:D9:D9:81:0F:42:92:4D:16:D7:0A:53:E0:34:08:8F:F2:AA:D4:DB`.
@@ -127,7 +127,7 @@ Google sign-in (verified on a device with the debug key), all in Google Cloud pr
 
 Microsoft sign-in (verified on a device with the debug key), Azure app registration "EZOFIS APP":
 1. **Android platform** with package `com.ezofis.mobile` and signature hash `NNnZgQ9Ckk0W1wpT4DQIj/Kq1Ns=` (base64 of the debug SHA-1).
-2. Its Application (client) id and redirect URI are in `android/app/src/main/res/raw/msal_config.json` (audience: work accounts in any org). The same hash is the `BrowserTabActivity` path in `AndroidManifest.xml`.
+2. Its Application (client) id and redirect URI are in `android/app/src/main/res/raw/msal_config.json` (audience: work, school and personal Microsoft accounts — matches the registration's "All Microsoft account users"). The same hash is the `BrowserTabActivity` path in `AndroidManifest.xml`.
 3. Some tenants need an admin to consent to "EZOFIS APP" on first sign-in.
 
 **Release builds** are signed with a different key: add its SHA-1 as another Android client in Google Cloud, and its signature hash as another Android platform in Azure (then update `msal_config.json` and the manifest path).

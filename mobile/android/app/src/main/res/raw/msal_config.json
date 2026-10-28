@@ -7,7 +7,7 @@
   "authorities": [
     {
       "type": "AAD",
-      "audience": { "type": "AzureADMultipleOrgs" }
+      "audience": { "type": "AzureADandPersonalMicrosoftAccount" }
     }
   ]
 }
