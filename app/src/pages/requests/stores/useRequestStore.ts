@@ -85,6 +85,8 @@ type Store = {
   /** Quote edited after its PDF was generated; Regenerate PDF is pending. */
   quoteRegenerationPending: boolean
   rawWorkflowData: any
+  /** Name of the workflow whose request list is on screen (topbar title). */
+  listWorkflowName: string | null
   reloadMeta: boolean
   repoData: any
   requestListTab: string // New state for main list tabs
@@ -113,6 +115,7 @@ type Store = {
   removeProcessingProcess: (id: string | number) => void
   setJobMapping: (jobId: string | number, instanceId: string) => void
   setJobStatus: (id: string, status: any) => void
+  setListWorkflowName: (name: string | null) => void
   setPendingDeepLink: (deepLink: Store['pendingDeepLink']) => void
 
   setPendingNav: (v: any) => void
@@ -139,6 +142,7 @@ const requestStore = create<Store>()(
       jobMappings: getInitialJobMappings(),
       jobStatuses: getInitialJobStatuses(),
       kanbanMissingFieldIds: [],
+      listWorkflowName: null,
       newRequest: false,
       newRequestMeta: null,
       pendingDeepLink: null,
@@ -268,6 +272,7 @@ const requestStore = create<Store>()(
           } catch {}
           return { jobStatuses: nextStatuses }
         }),
+      setListWorkflowName: (name) => set({ listWorkflowName: name }),
       setPendingDeepLink: (deepLink) => set({ pendingDeepLink: deepLink }),
       setPendingNav: (v) => set({ pendingNav: v }),
       setPendingOpenNewRequest: (value: boolean) =>

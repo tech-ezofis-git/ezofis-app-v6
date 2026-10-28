@@ -24,9 +24,8 @@ const PageTitle = () => {
   const navigate = useNavigate()
   const isGuestShare = useIsGuestShare()
   const matches = useMatches()
-  const { closeRequest, isRequestOpen, selectedWorkflow } = requestStore(
-    (state) => state,
-  )
+  const { closeRequest, isRequestOpen, listWorkflowName, selectedWorkflow } =
+    requestStore((state) => state)
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
   const isApSetupStarted = useSetupStore((state) => state.isSetupStarted)
   const isDmsSetupStarted = useDmsSetupStore((state) => state.isSetupStarted)
@@ -162,6 +161,15 @@ const PageTitle = () => {
           >
             {selectedWorkflow.name}
           </span>
+        </div>
+      )
+    }
+
+    // A single workflow's request list: its name replaces the generic title.
+    if (isRequestsRoute && !isRequestOpen && listWorkflowName) {
+      return (
+        <div className='flex items-center gap-4'>
+          <Title level={3} title={listWorkflowName} />
         </div>
       )
     }

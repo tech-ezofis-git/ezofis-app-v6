@@ -309,6 +309,25 @@ const lineItemStickyClass = (index: number, kind: 'th' | 'td') => {
   return 'min-w-[120px]'
 }
 
+// "Form Details" goes above "System Info"; without a System Info card it is last.
+const withFormCard = (
+  cards: DetailCard[],
+  formCard: DetailCard,
+): DetailCard[] => {
+  if (!formCard.rows.length) return cards
+  const systemIndex = cards.findIndex(
+    (card) =>
+      card.id === 'systemInfo' ||
+      String(card.title).trim().toLowerCase() === 'system info',
+  )
+  if (systemIndex === -1) return [...cards, formCard]
+  return [
+    ...cards.slice(0, systemIndex),
+    formCard,
+    ...cards.slice(systemIndex),
+  ]
+}
+
 const buildInfoCards = (
   data: WorkspaceDocumentDetail | null,
   t: ReturnType<typeof useLingui>['t'],
@@ -1768,7 +1787,7 @@ export function DocumentDetailsView({
     [t, ticketForm.rows],
   )
   const allCards = useMemo(
-    () => (formCard.rows.length ? [...infoCards, formCard] : infoCards),
+    () => withFormCard(infoCards, formCard),
     [formCard, infoCards],
   )
 
@@ -3807,12 +3826,8 @@ export function DocumentDetailsView({
                   </div>
                 </Card>
               ) : null}
-              {(isEditingMetadata
-                ? []
-                : formCard.rows.length
-                  ? [...infoCards, formCard]
-                  : infoCards
-              ).map((card) => (
+              {(isEditingMetadata ? [] : withFormCard(infoCards, formCard)).map(
+                (card) => (
                 <Card className='overflow-hidden p-0' key={card.id}>
                   <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
                     <DynamicIcon
