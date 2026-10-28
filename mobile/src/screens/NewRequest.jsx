@@ -6,7 +6,8 @@ import { useStore } from '../store.jsx';
 import { Icon, TopBar, FileThumb, Sparkle } from '../ui.jsx';
 import { apiErrorMessage } from '../api.js';
 import { wfApi, getWorkflows, getMeta, getForm, canStart, isTechnicalLabel, MAX_FILE_MB, tooBig } from '../wf.js';
-import { buildSchema, initialValues, newRow, recompute, loadMaster, validate, fileProblem, ocrExtract, ocrTargets, uploadWithOcr, toPayload, empty, shownBy, lockedBy, NO_INPUT, FILE_TYPES } from '../formEngine.js';
+import { buildSchema, initialValues, newRow, recompute, loadMaster, validate, fileProblem, ocrExtract, ocrTargets, uploadWithOcr, toPayload, empty, shownBy, lockedBy, repoSources, rowLabel, columnTotals, NO_INPUT, FILE_TYPES } from '../formEngine.js';
+import { repoApi } from '../repo.js';
 import { Skeleton, ErrorNote } from './LiveWorkflow.jsx';
 import { Control, KNOWN_TYPES, TipButton, HelpText, labelHidden } from '../controls.jsx';
 
@@ -94,7 +95,7 @@ function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onF
     if (options === null) input = <div className="input locked"><span className="spinner" style={{ width: 14, height: 14 }} /> Loading options…</div>;
     else if (ro) input = <div className="input locked" id={id}>{value || '—'}</div>;
     else if (f.type === 'SINGLE_CHOICE' && opts.length && opts.length <= 5) input = <div className="choice-row" role="radiogroup">{opts.map((o) => <button key={o.value} type="button" role="radio" aria-checked={value === o.value} className={'chip' + (value === o.value ? ' on' : '')} onClick={() => onChange(value === o.value ? '' : o.value)}>{o.label}</button>)}</div>;
-    else input = <select id={id} className="input strong" value={value || ''} onChange={(e) => onChange(e.target.value)} disabled={!opts.length}><option value="">{opts.length ? 'Select…' : f.parent ? 'Choose the field above first' : 'No options'}</option>{opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>;
+    else input = <select id={id} className="input strong" value={value || ''} onChange={(e) => onChange(e.target.value)} disabled={!opts.length}><option value="">{opts.length ? 'Select…' : (f.parent || (f.repo && f.repo.parent)) ? 'Choose the field above first' : 'No options'}</option>{opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>;
   } else {
     input = <Control kind={f.kind} id={id} value={value} readOnly={ro} error={!!error} settings={f.settings} label={f.kind === 'consent' ? undefined : f.label} placeholder={f.placeholder || (f.fill ? 'Filled from master data' : '')} onChange={onChange} />;
   }
@@ -111,6 +112,8 @@ function StartForm({ workflowId }) {
   const [state, setState] = useState(null); // { vals, options, rowOptions, required }
   const [masters, setMasters] = useState({});
   const [masterErr, setMasterErr] = useState('');
+  const [facets, setFacets] = useState({}); // repository-field options by source key
+  const facetAsked = useRef(new Set());
   const [users, setUsers] = useState(null);
   const [errs, setErrs] = useState({});
   const [files, setFiles] = useState([]);
@@ -134,7 +137,7 @@ function StartForm({ workflowId }) {
         const sc = buildSchema(f && f.json);
         setMeta(m); setSchema(sc);
         valsRef.current = initialValues(sc, me, session);
-        setState(recompute(sc, valsRef.current, {}, null, manual.current));
+        setState(recompute(sc, valsRef.current, {}, null, manual.current, {}, m.repositoryId));
         // 2) master forms used by this form (only the referenced columns are kept)
         Object.entries(sc.need).forEach(([fid, cols]) => loadMaster(fid, [...cols]).then((rows) => { if (!off) setMasters((x) => ({ ...x, [fid]: rows })); }).catch(() => { if (!off) { setMasterErr("Some lists couldn't load. You can still type values or try again."); setMasters((x) => ({ ...x, [fid]: [] })); } }));
         if (Object.values(sc.byId).some((x) => x.userList)) wfApi.users().then((u) => !off && setUsers(u)).catch(() => !off && setUsers([]));
@@ -144,9 +147,21 @@ function StartForm({ workflowId }) {
   }, [workflowId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // re-run fills / options / calculations when lists arrive
-  useEffect(() => { if (schema) { const r = recompute(schema, valsRef.current, masters, users, manual.current); valsRef.current = r.vals; setState(r); } }, [masters, users, schema]);
+  useEffect(() => { if (schema) { const r = recompute(schema, valsRef.current, masters, users, manual.current, facets, meta && meta.repositoryId); valsRef.current = r.vals; setState(r); } }, [masters, users, schema, facets]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const apply = (next) => { const r = recompute(schema, next, masters, users, manual.current); valsRef.current = r.vals; setState(r); };
+  // dropdowns fed by a repository field: load each (field, parent value) combination once
+  useEffect(() => {
+    if (!schema || !meta || !state) return;
+    repoSources(schema, state.vals, meta.repositoryId).forEach((s) => {
+      if (facetAsked.current.has(s.key)) return;
+      facetAsked.current.add(s.key);
+      repoApi.facetsIn(s.repositoryId, s.field, s.scope).then((l) => (Array.isArray(l) ? l : (l && (l.values || l.items || l.data)) || []))
+        .then((l) => setFacets((x) => ({ ...x, [s.key]: [...new Set(l.map((v) => String(v && typeof v === 'object' ? v.value ?? v.name ?? '' : v)).filter(Boolean))] })))
+        .catch(() => setFacets((x) => ({ ...x, [s.key]: [] })));
+    });
+  }, [schema, meta, state]);
+
+  const apply = (next) => { const r = recompute(schema, next, masters, users, manual.current, facets, meta && meta.repositoryId); valsRef.current = r.vals; setState(r); };
   // children of a changed field go back to automatic filling
   const releaseChildren = (id) => Object.values(schema.byId).forEach((x) => { if (x.parent === id) { manual.current.delete(x.id); [...manual.current].forEach((k) => { if (k.endsWith(':' + x.id)) manual.current.delete(k); }); } });
   const setField = (f, v) => { manual.current.add(f.id); releaseChildren(f.id); setErrs((e) => ({ ...e, [f.id]: '' })); apply({ ...valsRef.current, [f.id]: v }); };
@@ -278,11 +293,13 @@ function StartForm({ workflowId }) {
         {visible.map((f) => {
           if (f.type === 'TABLE') {
             const rows = vals[f.id] || [];
+            const fixed = f.rowsType === 'FIXED';
+            const totals = columnTotals(f, rows);
             return (
               <section key={f.id} className="nr-table" data-err={errs[f.id] ? '1' : undefined}>
-                <div className="row-between" style={{ alignItems: 'center' }}><b style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="grid" size={18} color="#643094" />{f.label}{required.has(f.id) ? <span className="req">*</span> : null}</b><button type="button" className="btn neutral small" style={{ width: 'auto', padding: '0 14px' }} onClick={() => addRow(f)}><Icon name="plus" size={16} />Add row</button></div>
+                <div className="row-between" style={{ alignItems: 'center' }}><b style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="grid" size={18} color="#643094" />{f.label}{required.has(f.id) ? <span className="req">*</span> : null}</b>{fixed ? null : <button type="button" className="btn neutral small" style={{ width: 'auto', padding: '0 14px' }} onClick={() => addRow(f)}><Icon name="plus" size={16} />Add row</button>}</div>
                 {errs[f.id] ? <span className="err" role="alert">{errs[f.id]}</span> : null}
-                {!rows.length ? <button type="button" className="nr-empty-row" onClick={() => addRow(f)}>No rows yet · tap to add {f.label}</button> : null}
+                {!rows.length && !fixed ? <button type="button" className="nr-empty-row" onClick={() => addRow(f)}>No rows yet · tap to add {f.label}</button> : null}
                 {rows.map((r, i) => {
                   const st = rowStats(f, r);
                   const isOpen = open[r._key] !== false;
@@ -291,10 +308,10 @@ function StartForm({ workflowId }) {
                       <div className="nr-row-h">
                         <span className="nr-row-n">{i + 1}</span>
                         <button type="button" className="nr-row-t" aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [r._key]: !isOpen }))}>
-                          <b>{f.label} {i + 1}</b>
+                          <b>{rowLabel(f, i, r)}</b>
                           <span><span className="pill neu solid" style={{ height: 20, fontSize: 11 }}>{st.filled} of {st.total} filled</span>{st.missing ? <span style={{ color: 'var(--bad)', fontSize: 11, fontWeight: 600 }}>{st.missing} required missing</span> : null}</span>
                         </button>
-                        <button type="button" className="icon-btn" aria-label={`Delete row ${i + 1}`} onClick={() => removeRow(f, i)}><Icon name="close" size={18} color="#C2264B" /></button>
+                        {fixed ? null : <button type="button" className="icon-btn" aria-label={`Delete row ${i + 1}`} onClick={() => removeRow(f, i)}><Icon name="close" size={18} color="#C2264B" /></button>}
                       </div>
                       {isOpen ? (
                         <div className="nr-row-b">
@@ -306,6 +323,7 @@ function StartForm({ workflowId }) {
                     </div>
                   );
                 })}
+                {totals ? <div className="nr-totals" aria-label={`${f.label} totals`}><b>Total</b>{totals.map((x) => <span key={x.col.id}><small>{x.col.label}</small>{x.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>)}</div> : null}
               </section>
             );
           }

@@ -35,7 +35,14 @@ function normField(x, parentTableId) {
     allowedFileTypes: Array.isArray(val.allowedFileTypes) ? val.allowedFileTypes : [], maxFileSize: Number(val.maxFileSize) || 0,
     // options: custom lists only for choice controls (text fields carry a leftover "Option 1,Option 2,Option 3")
     choice: CHOICE.has(type),
-    customOptions: CHOICE.has(type) && (optionsType === 'CUSTOM' || optionsType === '' ) ? String(sp.customOptions || '').split(sep).map((o) => o.trim()).filter(Boolean) : [],
+    customOptions: CHOICE.has(type) && (optionsType === 'CUSTOM' || optionsType === '' ) ? String(sp.customOptions || '').split(sep).map((o) => o.trim()).filter(Boolean)
+      // DYNAMIC: a fixed option list stored on the field (settings.specific.options)
+      : CHOICE.has(type) && optionsType === 'DYNAMIC' ? (Array.isArray(sp.options) ? sp.options : []).map((o) => (o && typeof o === 'object' ? { value: String(o.id ?? o.value ?? o.name), label: String(o.name ?? o.label ?? o.value) } : String(o))).filter((o) => (typeof o === 'object' ? o.value : o)) : [],
+    // REPOSITORY: distinct values of a repository field (items/facets), optionally scoped by a parent field's value
+    repo: CHOICE.has(type) && (optionsType === 'REPOSITORY' || String(sp.optionsSource || '').toUpperCase() === 'REPOSITORY') && sp.repositoryField
+      ? { repositoryId: String(sp.repositoryId || ''), field: String(sp.repositoryField), parent: String(sp.repositoryFieldParent || sp.masterFormParentColumn || '') } : null,
+    rowsType: String(sp.rowsType || sp.tableRowsType || 'ON_DEMAND').toUpperCase(), fixedRowCount: Number(sp.fixedRowCount || sp.tableFixedRowCount) || 5,
+    rowLabels: Array.isArray(sp.tableFixedRowLabels) ? sp.tableFixedRowLabels : [], showSummaryRow: !!sp.showSummaryRow, showColumnTotal: sp.showColumnTotal,
     master: (CHOICE.has(type) && (optionsType === 'MASTER' || optionsType === 'MASTER_TABLE') && sp.masterFormId)
       ? { formId: String(sp.masterFormId), column: String(sp.masterFormColumn || ''), conditions: (sp.masterFormConditionColumn || []).filter((c) => (c.formField || c.formColumn) && c.masterColumn).map((c) => ({ field: String(c.formField || c.formColumn), column: String(c.masterColumn) })), showAll: !!sp.showAllData }
       : null,
@@ -131,11 +138,38 @@ export function initialValues(schema, me, session) {
   const user = userInfo(me, session);
   const vals = {};
   schema.fields.forEach((f) => {
-    if (f.type === 'TABLE') { vals[f.id] = []; return; }
+    if (f.type === 'TABLE') { vals[f.id] = f.rowsType === 'FIXED' ? Array.from({ length: f.fixedRowCount }, (_, i) => fixedRow(f, i, me, session)) : []; return; }
     const d = defaultFor(f, user);
     if (d !== undefined && d !== '') vals[f.id] = d;
   });
   return vals;
+}
+// a FIXED table starts with its rows; a LABEL column carries the row label (tableFixedRowLabels)
+function fixedRow(table, i, me, session) {
+  const r = newRow(table, me, session);
+  const labelCol = table.columns.find((c) => c.type === 'LABEL');
+  const e = table.rowLabels[i];
+  if (labelCol) r[labelCol.id] = typeof e === 'string' ? e : e && typeof e === 'object' ? String(e[labelCol.id] ?? e.label ?? '') : '';
+  return r;
+}
+export function rowLabel(table, i, row) {
+  if (table.rowsType !== 'FIXED') return `${table.label} ${i + 1}`;
+  const labelCol = table.columns.find((c) => c.type === 'LABEL');
+  const e = table.rowLabels[i];
+  const v = typeof e === 'string' ? e : e && typeof e === 'object' ? (labelCol ? e[labelCol.id] : e.label) : labelCol && row ? row[labelCol.id] : '';
+  return v ? String(v) : `${table.label} ${i + 1}`;
+}
+// summary row as on the web: columns with showColumnTotal, or every summable column when the table shows a summary row
+const SUMMABLE = new Set(['NUMBER', 'CURRENCY_AMOUNT', 'CALCULATED', 'COUNTER']);
+export function columnTotals(table, rows) {
+  const explicit = table.columns.some((c) => c.showColumnTotal === true);
+  if (!table.showSummaryRow && !explicit) return null;
+  const out = [];
+  table.columns.forEach((c) => {
+    const on = c.showColumnTotal === true || (c.showColumnTotal !== false && table.showSummaryRow && !explicit && SUMMABLE.has(c.type));
+    if (on) out.push({ col: c, total: round2((rows || []).reduce((n, r) => n + num(r[c.id] && typeof r[c.id] === 'object' ? r[c.id].value : r[c.id]), 0)) });
+  });
+  return out.length ? out : null;
 }
 export function newRow(table, me, session) {
   const user = userInfo(me, session);
@@ -170,7 +204,30 @@ function conditionsFor(f, formId, schema, vals, row) {
 }
 const matchRows = (rows, conds) => rows.filter((r) => conds.every((c) => !(c.column in r) || same(r[c.column], c.value)));
 
-export function optionsFor(f, schema, vals, masters, row, users) {
+// repository source for f: which repository / field to ask and the parent scope; null while the parent is empty
+export function repoSource(f, schema, vals, row, repoId) {
+  if (!f.repo) return null;
+  const repositoryId = f.repo.repositoryId || repoId || '';
+  if (!repositoryId) return null;
+  let scope = {};
+  if (f.repo.parent) {
+    const t = f.repo.parent.trim().toLowerCase();
+    const p = schema.byId[f.repo.parent] || Object.values(schema.byId).find((x) => (x.raw && x.raw.settings && x.raw.settings.specific && x.raw.settings.specific.repositoryField) === f.repo.parent || x.label.trim().toLowerCase() === t);
+    const pv = p ? valOf(p.id, vals, row) : vals[f.repo.parent];
+    const one = Array.isArray(pv) ? pv[0] : pv;
+    if (empty(one)) return { key: null };
+    const name = p ? (p.raw && p.raw.settings && p.raw.settings.specific && p.raw.settings.specific.repositoryField) || p.label : f.repo.parent;
+    scope = { [name]: str(typeof one === 'object' ? one.value ?? one.label : one) };
+  }
+  return { key: `${repositoryId}|${f.repo.field}|${JSON.stringify(scope)}`, repositoryId, field: f.repo.field, scope };
+}
+export function repoSources(schema, vals, repoId) {
+  const out = [];
+  schema.fields.forEach((f) => { const s = repoSource(f, schema, vals, null, repoId); if (s && s.key) out.push(s); });
+  return out;
+}
+export function optionsFor(f, schema, vals, masters, row, users, facets = {}, repoId = '') {
+  if (f.repo) { const s = repoSource(f, schema, vals, row, repoId); if (!s) return []; if (!s.key) return []; return facets[s.key] || null; }
   if (f.master) {
     const rows = masters[f.master.formId];
     if (!rows) return null; // still loading
@@ -214,7 +271,7 @@ function evalTokens(tokens, get, tableSum) {
 }
 
 // ---------- recompute everything that depends on other values ----------
-export function recompute(schema, vals0, masters, users, manual = new Set()) {
+export function recompute(schema, vals0, masters, users, manual = new Set(), facets = {}, repoId = '') {
   const vals = { ...vals0 };
   const options = {}; // fieldId → options (top level)
   const rowOptions = {}; // tableId → [ { colId: options } ]
@@ -226,9 +283,9 @@ export function recompute(schema, vals0, masters, users, manual = new Set()) {
       if (f.type === 'TABLE') return;
       if (f.fill && !manual.has(f.id)) { const v = fillValue(f, schema, vals, masters, null); if (v !== undefined) set(vals, f.id, v); }
       if (f.choice) {
-        const opts = optionsFor(f, schema, vals, masters, null, users);
+        const opts = optionsFor(f, schema, vals, masters, null, users, facets, repoId);
         options[f.id] = opts;
-        if (opts && f.master) {
+        if (opts && (f.master || f.repo)) {
           const list = opts.map((o) => (typeof o === 'object' ? o.value : o));
           if (!empty(vals[f.id]) && !list.some((o) => same(o, vals[f.id])) && !f.readOnly) set(vals, f.id, '');
           if (empty(vals[f.id]) && list.length === 1) set(vals, f.id, list[0]); // single match → preselect (as the web form does)
@@ -243,7 +300,7 @@ export function recompute(schema, vals0, masters, users, manual = new Set()) {
         t.columns.forEach((c) => {
           if (c.fill && !manual.has(`${r._key}:${c.id}`)) { const v = fillValue(c, schema, vals, masters, r); if (v !== undefined) set(r, c.id, v); }
           if (c.choice) {
-            const opts = optionsFor(c, schema, vals, masters, r, users);
+            const opts = optionsFor(c, schema, vals, masters, r, users, facets, repoId);
             ro[c.id] = opts;
             if (opts && c.master) {
               if (!empty(r[c.id]) && !opts.some((o) => same(o, r[c.id]))) set(r, c.id, '');

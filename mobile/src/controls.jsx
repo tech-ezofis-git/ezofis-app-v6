@@ -5,9 +5,10 @@
 //   currency → amount (or the V5 { currency, value } object when the stored value already has that shape);
 //   phone → string (or the V5 { code, phoneNo } object when stored that way).
 import React, { useEffect, useRef, useState } from 'react';
+import { decodeImage, forKind } from './scan.js';
 
 // own icons, so this module doesn't import ui.jsx (ui → store → wf → controls would be a cycle)
-const PATH = { star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z', pen: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4', info: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 11v5M12 8v.01', minus: 'M5 12h14', plus: 'M12 5v14M5 12h14', external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5' };
+const PATH = { scan: 'M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M7 12h10', star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z', pen: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4', info: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 11v5M12 8v.01', minus: 'M5 12h14', plus: 'M12 5v14M5 12h14', external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5' };
 const Icon = ({ name, size = 18, fill = 'none' }) => <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={PATH[name]} /></svg>;
 
 const str = (v) => (v === undefined || v === null ? '' : String(v));
@@ -297,10 +298,43 @@ function SignatureField({ id, value, onChange, readOnly, error, settings }) {
   );
 }
 
+// Scan a QR code / barcode with the camera (photo) into the field: settings.specific.qrValue on the web, or a folder
+// BARCODE field. The value is converted to the field's kind (number, date…); a code that doesn't fit is reported.
+function ScanButton({ kind, onValue }) {
+  const ref = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const pick = async (file) => {
+    setBusy(true); setMsg('');
+    try {
+      const text = await decodeImage(file);
+      const v = forKind(kind, text);
+      if (v === undefined) setMsg(`The code says “${String(text).slice(0, 40)}”, which doesn't fit this field.`);
+      else onValue(v);
+    } catch (e) { setMsg(e.message || "Couldn't read a code from the photo."); }
+    setBusy(false);
+  };
+  return (
+    <>
+      <button type="button" className="ctl-btn" aria-label="Scan QR code or barcode" disabled={busy} onClick={() => ref.current && ref.current.click()}>{busy ? <span className="spinner" style={{ width: 16, height: 16 }} /> : <Icon name="scan" size={20} />}</button>
+      <input ref={ref} type="file" accept="image/*" capture="environment" hidden aria-label="Photo of the code" onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) pick(f); }} />
+      {msg ? <span className="ctl-scan-msg" role="alert">{msg}</span> : null}
+    </>
+  );
+}
+const SCANNABLE = new Set(['text', 'number', 'counter', 'currency', 'date', 'datetime', 'email', 'url', 'phone']);
+
 // ---------- the control ----------
 // props: kind, id, value, onChange(value), readOnly, error (bool), placeholder, settings (field settings: general /
 // specific / validation), label (consent / toggle text), found / onFocus are passed through.
-export function Control({ kind, id, value, onChange, readOnly, error, placeholder, settings, label }) {
+export function Control(props) {
+  const { kind, value, onChange, readOnly, settings } = props;
+  const scan = props.scan !== undefined ? props.scan : !!(settings && settings.specific && settings.specific.qrValue);
+  const input = <ControlInput {...props} />;
+  if (!scan || readOnly || !SCANNABLE.has(kind)) return input;
+  return <div className="ctl-scanrow"><div className="grow">{input}</div><ScanButton kind={kind} onValue={(v) => onChange(kind === 'currency' ? (value && typeof value === 'object' ? { ...value, value: v } : v) : v)} /></div>;
+}
+function ControlInput({ kind, id, value, onChange, readOnly, error, placeholder, settings, label }) {
   const cls = 'input ' + (readOnly ? 'locked' : 'strong') + (error ? ' error' : '');
   const sp = (settings && settings.specific) || {};
   const lim = limits(settings);

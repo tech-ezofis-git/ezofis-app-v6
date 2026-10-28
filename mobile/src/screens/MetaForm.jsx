@@ -8,7 +8,7 @@ import { Icon, Sparkle } from '../ui.jsx';
 import { authed } from '../api.js';
 import { isTechnicalLabel } from '../wf.js';
 import { repoApi } from '../repo.js';
-import { Control, toTime, toDateTime, formatError } from '../controls.jsx';
+import { Control, toTime, toDateTime, formatError, kindOf, ruleError, isEmptyFor } from '../controls.jsx';
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const str = (v) => (v == null ? '' : String(v));
@@ -18,6 +18,18 @@ function parseOptions(json) {
   for (let i = 0; i < 2 && typeof p === 'string'; i += 1) { try { p = JSON.parse(p); } catch (e) { p = null; } }
   if (Array.isArray(p)) return { kind: 'predefined', values: p.map((x) => str(isObj(x) ? x.value ?? x.name ?? x.label : x)).filter(Boolean) };
   if (!isObj(p)) return { kind: 'none', values: [] };
+  // the web folder settings save the whole field settings object ({ general, specific, validation })
+  if (isObj(p.specific) || isObj(p.general)) {
+    const sp = p.specific || {};
+    const colDefs = (Array.isArray(sp.tableColumns) ? sp.tableColumns : []).map((c) => ({ name: str(c.label || c.name || c.id), type: str(c.type || 'SHORT_TEXT').toUpperCase(), required: ((c.settings && c.settings.validation) || {}).fieldRule === 'REQUIRED', settings: c.settings || {} })).filter((c) => c.name);
+    const extra = { colDefs, columns: colDefs.map((c) => c.name), qr: !!sp.qrValue, settings: p };
+    const ot = str(sp.optionsType).toUpperCase();
+    if ((ot === 'MASTER' || ot === 'MASTER_TABLE') && sp.masterFormId && sp.masterFormColumn) return { kind: 'master', values: [], masterFormId: str(sp.masterFormId), masterFieldId: str(sp.masterFormColumn), ...extra };
+    if (ot === 'UNIQUE' || ot === 'EXISTING') return { kind: 'unique', values: [], ...extra };
+    const raw = str(sp.customOptions);
+    const vals = (sp.separateOptionsUsing === 'NEWLINE' || (!sp.separateOptionsUsing && raw.includes('\n')) ? raw.split(/\r?\n/) : raw.split(',')).map((x) => x.trim()).filter(Boolean);
+    return { kind: vals.length && ot !== 'NONE' ? 'predefined' : 'none', values: vals, ...extra };
+  }
   const values = (Array.isArray(p.values) ? p.values : Array.isArray(p.options) ? p.options : []).map((x) => str(isObj(x) ? x.value ?? x.name ?? x.label : x)).filter(Boolean);
   const columns = (Array.isArray(p.columns) ? p.columns : []).map((c) => str(isObj(c) ? c.name ?? c.key ?? c.label : c)).filter(Boolean);
   if (p.type === 'master' && p.masterFormId && p.masterFieldId) return { kind: 'master', values: [], masterFormId: str(p.masterFormId), masterFieldId: str(p.masterFieldId), columns };
@@ -33,6 +45,7 @@ const T = (dataType) => {
   if (/DATE/.test(t)) return 'DATE';
   if (/^TIME$/.test(t)) return 'TIME';
   if (/^(LINK|URL)$/.test(t)) return 'LINK';
+  if (/BARCODE|QR/.test(t)) return 'BARCODE';
   if (/CURRENCY/.test(t)) return 'CURRENCY';
   if (/BOOL|CHECK/.test(t)) return 'BOOLEAN';
   if (/NUM|DECIMAL|INT|CURRENCY|AMOUNT|MONEY|FLOAT/.test(t)) return 'NUMBER';
@@ -99,12 +112,28 @@ export const toMetadata = (schema, values) => Object.fromEntries(schema.map((f) 
 export const toPatch = (schema, values, before) => Object.fromEntries(schema.filter((f) => !f.readOnly && str(values[f.name]) !== str(before[f.name])).map((f) => [f.col, str(values[f.name])]));
 
 const empty = (f, v) => (f.type === 'TABLE' ? !toTable(v).data.length : !str(v).trim());
+// typed table columns (from the field settings): required and settings rules per cell
+function tableError(f, v) {
+  const defs = f.opt.colDefs || [];
+  if (!defs.length) return '';
+  const rows = toTable(v).data;
+  for (let i = 0; i < rows.length; i += 1) {
+    for (const d of defs) {
+      const k = kindOf(d.type); const cell = rows[i][d.name];
+      if (d.required && isEmptyFor(k, cell)) return `Row ${i + 1}: ${d.name} is required`;
+      const e = ruleError(d.type, k, cell, d.settings);
+      if (e) return `Row ${i + 1}: ${d.name} · ${e}`;
+    }
+  }
+  return '';
+}
 export function validate(schema, values) {
   const e = {};
   schema.forEach((f) => {
     if (f.readOnly) return;
     if (f.required && empty(f, values[f.name])) e[f.name] = f.folder ? `${f.name} is required to file the document in the right folder` : `${f.name} is required`;
     else if (CONTROL[f.type]) { const fe = formatError(CONTROL[f.type], values[f.name]); if (fe) e[f.name] = fe; }
+    else if (f.type === 'TABLE') { const te = tableError(f, values[f.name]); if (te) e[f.name] = te; }
   });
   return e;
 }
@@ -178,7 +207,12 @@ function TableInput({ f, value, onChange, disabled, err }) {
       {t.data.map((r, i) => (
         <div key={i} className="mt-row">
           <div className="mt-row-h"><b>Row {i + 1}</b>{!disabled ? <button type="button" className="icon-btn" aria-label={`Delete row ${i + 1}`} onClick={() => save(t.data.filter((_, j) => j !== i))}><Icon name="close" size={16} color="#C2264B" /></button> : null}</div>
-          <div className="mt-cells">{cols.map((c) => <label key={c} className="mt-cell"><span>{c}</span><input className="input" value={str(r[c])} disabled={disabled} onChange={(e) => set(i, c, e.target.value)} aria-label={`${f.name} row ${i + 1} ${c}`} /></label>)}</div>
+          <div className="mt-cells">{cols.map((c) => {
+            const d = (f.opt.colDefs || []).find((x) => x.name === c);
+            const k = d ? kindOf(d.type) : 'text';
+            // typed columns use the shared controls; plain text cells stay simple inputs
+            return <label key={c} className="mt-cell"><span>{c}{d && d.required ? <span className="req"> *</span> : null}</span>{k !== 'text' ? <Control kind={k} id={`mt-${f.name}-${i}-${c}`} value={r[c] ?? ''} readOnly={disabled} settings={d.settings} onChange={(x) => set(i, c, x)} /> : <input className="input" value={str(r[c])} disabled={disabled} onChange={(e) => set(i, c, e.target.value)} aria-label={`${f.name} row ${i + 1} ${c}`} />}</label>;
+          })}</div>
         </div>
       ))}
       {!t.data.length ? <div className="muted" style={{ fontSize: 13 }}>No rows yet.</div> : null}
@@ -194,7 +228,7 @@ function TableInput({ f, value, onChange, disabled, err }) {
 }
 
 // folder types drawn by the shared controls (src/controls.jsx); TABLE, BOOLEAN and SELECT stay below
-const CONTROL = { NUMBER: 'number', DATE: 'date', DATETIME: 'datetime', TIME: 'time', LINK: 'url', CURRENCY: 'currency', COMPUTED: 'readonly' };
+const CONTROL = { BARCODE: 'text', NUMBER: 'number', DATE: 'date', DATETIME: 'datetime', TIME: 'time', LINK: 'url', CURRENCY: 'currency', COMPUTED: 'readonly' };
 
 // `found`: names AI/OCR filled (shown with an OCR tag until edited); `base`: values to compare for the Edited tag
 export default function MetaForm({ repoId, schema, values, onChange, errors = {}, found, base, disabled, idPrefix = 'mf' }) {
@@ -230,7 +264,7 @@ export default function MetaForm({ repoId, schema, values, onChange, errors = {}
             input = <select id={id} className={'input strong' + (errors[f.name] ? ' error' : '')} value={v} disabled={ro || (!list.length && !str(v))} onChange={(e) => set(f, e.target.value)}><option value="">{list.length ? 'Select…' : parentMissing ? 'Choose the field above first' : failed[f.opt.masterFormId] ? "Couldn't load the list" : 'No options'}</option>{list.map((o) => <option key={o} value={o}>{o}</option>)}</select>;
           }
         } else if (f.type === 'LONG_TEXT') input = <textarea id={id} className={'input strong' + (errors[f.name] ? ' error' : '')} rows={3} value={v} readOnly={ro} onChange={(e) => set(f, e.target.value)} />;
-        else input = <Control kind={CONTROL[f.type] || 'text'} id={id} value={v} readOnly={ro} error={!!errors[f.name]} placeholder={found && !found.has(f.name) && !v ? 'Not found · type a value' : ''} onChange={(x) => set(f, x)} />;
+        else input = <Control kind={CONTROL[f.type] || 'text'} scan={f.type === 'BARCODE' || !!f.opt.qr} id={id} value={v} readOnly={ro} error={!!errors[f.name]} placeholder={found && !found.has(f.name) && !v ? 'Not found · type a value' : ''} onChange={(x) => set(f, x)} />;
         return <div key={f.name} className="field" data-err={errors[f.name] ? '1' : undefined}>{lab}{input}{errors[f.name] ? <span className="err" role="alert">{errors[f.name]}</span> : null}</div>;
       })}
       {!schema.length ? <div className="muted" style={{ fontSize: 13 }}>This folder has no details to fill in.</div> : null}
