@@ -859,7 +859,7 @@ const WorkflowRequest = ({
           }
           isSubmitting={isSubmitting}
           stageTrail={stageTrail}
-          title={title ?? t`New Request`}
+          title={title ?? t`New Submission`}
           onClose={onClose}
           onTogglePanel={
             isFormInitiated

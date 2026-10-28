@@ -542,10 +542,12 @@ export function NumberFilterMenu({
   const [showCustom, setShowCustom] = useState(() => Boolean(customValue))
   const [draftValues, setDraftValues] = useState(selectedValues)
   const [isApplying, setIsApplying] = useState(false)
+  const [typedValue, setTypedValue] = useState(selectedValues[0] ?? '')
   const sawParentLoading = useRef(false)
 
   useEffect(() => {
     setDraftValues(selectedValues)
+    setTypedValue(selectedValues[0] ?? '')
   }, [selectedValues])
 
   useEffect(() => {
@@ -565,6 +567,70 @@ export function NumberFilterMenu({
     const timer = window.setTimeout(() => setIsApplying(false), 400)
     return () => window.clearTimeout(timer)
   }, [isApplying, isLoading])
+
+  // No preset ranges for this field (e.g. folder item fields): let the user
+  // type the exact value to search for instead of showing an empty list.
+  if (options.length === 0) {
+    const trimmed = typedValue.trim()
+    const applyTyped = () => {
+      if (!trimmed) return
+      setIsApplying(true)
+      onChange([trimmed])
+    }
+    return (
+      <div className={FILTER_MENU_PANEL}>
+        <div className='flex w-full flex-col gap-2 p-2.5'>
+          <input
+            autoFocus
+            className='w-full rounded-md border border-border-default bg-surface px-2.5 py-2 text-12 text-text-primary outline-none placeholder:text-text-muted focus:border-primary-9'
+            disabled={isApplying}
+            inputMode='decimal'
+            placeholder='Type a value to search...'
+            type='text'
+            value={typedValue}
+            onChange={(e) => setTypedValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') applyTyped()
+            }}
+          />
+        </div>
+        <div className='flex w-full flex-col gap-2 border-t border-border-default px-2.5 py-2'>
+          <button
+            type='button'
+            className={cn(
+              FILTER_MENU_ACTION,
+              'self-start',
+              trimmed || selectedValues.length > 0
+                ? FILTER_MENU_ACTION_ENABLED
+                : FILTER_MENU_ACTION_DISABLED,
+            )}
+            disabled={isApplying || (!trimmed && selectedValues.length === 0)}
+            onClick={() => {
+              setTypedValue('')
+              onClear()
+            }}
+          >
+            Clear selection
+          </button>
+          <button
+            className='inline-flex w-full items-center justify-center gap-1.5 rounded bg-primary-9 py-1.5 text-12 font-medium text-white disabled:opacity-50'
+            disabled={!trimmed || isApplying}
+            type='button'
+            onClick={applyTyped}
+          >
+            {isApplying ? (
+              <>
+                <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                Applying...
+              </>
+            ) : (
+              'Apply'
+            )}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const initialStart = customValue
     ? customValue.replace('custom:', '').split('-')[0]
