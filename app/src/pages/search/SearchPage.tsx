@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import InputText from '@/components/base/inputs/InputText'
@@ -23,6 +23,7 @@ import {
   hl,
 } from '@/layouts/app/components/topbar/components/mockSearch'
 import cn from '@/utils/cn'
+import { readSearchReturn } from './searchReturn'
 
 const CACHE_EMPTY_API_DEBOUNCE_MS = 450
 const ENABLE_LOCAL_CACHE = false
@@ -30,6 +31,7 @@ const ENABLE_LOCAL_CACHE = false
 export default function SearchPage() {
   const { t } = useLingui()
   const navigate = useNavigate()
+  const router = useRouter()
   // @ts-ignore
   const searchParams = useSearch({ from: '/_app/search' }) as { q?: string }
   const pageContext = useAskAiActionStore((state) => state.pageContext)
@@ -98,6 +100,30 @@ export default function SearchPage() {
         setLoading(false)
       }
     }
+  }
+
+  // Read once: the page search was opened from (set by the top-bar search).
+  const [returnTarget] = useState(readSearchReturn)
+  const goBack = () => {
+    if (returnTarget?.href) {
+      router.history.push(returnTarget.href)
+      return
+    }
+    if (window.history.length > 1) router.history.back()
+    else void navigate({ to: '/' })
+  }
+
+  // Clear the box, the results and the ?q= in the URL (else the effect
+  // below puts the old query straight back), and drop any search in flight.
+  const clearSearch = () => {
+    requestIdRef.current += 1
+    apiInFlightRef.current = false
+    lastApiQueryRef.current = ''
+    setLoading(false)
+    setQuery('')
+    setResults([])
+    void navigate({ replace: true, search: {}, to: '/search' })
+    inputRef.current?.focus()
   }
 
   useEffect(() => {
@@ -387,23 +413,45 @@ export default function SearchPage() {
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface'>
-      <div className='bg-surface px-4 pt-8 pb-4'>
+      <div className='bg-surface px-4 pt-4 pb-4'>
+        {/* Back to the page search was opened from, at the page's left edge */}
+        <button
+          className='group/back mb-3 flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-gray-4 bg-surface pr-3 pl-2.5 text-13 font-medium text-gray-12 shadow-xs transition-colors hover:border-primary-7 hover:bg-gray-2 hover:text-primary-11 active:scale-95'
+          type='button'
+          title={
+            returnTarget?.title ? t`Back to ${returnTarget.title}` : undefined
+          }
+          onClick={goBack}
+        >
+          <Icon
+            className='size-4 transition-transform duration-200 group-hover/back:-translate-x-0.5'
+            name='tabler:arrow-left'
+          />
+          {t`Back`}
+        </button>
         <div className='mx-auto flex max-w-4xl flex-col items-start'>
           <div className='w-full'>
             <InputText
-              leftSectionWidth={48}
+              leftSectionWidth={56}
               placeholder='Search for documents, workflows, folders...'
               ref={inputRef}
+              // The ✕ lives here; without this, clicks fall through to the field.
+              rightSectionPointerEvents='auto'
               rightSectionWidth={loading && query.length > 0 ? 80 : 48}
               value={query}
+              classNames={{
+                // Fixed height + one clean 1px border all round; a soft focus
+                // ring instead of the base input's heavy one.
+                input:
+                  '!h-14 !min-h-14 !rounded-xl !border !border-gray-5 bg-surface !py-0 pr-12 !pl-[70px] text-lg text-gray-12 shadow-xs transition-all focus-within:!ring-4 focus-within:!ring-primary-3 hover:!border-gray-7 focus:!border-primary-8 focus:!ring-4 focus:!ring-primary-3',
+                // Flush 1px inside the border on every side, so the tinted icon panel
+                // never covers it; text starts a little after the panel.
+                section:
+                  '!top-px !bottom-px !h-auto data-[position=left]:!left-px data-[position=left]:rounded-l-[11px] data-[position=left]:bg-primary-3 data-[position=left]:text-primary-11 data-[position=right]:!right-px data-[position=right]:bg-transparent',
+              }}
               leftSection={
                 <Icon className='size-5 text-primary-11' name='lucide:search' />
               }
-              classNames={{
-                input:
-                  'rounded-xl border border-gray-4 bg-surface py-6 pr-12 !pl-16 text-lg text-gray-12 shadow-sm transition-all focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20',
-                section: 'bg-primary-4 text-primary-11',
-              }}
               rightSection={
                 <div className='flex items-center gap-2 pr-2'>
                   {loading && (
@@ -414,11 +462,10 @@ export default function SearchPage() {
                   )}
                   {query.length > 0 && !loading && (
                     <button
-                      className='flex size-6 items-center justify-center rounded-full text-gray-9 transition-colors hover:bg-gray-3 hover:text-gray-12'
-                      onClick={() => {
-                        setQuery('')
-                        inputRef.current?.focus()
-                      }}
+                      aria-label={t`Clear search`}
+                      className='flex size-7 items-center justify-center rounded-full text-gray-9 transition-colors hover:bg-gray-3 hover:text-gray-12 active:scale-90'
+                      type='button'
+                      onClick={clearSearch}
                     >
                       <Icon className='size-4' name='lucide:x' />
                     </button>
@@ -583,7 +630,7 @@ export default function SearchPage() {
                         <div className='mt-2 flex items-center gap-2'>
                           <div className='size-[5px] shrink-0 rounded-full bg-secondary-9' />
 
-                          <div className='text-gray-9 line-clamp-1 text-[12.5px] hover:line-clamp-none'>
+                          <div className='line-clamp-1 text-[12.5px] text-gray-9 hover:line-clamp-none'>
                             <span className='font-medium text-gray-11'>
                               {query}
                             </span>{' '}

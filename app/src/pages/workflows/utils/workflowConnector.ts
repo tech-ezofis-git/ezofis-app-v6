@@ -33,6 +33,22 @@ export const getWorkflowConnectorErrors = (
     return []
   })
 
+export const CONNECTOR_SAVE_BLOCKED_MESSAGE =
+  "Workflows with a Workflow Connector step can't be saved yet: the server doesn't support it. Remove the step to save."
+
+/**
+ * Save-time block for Workflow Connector steps. The V6 save API rejects the
+ * WORKFLOW_CONNECTOR block type until the sub-workflow backend ships, so a
+ * workflow containing one isn't sent at all. Lifts when the live API is on.
+ */
+export const getConnectorSaveBlock = (
+  nodes: Node[],
+  backendSupportsConnector: boolean,
+): string | null =>
+  !backendSupportsConnector && nodes.some(isWorkflowConnectorNode)
+    ? CONNECTOR_SAVE_BLOCKED_MESSAGE
+    : null
+
 /** Publish-time errors for nodes with the Workflow Initiator switched on. */
 export const getWorkflowInitiatorErrors = (
   nodes: Node[],

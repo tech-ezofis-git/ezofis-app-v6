@@ -521,8 +521,16 @@ export function DocumentDetailsView({
     String(initialSignRequestId || ''),
   )
   const [activeInviteToken] = useState(String(inviteToken || ''))
-  // Opened from a share link: only the file — no Back or AI Summary.
+  // Opened from a share link: only the file — no Back, AI Summary or other
+  // file actions; Sign Document stays when the link was sent for signing.
   const isGuestShare = useIsGuestShare()
+  const guestShareContext = resolveShareContext(
+    authUserStore((state) => state.shareContext),
+  )
+  const guestShareCanSign =
+    isGuestShare &&
+    (guestShareContext?.permission === 'Sign' ||
+      Number(guestShareContext?.action) === 2)
   const [showDeclineForm, setShowDeclineForm] = useState(false)
   const [declineReason, setDeclineReason] = useState('')
   const [isDeclining, setIsDeclining] = useState(false)
@@ -2459,7 +2467,7 @@ export function DocumentDetailsView({
             </div>
           ) : !compactActions ? (
             <>
-              {isEditableDocType && canEditDocument ? (
+              {isEditableDocType && canEditDocument && !isGuestShare ? (
                 <Tooltip content={t`Edit file`} position='bottom'>
                   <button
                     aria-label={t`Edit file`}
@@ -2475,7 +2483,7 @@ export function DocumentDetailsView({
                 </Tooltip>
               ) : null}
 
-              {canPrint ? (
+              {canPrint && !isGuestShare ? (
                 <Tooltip
                   position='bottom'
                   content={
@@ -2496,7 +2504,7 @@ export function DocumentDetailsView({
                 </Tooltip>
               ) : null}
 
-              {canDownload ? (
+              {canDownload && !isGuestShare ? (
                 <Tooltip
                   content={isDownloading ? t`Downloading...` : t`Download file`}
                   position='bottom'
@@ -2513,7 +2521,7 @@ export function DocumentDetailsView({
                 </Tooltip>
               ) : null}
 
-              {canEditMetadata ? (
+              {canEditMetadata && !isGuestShare ? (
                 <button
                   aria-label={t`Edit Metadata`}
                   className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'
@@ -2525,7 +2533,7 @@ export function DocumentDetailsView({
                   <span className='hidden sm:inline'>{t`Edit Metadata`}</span>
                 </button>
               ) : null}
-              {onWorkflow ? (
+              {onWorkflow && !isGuestShare ? (
                 <button
                   aria-label={t`Start Workflow`}
                   className='inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-gray-3 bg-surface px-2.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5'
@@ -2548,7 +2556,7 @@ export function DocumentDetailsView({
                   <span className='hidden sm:inline'>{t`AI Summary`}</span>
                 </button>
               )}
-              {canSendForSignature ? (
+              {(isGuestShare ? guestShareCanSign : canSendForSignature) ? (
                 <button
                   aria-label={isSigning ? t`Exit Signing` : t`Sign Document`}
                   disabled={isPreviewLoading}
@@ -2575,129 +2583,133 @@ export function DocumentDetailsView({
                   </span>
                 </button>
               ) : null}
-              <div>
-                <FolderSharePopover
-                  allowSign={canSendForSignature}
-                  className='shrink-0'
-                  defaultOpen={autoOpenShare}
-                  sharedIds={sharedEmails}
-                  sharedRoles={sharedRoles}
-                  title={t`Share`}
-                  onOpenChange={(open) => {
-                    if (open && autoOpenShare) onShareOpened?.()
-                  }}
-                  onShare={async (shares, message, meta) => {
-                    if (!id || !repositoryId) {
-                      showToast({
-                        message: t`Missing file context for share`,
-                        variant: 'error',
-                      })
-                      return false
-                    }
-                    try {
-                      const viewShares = shares.filter(
-                        (share) =>
-                          share.permission !== 'Sign' && share.action !== 2,
-                      )
-                      const signShares = canSendForSignature
-                        ? shares.filter(
-                            (share) =>
-                              share.permission === 'Sign' || share.action === 2,
-                          )
-                        : []
-
-                      if (
-                        !canSendForSignature &&
-                        shares.some(
-                          (share) =>
-                            share.permission === 'Sign' || share.action === 2,
-                        )
-                      ) {
+              {isGuestShare ? null : (
+                <div>
+                  <FolderSharePopover
+                    allowSign={canSendForSignature}
+                    className='shrink-0'
+                    defaultOpen={autoOpenShare}
+                    sharedIds={sharedEmails}
+                    sharedRoles={sharedRoles}
+                    title={t`Share`}
+                    onOpenChange={(open) => {
+                      if (open && autoOpenShare) onShareOpened?.()
+                    }}
+                    onShare={async (shares, message, meta) => {
+                      if (!id || !repositoryId) {
                         showToast({
-                          message: t`You do not have permission to send for signature.`,
+                          message: t`Missing file context for share`,
                           variant: 'error',
                         })
                         return false
                       }
-
-                      // View → share API only
-                      for (const share of viewShares) {
-                        await folderApi.inviteToShare({
-                          email: share.email,
-                          itemId: id,
-                          message:
-                            message ||
-                            (data?.fileName
-                              ? t`Please review this file: ${data.fileName}`
-                              : t`Please review this file`),
-                          permission: 'Can View',
-                          repositoryId,
-                        })
-                      }
-
-                      // Sign → sign API only (no share invite)
-                      if (signShares.length) {
-                        const created = await createSignRequest({
-                          itemId: id,
-                          message:
-                            message ||
-                            t`Please sign this document. You can place your signature anywhere.`,
-                          repositoryId,
-                          signers: signShares.map((share, index) => ({
-                            email: share.email.trim(),
-                            name:
-                              share.email.split('@')[0] || share.email.trim(),
-                            order: index + 1,
-                          })),
-                          signingMode:
-                            meta?.signingMode ||
-                            (signShares.length === 1 ? 'single' : 'multiple'),
-                        })
-                        if (created.error || !created.data?.signRequestId) {
-                          throw new Error(
-                            String(
-                              created.error || 'Unable to create sign request',
-                            ),
-                          )
-                        }
-                      }
-
-                      setSharedEmails((prev) => {
-                        const next = new Set(prev)
-                        shares.forEach((share) =>
-                          next.add(share.email.trim().toLowerCase()),
+                      try {
+                        const viewShares = shares.filter(
+                          (share) =>
+                            share.permission !== 'Sign' && share.action !== 2,
                         )
-                        return [...next]
-                      })
-                      setSharedRoles((prev) => {
-                        const next = { ...prev }
-                        shares.forEach((share) => {
-                          const email = share.email.trim().toLowerCase()
-                          next[email] =
-                            share.permission === 'Sign' || share.action === 2
-                              ? 'Sign'
-                              : 'View'
+                        const signShares = canSendForSignature
+                          ? shares.filter(
+                              (share) =>
+                                share.permission === 'Sign' ||
+                                share.action === 2,
+                            )
+                          : []
+
+                        if (
+                          !canSendForSignature &&
+                          shares.some(
+                            (share) =>
+                              share.permission === 'Sign' || share.action === 2,
+                          )
+                        ) {
+                          showToast({
+                            message: t`You do not have permission to send for signature.`,
+                            variant: 'error',
+                          })
+                          return false
+                        }
+
+                        // View → share API only
+                        for (const share of viewShares) {
+                          await folderApi.inviteToShare({
+                            email: share.email,
+                            itemId: id,
+                            message:
+                              message ||
+                              (data?.fileName
+                                ? t`Please review this file: ${data.fileName}`
+                                : t`Please review this file`),
+                            permission: 'Can View',
+                            repositoryId,
+                          })
+                        }
+
+                        // Sign → sign API only (no share invite)
+                        if (signShares.length) {
+                          const created = await createSignRequest({
+                            itemId: id,
+                            message:
+                              message ||
+                              t`Please sign this document. You can place your signature anywhere.`,
+                            repositoryId,
+                            signers: signShares.map((share, index) => ({
+                              email: share.email.trim(),
+                              name:
+                                share.email.split('@')[0] || share.email.trim(),
+                              order: index + 1,
+                            })),
+                            signingMode:
+                              meta?.signingMode ||
+                              (signShares.length === 1 ? 'single' : 'multiple'),
+                          })
+                          if (created.error || !created.data?.signRequestId) {
+                            throw new Error(
+                              String(
+                                created.error ||
+                                  'Unable to create sign request',
+                              ),
+                            )
+                          }
+                        }
+
+                        setSharedEmails((prev) => {
+                          const next = new Set(prev)
+                          shares.forEach((share) =>
+                            next.add(share.email.trim().toLowerCase()),
+                          )
+                          return [...next]
                         })
-                        return next
-                      })
-                      return signShares.length > 0 && viewShares.length === 0
-                        ? t`Sign request sent successfully`
-                        : signShares.length > 0 && viewShares.length > 0
-                          ? t`File shared and sign request sent successfully`
-                          : t`File shared successfully`
-                    } catch (error) {
-                      showToast({
-                        message:
-                          error instanceof Error
-                            ? error.message
-                            : t`Failed to share file`,
-                        variant: 'error',
-                      })
-                      return false
-                    }
-                  }}
-                />
-              </div>
+                        setSharedRoles((prev) => {
+                          const next = { ...prev }
+                          shares.forEach((share) => {
+                            const email = share.email.trim().toLowerCase()
+                            next[email] =
+                              share.permission === 'Sign' || share.action === 2
+                                ? 'Sign'
+                                : 'View'
+                          })
+                          return next
+                        })
+                        return signShares.length > 0 && viewShares.length === 0
+                          ? t`Sign request sent successfully`
+                          : signShares.length > 0 && viewShares.length > 0
+                            ? t`File shared and sign request sent successfully`
+                            : t`File shared successfully`
+                      } catch (error) {
+                        showToast({
+                          message:
+                            error instanceof Error
+                              ? error.message
+                              : t`Failed to share file`,
+                          variant: 'error',
+                        })
+                        return false
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </>
           ) : null}
           {activeInviteToken && onDecline ? (

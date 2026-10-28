@@ -2093,10 +2093,13 @@ const Header: React.FC<HeaderProps> = ({
               className={cn(
                 'flex items-center gap-2',
                 // Divider between the icon tools and the review buttons.
-                ((isEditing && !hideActions) || Boolean(actions?.length)) &&
+                ((isEditing && !hideActions) ||
+                  Boolean(actions?.length) ||
+                  Boolean(extraActions)) &&
                   'border-l border-gray-3 pl-3',
               )}
             >
+              {extraActions}
               {isEditing && !hideActions && (
                 <Button
                   color='primary'
