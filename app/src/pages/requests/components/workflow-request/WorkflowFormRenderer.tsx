@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { Accordion } from '@mantine/core'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import Tooltip from '@/components/base/Tooltip'
@@ -273,6 +273,8 @@ interface Props {
   preparingFieldId?: string | null
   // AP-style dense label/value grid (click-to-edit) instead of Input cards.
   presentation?: 'default' | 'extracted'
+  // Bumped on every submit click — reopens sections that hold errors.
+  submitAttempt?: number
   // Field ids the current acting user can see but not edit, from the same
   // Security & Form Access settings (formEditAccess / formEditControls).
   readOnlyFieldIds?: Set<string>
@@ -331,6 +333,7 @@ const WorkflowFormRenderer = ({
   repositoryId,
   stageEditableFieldIds,
   stages,
+  submitAttempt,
   viewOnly,
   getPanelValue,
   onAddAttachments,
@@ -415,7 +418,9 @@ const WorkflowFormRenderer = ({
       for (const childId of dependentChildIds) {
         if (isFilled(formModel?.[childId])) {
           onFieldChange(childId, null)
-          cleared.push(childId)
+          // Switching the parent straight to another value must let the
+          // children refill from it, same as clearing it and reselecting.
+          if (!isFilled(value)) cleared.push(childId)
         }
       }
     }
@@ -504,6 +509,44 @@ const WorkflowFormRenderer = ({
 
   const resolvePanelValue = (panel: any, index: number) =>
     getPanelValue?.(panel, index) || `panel-${index}`
+
+  const fieldHasError = (field: any) =>
+    Boolean(
+      missingMandatoryFieldIds?.has(String(field.id)) ||
+        (field.jsonId && missingMandatoryFieldIds?.has(String(field.jsonId))) ||
+        validationErrors[String(field.id)] ||
+        (field.jsonId && validationErrors[String(field.jsonId)]),
+    )
+
+  // Non-exclusive accordion: every section starts open (sections that load
+  // later open too). Controlled so a submit can reopen closed sections.
+  const [openPanels, setOpenPanels] = useState<string[]>(() =>
+    panels.map((panel, idx) => resolvePanelValue(panel, idx)),
+  )
+  const seenPanelsRef = useRef(new Set(openPanels))
+  useEffect(() => {
+    const added = panels
+      .map((panel, idx) => resolvePanelValue(panel, idx))
+      .filter((value) => !seenPanelsRef.current.has(value))
+    if (added.length === 0) return
+    added.forEach((value) => seenPanelsRef.current.add(value))
+    setOpenPanels((prev) => [...prev, ...added])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panels])
+
+  // A closed section hides its field errors — open every section that has
+  // one when the user submits.
+  useEffect(() => {
+    if (!submitAttempt) return
+    const withErrors = panels
+      .map((panel, idx) => ({ panel, value: resolvePanelValue(panel, idx) }))
+      .filter(({ panel }) => (panel.fields || []).some(fieldHasError))
+      .map(({ value }) => value)
+    if (withErrors.length === 0) return
+    if (exclusive) onOpenChange?.(withErrors[0])
+    else setOpenPanels((prev) => Array.from(new Set([...prev, ...withErrors])))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitAttempt])
 
   const resolveEffectiveReadOnly = (field: any) => {
     if (viewOnly) return true
@@ -791,7 +834,7 @@ const WorkflowFormRenderer = ({
         <Accordion
           multiple={!exclusive}
           radius='md'
-          value={exclusive ? openValue || null : undefined}
+          value={exclusive ? openValue || null : openPanels}
           variant='separated'
           classNames={{
             chevron: 'text-gray-10',
@@ -801,13 +844,11 @@ const WorkflowFormRenderer = ({
             label: 'py-0 text-13 font-bold tracking-tight text-gray-13',
             panel: 'h-auto min-w-0 overflow-hidden border-t border-gray-3 px-4 py-3',
           }}
-          defaultValue={
-            exclusive
-              ? undefined
-              : panels.map((panel, idx) => resolvePanelValue(panel, idx))
-          }
           onChange={(value) => {
-            if (!exclusive) return
+            if (!exclusive) {
+              setOpenPanels(Array.isArray(value) ? value : [])
+              return
+            }
             onOpenChange?.(typeof value === 'string' ? value : null)
           }}
         >
@@ -835,10 +876,13 @@ const WorkflowFormRenderer = ({
               isFieldFilled(field, formModel[field.id]),
             ).length
             const panelValue = resolvePanelValue(panel, panelIndex)
+            const errorCount = hasAttemptedSubmit
+              ? visibleFields.filter(fieldHasError).length
+              : 0
 
             return (
               <Accordion.Item
-                className='scroll-mt-3'
+                className={cn('scroll-mt-3', errorCount > 0 && '!border-red-6')}
                 data-portal-section={panelValue}
                 key={panel.id || panelIndex}
                 value={panelValue}
@@ -874,7 +918,14 @@ const WorkflowFormRenderer = ({
                         {t`Read-Only at this step`}
                       </span>
                     ) : null}
-                    {!allReadOnly && !viewOnly && requiredFields.length > 0 && (
+                    {!allReadOnly && !viewOnly && errorCount > 0 ? (
+                      <span className='mr-3 flex shrink-0 items-center gap-1 self-center text-11 font-semibold whitespace-nowrap text-red-9'>
+                        <Icon className='size-3.5' name='tabler:alert-circle' />
+                        {errorCount === 1
+                          ? t`1 field needs attention`
+                          : t`${errorCount} fields need attention`}
+                      </span>
+                    ) : !allReadOnly && !viewOnly && requiredFields.length > 0 && (
                       <span className='mr-3 flex shrink-0 items-center gap-1 self-center text-11 font-medium whitespace-nowrap text-gray-9'>
                         <span
                           className={

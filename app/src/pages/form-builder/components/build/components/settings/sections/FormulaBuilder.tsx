@@ -136,7 +136,7 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
           </label>
           {tokens.length > 0 && (
             <button
-              className='text-[10px] font-bold tracking-wide text-gray-7 uppercase transition-colors hover:text-error-main active:scale-95'
+              className='text-[10px] font-bold tracking-wide text-gray-10 uppercase transition-colors hover:text-error-main active:scale-95'
               type='button'
               onClick={() => setTokens([])}
             >
@@ -147,7 +147,7 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
 
         <div className='flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border border-gray-3 bg-surface-primary p-2'>
           {tokens.length === 0 && (
-            <span className='self-center text-[11px] text-gray-7 italic'>
+            <span className='self-center text-[11px] text-gray-10 italic'>
               Build a formula with fields, numbers, and operators
             </span>
           )}
@@ -195,14 +195,14 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
 
         {formulaPreview && (
           <div className='mt-2 text-[11px] font-medium text-gray-8'>
-            <span className='mr-1 font-bold text-gray-7'>fx</span>
+            <span className='mr-1 font-bold text-gray-10'>fx</span>
             {formulaPreview}
           </div>
         )}
       </div>
 
       <div className='space-y-2'>
-        <label className='block text-[10px] font-bold tracking-wider text-gray-7 uppercase'>
+        <label className='block text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
           Operators
         </label>
         <div className='grid grid-cols-4 gap-1.5'>
@@ -248,7 +248,7 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
       </div>
 
       <div className='space-y-2'>
-        <label className='block text-[10px] font-bold tracking-wider text-gray-7 uppercase'>
+        <label className='block text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
           Manual value
         </label>
         <div className='flex items-end gap-2'>
@@ -278,7 +278,7 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
       </div>
 
       <div className='space-y-2'>
-        <label className='block text-[10px] font-bold tracking-wider text-gray-7 uppercase'>
+        <label className='block text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
           Include field
         </label>
         <InputSelect
@@ -302,14 +302,14 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
             }
           }}
         />
-        <p className='text-[10px] text-gray-7'>
+        <p className='text-[10px] text-gray-10'>
           Include a number, currency, or numeric short text field, or the sum
           of a table column.
         </p>
       </div>
 
       <div className='space-y-2'>
-        <label className='block text-[10px] font-bold tracking-wider text-gray-7 uppercase'>
+        <label className='block text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
           Sum of table column
         </label>
         <InputSelect
@@ -367,7 +367,7 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
           variant='outline'
           onClick={addTableColumnSum}
         />
-        <p className='text-[10px] text-gray-7'>
+        <p className='text-[10px] text-gray-10'>
           Adds the sum of that column across all table rows.
         </p>
       </div>

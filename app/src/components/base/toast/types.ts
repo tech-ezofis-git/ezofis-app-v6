@@ -3,6 +3,9 @@ import type { ReactNode } from 'react'
 export interface Toast {
   message: ReactNode
   autoClose?: number | false
+  // Keep the given variant even for a mandatory-field message (which is
+  // otherwise shown as info).
+  keepVariant?: boolean
   toastTitle?: string
   variant?: ToastVariant
 }

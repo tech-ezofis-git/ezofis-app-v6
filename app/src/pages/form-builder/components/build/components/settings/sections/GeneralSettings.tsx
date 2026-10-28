@@ -110,7 +110,7 @@ const GeneralSettings = () => {
                   'group flex h-[90px] flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-all',
                   active
                     ? 'border-primary-9 bg-primary-1/60 shadow-xs ring-2 ring-primary-6/20'
-                    : 'border-gray-4 bg-transparent hover:bg-gray-1',
+                    : 'border-gray-4 bg-transparent hover:bg-surface-hover',
                 )}
                 onClick={() => setFormType(t.value)}
               >
@@ -159,7 +159,7 @@ const GeneralSettings = () => {
                   'flex items-center gap-3 rounded-xl border p-2.5 transition-all duration-200',
                   active
                     ? 'border-primary-9 bg-primary-1/60 shadow-xs ring-2 ring-primary-6/20'
-                    : 'border-gray-4 bg-transparent hover:bg-gray-1',
+                    : 'border-gray-4 bg-transparent hover:bg-surface-hover',
                 )}
                 onClick={() => setLayout(l.value)}
               >
