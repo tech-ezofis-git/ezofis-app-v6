@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { Accordion } from '@mantine/core'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import Tooltip from '@/components/base/Tooltip'
@@ -10,6 +11,7 @@ import {
   resetRuleDrivenValues,
 } from '@/pages/form-builder/helpers/ruleEngine'
 import { getFieldAttachmentMap } from '@/pages/requests/utils/fieldAttachmentMap'
+import type { FormRuntimeLayout } from './utils/formLayout'
 import cn from '@/utils/cn'
 import ExtractedFieldCell from './components/ExtractedFieldCell'
 import FieldRenderer from './components/FieldRenderer'
@@ -267,6 +269,11 @@ interface Props {
   hidePanels?: boolean
   // Overview only — scopes the local field↔attachment map to this request.
   instanceId?: string | number
+  // The form's configured layout (Form Settings → Form Layout). CLASSIC:
+  // every section open; ACCORDION: one section open at a time; SINGLE: one
+  // section per step with Back/Next. Ignored for `exclusive` and the
+  // extracted presentation, whose open state the parent owns.
+  layout?: FormRuntimeLayout
   missingMandatoryFieldIds?: Set<string>
   openValue?: string | null
   preparePhase?: 'extracting' | 'uploading' | null
@@ -322,6 +329,7 @@ const WorkflowFormRenderer = ({
   hiddenFieldIds,
   hidePanels,
   instanceId,
+  layout = 'CLASSIC',
   missingMandatoryFieldIds,
   openValue,
   panels,
@@ -534,6 +542,46 @@ const WorkflowFormRenderer = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panels])
 
+  const effectiveLayout: FormRuntimeLayout =
+    exclusive || presentation === 'extracted' ? 'CLASSIC' : layout
+
+  const getVisiblePanelFields = (panel: any) =>
+    (panel.fields || []).filter((field: any) => {
+      const state = evaluatedFieldStates[field.id]
+      const isHiddenByRule = state ? !state.visible : isFieldHidden(field)
+      return !isHiddenByRule && !hiddenFieldIds?.has(field.id)
+    })
+
+  // Sections with something to show — the steps of the SINGLE layout.
+  const visiblePanels = panels
+    .map((panel: any, panelIndex: number) => ({
+      panel,
+      panelIndex,
+      value: resolvePanelValue(panel, panelIndex),
+      visibleFields: getVisiblePanelFields(panel),
+    }))
+    .filter(({ visibleFields }) => visibleFields.length > 0)
+
+  // ACCORDION: one section open at a time, the first one to start with.
+  const [accordionOpen, setAccordionOpen] = useState<string | null>(null)
+  const accordionInitRef = useRef(false)
+  useEffect(() => {
+    if (accordionInitRef.current || visiblePanels.length === 0) return
+    accordionInitRef.current = true
+    setAccordionOpen(visiblePanels[0].value)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visiblePanels.length])
+
+  // SINGLE: index into visiblePanels. Clamped because rules can hide a
+  // section while the user is on it.
+  const [step, setStep] = useState(0)
+  const currentStep = Math.min(step, Math.max(visiblePanels.length - 1, 0))
+  const stepTopRef = useRef<HTMLDivElement>(null)
+  const goToStep = (next: number) => {
+    setStep(next)
+    stepTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   // A closed section hides its field errors — open every section that has
   // one when the user submits.
   useEffect(() => {
@@ -544,7 +592,13 @@ const WorkflowFormRenderer = ({
       .map(({ value }) => value)
     if (withErrors.length === 0) return
     if (exclusive) onOpenChange?.(withErrors[0])
-    else setOpenPanels((prev) => Array.from(new Set([...prev, ...withErrors])))
+    else if (effectiveLayout === 'ACCORDION') setAccordionOpen(withErrors[0])
+    else if (effectiveLayout === 'SINGLE') {
+      const errorStep = visiblePanels.findIndex(
+        ({ value }) => value === withErrors[0],
+      )
+      if (errorStep >= 0) goToStep(errorStep)
+    } else setOpenPanels((prev) => Array.from(new Set([...prev, ...withErrors])))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitAttempt])
 
@@ -761,6 +815,79 @@ const WorkflowFormRenderer = ({
     )
   }
 
+  const getPanelMeta = (visibleFields: any[]) => {
+    const allReadOnly =
+      viewOnly ||
+      visibleFields.every((field: any) => resolveEffectiveReadOnly(field))
+    const requiredFields = visibleFields.filter((field: any) => {
+      const state = evaluatedFieldStates[field.id]
+      const isReq = state ? state.required : isFieldRequired(field)
+      return isReq && !resolveEffectiveReadOnly(field)
+    })
+    return {
+      allReadOnly: Boolean(allReadOnly),
+      completedCount: requiredFields.filter((field: any) =>
+        isFieldFilled(field, formModel[field.id]),
+      ).length,
+      errorCount: hasAttemptedSubmit
+        ? visibleFields.filter(fieldHasError).length
+        : 0,
+      requiredCount: requiredFields.length,
+    }
+  }
+
+  const renderPanelHeader = (
+    panel: any,
+    panelIndex: number,
+    meta: ReturnType<typeof getPanelMeta>,
+  ) => (
+    <div className='flex items-center justify-between gap-3'>
+      <div className='flex items-center gap-3'>
+        <div className='flex size-11 shrink-0 items-center justify-center rounded-sm bg-[var(--primary-1)]'>
+          <Icon className='size-4 text-[var(--primary-9)]' name='tabler:forms' />
+        </div>
+        <div className='flex flex-col gap-0.5'>
+          <span>{panel.settings?.title || `Section ${panelIndex + 1}`}</span>
+          {panel.settings?.description && (
+            <span className='text-12 font-normal text-gray-9'>
+              {panel.settings.description}
+            </span>
+          )}
+        </div>
+      </div>
+      {meta.allReadOnly ? (
+        <span className='mr-3 shrink-0 self-center text-12 font-medium whitespace-nowrap text-gray-5'>
+          {t`Read-Only at this step`}
+        </span>
+      ) : null}
+      {!meta.allReadOnly && !viewOnly && meta.errorCount > 0 ? (
+        <span className='mr-3 flex shrink-0 items-center gap-1 self-center text-11 font-semibold whitespace-nowrap text-red-9'>
+          <Icon className='size-3.5' name='tabler:alert-circle' />
+          {meta.errorCount === 1
+            ? t`1 field needs attention`
+            : t`${meta.errorCount} fields need attention`}
+        </span>
+      ) : (
+        !meta.allReadOnly &&
+        !viewOnly &&
+        meta.requiredCount > 0 && (
+          <span className='mr-3 flex shrink-0 items-center gap-1 self-center text-11 font-medium whitespace-nowrap text-gray-9'>
+            <span
+              className={
+                meta.completedCount === meta.requiredCount
+                  ? 'font-bold text-green-9'
+                  : 'font-bold text-primary-9'
+              }
+            >
+              {meta.completedCount}
+            </span>{' '}
+            of {meta.requiredCount} mandatory fields completed
+          </span>
+        )
+      )}
+    </div>
+  )
+
   const stageBar =
     stages && stages.length > 0 ? (
       <WorkflowStageBar
@@ -832,9 +959,15 @@ const WorkflowFormRenderer = ({
       {hiddenFillSyncs}
       <AnimateFadeIn delay={0.1}>
         <Accordion
-          multiple={!exclusive}
+          multiple={!exclusive && effectiveLayout !== 'ACCORDION'}
           radius='md'
-          value={exclusive ? openValue || null : openPanels}
+          value={
+            exclusive
+              ? openValue || null
+              : effectiveLayout === 'ACCORDION'
+                ? accordionOpen
+                : openPanels
+          }
           variant='separated'
           classNames={{
             chevron: 'text-gray-10',
@@ -845,6 +978,10 @@ const WorkflowFormRenderer = ({
             panel: 'h-auto min-w-0 overflow-hidden border-t border-gray-3 px-4 py-3',
           }}
           onChange={(value) => {
+            if (!exclusive && effectiveLayout === 'ACCORDION') {
+              setAccordionOpen(typeof value === 'string' ? value : null)
+              return
+            }
             if (!exclusive) {
               setOpenPanels(Array.isArray(value) ? value : [])
               return
@@ -852,94 +989,24 @@ const WorkflowFormRenderer = ({
             onOpenChange?.(typeof value === 'string' ? value : null)
           }}
         >
-          {panels.map((panel: any, panelIndex: number) => {
-            const visibleFields = (panel.fields || []).filter((field: any) => {
-              const state = evaluatedFieldStates[field.id]
-              const isHiddenByRule = state
-                ? !state.visible
-                : isFieldHidden(field)
-              return !isHiddenByRule && !hiddenFieldIds?.has(field.id)
-            })
-            if (visibleFields.length === 0) return null
-
-            const allReadOnly =
-              viewOnly ||
-              visibleFields.every((field: any) => resolveEffectiveReadOnly(field))
-
-            const requiredFields = visibleFields.filter((field: any) => {
-              const state = evaluatedFieldStates[field.id]
-              const isReq = state ? state.required : isFieldRequired(field)
-              const isRo = resolveEffectiveReadOnly(field)
-              return isReq && !isRo
-            })
-            const completedCount = requiredFields.filter((field: any) =>
-              isFieldFilled(field, formModel[field.id]),
-            ).length
-            const panelValue = resolvePanelValue(panel, panelIndex)
-            const errorCount = hasAttemptedSubmit
-              ? visibleFields.filter(fieldHasError).length
-              : 0
+          {visiblePanels.map(({ panel, panelIndex, value, visibleFields }) => {
+            const meta = getPanelMeta(visibleFields)
 
             return (
               <Accordion.Item
-                className={cn('scroll-mt-3', errorCount > 0 && '!border-red-6')}
-                data-portal-section={panelValue}
+                className={cn('scroll-mt-3', meta.errorCount > 0 && '!border-red-6')}
+                data-portal-section={value}
                 key={panel.id || panelIndex}
-                value={panelValue}
+                value={value}
               >
                 <span
                   className='block h-px'
-                  data-portal-section={panelValue}
-                  id={panelValue}
+                  data-portal-section={value}
+                  id={value}
                   aria-hidden
                 />
                 <Accordion.Control>
-                  <div className='flex items-center justify-between gap-3'>
-                    <div className='flex items-center gap-3'>
-                      <div className='flex size-11 shrink-0 items-center justify-center rounded-sm bg-[var(--primary-1)]'>
-                        <Icon
-                          className='size-4 text-[var(--primary-9)]'
-                          name='tabler:forms'
-                        />
-                      </div>
-                      <div className='flex flex-col gap-0.5'>
-                        <span>
-                          {panel.settings?.title || `Section ${panelIndex + 1}`}
-                        </span>
-                        {panel.settings?.description && (
-                          <span className='text-12 font-normal text-gray-9'>
-                            {panel.settings.description}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {allReadOnly ? (
-                      <span className='mr-3 shrink-0 self-center text-12 font-medium whitespace-nowrap text-gray-5'>
-                        {t`Read-Only at this step`}
-                      </span>
-                    ) : null}
-                    {!allReadOnly && !viewOnly && errorCount > 0 ? (
-                      <span className='mr-3 flex shrink-0 items-center gap-1 self-center text-11 font-semibold whitespace-nowrap text-red-9'>
-                        <Icon className='size-3.5' name='tabler:alert-circle' />
-                        {errorCount === 1
-                          ? t`1 field needs attention`
-                          : t`${errorCount} fields need attention`}
-                      </span>
-                    ) : !allReadOnly && !viewOnly && requiredFields.length > 0 && (
-                      <span className='mr-3 flex shrink-0 items-center gap-1 self-center text-11 font-medium whitespace-nowrap text-gray-9'>
-                        <span
-                          className={
-                            completedCount === requiredFields.length
-                              ? 'font-bold text-green-9'
-                              : 'font-bold text-primary-9'
-                          }
-                        >
-                          {completedCount}
-                        </span>{' '}
-                        of {requiredFields.length} mandatory fields completed
-                      </span>
-                    )}
-                  </div>
+                  {renderPanelHeader(panel, panelIndex, meta)}
                 </Accordion.Control>
                 <Accordion.Panel>
                   {renderVisibleFields(visibleFields)}
@@ -952,12 +1019,147 @@ const WorkflowFormRenderer = ({
     </div>
   )
 
-  const rendered = disableOwnScroll ? (
+  const activeStep = visiblePanels[currentStep]
+  const isLastStep = currentStep >= visiblePanels.length - 1
+  const stepperContent = activeStep ? (
+    <div
+      className={
+        disableOwnScroll
+          ? 'w-full max-w-full min-w-0 px-3 py-3'
+          : 'w-full max-w-full min-w-0 overflow-x-hidden px-4 py-3'
+      }
+    >
+      <div className='scroll-mt-3' ref={stepTopRef} />
+      {stageBar}
+      {hiddenFillSyncs}
+      {visiblePanels.length > 1 && (
+        <div className='mb-3 flex flex-col gap-2.5'>
+          <div className='flex items-center justify-between gap-3'>
+            <span className='text-11 font-semibold tracking-wider text-gray-10 uppercase'>
+              {t`Step ${currentStep + 1} of ${visiblePanels.length}`}
+            </span>
+            <span className='text-11 font-medium text-gray-9'>
+              {Math.round(((currentStep + 1) / visiblePanels.length) * 100)}%
+            </span>
+          </div>
+          <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-3'>
+            <div
+              className='h-full rounded-full bg-primary-9 transition-all duration-500'
+              style={{
+                width: `${((currentStep + 1) / visiblePanels.length) * 100}%`,
+              }}
+            />
+          </div>
+          <div className='custom-scrollbar flex gap-1.5 overflow-x-auto pb-1'>
+            {visiblePanels.map(({ panel, panelIndex, visibleFields }, idx) => {
+              const meta = getPanelMeta(visibleFields)
+              const isActive = idx === currentStep
+              const isComplete =
+                !isActive &&
+                meta.requiredCount > 0 &&
+                meta.completedCount === meta.requiredCount
+              return (
+                <button
+                  key={panel.id || panelIndex}
+                  type='button'
+                  className={cn(
+                    'flex shrink-0 cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-12 font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary-6 active:scale-[0.98]',
+                    isActive
+                      ? 'border-primary-6 bg-primary-1 text-primary-11'
+                      : meta.errorCount > 0
+                        ? 'border-red-6 bg-surface text-red-9 hover:bg-red-1'
+                        : 'border-gray-3 bg-surface text-gray-11 hover:border-primary-5 hover:text-gray-13',
+                  )}
+                  onClick={() => goToStep(idx)}
+                >
+                  <span
+                    className={cn(
+                      'flex size-5 items-center justify-center rounded-full text-11 font-bold',
+                      isActive
+                        ? 'bg-primary-9 text-white'
+                        : meta.errorCount > 0
+                          ? 'bg-red-9 text-white'
+                          : isComplete
+                            ? 'bg-green-9 text-white'
+                            : 'bg-gray-3 text-gray-11',
+                    )}
+                  >
+                    {meta.errorCount > 0 && !isActive ? (
+                      <Icon className='size-3' name='tabler:exclamation-mark' />
+                    ) : isComplete ? (
+                      <Icon className='size-3' name='tabler:check' />
+                    ) : (
+                      idx + 1
+                    )}
+                  </span>
+                  <span className='max-w-40 truncate'>
+                    {panel.settings?.title || `Section ${panelIndex + 1}`}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+      <AnimateFadeIn delay={0.05} key={activeStep.value}>
+        {(() => {
+          const meta = getPanelMeta(activeStep.visibleFields)
+          return (
+            <div
+              data-portal-section={activeStep.value}
+              id={activeStep.value}
+              className={cn(
+                'min-w-0 overflow-hidden rounded-xl border border-gray-3 bg-gray-0 shadow-2xs',
+                meta.errorCount > 0 && '!border-red-6',
+              )}
+            >
+              <div className='px-3 py-1.5 text-13 font-bold tracking-tight text-gray-13'>
+                {renderPanelHeader(activeStep.panel, activeStep.panelIndex, meta)}
+              </div>
+              <div className='min-w-0 overflow-hidden border-t border-gray-3 px-4 py-3'>
+                {renderVisibleFields(activeStep.visibleFields)}
+              </div>
+            </div>
+          )
+        })()}
+      </AnimateFadeIn>
+      {visiblePanels.length > 1 && (
+        <div className='mt-3 flex items-center justify-between gap-3'>
+          <Button
+            color='gray'
+            disabled={currentStep === 0}
+            icon='tabler:arrow-left'
+            label={t`Back`}
+            size='sm'
+            variant='outline'
+            onClick={() => goToStep(currentStep - 1)}
+          />
+          {isLastStep ? (
+            <span className='text-12 font-medium text-gray-9'>
+              {t`Last section — review and submit`}
+            </span>
+          ) : (
+            <Button
+              label={t`Next`}
+              size='sm'
+              suffixIcon='tabler:arrow-right'
+              onClick={() => goToStep(currentStep + 1)}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  ) : (
     content
+  )
+
+  const body = effectiveLayout === 'SINGLE' ? stepperContent : content
+  const rendered = disableOwnScroll ? (
+    body
   ) : (
     <div className='h-full min-h-0 w-full min-w-0 overflow-hidden'>
       <ScrollArea className='h-full w-full min-w-0' height='100%'>
-        {content}
+        {body}
       </ScrollArea>
     </div>
   )

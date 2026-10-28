@@ -434,6 +434,7 @@ const WorkflowRequest = ({
     commentDraft,
     comments,
     confirmUpload,
+    formLayout,
     formModel,
     hasAttemptedSubmit,
     isExtractingOcr,
@@ -1178,6 +1179,7 @@ const WorkflowRequest = ({
                   formModel={formModel}
                   hasAttemptedSubmit={hasAttemptedSubmit}
                   hiddenFieldIds={stageHiddenFieldIds}
+                  layout={formLayout}
                   missingMandatoryFieldIds={missingMandatoryFieldIds}
                   panels={panels}
                   repoFieldHints={repoFieldHints}

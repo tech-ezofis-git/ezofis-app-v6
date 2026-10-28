@@ -15,6 +15,7 @@ import { uploadInstanceAttachment } from '@/pages/requests/utils/instanceAttachm
 import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
+import { resolveFormLayout } from '../utils/formLayout'
 import {
   applyFilenamePreFillToFormModel,
   buildInitialFormModel,
@@ -184,6 +185,7 @@ export const useWorkflowForm = (
                   {}),
                 panels: normalizedJson.panels,
                 settings: {
+                  ...normalizedJson.settings,
                   ...((typeof fallbackWorkflowForm === 'object' &&
                     fallbackWorkflowForm?.settings) ||
                     {}),
@@ -227,6 +229,7 @@ export const useWorkflowForm = (
                   {}),
                 panels: normalizedJson.panels,
                 settings: {
+                  ...normalizedJson.settings,
                   ...((typeof fallbackWorkflowForm === 'object' &&
                     fallbackWorkflowForm?.settings) ||
                     {}),
@@ -258,6 +261,7 @@ export const useWorkflowForm = (
           ...((typeof rawFormSource === 'object' && rawFormSource) || {}),
           panels: normalizedJson.panels,
           settings: {
+            ...normalizedJson.settings,
             ...((typeof rawFormSource === 'object' &&
               rawFormSource?.settings) ||
               {}),
@@ -303,6 +307,7 @@ export const useWorkflowForm = (
 
   const panels = useMemo(() => form?.formJson?.panels || [], [form])
   const formRules = useMemo(() => form?.formJson?.settings?.rules || [], [form])
+  const formLayout = useMemo(() => resolveFormLayout(form?.formJson), [form])
   const repoFieldHints = useMemo(
     () => buildRepoFieldHints(repositoryFields),
     [repositoryFields],
@@ -1035,6 +1040,7 @@ export const useWorkflowForm = (
     form,
     formModel,
     formRules,
+    formLayout,
     hasAttemptedSubmit,
     hasUploadedFile,
     isExtractingOcr,

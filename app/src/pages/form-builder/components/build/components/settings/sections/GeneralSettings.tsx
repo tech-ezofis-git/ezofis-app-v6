@@ -36,19 +36,19 @@ const LAYOUT_OPTIONS: {
   value: FormLayout
 }[] = [
   {
-    desc: 'One question at a time',
+    desc: 'One section per step, Back / Next',
     icon: 'tabler:square-rotated',
     name: 'Single Page',
     value: 'SINGLE',
   },
   {
-    desc: 'Multi-column layout',
+    desc: 'All sections open on one page',
     icon: 'tabler:layout-grid',
     name: 'Classic Grid',
     value: 'CLASSIC',
   },
   {
-    desc: 'Expandable section stack',
+    desc: 'One section open at a time',
     icon: 'tabler:layout-list',
     name: 'Accordion',
     value: 'ACCORDION',

@@ -55,19 +55,19 @@ const PublishSidebar = () => {
 
   const layouts = [
     {
-      description: 'One question at a time',
+      description: 'One section per step, Back / Next',
       icon: 'tabler:square-rotated',
       id: 'SINGLE',
       name: 'Single Page',
     },
     {
-      description: 'Multi-column layout',
+      description: 'All sections open on one page',
       icon: 'tabler:layout-grid',
       id: 'CLASSIC',
       name: 'Classic Grid',
     },
     {
-      description: 'Expandable section stack',
+      description: 'One section open at a time',
       icon: 'tabler:layout-list',
       id: 'ACCORDION',
       name: 'Accordion',
