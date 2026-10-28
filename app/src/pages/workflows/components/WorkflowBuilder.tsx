@@ -73,6 +73,10 @@ const edgeTypes = {
   custom: CustomEdge,
 }
 
+// Stable reference: an inline object is re-sent to React Flow's store on every
+// render and clobbers the options of a fitView() call still in flight.
+const fitViewOptions = { padding: 0.2 }
+
 const initialTriggerId = generateId()
 const initialEndId = generateId()
 
@@ -354,7 +358,7 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
             deleteKeyCode={['Backspace', 'Delete']}
             edges={edges}
             edgeTypes={edgeTypes}
-            fitViewOptions={{ padding: 0.2 }}
+            fitViewOptions={fitViewOptions}
             maxZoom={0.75}
             minZoom={0.25}
             nodes={nodes}

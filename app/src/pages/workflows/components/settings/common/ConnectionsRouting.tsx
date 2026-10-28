@@ -19,7 +19,13 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { type Node, useEdges, useNodes, useReactFlow } from '@xyflow/react'
+import {
+  type Edge,
+  type Node,
+  useEdges,
+  useNodes,
+  useReactFlow,
+} from '@xyflow/react'
 import { type ReactNode, useEffect, useState } from 'react'
 import type { ButtonColor } from '@/components/base/button/types'
 import Button from '@/components/base/button/Button'
@@ -33,7 +39,6 @@ import {
   NODE_TOOL_TYPE,
 } from '@/pages/workflows/utils/nodeToolTypes'
 import cn from '@/utils/cn'
-import useWorkflowStore from '../../../stores/useWorkflowStore'
 import DataIntegrationSection from './DataIntegrationSection'
 import RequestPageVisibilitySetting from './RequestPageVisibilitySetting'
 import SettingsSection from './SettingsSection'
@@ -127,16 +132,15 @@ export default function ConnectionsRouting({
     }
   }
 
-  const updateEdgesAndStore = (updater: (eds: any[]) => any[]) => {
-    setEdges((eds) => {
-      const next = updater(eds)
-      useWorkflowStore.setState({ loadedEdges: next })
-      return next
-    })
+  // React Flow state is the source of truth (save reads getEdges()). Don't
+  // mirror into the store's loadedEdges: that re-runs the canvas's load
+  // effect, which resets nodes to the loaded snapshot and re-fits the view.
+  const updateEdges = (updater: (eds: Edge[]) => Edge[]) => {
+    setEdges(updater)
   }
 
   const onUpdateAction = (edgeId: string, action: string) => {
-    updateEdgesAndStore((eds) =>
+    updateEdges((eds) =>
       eds.map((e) =>
         e.id === edgeId
           ? { ...e, data: { ...e.data, action, proceedAction: action } }
@@ -148,7 +152,7 @@ export default function ConnectionsRouting({
   const onUpdateTarget = (edgeId: string, targetId: string) => {
     const targetNode = nodes.find((n) => n.id === targetId)
     const handles = computeHandlesForNodes(node, targetNode)
-    updateEdgesAndStore((eds) =>
+    updateEdges((eds) =>
       eds.map((e) =>
         e.id === edgeId
           ? {
@@ -163,7 +167,7 @@ export default function ConnectionsRouting({
   }
 
   const onDeleteEdge = (edgeId: string) => {
-    updateEdgesAndStore((eds) => eds.filter((e) => e.id !== edgeId))
+    updateEdges((eds) => eds.filter((e) => e.id !== edgeId))
   }
 
   const onUpdateFlag = (
@@ -171,7 +175,7 @@ export default function ConnectionsRouting({
     key: 'remarks' | 'confirm' | 'passwordAccess' | 'signature',
     value: boolean,
   ) => {
-    updateEdgesAndStore((eds) =>
+    updateEdges((eds) =>
       eds.map((e) =>
         e.id === edgeId ? { ...e, data: { ...e.data, [key]: value } } : e,
       ),
@@ -182,7 +186,7 @@ export default function ConnectionsRouting({
     edgeId: string,
     buttonColor: ConnectionButtonColor,
   ) => {
-    updateEdgesAndStore((eds) =>
+    updateEdges((eds) =>
       eds.map((e) =>
         e.id === edgeId ? { ...e, data: { ...e.data, buttonColor } } : e,
       ),
@@ -193,7 +197,7 @@ export default function ConnectionsRouting({
   // order, which is the order of the action buttons on the request page.
   const onReorder = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return
-    updateEdgesAndStore((eds) => {
+    updateEdges((eds) => {
       const ownIds = eds.filter((e) => e.source === node.id).map((e) => e.id)
       const from = ownIds.indexOf(String(active.id))
       const to = ownIds.indexOf(String(over.id))
@@ -687,7 +691,7 @@ export default function ConnectionsRouting({
                       const targetNode = nodes.find((n) => n.id === newTargetId)
                       const handles = computeHandlesForNodes(node, targetNode)
                       const edgeId = `e-${node.id}-${newTargetId}-${Date.now()}`
-                      updateEdgesAndStore((eds) => [
+                      updateEdges((eds) => [
                         ...eds,
                         {
                           data: { action: newAction, proceedAction: newAction },
