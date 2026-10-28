@@ -454,6 +454,14 @@ export default function PortalConfiguration({
         meta: { ...settingsHeaderMeta.start, label: t`Name` },
         minSize: 160,
         size: 220,
+        cell: ({ getValue, row }) => (
+          <span
+            className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
+            onClick={() => openEditPortal(row.original)}
+          >
+            {getValue()}
+          </span>
+        ),
       }),
       portalColumnHelper.accessor('description', {
         enableSorting: false,

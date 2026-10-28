@@ -1,5 +1,4 @@
 import { useLingui } from '@lingui/react/macro'
-import { Tooltip } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
@@ -9,11 +8,11 @@ import formApi from '@/api/form/form'
 import { getFormsListQueryOptions } from '@/api/form/queries'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
-import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import showToast from '@/components/base/toast/showToast'
@@ -181,25 +180,9 @@ const FormsPage = () => {
         label: t`Name`,
         size: 200,
         renderCell: (row: any) => {
-          const isDraft = isFormDraft(row)
           const formName = String(
-            row._json?.settings?.general?.name ||
-              row.name ||
-              t`Untitled Form`,
+            row._json?.settings?.general?.name || row.name || t`Untitled Form`,
           )
-
-          if (isDraft) {
-            return (
-              <Tooltip
-                label={t`Draft forms do not have entries. Publish the form to view entries.`}
-                withArrow
-              >
-                <span className='cursor-not-allowed font-medium text-gray-10 select-none'>
-                  {formName}
-                </span>
-              </Tooltip>
-            )
-          }
 
           return (
             <span
@@ -207,7 +190,7 @@ const FormsPage = () => {
               onClick={() =>
                 navigate({
                   params: { formId: row.uid || row.id },
-                  to: '/forms/$formId/entries',
+                  to: '/form-builder/$formId',
                 })
               }
             >
@@ -519,6 +502,12 @@ const FormsPage = () => {
     navigate({ to: '/form-builder' })
   }
 
+  const deletingFormName = String(
+    deletingForm?._json?.settings?.general?.name ||
+      deletingForm?.name ||
+      t`Untitled Form`,
+  )
+
   if (showAiBuilder) {
     return (
       <AiFormBuilder
@@ -538,79 +527,41 @@ const FormsPage = () => {
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
-      {deletingForm && (
-        <div className='animate-in fade-in slide-in-from-top-4 mx-4 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
-          <div className='flex items-center gap-3'>
-            <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-3 text-red-11'>
-              <Icon
-                className='h-5 w-5 animate-pulse text-red-11'
-                name='lucide:triangle-alert'
-              />
-            </div>
-            <div>
-              <h4 className='text-sm font-semibold text-red-12'>{t`Delete Form`}</h4>
-              <p className='mt-0.5 text-xs text-red-11'>
-                {t`Are you sure you want to delete`}{' '}
-                <span className='font-bold text-red-12'>
-                  "
-                  {deletingForm._json?.settings?.general?.name ||
-                    deletingForm.name ||
-                    t`Untitled Form`}
-                  "
-                </span>
-                ? {t`This action is permanent and cannot be undone.`}
-              </p>
-            </div>
-          </div>
-          <div className='flex shrink-0 items-center gap-2'>
-            <Button
-              color='gray'
-              disabled={isDeleting}
-              size='sm'
-              variant='subtle'
-              onClick={() => setDeletingForm(null)}
-            >
-              {t`Cancel`}
-            </Button>
-            <Button
-              color='red'
-              disabled={isDeleting}
-              icon='lucide:trash-2'
-              loading={isDeleting}
-              size='sm'
-              variant='solid'
-              onClick={async () => {
-                setIsDeleting(true)
-                const targetForm = deletingForm
-                showToast({
-                  message: t`Deleting form...`,
-                })
-                const { error } = await formApi.deleteForm(
-                  targetForm.uid || targetForm.id,
-                )
-                setIsDeleting(false)
-                setDeletingForm(null)
-                if (error) {
-                  showToast({
-                    message: error || t`Failed to delete form`,
-                    variant: 'error',
-                  })
-                } else {
-                  showToast({
-                    message: t`Form deleted successfully`,
-                    variant: 'success',
-                  })
-                  queryClient.invalidateQueries({ queryKey: ['forms'] })
-                }
-              }}
-            >
-              {t`Yes, Delete`}
-            </Button>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete`}
+        description={t`Are you sure you want to delete "${deletingFormName}"? This action is permanent and cannot be undone.`}
+        isConfirming={isDeleting}
+        opened={Boolean(deletingForm)}
+        title={t`Delete Form`}
+        variant='danger'
+        onCancel={() => {
+          if (!isDeleting) setDeletingForm(null)
+        }}
+        onConfirm={async () => {
+          if (!deletingForm) return
+          setIsDeleting(true)
+          const { error } = await formApi.deleteForm(
+            deletingForm.uid || deletingForm.id,
+          )
+          setIsDeleting(false)
+          setDeletingForm(null)
+          if (error) {
+            showToast({
+              message: error || t`Failed to delete form`,
+              variant: 'error',
+            })
+          } else {
+            showToast({
+              message: t`Form deleted successfully`,
+              variant: 'success',
+            })
+            queryClient.invalidateQueries({ queryKey: ['forms'] })
+          }
+        }}
+      />
 
-      <div className='bg-surface-muted/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-surface-muted/50 p-4'>
         <CustomFilter
           activeFilters={activeFilters}
           customSearchComponent={<TableSearch table={table as any} />}
