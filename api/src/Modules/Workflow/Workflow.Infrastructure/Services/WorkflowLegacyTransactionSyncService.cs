@@ -91,7 +91,8 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         string? review,
         MailboxFormSnapshot? mailboxForm = null,
         CancellationToken cancellationToken = default,
-        bool endWorkflow = false)
+        bool endWorkflow = false,
+        WorkflowStep? overrideNextStep = null)
     {
         var connectionString = _tenantContext.ConnectionString;
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -272,8 +273,20 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
             }
 
             WorkflowStep? nextStep;
-            var matchedRule = WorkflowStepActionsHelper.FindMatchingAction(targetStep, review);
-            if (matchedRule != null)
+            var matchedRule = overrideNextStep == null
+                ? WorkflowStepActionsHelper.FindMatchingAction(targetStep, review)
+                : null;
+            if (overrideNextStep != null)
+            {
+                nextStep = overrideNextStep;
+                _logger.LogInformation(
+                    "Routing review '{Review}' from activity {FromActivityId} to explicit step {ToStep} (order {Order})",
+                    review?.Trim(),
+                    txActivityId,
+                    overrideNextStep.Name,
+                    overrideNextStep.Order);
+            }
+            else if (matchedRule != null)
             {
                 nextStep = WorkflowStepActionsHelper.ResolveNextStepByReview(targetStep, review, orderedSteps);
                 if (nextStep == null)
