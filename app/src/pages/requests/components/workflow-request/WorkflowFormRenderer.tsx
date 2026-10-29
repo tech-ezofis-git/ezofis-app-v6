@@ -1118,9 +1118,12 @@ const WorkflowFormRenderer = ({
             onClick={() => goToStep(currentStep - 1)}
           />
           {isLastStep ? (
-            <span className='text-12 font-medium text-gray-9'>
-              {t`Last section — review and submit`}
-            </span>
+            // Nothing to submit when the request has no action buttons.
+            viewOnly ? null : (
+              <span className='text-12 font-medium text-gray-9'>
+                {t`Last section — review and submit`}
+              </span>
+            )
           ) : (
             <Button
               label={t`Next`}

@@ -38,6 +38,7 @@ import {
   hasStoredFileValue,
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import { resolveFormLayout } from '@/pages/requests/components/workflow-request/utils/formLayout'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
 import { useStableRequestKey } from '@/pages/requests/hooks/useStableRequestKey'
 import requestStore from '@/pages/requests/stores/useRequestStore'
@@ -1079,6 +1080,11 @@ const GenericRequestOverview = ({
     () => getFormPanels(rawWorkflowData),
     [rawWorkflowData],
   )
+  // Form Settings → Form Layout (Classic / Single page), as on New Request.
+  const formLayout = useMemo(
+    () => resolveFormLayout(rawWorkflowData?.formJson),
+    [rawWorkflowData?.formJson],
+  )
   const workflowStages = useMemo(
     () =>
       computeWorkflowStages({
@@ -1581,6 +1587,7 @@ const GenericRequestOverview = ({
                   hiddenFieldIds={hiddenFieldIds}
                   hidePanels={true}
                   instanceId={instanceId}
+                  layout={formLayout}
                   panels={panels}
                   preparePhase={preparePhase}
                   preparingFieldId={preparingFieldId}
@@ -1707,6 +1714,7 @@ const GenericRequestOverview = ({
                     hiddenFieldIds={lineItemsHiddenFieldIds.ids}
                     hidePanels={agentBlocks.length > 0}
                     instanceId={instanceId}
+                    layout={formLayout}
                     panels={panels}
                     preparePhase={preparePhase}
                     preparingFieldId={preparingFieldId}
@@ -1808,6 +1816,7 @@ const GenericRequestOverview = ({
                       }
                       hidePanels={agentBlocks.length > 0}
                       instanceId={instanceId}
+                      layout={formLayout}
                       panels={panels}
                       preparePhase={preparePhase}
                       preparingFieldId={preparingFieldId}
