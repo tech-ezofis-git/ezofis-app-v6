@@ -833,7 +833,7 @@ const TermsColumn = ({ activeTab, row }: TermsColumnProps) => {
     return (
       <span
         className={cn(
-          'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold',
+          'inline-flex max-w-full items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap',
           tone === 'red'
             ? 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
             : 'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]',
@@ -846,7 +846,9 @@ const TermsColumn = ({ activeTab, row }: TermsColumnProps) => {
             tone === 'red' ? 'text-[var(--red-9)]' : 'text-[var(--green-9)]',
           )}
         />
-        {label}
+        <span className='truncate' title={label}>
+          {label}
+        </span>
       </span>
     )
   }
@@ -1274,7 +1276,14 @@ export const GridRowItem = memo(
         {/* Columns 1-4 perfectly aligned across all rows */}
         <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
           {/* Column 3: Terms & Due Calculation */}
-          <div className='flex w-[84px] shrink-0 flex-col items-center justify-center text-center'>
+          <div
+            className={cn(
+              'flex shrink-0 flex-col items-center justify-center text-center',
+              // Closing-stage labels ("Pending For Payment") need more room
+              // than the due-date text, so they stay on one line.
+              activeTab === 'Processed' ? 'w-[156px]' : 'w-[84px]',
+            )}
+          >
             <TermsColumn activeTab={activeTab} row={row} />
           </div>
 
