@@ -27,6 +27,15 @@ Agents image default is `AP_PIPELINE_FROM_DB=true`; still set it explicitly on A
 
 See [docs/AP_PIPELINE_FROM_DB.md](../docs/AP_PIPELINE_FROM_DB.md).
 
+## Test Console login (`/console`)
+
+| App Setting | Example | Purpose |
+|-------------|---------|---------|
+| `CONSOLE_USER` | `ops-admin` | Username for the browser login prompt on `/console` and every `/console/*` API |
+| `CONSOLE_PASSWORD` | (secret, 12+ characters) | Same |
+
+If either is missing, or the password is shorter than 12 characters, the console is **off** (404). Other routes (`/chat`, `/health`, agent APIs) are not affected. See `app/control/console_auth.py`.
+
 ## GHCR pull (agents/api/app images)
 
 App Service pulls `ghcr.io/tech-ezofis-git/ezofis-app-v6/*:latest`. If `DOCKER_REGISTRY_SERVER_PASSWORD` is empty, new images fail to pull and agents often never start.

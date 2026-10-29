@@ -164,6 +164,7 @@ from app.dashboard.llm import configure_dashboard_llm
 from app.dashboard.store import DashboardStore, DashboardStoreUnavailableError
 from app.control.audit import AuditMiddleware, configure_app_logging
 from app.control.audit_store import AuditStore
+from app.control.console_auth import ConsoleAuthMiddleware
 from app.control.content_filter import ContentFilterRejectedError, check_content
 from app.control.memory_store import MemoryStore
 from app.control.metrics import CONTENT_TYPE_LATEST, record_guardrail_rejection, render_latest
@@ -729,6 +730,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="AI Orchestrator", version="0.1.0", lifespan=lifespan)
 app.include_router(ftl_router)
 app.add_middleware(AuditMiddleware)
+# Added last = runs first: unauthenticated /console requests are rejected
+# before anything else. See app/control/console_auth.py.
+app.add_middleware(ConsoleAuthMiddleware)
 # Backs GET /console's logo (app/static/ezofis-logo-mark.png) and any
 # other static asset dropped in app/static/. Same-origin, so the console
 # page's fetch() calls to /chat etc. need no CORS setup either.

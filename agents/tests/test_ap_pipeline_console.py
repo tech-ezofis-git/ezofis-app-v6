@@ -9,7 +9,7 @@ from app.ap_pipeline import seed_platform_ap_pipeline, set_catalog_store
 from app.ap_skills.types import DEFAULT_SKILL_ORDER
 from app.catalog.store import CatalogStore
 from app.config import get_settings
-from tests.conftest import _IsolatedFakeRedis
+from tests.conftest import CONSOLE_TEST_PASSWORD, CONSOLE_TEST_USER, _IsolatedFakeRedis
 from tests.fakes import FakeDBPool
 
 
@@ -26,6 +26,8 @@ def pipeline_client(monkeypatch):
     monkeypatch.setenv("EZOFIS_LOGIN_PASSWORD", "")
     monkeypatch.setenv("EZOFIS_ENV", "trial")
     monkeypatch.setenv("AP_PIPELINE_FROM_DB", "true")
+    monkeypatch.setenv("CONSOLE_USER", CONSOLE_TEST_USER)
+    monkeypatch.setenv("CONSOLE_PASSWORD", CONSOLE_TEST_PASSWORD)
     get_settings.cache_clear()
     from app.llm.model_presets import set_runtime_presets
 
@@ -46,6 +48,7 @@ def pipeline_client(monkeypatch):
     )
 
     with TestClient(main_module.app) as test_client:
+        test_client.auth = (CONSOLE_TEST_USER, CONSOLE_TEST_PASSWORD)
         test_client.fake_db_pool = fake_db
         yield test_client
 

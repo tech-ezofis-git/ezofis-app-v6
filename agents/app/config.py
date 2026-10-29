@@ -77,6 +77,12 @@ class Settings(BaseSettings):
     # /actions/{action_id}/confirm.
     rate_limit_max_requests: int = 20
     rate_limit_window_seconds: int = 60
+    # HTTP Basic login for the Test Console (GET /console + every /console/*
+    # API) — see app/control/console_auth.py. Both empty (the default) or a
+    # password under 12 characters = console switched off (404).
+    # Env: CONSOLE_USER / CONSOLE_PASSWORD. Never commit real values.
+    console_user: str = ""
+    console_password: str = ""
 
     # --- Response caching (Phase 5b) --------------------------------------
     # See app/control/response_cache.py for the full reasoning. Embedding
