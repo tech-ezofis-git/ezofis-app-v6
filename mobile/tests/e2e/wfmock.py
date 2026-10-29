@@ -322,6 +322,7 @@ def handle(method, path, qs, body):
     STATE['calls'].append((method, path, qs, body))
     if STATE['fail401']: return 401, {'message': 'Unauthorized'}
     if path == '/repositories/assistant/chatbot' and method == 'POST': return chatbot(body)
+    if path == '/me/tenants': return 200, {'tenants': [{'tenantId': 't1', 'name': 'EZOFIS Admin', 'role': 'Lawyers'}]}  # token check before signing out on a 401
     if path == '/usersession': return 200, {'id': 'u1', 'email': 'student.lawyer@example.com', 'displayName': 'Student Lawyer', 'role': 'User', 'Job Title': None, 'department': 'Legal', 'MFAuthentication': 'No', 'configuration': 1}
     p = path[len('/Workflows'):] if path.startswith('/Workflows') else None
     if path.startswith('/repositories/') and path.endswith('/file'): return 200, ('bytes', PDF, 'application/pdf')

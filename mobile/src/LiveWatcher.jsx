@@ -8,6 +8,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from './store.jsx';
 import { wfApi } from './wf.js';
 import { phoneNotify, onNotificationTap } from './notify.js';
+import { bgSeen, bgCheckNow, bgAvailable } from './background.js';
+import { onPushTap } from './push.js';
+import { App as CapApp } from '@capacitor/app';
 
 const testMs = (() => { try { return Number(localStorage.getItem('ezofis.pollMs')) || 0; } catch (e) { return 0; } })();
 const FG_MS = testMs || 45000, BG_MS = testMs || 120000;
@@ -16,6 +19,11 @@ export const autoRefreshOn = () => { try { return localStorage.getItem(AUTO) !==
 export const setAutoRefresh = (on) => { try { localStorage.setItem(AUTO, on ? 'on' : 'off'); } catch (e) { /* ignore */ } window.dispatchEvent(new Event('ezofis-autorefresh')); };
 const refreshable = (p) => p === '/app/home' || p === '/app/inbox' || p === '/app/notifications';
 const keyOf = (r) => `${r.workflowInstanceId}|${r.transactionId || r.activityId || ''}`;
+// Is the user looking at the app? Android's in-app WebView doesn't always set document.hidden when the app goes to the
+// background, so the Capacitor app state decides on the phone.
+let appActive = true;
+try { CapApp.addListener('appStateChange', (st) => { appActive = !!(st && st.isActive); }); } catch (e) { /* web: document.hidden only */ }
+const away = () => document.hidden || !appActive;
 
 export default function LiveWatcher() {
   const { live, session, bumpLive, addNotif, setInboxCount, showToast } = useStore();
@@ -38,18 +46,23 @@ export default function LiveWatcher() {
       const prev = snap.current;
       snap.current = { keys, total };
       setInboxCount(total);
-      if (!prev) return;
-      const fresh = rows.filter((r) => !prev.keys.has(keyOf(r)));
-      if (!fresh.length && total === prev.total) return;
-      fresh.slice(0, 5).forEach((r) => addNotif({
+      // While the user is away on the phone, the background check announces new requests (the notification path the
+      // Settings test proves) and keeps its own "seen" list; requests count as seen only when the app was on screen.
+      const fresh = prev ? rows.filter((r) => !prev.keys.has(keyOf(r))) : [];
+      const listIn = () => fresh.slice(0, 5).forEach((r) => addNotif({
         type: 'wf', tone: 'p', title: `New request · ${r.referenceNumber || r.name}`,
         body: `${r.name}${r.stage ? ' · ' + r.stage : ''}`, to: '/app/inbox/' + encodeURIComponent(r.workflowId + '~' + r.workflowInstanceId),
       }));
+      if (away() && bgAvailable()) { listIn(); bgCheckNow('app, you were away'); if (refreshable(path.current)) bumpLive(); else stale.current = true; return; }
+      bgSeen([...keys]); // the background check won't announce these again
+      if (!prev) return;
+      if (!fresh.length && total === prev.total) return;
+      listIn();
       if (fresh.length) {
         const one = fresh[0];
         const title = fresh.length === 1 ? `New request · ${one.referenceNumber || one.name}` : `${fresh.length} new requests`;
         const body = fresh.length === 1 ? `${one.name}${one.stage ? ' · ' + one.stage : ''} is waiting for you` : `${total} waiting in your EZOFIS inbox`;
-        if (document.hidden) phoneNotify(title, body, { route: '/app/inbox' + (fresh.length === 1 ? '/' + encodeURIComponent(one.workflowId + '~' + one.workflowInstanceId) : ''), tag: 'ezofis-inbox' });
+        if (away()) phoneNotify(title, body, { route: '/app/inbox' + (fresh.length === 1 ? '/' + encodeURIComponent(one.workflowId + '~' + one.workflowInstanceId) : ''), tag: 'ezofis-inbox' });
         else showToast(fresh.length === 1 ? `New request ${one.referenceNumber || ''} arrived` : `${fresh.length} new requests arrived`);
       }
       if (refreshable(path.current)) bumpLive(); else stale.current = true;
@@ -63,7 +76,7 @@ export default function LiveWatcher() {
     snap.current = null; stale.current = false;
     if (!live) return undefined;
     let timer = null, off = false;
-    const loop = () => { if (off) return; timer = setTimeout(async () => { await check(); loop(); }, document.hidden ? BG_MS : FG_MS); };
+    const loop = () => { if (off) return; timer = setTimeout(async () => { await check(); loop(); }, away() ? BG_MS : FG_MS); };
     const now = () => { clearTimeout(timer); check().then(loop); };
     const onVis = () => { if (!document.hidden) now(); };
     check().then(loop);
@@ -81,6 +94,7 @@ export default function LiveWatcher() {
 
   // tapping a phone notification (release build) opens the request
   useEffect(() => { let un = () => {}; onNotificationTap((r) => nav(r)).then((f) => { un = f; }); return () => un(); }, [nav]);
+  useEffect(() => { let un = () => {}; onPushTap((r) => nav(r)).then((f) => { un = f; }); return () => un(); }, [nav]);
 
   return null;
 }

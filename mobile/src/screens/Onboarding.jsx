@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon, Sheet, Sparkle, TopBar } from '../ui.jsx';
-import { authApi, loginErrorMessage, saveSession, loadSession, clearSession, IS_BROWSER_PREVIEW } from '../api.js';
+import { authApi, loginErrorMessage, saveSession, loadSession, clearSession, lastLogin, IS_BROWSER_PREVIEW } from '../api.js';
+import { bgSession, bgAllowNotifications } from '../background.js';
+import { pushUnregister } from '../push.js';
 import { getProviderEmail, SocialUnavailable, SocialCancelled } from '../social.js';
 import { USER } from '../data.js';
 import markWhite from '../assets/mark-white.png';
@@ -11,9 +13,10 @@ import lockup from '../assets/lockup-color.png';
 
 export function Splash() {
   const nav = useNavigate();
-  useEffect(() => { const t = setTimeout(() => nav('/loading', { replace: true }), 1300); return () => clearTimeout(t); }, [nav]);
+  const next = () => nav(loadSession() ? '/app/home' : '/loading', { replace: true });
+  useEffect(() => { const t = setTimeout(next, loadSession() ? 700 : 1300); return () => clearTimeout(t); }, [nav]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className="splash" onClick={() => nav('/loading', { replace: true })}>
+    <div className="splash" onClick={next}>
       <img className="mark" src={markWhite} alt="EZOFIS" />
     </div>
   );
@@ -36,7 +39,7 @@ export function Loader() {
   }, [i, nav]);
   return (
     <div className="splash">
-      <button type="button" onClick={() => nav('/welcome', { replace: true })} style={{ position: 'absolute', top: 'calc(var(--sat) + 16px)', right: 16, border: 0, background: 'transparent', color: 'rgba(255,255,255,.85)', fontWeight: 500, fontSize: 14, padding: 10 }}>Skip</button>
+      <button type="button" onClick={() => nav(loadSession() ? '/app/home' : '/welcome', { replace: true })} style={{ position: 'absolute', top: 'calc(var(--sat) + 16px)', right: 16, border: 0, background: 'transparent', color: 'rgba(255,255,255,.85)', fontWeight: 500, fontSize: 14, padding: 10 }}>Skip</button>
       <div className="loader-line" key={i} aria-live="polite">{LINES[i][0]}</div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         <div className="loader-bar"><span style={{ width: (i + 1) * 25 + '%' }} /></div>
@@ -153,7 +156,7 @@ function OtpInput({ value, onChange, length = 6 }) {
 export function Login() {
   const nav = useNavigate();
   const [step, setStep] = useState('email');          // email | org | password | otp | guest
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => lastLogin().email || '');
   const [pw, setPw] = useState('');
   const [show, setShow] = useState(false);
   const [tenants, setTenants] = useState([]);
@@ -172,7 +175,7 @@ export function Login() {
     return () => clearTimeout(t);
   }, [step, left]);
 
-  const done = (login, t) => { saveSession(login, t, email.trim()); nav('/app/home', { replace: true }); };
+  const done = (login, t) => { const s = saveSession(login, t, email.trim()); bgSession(s); bgAllowNotifications(); nav('/app/home', { replace: true }); };
   const run = async (fn) => { setErr(''); setBusy(true); try { await fn(); } finally { setBusy(false); } };
 
   const afterTenants = async (list, mode, verifiedEmail) => {
@@ -356,7 +359,7 @@ export function Passcode() {
     if (hashPin(code, salt) === stored) nav('/app/home', { replace: true }); else fail('Wrong passcode. Try again.');
   };
   useEffect(() => { if (code.length === 4) { const t = setTimeout(verify, 250); return () => clearTimeout(t); } return undefined; }, [code]); // eslint-disable-line
-  const forgot = () => { clearSession(); writePin(null); nav('/login', { replace: true }); };
+  const forgot = () => { pushUnregister(loadSession()); clearSession(); bgSession(null); writePin(null); nav('/login', { replace: true }); };
   const title = mode === 'create' ? (first ? 'Confirm passcode' : 'Create a passcode') : 'Enter passcode';
   const sub = mode === 'create' ? (first ? 'Enter the same 4 digits again.' : 'Choose a 4-digit passcode to unlock EZOFIS on this device.') : mode === 'demo' ? 'Sample-data mode: enter any 4 digits.' : 'Unlock EZOFIS with your 4-digit passcode.';
   return (

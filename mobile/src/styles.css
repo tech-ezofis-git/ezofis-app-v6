@@ -882,3 +882,13 @@ b.hl { color: var(--deep); background: linear-gradient(transparent 62%, rgba(92,
   .nr-sec-b > .field.wide, .nr-sec-b > section, .nr-sec-b > hr { grid-column: 1 / -1; }
 }
 .nr-sec-b { border-top: 1px solid var(--line); padding: 14px; display: flex; flex-direction: column; gap: 16px; }
+.bg-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.bg-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.bg-row span { color: var(--muted); flex: none; }
+.bg-row b { font-weight: 600; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.bg-hist { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border-radius: 10px; padding: 8px 10px; font-size: 12px; }
+.bg-hist > div { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; }
+.bg-hist time { color: var(--muted); }
+.bg-hist span { color: var(--deep); font-weight: 600; text-align: right; }
+.bg-hist b { grid-column: 1 / -1; font-weight: 500; overflow-wrap: anywhere; }
+.bg-row b.ok { color: #0E8A5F; } .bg-row b.bad { color: var(--bad); }

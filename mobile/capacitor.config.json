@@ -2,10 +2,28 @@
   "appId": "com.ezofis.mobile",
   "appName": "EZOFIS",
   "webDir": "dist",
-  "android": { "backgroundColor": "#643094" },
-  "ios": { "backgroundColor": "#643094", "contentInset": "never" },
+  "android": {
+    "backgroundColor": "#643094"
+  },
+  "ios": {
+    "backgroundColor": "#643094",
+    "contentInset": "never"
+  },
   "plugins": {
-    "StatusBar": { "style": "LIGHT", "backgroundColor": "#643094" },
-    "CapacitorHttp": { "enabled": true }
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#643094"
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "BackgroundRunner": {
+      "label": "com.ezofis.mobile.inbox",
+      "src": "runners/inbox.js",
+      "event": "checkInbox",
+      "repeat": true,
+      "interval": 15,
+      "autoStart": true
+    }
   }
 }

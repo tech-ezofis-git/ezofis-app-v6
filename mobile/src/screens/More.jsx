@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { permission, requestPermission, phonePref, setPhonePref, phoneNotify } from '../notify.js';
+import { pushRegister, pushUnregister, pushAvailable, pushToken, pushRegistered } from '../push.js';
+import { bgSession, bgAvailable, bgStatus, bgCheckNow, bgTestNotification, bgPermission, bgAllowNotifications } from '../background.js';
 import { autoRefreshOn, setAutoRefresh } from '../LiveWatcher.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store.jsx';
@@ -76,6 +78,46 @@ export function Notifications() {
   );
 }
 
+// Settings → Background check: what the closed-app inbox check last did, the notification permission, and buttons to run
+// it now or post a test notification (to tell "no new requests" apart from "notifications blocked").
+function BackgroundCheck() {
+  const { showToast } = useStore();
+  const [st, setSt] = useState(null);
+  const [perm, setPerm] = useState('');
+  const [busy, setBusy] = useState('');
+  const load = async () => { setSt(await bgStatus()); setPerm(await bgPermission()); };
+  useEffect(() => { load(); }, []);
+  const run = async (what) => {
+    setBusy(what);
+    if (what === 'test') { const p = await bgAllowNotifications(); setPerm(p); if (p !== 'granted') { showToast('Notifications are blocked. Allow them for EZOFIS in your phone settings.', { tone: 'bad' }); setBusy(''); return; } await bgTestNotification(); showToast('Test notification sent. Check your notification shade.'); }
+    else { await bgSession(loadSession(), phonePref()); await bgCheckNow(); }
+    await load(); setBusy('');
+  };
+  const last = st && st.last;
+  const when = last && last.at ? new Date(last.at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  const permText = perm === 'granted' ? 'Allowed' : perm === 'denied' ? 'Blocked in phone settings' : 'Not allowed yet';
+  return (
+    <div className="bg-card" aria-label="Background check">
+      <div className="bg-row"><span>Last check</span><b>{last ? `${when} · ${last.result}` : st ? 'Not run yet · it runs about 15 minutes after you leave the app' : 'Loading…'}</b></div>
+      <div className="bg-row"><span>Notifications</span><b className={perm === 'granted' ? 'ok' : 'bad'}>{permText}</b></div>
+      {st && st.history && st.history.length ? (
+        <div className="bg-hist" aria-label="Recent checks">
+          {st.history.map((h, i) => <div key={i}><time>{new Date(h.at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time><span>{h.by || 'schedule'}</span><b>{h.result}{h.waiting != null ? ` · ${h.waiting} waiting` : ''}{h.newest ? ` · newest ${h.newest}` : ''}</b></div>)}
+        </div>
+      ) : null}
+      {pushAvailable() ? (
+        <div className="bg-row"><span>Firebase push</span><b className={pushToken() ? 'ok' : ''}>{!pushToken() ? 'Not registered yet' : pushRegistered() ? 'On · registered with EZOFIS' : 'Phone ready · EZOFIS server not set up yet'}{pushToken() ? <button type="button" className="chip" style={{ marginLeft: 8, height: 26 }} onClick={() => { try { navigator.clipboard.writeText(pushToken()); showToast('Push token copied'); } catch (e) { showToast(pushToken()); } }}>Copy token</button> : null}</b></div>
+      ) : null}
+      <div className="bg-row"><span>Signed in for checks</span><b>{st ? (st.signedIn ? (st.enabled ? 'Yes' : 'Paused (phone notifications off)') : 'No') : '…'}</b></div>
+      <div className="grid2" style={{ marginTop: 6 }}>
+        <button type="button" className="btn neutral small" disabled={!!busy} onClick={() => run('check')}>{busy === 'check' ? <span className="spinner" /> : null}Check now</button>
+        <button type="button" className="btn neutral small" disabled={!!busy} onClick={() => run('test')}>{busy === 'test' ? <span className="spinner" /> : null}Test notification</button>
+      </div>
+      <p className="muted" style={{ fontSize: 12, margin: '6px 0 0', lineHeight: 1.45 }}>If no check runs after you close the app, set Settings → Apps → EZOFIS → Battery to Unrestricted.</p>
+    </div>
+  );
+}
+
 export function Settings() {
   const nav = useNavigate();
   const { platformPref, setPlatform, platform, showToast, me, syncSession } = useStore();
@@ -85,11 +127,11 @@ export function Settings() {
   useEffect(() => { let off = false; const upd = () => permission().then((p) => { if (!off) setPerm(p); }); upd(); document.addEventListener('visibilitychange', upd); return () => { off = true; document.removeEventListener('visibilitychange', upd); }; }, []);
   const phoneActive = phoneOn && perm === 'granted';
   const togglePhone = async () => {
-    if (phoneActive) { setPhonePref(false); setPhoneOn(false); return; }
+    if (phoneActive) { setPhonePref(false); setPhoneOn(false); bgSession(loadSession(), false); pushUnregister(loadSession()); return; }
     let p = perm;
     if (p !== 'granted') p = await requestPermission();
     setPerm(p);
-    if (p === 'granted') { setPhonePref(true); setPhoneOn(true); phoneNotify('Phone notifications are on', 'You\'ll be told here when a new request is waiting for you.'); }
+    if (p === 'granted') { setPhonePref(true); setPhoneOn(true); bgSession(loadSession(), true); pushRegister(loadSession()); phoneNotify('Phone notifications are on', 'You\'ll be told here when a new request is waiting for you.'); }
     else if (p === 'unsupported') showToast('This preview can\'t show phone notifications. Use the app on your phone.');
     else showToast('Notifications are blocked. Allow them for EZOFIS in your phone settings.', { tone: 'bad' });
   };
@@ -98,7 +140,7 @@ export function Settings() {
   const [language, setLanguage] = useState('English');
   const [session] = useState(() => loadSession());
   const brand = useTenantBrand(session);
-  const signOut = () => { clearSession(); syncSession(); try { localStorage.removeItem('ezofis.pin'); } catch (e) { /* storage unavailable */ } nav('/welcome', { replace: true }); };
+  const signOut = () => { pushUnregister(loadSession()); clearSession(); bgSession(null); syncSession(); try { localStorage.removeItem('ezofis.pin'); } catch (e) { /* storage unavailable */ } nav('/welcome', { replace: true }); };
   const name = me && me.displayName ? me.displayName : session ? session.email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : USER.name;
   return (
     <div className="screen">
@@ -129,6 +171,7 @@ export function Settings() {
         ) : (
           <button type="button" className="setting-row" onClick={() => nav('/login')}><span className="ic"><Icon name="user" size={20} /></span><span className="tx">Sign in to your organization<small>You're exploring sample data</small></span><Icon name="chevR" size={18} color="#5E5873" /></button>
         )}
+        {session && bgAvailable() ? <><div className="sec-label">Background check</div><BackgroundCheck /></> : null}
         <div className="sec-label">Preferences</div>
         <div>
           <div className="setting-row"><span className="ic"><Icon name="bell" size={20} /></span><span className="tx">Phone notifications<small>{phoneSub}</small></span><button type="button" role="switch" aria-checked={phoneActive} aria-label="Phone notifications" className="switch" onClick={togglePhone} /></div>
@@ -137,7 +180,7 @@ export function Settings() {
           <button type="button" className="setting-row" onClick={() => showToast('Opening help.ezofis.com')}><span className="ic"><Icon name="help" size={20} /></span><span className="tx">Help center<small>Guides for inbox, folders and uploads</small></span><Icon name="chevR" size={18} color="#5E5873" /></button>
           <button type="button" className="setting-row" onClick={signOut}><span className="ic" style={{ background: 'var(--tint-r)', color: 'var(--bad)' }}><Icon name="logout" size={20} /></span><span className="tx" style={{ color: 'var(--bad)' }}>Sign out</span></button>
         </div>
-        <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 10 }}>EZOFIS Mobile · V6 · 0.5.5</p>
+        <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 10 }}>EZOFIS Mobile · V6 · 0.6.0</p>
       </div>
       <Sheet open={lang} onClose={() => setLang(false)} title="Language">
         <div className="sheet-list">{['English', 'Tamil', 'Hindi', 'Arabic', 'French'].map((l) => <button key={l} type="button" className={'opt' + (l === language ? ' on' : '')} onClick={() => { setLanguage(l); setLang(false); }}>{l}</button>)}</div>

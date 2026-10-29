@@ -3,6 +3,9 @@ import { REQUESTS, ACTIONED, FILES, UPLOAD_POOL, NOTIFS } from './data.js';
 import { loadSession } from './api.js';
 import { wfApi, clearWfCache } from './wf.js';
 import { repoApi } from './repo.js';
+import { bgSession, bgAllowNotifications } from './background.js';
+import { pushRegister } from './push.js';
+import { phonePref } from './notify.js';
 
 const Ctx = createContext(null);
 export const useStore = () => useContext(Ctx);
@@ -46,6 +49,10 @@ export function StoreProvider({ children }) {
   });
   // Live mode = signed in with a real EZOFIS session; otherwise the app shows sample data ("Explore").
   const [session, setSession] = useState(() => loadSession());
+  // the background inbox check follows the session: it gets the token on sign-in and forgets it on sign-out
+  // and, once per app start, Android asks for the notification permission if EZOFIS doesn't have it yet
+  // server push (Firebase) registers this phone with EZOFIS when it's built in; the background check is the fallback
+  useEffect(() => { bgSession(session, phonePref()); if (session && phonePref()) { bgAllowNotifications(); pushRegister(session); } }, [session && session.accessToken, session && session.tenantId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [me, setMe] = useState(null);
   const [liveTick, setLiveTick] = useState(0);
   const live = !!session;
