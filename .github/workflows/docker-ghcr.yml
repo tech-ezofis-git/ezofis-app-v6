@@ -235,6 +235,7 @@ jobs:
           SMOKE_BASE_URL: ${{ env.SMOKE_BASE_URL }}
           SMOKE_ATTEMPTS: '20'
           SMOKE_SLEEP_SEC: '60'
+          EZOFIS_SIGNING_KEY: ${{ secrets.EZOFIS_SIGNING_KEY }}
         run: |
           chmod +x .github/scripts/deploy-azure-compose.sh
           .github/scripts/deploy-azure-compose.sh
