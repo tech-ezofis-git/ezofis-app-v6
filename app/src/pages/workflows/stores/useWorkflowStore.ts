@@ -5,6 +5,7 @@ import {
   type KanbanCardSetting,
   parseKanbanSettings,
 } from '../utils/kanbanSettings'
+import { normalizeSlaSettings, type SlaSettings } from '../utils/slaSettings'
 import {
   isFilledValue,
   type WorkflowValidationErrors,
@@ -90,6 +91,10 @@ type Store = {
   selectedEdge: Edge | null
   selectedNode: Node | null
   settingsValidationErrors: WorkflowValidationErrors | null
+  /** Set when a save is blocked by SLA validation, so SLA editors show errors. */
+  showSlaErrors: boolean
+  /** Workflow-level resolution SLA (`settings.SlaSettings`); null = none. */
+  slaSettings: null | SlaSettings
   workflowDescription: string
   workflowId: number | null
   workflowName: string
@@ -118,6 +123,8 @@ type Store = {
   setRequestTabs: (tabs: RequestTabConfig[]) => void
   setRequestTitleField: (field: string | null) => void
   setSettingsValidationErrors: (errors: WorkflowValidationErrors | null) => void
+  setShowSlaErrors: (show: boolean) => void
+  setSlaSettings: (settings: null | SlaSettings) => void
   setWorkflowDescription: (description: string) => void
   setWorkflowId: (id: number | null) => void
   setWorkflowName: (name: string) => void
@@ -152,6 +159,8 @@ const useWorkflowStore = create<Store>()((set) => ({
   requestTitleField: null,
   selectedEdge: null,
   selectedNode: null,
+  showSlaErrors: false,
+  slaSettings: null,
   workflowDescription: '',
   workflowId: null,
   workflowName: `Workflow - ${new Date()
@@ -276,6 +285,10 @@ const useWorkflowStore = create<Store>()((set) => ({
       requestTabs,
       requestTitleField:
         legacyJson.settings?.general?.requestTitleField || null,
+      slaSettings: normalizeSlaSettings(
+        legacyJson.settings?.SlaSettings,
+        'workflow',
+      ),
       workflowDescription,
       workflowId: legacyJson.id || apiData?.id || null,
       workflowName,
@@ -293,6 +306,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       isSettingsOpen: true,
       selectedEdge: null,
       selectedNode: null,
+      showSlaErrors: false,
     }),
   resetWorkflow: () =>
     set({
@@ -308,6 +322,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       requestTitleField: null,
       selectedEdge: null,
       selectedNode: null,
+      slaSettings: null,
       workflowDescription: '',
       workflowId: null,
       workflowName: `Workflow - ${new Date()
@@ -338,6 +353,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       isSettingsOpen: false,
       selectedEdge: null,
       selectedNode: node,
+      showSlaErrors: false,
     }),
   startTestRun: () => set({ isRunningTest: true }),
   stopTestRun: () =>
@@ -354,6 +370,8 @@ const useWorkflowStore = create<Store>()((set) => ({
   setRequestTitleField: (field) => set({ requestTitleField: field }),
   setSettingsValidationErrors: (errors) =>
     set({ settingsValidationErrors: errors }),
+  setShowSlaErrors: (showSlaErrors) => set({ showSlaErrors }),
+  setSlaSettings: (slaSettings) => set({ slaSettings }),
   settingsValidationErrors: null,
   setWorkflowDescription: (description) =>
     set({ workflowDescription: description }),
