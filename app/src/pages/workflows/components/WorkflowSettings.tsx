@@ -31,6 +31,7 @@ import {
   TOKEN_TYPE_OPTIONS,
   YEAR_OPTIONS,
 } from '../utils/prefixFormat'
+import { firstSlaError, validateSlaSettings } from '../utils/slaSettings'
 import useDefaultSectionOpen from '../utils/useDefaultSectionOpen'
 import {
   normalizeInitiateUsing,
@@ -39,6 +40,7 @@ import {
 import { getDefaultShortName } from '../utils/workflowShortName'
 import NumberPartsDnd, { NumberPartRow } from './settings/common/NumberPartsDnd'
 import SettingsSection from './settings/common/SettingsSection'
+import SLAConfiguration from './settings/common/SLAConfiguration'
 import KanbanViewSettingsSection from './settings/KanbanViewSettingsSection'
 import RequestTabsSettingsSection from './settings/RequestTabsSettingsSection'
 
@@ -59,6 +61,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   const [openRequestNumber, setOpenRequestNumber] = useState(false)
   const [openKanban, setOpenKanban] = useState(false)
   const [openRequestViews, setOpenRequestViews] = useState(false)
+  const [openSla, setOpenSla] = useState(false)
 
   const {
     closeSettings,
@@ -71,6 +74,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     previewValues,
     requestTabs,
     requestTitleField,
+    showSlaErrors,
+    slaSettings,
     workflowDescription,
     workflowName,
     workflowShortName,
@@ -84,6 +89,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     setRequestTabs,
     setRequestTitleField,
     setSettingsValidationErrors,
+    setShowSlaErrors,
+    setSlaSettings,
     settingsValidationErrors,
     setWorkflowDescription,
     setWorkflowName,
@@ -96,6 +103,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   // Left empty, it is filled again once the field loses focus.
   const [isShortNameFocused, setIsShortNameFocused] = useState(false)
   const lastAutoShortNameRef = useRef('')
+  const slaSnapshotRef = useRef<typeof slaSettings>(null)
   useEffect(() => {
     if (isShortNameFocused) return
     const current = workflowShortName.trim()
@@ -127,6 +135,10 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     setOpenRequestNumber(false)
     setOpenKanban(false)
     setOpenRequestViews(false)
+    setOpenSla(false)
+    // Workflow SLA as it was when the panel opened; Cancel restores it.
+    const saved = useWorkflowStore.getState().slaSettings
+    slaSnapshotRef.current = saved ? structuredClone(saved) : null
   }, [isSettingsOpen])
 
   useEffect(() => {
@@ -418,7 +430,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             <label className='mb-2 block text-13 font-medium text-gray-11'>
               Status
             </label>
-            <div className='bg-surface-muted flex rounded-lg border border-gray-3 p-1'>
+            <div className='flex rounded-lg border border-gray-3 bg-surface-muted p-1'>
               {[
                 { id: 'draft', label: 'Draft' },
                 { id: 'published', label: 'Published' },
@@ -735,7 +747,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
                   </div>
 
                   <button
-                    className='text-gray-8 hover:text-red-9 shrink-0 p-1.5 transition-colors'
+                    className='shrink-0 p-1.5 text-gray-8 transition-colors hover:text-red-9'
                     title='Remove part'
                     type='button'
                     onClick={() => removeToken(segment.id)}
@@ -790,6 +802,21 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             onChange={setRequestTabs}
           />
         </SettingsSection>
+
+        <SettingsSection
+          icon='lucide:timer'
+          isOpen={openSla || showSlaErrors}
+          title='SLA'
+          variant='premium'
+          onToggle={() => setOpenSla(!openSla)}
+        >
+          <SLAConfiguration
+            scope='workflow'
+            showErrors={showSlaErrors}
+            value={slaSettings}
+            onChange={setSlaSettings}
+          />
+        </SettingsSection>
       </div>
 
       {/* Footer */}
@@ -799,6 +826,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
           variant='outline'
           onClick={() => {
             setSettingsValidationErrors(null)
+            setSlaSettings(slaSnapshotRef.current)
+            setShowSlaErrors(false)
             closeSettings()
           }}
         >
@@ -830,6 +859,21 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
               return
             }
             setSettingsValidationErrors(null)
+            const slaError = firstSlaError(
+              validateSlaSettings(slaSettings, 'workflow'),
+            )
+            if (slaError) {
+              setShowSlaErrors(true)
+              setOpenSla(true)
+              showToast({
+                message: slaError,
+                toastTitle: 'Workflow SLA',
+                variant: 'default',
+              })
+              return
+            }
+            setShowSlaErrors(false)
+            slaSnapshotRef.current = slaSettings
             closeSettings()
           }}
         >

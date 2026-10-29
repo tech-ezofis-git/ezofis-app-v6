@@ -1,13 +1,14 @@
 import type { Edge, Node } from '@xyflow/react'
-import { generateId } from './generateId'
-import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
-import { poSourceToNodeData } from './poSourceConfig'
 import {
   INITIATOR_BLOCK_TYPES,
   isSubWorkflowIdSet,
   readConnectorSettings,
   readInitiatorSettings,
 } from '@/features/sub-workflow/utils/blockSettings'
+import { generateId } from './generateId'
+import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
+import { poSourceToNodeData } from './poSourceConfig'
+import { normalizeSlaSettings } from './slaSettings'
 import { WORKFLOW_CONNECTOR_NODE } from './workflowConnector'
 
 function getNodeDefaults(toolType: string) {
@@ -392,7 +393,9 @@ export const importWorkflow = (
       normalizeNodeToolType(toolType) === NODE_TOOL_TYPE.WORKFLOW_CONNECTOR
         ? (() => {
             const { subWorkflowId } = readConnectorSettings(block.settings)
-            const subWorkflowName = String(block.settings?.subWorkflowName || '')
+            const subWorkflowName = String(
+              block.settings?.subWorkflowName || '',
+            )
             return {
               subLabel: subWorkflowName
                 ? `Starts ${subWorkflowName}`
@@ -528,10 +531,10 @@ export const importWorkflow = (
       data: {
         // Map condition-specific settings for legacy import
         conditions: block.settings?.conditions,
-        // End node - post-completion sync (SAP / QuickBooks / Master Form)
-        endSync: block.settings?.endSync,
         connection: connectorId ? String(connectorId) : undefined,
         connectorId: connectorId,
+        // End node - post-completion sync (SAP / QuickBooks / Master Form)
+        endSync: block.settings?.endSync,
         fromDomainName,
         fromDomainNameEnabled,
         fromMailAddressEnabled,
@@ -688,6 +691,10 @@ export const importWorkflow = (
           block.settings?.editableTable,
         ),
 
+        // Per-block response SLA; absent when the block never had one.
+        SlaSettings:
+          normalizeSlaSettings(block.settings?.SlaSettings, 'block') ??
+          undefined,
         standardCondition: block.settings?.standardCondition ?? true,
         subLabel: defaults.subLabel,
         toolType: normalizeNodeToolType(toolType),
