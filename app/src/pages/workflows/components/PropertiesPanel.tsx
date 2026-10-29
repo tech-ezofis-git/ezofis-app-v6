@@ -53,11 +53,18 @@ const WorkflowConnectorSettings = lazy<React.ComponentType<{ node: Node }>>(
 )
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
+import showToast from '@/components/base/toast/showToast'
 import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import { parseOAuthConnectionSuccess } from '@/pages/workflows/utils/oauthAuthorize'
 import cn from '@/utils/cn'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { getNodeToolType, NODE_TOOL_TYPE } from '../utils/nodeToolTypes'
+import {
+  firstSlaError,
+  isSlaEscalationTarget,
+  type SlaSettings,
+  validateSlaSettings,
+} from '../utils/slaSettings'
 import ConnectionsRouting from './settings/common/ConnectionsRouting'
 
 interface PropertiesPanelProps {
@@ -147,6 +154,52 @@ function PropertiesPanel({
       inputRef.current.focus()
     }
   }, [isEditingLabel])
+
+  // Block SLA as it was when this block was opened, so Cancel can discard
+  // SLA edits made in the panel.
+  const slaSnapshotRef = useRef<{ nodeId: string; value: unknown } | null>(null)
+  useEffect(() => {
+    if (!node) return
+    slaSnapshotRef.current = {
+      nodeId: node.id,
+      value: node.data.SlaSettings
+        ? structuredClone(node.data.SlaSettings)
+        : undefined,
+    }
+    // Only re-snapshot when a different block is opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node?.id])
+
+  const restoreBlockSla = () => {
+    const snapshot = slaSnapshotRef.current
+    if (!node || snapshot?.nodeId !== node.id) return
+    setNodes((nodes) =>
+      nodes.map((n) =>
+        n.id === node.id
+          ? { ...n, data: { ...n.data, SlaSettings: snapshot.value } }
+          : n,
+      ),
+    )
+  }
+
+  // Blocks the panel Save when the block SLA is incomplete.
+  const validateBlockSla = () => {
+    if (!node?.data.SlaSettings) return true
+    const stageIds = nodes
+      .filter((n) => n.id !== node.id && isSlaEscalationTarget(n.data))
+      .map((n) => n.id)
+    const message = firstSlaError(
+      validateSlaSettings(
+        node.data.SlaSettings as SlaSettings,
+        'block',
+        stageIds,
+      ),
+    )
+    if (!message) return true
+    useWorkflowStore.getState().setShowSlaErrors(true)
+    showToast({ message, toastTitle: 'SLA', variant: 'default' })
+    return false
+  }
 
   const handleLabelSave = () => {
     if (node && editedLabel.trim() !== '') {
@@ -359,6 +412,7 @@ function PropertiesPanel({
         className='text-gray-10 hover:bg-gray-2 hover:text-gray-13'
         variant='ghost'
         onClick={() => {
+          restoreBlockSla()
           setNodes((nodes) =>
             nodes.map((n) =>
               n.id === node.id ? { ...n, selected: false } : n,
@@ -373,7 +427,7 @@ function PropertiesPanel({
         className='px-6 shadow-sm transition-all active:scale-95'
         color='primary'
         onClick={() => {
-          // Save logic would go here
+          if (!validateBlockSla()) return
           setNodes((nodes) =>
             nodes.map((n) =>
               n.id === node.id ? { ...n, selected: false } : n,

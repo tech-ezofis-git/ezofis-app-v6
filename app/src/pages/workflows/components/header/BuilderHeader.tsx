@@ -13,10 +13,8 @@ import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigati
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import { validateDataSync } from '../../utils/dataIntegrationMapping'
 import { exportWorkflow } from '../../utils/exportWorkflow'
-import {
-  getNodeToolType,
-  NODE_TOOL_TYPE,
-} from '../../utils/nodeToolTypes'
+import { getNodeToolType, NODE_TOOL_TYPE } from '../../utils/nodeToolTypes'
+import { diffSlaSettings, getWorkflowSlaError } from '../../utils/slaSettings'
 import { validateWorkflowSettings } from '../../utils/validateWorkflowSettings'
 import {
   getConnectorSaveBlock,
@@ -77,6 +75,23 @@ const BuilderHeader = () => {
       showToast({
         message: syncErrors[0],
         toastTitle: 'Data Integration',
+        variant: 'default',
+      })
+      return
+    }
+
+    // Workflow and block SLAs must be complete; open where the problem is.
+    const slaError = getWorkflowSlaError(getNodes() as any, state.slaSettings)
+    if (slaError) {
+      const target = slaError.nodeId
+        ? getNodes().find((n) => n.id === slaError.nodeId)
+        : null
+      if (target) state.selectNode(target)
+      else state.openSettings()
+      useWorkflowStore.getState().setShowSlaErrors(true)
+      showToast({
+        message: slaError.message,
+        toastTitle: 'SLA',
         variant: 'default',
       })
       return
@@ -159,8 +174,13 @@ const BuilderHeader = () => {
       const { data, error } = response
 
       if (error) {
+        // The V6 API returns `{ error }` (e.g. SLA validation messages).
+        const errorText =
+          typeof error === 'object' && error !== null
+            ? String((error as any).error ?? JSON.stringify(error))
+            : error
         showToast({
-          message: `Failed to ${isPublished ? 'publish' : 'save'} workflow: ${error}`,
+          message: `Failed to ${isPublished ? 'publish' : 'save'} workflow: ${errorText}`,
           variant: 'error',
         })
       } else {
@@ -175,6 +195,28 @@ const BuilderHeader = () => {
         })
         const newId = data?.id || (typeof data === 'string' ? data : null)
         const finalWorkflowId = String(newId || workflowId)
+
+        // Re-read the saved workflow and confirm every SLA came back as sent.
+        if (finalWorkflowId && finalWorkflowId !== 'new') {
+          void workflowsApiV6
+            .getWorkflowById(finalWorkflowId)
+            .then(({ data: saved }) => {
+              const raw = (saved as any)?.workflowJson
+              if (!raw) return
+              const savedJson = typeof raw === 'string' ? JSON.parse(raw) : raw
+              const mismatched = diffSlaSettings(exportedJson, savedJson)
+              if (mismatched.length > 0) {
+                console.warn('SLA settings not persisted as sent:', mismatched)
+                showToast({
+                  message:
+                    'The workflow saved, but some SLA settings did not persist. Reopen the workflow to check them.',
+                  toastTitle: 'SLA',
+                  variant: 'error',
+                })
+              }
+            })
+            .catch((err) => console.warn('SLA verification failed:', err))
+        }
 
         // Automatically link Gmail email-ingest mailbox if workflow contains a Gmail trigger node
         if (finalWorkflowId && finalWorkflowId !== 'new') {

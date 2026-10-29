@@ -8,6 +8,7 @@ import { ensureStartAndEndNodes } from '@/services/ai/workflowConfig'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
 import { resolvePoSource } from './poSourceConfig'
+import { serializeSlaSettings } from './slaSettings'
 import { getDefaultShortName } from './workflowShortName'
 
 const mapToolTypeToLegacyType = (
@@ -45,10 +46,7 @@ const mapToolTypeToLegacyType = (
     return 'QUALIFY_AGENT'
   if (t === NODE_TOOL_TYPE.QUOTE_AGENT || t.includes('quote'))
     return 'QUOTE_AGENT'
-  if (
-    t === NODE_TOOL_TYPE.CLASSIFICATION_AGENT ||
-    t.includes('classification')
-  )
+  if (t === NODE_TOOL_TYPE.CLASSIFICATION_AGENT || t.includes('classification'))
     return 'CLASSIFICATION_AGENT'
   if (t === NODE_TOOL_TYPE.FTP_AGENT || t.includes('ftp')) return 'FTP_AGENT'
   if (t === NODE_TOOL_TYPE.GOOGLE_DRIVE || t.includes('drive'))
@@ -344,6 +342,13 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       }
     }
 
+    // Block response SLA: only the active mode's data is saved.
+    if (data.SlaSettings && typeof data.SlaSettings === 'object') {
+      settings.SlaSettings = serializeSlaSettings(data.SlaSettings, 'block')
+    } else {
+      delete settings.SlaSettings
+    }
+
     settings.generatePDF = Boolean(data.generatePDF)
     if (!Array.isArray(settings.generatePDFFields)) {
       settings.generatePDFFields = []
@@ -493,6 +498,16 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     modifiedBlockIds: [],
     rules,
     settings: {
+      // Workflow resolution SLA. Kept beside `general` because
+      // `general.slaSettings` is the legacy work-hours calendar.
+      ...(storeState.slaSettings
+        ? {
+            SlaSettings: serializeSlaSettings(
+              storeState.slaSettings,
+              'workflow',
+            ),
+          }
+        : {}),
       general: {
         coordinator: [],
         description: storeState.workflowDescription,
