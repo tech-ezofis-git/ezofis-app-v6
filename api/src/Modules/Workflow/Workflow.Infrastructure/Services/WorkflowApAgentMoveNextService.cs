@@ -1493,6 +1493,9 @@ public sealed class WorkflowApAgentMoveNextService : IWorkflowApAgentMoveNextSer
                     foreach (var (key, cell) in cells)
                     {
                         writer.WritePropertyName(key);
+                        // Multi-select cells stay real JSON arrays in the stored row, as submitted.
+                        if (IsJsonArrayValue(cell) && TryWriteRawJsonArray(writer, cell))
+                            continue;
                         writer.WriteStringValue(cell);
                     }
 
@@ -1510,6 +1513,22 @@ public sealed class WorkflowApAgentMoveNextService : IWorkflowApAgentMoveNextSer
         catch (JsonException)
         {
             return null;
+        }
+    }
+
+    private static bool TryWriteRawJsonArray(Utf8JsonWriter writer, string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                return false;
+            doc.RootElement.WriteTo(writer);
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
         }
     }
 
@@ -1603,6 +1622,11 @@ public sealed class WorkflowApAgentMoveNextService : IWorkflowApAgentMoveNextSer
             case JsonValueKind.True:
             case JsonValueKind.False:
                 return value.GetRawText();
+            case JsonValueKind.Array:
+                // Multi-select / checkbox cell, e.g. ["Wrapper"]. Keep it as a JSON array (same as
+                // top-level multi-select columns); an empty array is a blank cell. Without this case
+                // the value fell to default and was dropped, so table rows lost these cells.
+                return value.GetArrayLength() == 0 ? string.Empty : value.GetRawText();
             case JsonValueKind.Object:
                 foreach (var key in new[] { "value", "text", "label", "name", "displayValue" })
                 {
@@ -1807,6 +1831,8 @@ public sealed class WorkflowApAgentMoveNextService : IWorkflowApAgentMoveNextSer
 
                         writer.WritePropertyName(prop.Name);
                         var cell = UnwrapTableCellValue(prop.Value);
+                        if (cell is not null && IsJsonArrayValue(cell) && TryWriteRawJsonArray(writer, cell))
+                            continue;
                         writer.WriteStringValue(cell ?? string.Empty);
                     }
 
