@@ -326,6 +326,9 @@ _ROW_ID_KEYS = frozenset(
         "lastactionon",
         "duration",
         "daysopen",
+        "response",
+        "slaresponse",
+        "resolution",
     }
 )
 _INSTANCE_DEFAULT_KEYS = frozenset(
@@ -348,6 +351,9 @@ _INSTANCE_DEFAULT_KEYS = frozenset(
         "lastactionon",
         "duration",
         "daysopen",
+        "response",
+        "slaresponse",
+        "resolution",
     }
 )
 _LISTING_COMPACT = frozenset(
@@ -384,6 +390,9 @@ _LISTING_COMPACT = frozenset(
         "lastactionon",
         "duration",
         "daysopen",
+        "response",
+        "slaresponse",
+        "resolution",
     }
 )
 _LISTING_OUTPUT_KEYS = frozenset(
@@ -401,6 +410,9 @@ _LISTING_OUTPUT_KEYS = frozenset(
         "lastactionon",
         "duration",
         "daysopen",
+        "response",
+        "slaresponse",
+        "resolution",
     }
 )
 _REPO_DEFAULT_KEYS = frozenset(
@@ -466,6 +478,8 @@ _KEY_ALIAS_GROUPS = (
     frozenset({"stage", "currentstage", "stepname"}),
     frozenset({"lastaction", "last_action", "activity"}),
     frozenset({"lastactionon", "lastactivityatutc", "last_activity_at_utc"}),
+    frozenset({"response", "slaresponse", "sla_response", "responsestatus"}),
+    frozenset({"resolution", "resolutionstatus"}),
     frozenset({"createdat", "createdatutc", "created_at"}),
     frozenset({"createdby", "created_by"}),
     frozenset({"createdbyid", "created_by_id"}),
@@ -1807,6 +1821,144 @@ def _overlay_last_activity_lookup(row: dict[str, Any], lookup: dict[str, Any]) -
         row["lastActionOn"] = stamp
 
 
+def _format_sla_cell(status: Any, deadline: Any = None) -> str:
+    """Keep one cell: status, or status plus deadline when both exist."""
+    if isinstance(status, bool):
+        status_text = "Met" if status else "Missed"
+    else:
+        status_text = str(status or "").strip()
+        if status_text in {"1", "true", "True"}:
+            status_text = "Met"
+        elif status_text in {"0", "false", "False"}:
+            status_text = "Missed"
+    deadline_text = str(deadline or "").strip()
+    if status_text and deadline_text:
+        return f"{status_text} ({deadline_text})"
+    return status_text or deadline_text
+
+
+def _overlay_sla_lookup(row: dict[str, Any], lookup: dict[str, dict[str, Any]]) -> None:
+    inst = _compact_id(row.get("instanceId") or row.get("instance_id"))
+    if not inst:
+        return
+    sla = lookup.get(inst) or {}
+    text = str(sla.get("slaResponse") or sla.get("response") or "").strip()
+    if text:
+        if not str(row.get("response") or "").strip():
+            row["response"] = text
+        if not str(row.get("slaResponse") or "").strip():
+            row["slaResponse"] = text
+    if not str(row.get("resolution") or "").strip() and sla.get("resolution"):
+        row["resolution"] = sla["resolution"]
+
+
+async def _sql_lookup_sla_by_instance(
+    db: Any, instance_ids: list[str], *, suffix: str = ""
+) -> dict[str, dict[str, Any]]:
+    """SLA Response / Resolution from WorkflowInstanceLookup, then workflow_instance_slas_*."""
+    compact_ids = [_compact_id(item) for item in instance_ids if _compact_id(item)]
+    found: dict[str, dict[str, Any]] = {}
+    if db is None or not compact_ids:
+        return found
+
+    async def _ingest(located: Optional[tuple[str, str]]) -> None:
+        if located is None:
+            return
+        schema, table = located
+        by_lower, _ = await fetch_columns(db, schema, table)
+        inst_col = _sql_col(
+            by_lower,
+            "workflow_instance_id",
+            "workflowinstanceid",
+            "instance_id",
+            "instanceid",
+        )
+        if not inst_col:
+            return
+        response_col = _sql_col(
+            by_lower,
+            "response",
+            "responsestatus",
+            "response_status",
+            "sla_response",
+            "slaresponse",
+            "ResponseStatus",
+        )
+        response_due = _sql_col(
+            by_lower,
+            "responsedeadline",
+            "response_deadline",
+            "ResponseDeadline",
+        )
+        resolution_col = _sql_col(
+            by_lower,
+            "resolutionstatus",
+            "resolution_status",
+            "resolution",
+            "ResolutionStatus",
+        )
+        resolution_due = _sql_col(
+            by_lower,
+            "resolutiondeadline",
+            "resolution_deadline",
+            "ResolutionDeadline",
+        )
+        if not response_col and not resolution_col and not response_due and not resolution_due:
+            return
+        parts = [
+            f"lower(replace(CAST({quote_ident(inst_col)} AS text), '-', '')) AS instance_id"
+        ]
+        if response_col:
+            parts.append(f"CAST({quote_ident(response_col)} AS text) AS response_status")
+        if response_due:
+            parts.append(f"CAST({quote_ident(response_due)} AS text) AS response_deadline")
+        if resolution_col:
+            parts.append(f"CAST({quote_ident(resolution_col)} AS text) AS resolution_status")
+        if resolution_due:
+            parts.append(f"CAST({quote_ident(resolution_due)} AS text) AS resolution_deadline")
+        sql = (
+            f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
+            f"WHERE lower(replace(CAST({quote_ident(inst_col)} AS text), '-', '')) = ANY($1::text[])"
+        )
+        try:
+            rows = await db.fetch(sql, compact_ids)
+        except Exception:
+            return
+        for row in rows or []:
+            inst = _compact_id(row_get(row, "instance_id"))
+            if not inst:
+                continue
+            current = found.setdefault(inst, {})
+            response = _format_sla_cell(
+                row_get(row, "response_status"), row_get(row, "response_deadline")
+            )
+            resolution = _format_sla_cell(
+                row_get(row, "resolution_status"), row_get(row, "resolution_deadline")
+            )
+            if response:
+                if not current.get("response"):
+                    current["response"] = response
+                if not current.get("slaResponse"):
+                    current["slaResponse"] = response
+            if resolution and not current.get("resolution"):
+                current["resolution"] = resolution
+
+    located = await find_table(
+        db,
+        ("WorkflowInstanceLookup", "workflowinstancelookup"),
+        prefer_schemas=("workflow", "dbo", "public"),
+    )
+    await _ingest(located)
+    if suffix:
+        sla_table = await find_table(
+            db,
+            (f"workflow_instance_slas_{suffix}", f"workflowinstanceslas_{suffix}"),
+            prefer_schemas=("workflow", "dbo", "public"),
+        )
+        await _ingest(sla_table)
+    return found
+
+
 async def _sql_completed_rows_missing_from_form(
     db: Any, suffix: str, workflow_name: str, existing_row_keys: set[str], existing_request_nos: set[str]
 ) -> list[dict[str, Any]]:
@@ -1958,11 +2110,12 @@ async def execute_catalog_spec(
     workflow_name: Optional[str] = None,
     repository_name: Optional[str] = None,
     db: Any = None,
+    force_instance: bool = False,
 ) -> Optional[tuple[list[ReportColumnOut], list[dict[str, Any]], int, list[str]]]:
     table = (spec.source_table or "").lower()
     rt = (report_type or spec.report_type or "").lower()
     if rt == "specific_workflow":
-        if not wants_instance_execute(spec, rt):
+        if not force_instance and not wants_instance_execute(spec, rt):
             return None
         rows = await _workflow_rows(
             ezofis, spec, tenant_id, workflow_name=workflow_name, db=db
@@ -2287,6 +2440,7 @@ async def _workflow_rows(
             if isinstance(row, dict)
         ]
         lookup_activity: dict[str, Any] = {}
+        lookup_sla: dict[str, dict[str, Any]] = {}
         for wf_id in wf_ids:
             suffix = _compact_id(wf_id)[:8]
             if not suffix:
@@ -2303,6 +2457,12 @@ async def _workflow_rows(
                 )
             except Exception:
                 pass
+            try:
+                lookup_sla.update(
+                    await _sql_lookup_sla_by_instance(db, inst_ids, suffix=suffix)
+                )
+            except Exception:
+                pass
             for row in aggregated:
                 if not isinstance(row, dict):
                     continue
@@ -2311,6 +2471,7 @@ async def _workflow_rows(
                 if listing:
                     _fill_listing_fields(row, listing, spec)
                 _overlay_last_activity_lookup(row, lookup_activity)
+                _overlay_sla_lookup(row, lookup_sla)
             if by_inst:
                 break
         if not lookup_activity:
@@ -2321,6 +2482,14 @@ async def _workflow_rows(
             for row in aggregated:
                 if isinstance(row, dict):
                     _overlay_last_activity_lookup(row, lookup_activity)
+        if not lookup_sla:
+            try:
+                lookup_sla = await _sql_lookup_sla_by_instance(db, inst_ids)
+            except Exception:
+                lookup_sla = {}
+            for row in aggregated:
+                if isinstance(row, dict):
+                    _overlay_sla_lookup(row, lookup_sla)
     _apply_v5_timeline_fields(aggregated, spec)
     return _shape_rows(spec, aggregated)
 
@@ -2411,6 +2580,9 @@ def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: Report
         "lastActionBy": inst.get("lastActionBy"),
         "lastActionOn": inst.get("lastActionOn"),
         "completedAtUtc": inst.get("completedAtUtc"),
+        "response": inst.get("response") or inst.get("slaResponse"),
+        "slaResponse": inst.get("slaResponse") or inst.get("response"),
+        "resolution": inst.get("resolution"),
     }
     for key, value in payload.items():
         _assign_listing_value(row, key, value)
@@ -2429,6 +2601,10 @@ def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: Report
             value = inst.get("lastActionBy")
         elif value in (None, "") and _listing_compact(key) == "lastactionon":
             value = inst.get("lastActionOn")
+        elif value in (None, "") and _listing_compact(key) in {"response", "slaresponse"}:
+            value = inst.get("response") or inst.get("slaResponse")
+        elif value in (None, "") and _listing_compact(key) == "resolution":
+            value = inst.get("resolution")
         if not _assign_listing_value(row, key, value):
             continue
         if _listing_compact(key) == "requestno":
@@ -2580,6 +2756,7 @@ async def attach_listing_fields_to_form_rows(
         except Exception:
             continue
     lookup_activity: dict[str, Any] = {}
+    lookup_sla: dict[str, dict[str, Any]] = {}
     if db is not None and lookup_inst_ids:
         try:
             lookup_activity = await _sql_lookup_last_activity_by_instance(db, lookup_inst_ids)
@@ -2595,8 +2772,19 @@ async def attach_listing_fields_to_form_rows(
                 )
             except Exception:
                 sql_by_inst = {}
+            try:
+                lookup_sla.update(
+                    await _sql_lookup_sla_by_instance(db, lookup_inst_ids, suffix=suffix)
+                )
+            except Exception:
+                pass
             if sql_by_inst:
                 break
+        if not lookup_sla:
+            try:
+                lookup_sla = await _sql_lookup_sla_by_instance(db, lookup_inst_ids)
+            except Exception:
+                lookup_sla = {}
     out: list[dict[str, Any]] = []
     for row in rows:
         item = dict(row)
@@ -2626,6 +2814,7 @@ async def attach_listing_fields_to_form_rows(
             item, inst=inst, sql_listing=sql_listing, completed_person=completed_person
         )
         _overlay_last_activity_lookup(item, lookup_activity)
+        _overlay_sla_lookup(item, lookup_sla)
         out.append(item)
     for listing in extra_listings:
         item = dict(listing)
@@ -2638,6 +2827,7 @@ async def attach_listing_fields_to_form_rows(
             item, inst=None, sql_listing=listing, completed_person=completed_person
         )
         _overlay_last_activity_lookup(item, lookup_activity)
+        _overlay_sla_lookup(item, lookup_sla)
         out.append(item)
     _apply_v5_timeline_fields(out, spec)
     out = await resolve_user_names(ezofis, out, tenant_id=tenant_id, db=db)
