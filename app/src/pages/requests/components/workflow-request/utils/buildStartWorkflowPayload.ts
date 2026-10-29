@@ -121,33 +121,15 @@ export const buildStartWorkflowPayload = (
                 cleanRow[colKey] = processCellFile(cellVal)
               }
             }
-
-            // Also mirror under column name so backend matches regardless of ID vs Name
-            const targetCol = tableColumns.find((c: any) => c.id === colKey)
-            if (targetCol?.name && targetCol.name !== colKey) {
-              cleanRow[targetCol.name] = cleanRow[colKey]
-            }
           }
           return cleanRow
         })
 
         formData[field.id] = sanitizedRows
-        if (field.label && field.label !== field.id) {
-          formData[field.label] = sanitizedRows
-        }
-        if (field.name && field.name !== field.id && field.name !== field.label) {
-          formData[field.name] = sanitizedRows
-        }
         continue
       }
 
       formData[field.id] = value
-      if (field.label && field.label !== field.id) {
-        formData[field.label] = value
-      }
-      if (field.name && field.name !== field.id && field.name !== field.label) {
-        formData[field.name] = value
-      }
     }
   }
 
