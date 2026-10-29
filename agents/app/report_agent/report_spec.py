@@ -65,7 +65,12 @@ _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
         "RequestNo",
         "Request No",
     ),
-    (("stage", "currentstage", "activity", "activity_name", "step", "stepname"), "Stage", "Stage"),
+    (("stage", "currentstage", "step", "stepname", "current_step_name"), "Stage", "Stage"),
+    (
+        ("lastaction", "last_action", "activity", "activity_name", "action_name"),
+        "lastAction",
+        "Last Action",
+    ),
     (("status",), "status", "Status"),
     (("startedby", "started_by"), "startedBy", "Started by"),
     (("startedbyid", "started_by_id"), "startedById", "Started by Id"),
@@ -80,6 +85,18 @@ _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("workflowid", "workflow_id"), "workflowId", "Workflow Id"),
     (("itemid", "item_id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
     (("instanceid", "instance_id", "workflowinstanceid"), "instanceId", "Instance Id"),
+    (
+        ("lastactionby", "last_action_by", "lastactivityby"),
+        "lastActionBy",
+        "Last Action By",
+    ),
+    (
+        ("lastactionon", "last_action_on", "lastactivityatutc", "last_activity_at_utc"),
+        "lastActionOn",
+        "Last Action On",
+    ),
+    (("duration",), "duration", "Duration"),
+    (("daysopen", "days_open"), "daysOpen", "Days Open"),
 )
 _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("repository_name", "repositoryname", "repository"), "Repository_Name", "Repository"),
@@ -94,6 +111,27 @@ _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("itemid", "item_id", "id", "repositoryitemid", "repository_item_id"), "itemId", "Item Id"),
     (("repositoryid", "repository_id"), "repositoryId", "Repository Id"),
     (("status",), "Status", "Status"),
+    (("lastaction", "last_action"), "lastAction", "Last Action"),
+    (
+        ("lastactionby", "modified_by", "modifiedby", "updated_by", "updatedby"),
+        "lastActionBy",
+        "Last Action By",
+    ),
+    (
+        (
+            "lastactionon",
+            "modified_at",
+            "modifiedat",
+            "modified_at_utc",
+            "updated_at",
+            "updatedat",
+            "updated_at_utc",
+        ),
+        "lastActionOn",
+        "Last Action On",
+    ),
+    (("duration",), "duration", "Duration"),
+    (("daysopen", "days_open"), "daysOpen", "Days Open"),
 )
 _ALWAYS_SELECTED_DEFAULTS = frozenset({"workflowid", "itemid", "instanceid", "repositoryid"})
 _LISTING_DEFAULTS = frozenset(
@@ -106,6 +144,11 @@ _LISTING_DEFAULTS = frozenset(
         "actedby",
         "actedbyid",
         "workflowname",
+        "lastaction",
+        "lastactionby",
+        "lastactionon",
+        "duration",
+        "daysopen",
     }
 )
 _REPO_LISTING_DEFAULTS = frozenset(
@@ -116,6 +159,11 @@ _REPO_LISTING_DEFAULTS = frozenset(
         "createdby",
         "createdbyid",
         "createdat",
+        "lastaction",
+        "lastactionby",
+        "lastactionon",
+        "duration",
+        "daysopen",
     }
 )
 _IDENTITY_COLUMN_KEYS = frozenset({"instanceid", "itemid", "workflowid", "id", "requestno"})
@@ -219,6 +267,11 @@ def _default_in_live_schema(
         "filename": ("file_name", "ifilename"),
         "createdat": ("created_at", "created_at_utc"),
         "status": ("status",),
+        "lastaction": ("status", "last_action"),
+        "lastactionby": ("modified_by", "updated_by", "created_by"),
+        "lastactionon": ("modified_at", "updated_at", "created_at"),
+        "duration": ("created_at", "modified_at"),
+        "daysopen": ("created_at", "modified_at"),
     }.get(canonical.lower(), ())
     names = aliases + (canonical,) + extra
     return any(re.sub(r"[^a-z0-9]", "", (name or "").lower()) in live for name in names)

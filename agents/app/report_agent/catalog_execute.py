@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any, Optional
 
 from app.data_import.ident import quote_ident
@@ -32,6 +32,175 @@ def _parse_date(value: Any) -> Optional[date]:
         return datetime.fromisoformat(text.replace("Z", "+00:00")).date()
     except ValueError:
         return None
+
+
+def _parse_datetime(value: Any) -> Optional[datetime]:
+    if value in (None, ""):
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, date):
+        return datetime(value.year, value.month, value.day, tzinfo=timezone.utc)
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _format_duration(start: Optional[datetime], end: Optional[datetime]) -> str:
+    if start is None or end is None:
+        return ""
+    delta = end - start
+    if delta.total_seconds() < 0:
+        return ""
+    days = delta.days
+    hours = delta.seconds // 3600
+    if days and hours:
+        return f"{days} day(s) {hours} hour(s)"
+    if days:
+        return f"{days} day(s)"
+    if hours:
+        return f"{hours} hour(s)"
+    minutes = delta.seconds // 60
+    return f"{minutes} minute(s)" if minutes else "0 minute(s)"
+
+
+def _days_open_value(
+    created: Any,
+    *,
+    completed: Any = None,
+    last_action_on: Any = None,
+    status: Any = None,
+    today: Optional[date] = None,
+) -> Any:
+    start = _parse_date(created)
+    if start is None:
+        return ""
+    today = today or date.today()
+    status_text = str(status or "").strip().lower()
+    end: Optional[date] = None
+    if status_text in {"completed", "cancelled", "rejected"}:
+        end = _parse_date(completed) or _parse_date(last_action_on)
+    if end is None:
+        end = today
+    return max(0, (end - start).days)
+
+
+def _apply_v5_timeline_fields(rows: list[dict[str, Any]], spec: ReportSpec) -> None:
+    want = _keys(spec)
+    if not want & {"duration", "daysopen", "lastactionon"}:
+        return
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        created = row.get("createdAtUtc") or row.get("CreatedAt") or row.get("created_at")
+        last_on = row.get("lastActionOn") or row.get("last_action_on")
+        completed = row.get("completedAtUtc") or row.get("completed_at_utc")
+        status = row.get("status")
+        if "lastactionon" in want and not str(last_on or "").strip():
+            fallback = (
+                completed
+                or row.get("updatedAtUtc")
+                or row.get("updated_at_utc")
+                or row.get("ModifiedAt")
+                or row.get("modified_at")
+            )
+            if fallback not in (None, ""):
+                row["lastActionOn"] = fallback
+                last_on = fallback
+        if "duration" in want and not str(row.get("duration") or "").strip():
+            start_dt = _parse_datetime(created)
+            end_dt = _parse_datetime(last_on) or _parse_datetime(completed)
+            row["duration"] = _format_duration(start_dt, end_dt)
+        if "daysopen" in want and row.get("daysOpen") in (None, ""):
+            row["daysOpen"] = _days_open_value(
+                created,
+                completed=completed,
+                last_action_on=last_on,
+                status=status,
+            )
+
+
+_MAILBOX_LISTING_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("request_no", ("reference_number", "referencenumber", "request_no", "requestno", "requestnumber")),
+    ("stage", ("stage", "current_stage", "currentstage", "step_name", "current_step_name", "stepname")),
+    (
+        "last_action",
+        (
+            "last_action",
+            "lastaction",
+            "last_activity",
+            "lastactivity",
+            "activity",
+            "action_name",
+            "action",
+        ),
+    ),
+    (
+        "last_action_by",
+        (
+            "last_action_by",
+            "lastactionby",
+            "last_activity_by",
+            "lastactivityby",
+            "activity_user_email",
+        ),
+    ),
+    (
+        "last_action_on",
+        (
+            "last_action_on",
+            "lastactionon",
+            "last_activity_at_utc",
+            "lastactivityatutc",
+            "updated_at_utc",
+            "updatedatutc",
+            "modified_at_utc",
+            "modifiedatutc",
+            "activity_at_utc",
+        ),
+    ),
+    ("status", ("status", "instance_status", "instancestatus")),
+    (
+        "started_by",
+        (
+            "started_by",
+            "startedby",
+            "created_by",
+            "createdby",
+            "transaction_created_by_email",
+            "created_by_name",
+        ),
+    ),
+    (
+        "acted_by",
+        (
+            "updated_by",
+            "updatedby",
+            "acted_by",
+            "actedby",
+            "assigned_to",
+            "assignedto",
+            "activity_user_email",
+        ),
+    ),
+    ("workflow_id", ("workflow_id", "workflowid", "wworkflowid")),
+    ("workflow_name", ("workflow_name", "workflowname")),
+    ("created_at", ("created_at_utc", "createdatutc", "created_at", "createdat", "started_at")),
+)
+
+
+def _sql_select_parts_for_mailbox(by_lower: dict[str, str], skip_cols: set[str]) -> list[str]:
+    parts: list[str] = []
+    for alias, candidates in _MAILBOX_LISTING_ALIASES:
+        col = _sql_col(by_lower, *candidates)
+        if col and col not in skip_cols:
+            parts.append(f"CAST({quote_ident(col)} AS text) AS {alias}")
+    return parts
 
 
 def _aging_bucket(when: Optional[date], today: Optional[date] = None) -> str:
@@ -152,6 +321,11 @@ _ROW_ID_KEYS = frozenset(
         "createdby",
         "createdbyid",
         "createdat",
+        "lastaction",
+        "lastactionby",
+        "lastactionon",
+        "duration",
+        "daysopen",
     }
 )
 _INSTANCE_DEFAULT_KEYS = frozenset(
@@ -169,6 +343,11 @@ _INSTANCE_DEFAULT_KEYS = frozenset(
         "instanceid",
         "itemid",
         "createdatutc",
+        "lastaction",
+        "lastactionby",
+        "lastactionon",
+        "duration",
+        "daysopen",
     }
 )
 _LISTING_COMPACT = frozenset(
@@ -200,6 +379,11 @@ _LISTING_COMPACT = frozenset(
         "file_name",
         "repositoryname",
         "repository",
+        "lastaction",
+        "lastactionby",
+        "lastactionon",
+        "duration",
+        "daysopen",
     }
 )
 _LISTING_OUTPUT_KEYS = frozenset(
@@ -212,6 +396,11 @@ _LISTING_OUTPUT_KEYS = frozenset(
         "actedby",
         "actedbyid",
         "workflowname",
+        "lastaction",
+        "lastactionby",
+        "lastactionon",
+        "duration",
+        "daysopen",
     }
 )
 _REPO_DEFAULT_KEYS = frozenset(
@@ -227,6 +416,11 @@ _REPO_DEFAULT_KEYS = frozenset(
         "createdbyid",
         "createdat",
         "status",
+        "lastaction",
+        "lastactionby",
+        "lastactionon",
+        "duration",
+        "daysopen",
     }
 )
 _REPO_OUTPUT_KEYS = frozenset(
@@ -240,13 +434,38 @@ _REPO_OUTPUT_KEYS = frozenset(
         "createdby",
         "createdbyid",
         "createdat",
+        "lastaction",
+        "lastactionby",
+        "lastactionon",
+        "duration",
+        "daysopen",
     }
 )
+
+
+def _repo_timeline_fields(
+    *,
+    status: Any = None,
+    last_action: Any = None,
+    modified_by: Any = None,
+    modified_at: Any = None,
+) -> dict[str, Any]:
+    """Map repository item touch metadata onto workflow-style timeline keys."""
+    last_action_text = str(last_action or status or "").strip()
+    mod_id, mod_name = _split_user_ref(modified_by)
+    return {
+        "lastAction": last_action_text,
+        "lastActionBy": mod_name,
+        "lastActionById": mod_id,
+        "lastActionOn": modified_at,
+    }
 _KEY_ALIAS_GROUPS = (
     frozenset({"repository", "repositoryname", "repository_name"}),
     frozenset({"ifilename", "filename", "file_name", "originalfilename"}),
     frozenset({"requestno", "reqno", "referencenumber"}),
     frozenset({"stage", "currentstage", "stepname"}),
+    frozenset({"lastaction", "last_action", "activity"}),
+    frozenset({"lastactionon", "lastactivityatutc", "last_activity_at_utc"}),
     frozenset({"createdat", "createdatutc", "created_at"}),
     frozenset({"createdby", "created_by"}),
     frozenset({"createdbyid", "created_by_id"}),
@@ -267,7 +486,7 @@ _USER_NAME_ID_PAIRS = (
     ("CreatedBy", "CreatedById"),
     ("createdBy", "createdById"),
 )
-_USER_NAME_COMPACT = frozenset({"startedby", "actedby", "createdby"})
+_USER_NAME_COMPACT = frozenset({"startedby", "actedby", "createdby", "lastactionby"})
 _USER_ID_COMPACT = frozenset({"startedbyid", "actedbyid", "createdbyid"})
 _HYDRATE_USER_CONCURRENCY = 8
 _WF_STATUS_LABELS = {
@@ -346,11 +565,17 @@ def _id_key_for_name(compact: str) -> str:
         "startedby": "startedById",
         "actedby": "actedById",
         "createdby": "CreatedById",
+        "lastactionby": "lastActionById",
     }.get(compact, "")
 
 
 def _canonical_user_name_key(compact: str) -> str:
-    return {"startedby": "startedBy", "actedby": "actedBy", "createdby": "CreatedBy"}.get(compact, "")
+    return {
+        "startedby": "startedBy",
+        "actedby": "actedBy",
+        "createdby": "CreatedBy",
+        "lastactionby": "lastActionBy",
+    }.get(compact, "")
 
 
 def _set_user_id(row: dict[str, Any], id_key: str, uid: str) -> None:
@@ -463,9 +688,26 @@ def _status_label(value: Any) -> Any:
     return _WF_STATUS_LABELS.get(number, str(value))
 
 
+def _last_action_label(row: dict[str, Any]) -> str:
+    return str(
+        _pick(
+            row,
+            "lastAction",
+            "last_action",
+            "LastAction",
+            "activity",
+            "actionName",
+            "action_name",
+            "lastActivity",
+            "last_activity",
+        )
+        or ""
+    ).strip()
+
+
 def _current_stage(row: dict[str, Any]) -> str:
     named = str(
-        _pick(row, "currentStepName", "currentStage", "current_stage", "stage", "activity") or ""
+        _pick(row, "currentStepName", "currentStage", "current_stage", "stage") or ""
     ).strip()
     if named:
         return named
@@ -484,7 +726,7 @@ def _current_stage(row: dict[str, Any]) -> str:
             status = step.get("status")
             if status in (1, "1", "InProgress", "inprogress", "In Progress"):
                 return str(_pick(step, "stepName", "name", "activity", "stage") or "").strip()
-    return str(_pick(row, "stage", "currentStage", "activity", "stepName") or "").strip()
+    return str(_pick(row, "stage", "currentStage", "stepName") or "").strip()
 
 
 def _compact_id(value: Any) -> str:
@@ -760,6 +1002,19 @@ def _normalize_instance(row: dict[str, Any], *, wf_id: str, wf_name: str) -> dic
     if not acted_id and not acted_name:
         acted_id = started_id
         acted_name = started_name
+    last_action = _last_action_label(row)
+    last_by_id, last_by_name = _split_user_ref(
+        _pick(row, "lastActionBy", "last_action_by", "activity_user_email", "lastActivityBy")
+    )
+    last_on = _pick(
+        row,
+        "lastActionOn",
+        "last_action_on",
+        "lastActivityAtUtc",
+        "last_activity_at_utc",
+        "updatedAtUtc",
+        "updated_at_utc",
+    )
     return {
         "RequestNo": request_no,
         "requestNo": request_no,
@@ -773,6 +1028,9 @@ def _normalize_instance(row: dict[str, Any], *, wf_id: str, wf_name: str) -> dic
         "status": _status_label(_pick(row, "status")),
         "Stage": stage,
         "stage": stage,
+        "lastAction": last_action,
+        "lastActionBy": last_by_name,
+        "lastActionOn": last_on,
         "startedBy": started_name,
         "startedById": started_id,
         "actedBy": acted_name,
@@ -989,9 +1247,9 @@ async def _sql_ticket_maps(
             "stage",
             "current_stage",
             "currentstage",
-            "activity",
             "step_name",
             "current_step_name",
+            "stepname",
         )
         if id_col:
             parts = [f"CAST({quote_ident(id_col)} AS text) AS instance_id"]
@@ -1049,7 +1307,9 @@ async def _sql_ticket_maps(
             "requestno",
             "requestnumber",
         )
-        stage_col = _sql_col(by_lower, "stage", "current_stage", "currentstage", "activity", "step_name")
+        stage_col = _sql_col(
+            by_lower, "stage", "current_stage", "currentstage", "step_name", "current_step_name"
+        )
         if not inst_col:
             continue
         parts = [f"CAST({quote_ident(inst_col)} AS text) AS instance_id"]
@@ -1270,8 +1530,10 @@ def _apply_completed_person_fields(
 def _listing_from_sql_row(row: Any, workflow_name: str) -> dict[str, Any]:
     request_no = str(row_get(row, "request_no") or "").strip()
     stage = str(row_get(row, "stage") or "").strip()
+    last_action = str(row_get(row, "last_action") or "").strip()
     started_id, started_name = _split_user_ref(row_get(row, "started_by"))
     acted_id, acted_name = _split_user_ref(row_get(row, "acted_by"))
+    last_by_id, last_by_name = _split_user_ref(row_get(row, "last_action_by"))
     if not acted_id and not acted_name:
         acted_id, acted_name = started_id, started_name
     return {
@@ -1279,6 +1541,10 @@ def _listing_from_sql_row(row: Any, workflow_name: str) -> dict[str, Any]:
         "requestNo": request_no,
         "Stage": stage,
         "stage": stage,
+        "lastAction": last_action,
+        "lastActionBy": last_by_name,
+        "lastActionById": last_by_id,
+        "lastActionOn": row_get(row, "last_action_on"),
         "status": _status_label(row_get(row, "status")),
         "startedBy": started_name,
         "startedById": started_id,
@@ -1392,40 +1658,7 @@ async def _sql_listing_by_items(
         ]
         if form_col:
             parts.append(f"CAST({quote_ident(form_col)} AS text) AS form_entry_id")
-        for alias, candidates in (
-            ("request_no", ("reference_number", "referencenumber", "request_no", "requestno", "requestnumber")),
-            ("stage", ("stage", "current_stage", "currentstage", "activity", "step_name", "current_step_name")),
-            ("status", ("status", "instance_status", "instancestatus")),
-            (
-                "started_by",
-                (
-                    "started_by",
-                    "startedby",
-                    "created_by",
-                    "createdby",
-                    "transaction_created_by_email",
-                    "created_by_name",
-                ),
-            ),
-            (
-                "acted_by",
-                (
-                    "updated_by",
-                    "updatedby",
-                    "acted_by",
-                    "actedby",
-                    "assigned_to",
-                    "assignedto",
-                    "activity_user_email",
-                ),
-            ),
-            ("workflow_id", ("workflow_id", "workflowid", "wworkflowid")),
-            ("workflow_name", ("workflow_name", "workflowname")),
-            ("created_at", ("created_at_utc", "createdatutc", "created_at", "createdat", "started_at")),
-        ):
-            col = _sql_col(by_lower, *candidates)
-            if col and col not in skip_cols:
-                parts.append(f"CAST({quote_ident(col)} AS text) AS {alias}")
+        parts.extend(_sql_select_parts_for_mailbox(by_lower, skip_cols))
         sql = (
             f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
             f"WHERE {_sql_id_in_clause([item_col, form_col])}"
@@ -1441,6 +1674,137 @@ async def _sql_listing_by_items(
         except Exception:
             continue
     return found
+
+
+async def _sql_listing_by_instances(
+    db: Any, suffix: str, instance_ids: list[str], workflow_name: str
+) -> dict[str, dict[str, Any]]:
+    """Map compact workflow instance id → listing fields from mailbox / instance tables."""
+    found: dict[str, dict[str, Any]] = {}
+    compact_ids = [_compact_id(item) for item in instance_ids if _compact_id(item)]
+    if db is None or not suffix or not compact_ids:
+        return found
+
+    async def _ingest(sql: str, default_status: str = "", *, from_completed: bool = False) -> None:
+        rows = await db.fetch(sql, compact_ids)
+        for row in rows or []:
+            listing = _listing_from_sql_row(row, workflow_name)
+            if default_status and not str(listing.get("status") or "").strip():
+                listing["status"] = default_status
+            inst_key = _compact_id(row_get(row, "instance_id"))
+            if not inst_key:
+                continue
+            merge = _merge_listing_completed if from_completed else _merge_listing
+            found[inst_key] = merge(found.get(inst_key), listing)
+
+    for names in (
+        (f"inbox_{suffix}",),
+        (f"sent_{suffix}",),
+        (f"completed_{suffix}",),
+        (f"workflow_instances_{suffix}", f"workflowinstances_{suffix}"),
+    ):
+        located = await find_table(db, names, prefer_schemas=("workflow", "dbo", "public"))
+        if located is None:
+            continue
+        schema, table = located
+        by_lower, _ = await fetch_columns(db, schema, table)
+        if names[0].startswith("workflow_instances"):
+            inst_col = pick_id_column(by_lower) or _sql_col(by_lower, "id")
+        else:
+            inst_col = _sql_col(
+                by_lower,
+                "workflow_instance_id",
+                "workflowinstanceid",
+                "instance_id",
+                "instanceid",
+                "process_id",
+                "processid",
+            )
+        if not inst_col:
+            continue
+        skip_cols = {inst_col}
+        parts = [f"CAST({quote_ident(inst_col)} AS text) AS instance_id"]
+        parts.extend(_sql_select_parts_for_mailbox(by_lower, skip_cols))
+        if len(parts) == 1:
+            continue
+        sql = (
+            f"SELECT {', '.join(parts)} FROM {qualified(schema, table)} "
+            f"WHERE lower(replace(CAST({quote_ident(inst_col)} AS text), '-', '')) = ANY($1::text[])"
+        )
+        default_status = ""
+        from_completed = table.startswith("completed")
+        if from_completed:
+            default_status = "Completed"
+        elif table.startswith("inbox") or table.startswith("sent"):
+            default_status = "In Progress"
+        try:
+            await _ingest(sql, default_status, from_completed=from_completed)
+        except Exception:
+            continue
+    return found
+
+
+async def _sql_lookup_last_activity_by_instance(
+    db: Any, instance_ids: list[str]
+) -> dict[str, Any]:
+    """WorkflowInstanceLookup.LastActivityAtUtc when mailbox rows omit last action time."""
+    compact_ids = [_compact_id(item) for item in instance_ids if _compact_id(item)]
+    if db is None or not compact_ids:
+        return {}
+    located = await find_table(
+        db,
+        ("WorkflowInstanceLookup", "workflowinstancelookup"),
+        prefer_schemas=("workflow", "dbo", "public"),
+    )
+    if located is None:
+        return {}
+    schema, table = located
+    by_lower, _ = await fetch_columns(db, schema, table)
+    inst_col = _sql_col(
+        by_lower,
+        "workflow_instance_id",
+        "workflowinstanceid",
+        "instance_id",
+        "instanceid",
+    )
+    ts_col = _sql_col(
+        by_lower,
+        "lastactivityatutc",
+        "last_activity_at_utc",
+        "LastActivityAtUtc",
+        "last_action_on",
+        "lastactionon",
+    )
+    if not inst_col or not ts_col:
+        return {}
+    sql = (
+        f"SELECT lower(replace(CAST({quote_ident(inst_col)} AS text), '-', '')) AS instance_id, "
+        f"CAST({quote_ident(ts_col)} AS text) AS last_action_on "
+        f"FROM {qualified(schema, table)} "
+        f"WHERE lower(replace(CAST({quote_ident(inst_col)} AS text), '-', '')) = ANY($1::text[])"
+    )
+    try:
+        rows = await db.fetch(sql, compact_ids)
+    except Exception:
+        return {}
+    out: dict[str, Any] = {}
+    for row in rows or []:
+        inst = _compact_id(row_get(row, "instance_id"))
+        stamp = row_get(row, "last_action_on")
+        if inst and stamp not in (None, "") and inst not in out:
+            out[inst] = stamp
+    return out
+
+
+def _overlay_last_activity_lookup(row: dict[str, Any], lookup: dict[str, Any]) -> None:
+    if str(row.get("lastActionOn") or "").strip():
+        return
+    inst = _compact_id(row.get("instanceId") or row.get("instance_id"))
+    if not inst:
+        return
+    stamp = lookup.get(inst)
+    if stamp not in (None, ""):
+        row["lastActionOn"] = stamp
 
 
 async def _sql_completed_rows_missing_from_form(
@@ -1473,38 +1837,7 @@ async def _sql_completed_rows_missing_from_form(
     ]
     if form_col:
         parts.append(f"CAST({quote_ident(form_col)} AS text) AS form_entry_id")
-    for alias, candidates in (
-        ("request_no", ("reference_number", "referencenumber", "request_no", "requestno", "requestnumber")),
-        ("stage", ("stage", "current_stage", "currentstage", "activity", "step_name", "current_step_name")),
-        ("status", ("status", "instance_status", "instancestatus")),
-        (
-            "started_by",
-            (
-                "started_by",
-                "startedby",
-                "transaction_created_by_email",
-                "created_by_name",
-                "created_by",
-                "createdby",
-            ),
-        ),
-        (
-            "acted_by",
-            (
-                "updated_by",
-                "updatedby",
-                "acted_by",
-                "actedby",
-                "activity_user_email",
-            ),
-        ),
-        ("workflow_id", ("workflow_id", "workflowid", "wworkflowid")),
-        ("workflow_name", ("workflow_name", "workflowname")),
-        ("created_at", ("created_at_utc", "createdatutc", "created_at", "createdat", "started_at")),
-    ):
-        col = _sql_col(by_lower, *candidates)
-        if col and col not in skip_cols:
-            parts.append(f"CAST({quote_ident(col)} AS text) AS {alias}")
+    parts.extend(_sql_select_parts_for_mailbox(by_lower, skip_cols))
     sql = f"SELECT {', '.join(parts)} FROM {qualified(schema, table)}"
     try:
         rows = await db.fetch(sql)
@@ -1683,6 +2016,7 @@ def _collect_user_ids(rows: list[dict[str, Any]]) -> list[str]:
         "createdById",
         "startedBy",
         "actedBy",
+        "lastActionBy",
         "CreatedBy",
         "createdBy",
         "created_by",
@@ -1941,10 +2275,54 @@ async def _workflow_rows(
     workflow_name: Optional[str] = None,
     db: Any = None,
 ) -> list[dict[str, Any]]:
-    records, _wf_ids = await _load_workflow_instances(
+    records, wf_ids = await _load_workflow_instances(
         ezofis, spec, tenant_id, workflow_name=workflow_name, db=db
     )
-    return _shape_rows(spec, _aggregate_workflow(spec, records))
+    aggregated = _aggregate_workflow(spec, records)
+    want_listing = needs_listing_fields(spec)
+    if db is not None and wf_ids and want_listing:
+        inst_ids = [
+            str(_pick(row, "instanceId", "instance_id", "id") or "")
+            for row in aggregated
+            if isinstance(row, dict)
+        ]
+        lookup_activity: dict[str, Any] = {}
+        for wf_id in wf_ids:
+            suffix = _compact_id(wf_id)[:8]
+            if not suffix:
+                continue
+            try:
+                by_inst = await _sql_listing_by_instances(
+                    db, suffix, inst_ids, workflow_name or ""
+                )
+            except Exception:
+                by_inst = {}
+            try:
+                lookup_activity.update(
+                    await _sql_lookup_last_activity_by_instance(db, inst_ids)
+                )
+            except Exception:
+                pass
+            for row in aggregated:
+                if not isinstance(row, dict):
+                    continue
+                inst_key = _compact_id(row.get("instanceId") or row.get("instance_id"))
+                listing = by_inst.get(inst_key) if inst_key else None
+                if listing:
+                    _fill_listing_fields(row, listing, spec)
+                _overlay_last_activity_lookup(row, lookup_activity)
+            if by_inst:
+                break
+        if not lookup_activity:
+            try:
+                lookup_activity = await _sql_lookup_last_activity_by_instance(db, inst_ids)
+            except Exception:
+                lookup_activity = {}
+            for row in aggregated:
+                if isinstance(row, dict):
+                    _overlay_last_activity_lookup(row, lookup_activity)
+    _apply_v5_timeline_fields(aggregated, spec)
+    return _shape_rows(spec, aggregated)
 
 
 def _form_row_ids(row: dict[str, Any]) -> list[str]:
@@ -2029,6 +2407,10 @@ def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: Report
         "instanceId": inst.get("instanceId"),
         "itemId": inst.get("itemId"),
         "createdAtUtc": inst.get("createdAtUtc"),
+        "lastAction": inst.get("lastAction"),
+        "lastActionBy": inst.get("lastActionBy"),
+        "lastActionOn": inst.get("lastActionOn"),
+        "completedAtUtc": inst.get("completedAtUtc"),
     }
     for key, value in payload.items():
         _assign_listing_value(row, key, value)
@@ -2041,6 +2423,12 @@ def _fill_listing_fields(row: dict[str, Any], inst: dict[str, Any], spec: Report
             value = inst.get("RequestNo") or inst.get("requestNo")
         elif value in (None, "") and _listing_compact(key) == "stage":
             value = inst.get("Stage") or inst.get("stage")
+        elif value in (None, "") and _listing_compact(key) == "lastaction":
+            value = inst.get("lastAction")
+        elif value in (None, "") and _listing_compact(key) == "lastactionby":
+            value = inst.get("lastActionBy")
+        elif value in (None, "") and _listing_compact(key) == "lastactionon":
+            value = inst.get("lastActionOn")
         if not _assign_listing_value(row, key, value):
             continue
         if _listing_compact(key) == "requestno":
@@ -2069,6 +2457,9 @@ def _copy_repository_fields(row: dict[str, Any], repo_row: dict[str, Any], spec:
         "Status": repo_row.get("Status"),
         "itemId": repo_row.get("itemId"),
         "repositoryId": repo_row.get("repositoryId"),
+        "lastAction": repo_row.get("lastAction"),
+        "lastActionBy": repo_row.get("lastActionBy"),
+        "lastActionOn": repo_row.get("lastActionOn"),
     }
     for key, value in payload.items():
         _assign_listing_value(row, key, value)
@@ -2079,6 +2470,12 @@ def _copy_repository_fields(row: dict[str, Any], repo_row: dict[str, Any], spec:
             value = repo_row.get("Repository_Name")
         elif compact in {"filename"}:
             value = repo_row.get("FileName")
+        elif compact == "lastaction":
+            value = repo_row.get("lastAction")
+        elif compact == "lastactionby":
+            value = repo_row.get("lastActionBy")
+        elif compact == "lastactionon":
+            value = repo_row.get("lastActionOn")
         else:
             value = _value_from_row(repo_row, key)
         if not _assign_listing_value(row, key, value):
@@ -2120,6 +2517,7 @@ async def attach_listing_fields_to_form_rows(
             wf_ids = []
     item_to_inst: dict[str, str] = {}
     sql_by_item: dict[str, dict[str, Any]] = {}
+    sql_by_inst: dict[str, dict[str, Any]] = {}
     for wf_id in wf_ids:
         suffix = _compact_id(wf_id)[:8]
         if not suffix:
@@ -2181,6 +2579,24 @@ async def attach_listing_fields_to_form_rows(
             )
         except Exception:
             continue
+    lookup_activity: dict[str, Any] = {}
+    if db is not None and lookup_inst_ids:
+        try:
+            lookup_activity = await _sql_lookup_last_activity_by_instance(db, lookup_inst_ids)
+        except Exception:
+            lookup_activity = {}
+        for wf_id in wf_ids:
+            suffix = _compact_id(wf_id)[:8]
+            if not suffix:
+                continue
+            try:
+                sql_by_inst = await _sql_listing_by_instances(
+                    db, suffix, lookup_inst_ids, workflow_name or ""
+                )
+            except Exception:
+                sql_by_inst = {}
+            if sql_by_inst:
+                break
     out: list[dict[str, Any]] = []
     for row in rows:
         item = dict(row)
@@ -2198,17 +2614,32 @@ async def attach_listing_fields_to_form_rows(
             _fill_listing_fields(item, inst, spec)
         if sql_listing is not None:
             _fill_listing_fields(item, sql_listing, spec)
+        inst_key = _compact_id(
+            item.get("instanceId")
+            or item.get("instance_id")
+            or (item_to_inst.get(_compact_id(item.get("itemId") or item.get("item_id"))) if item_to_inst else "")
+        )
+        inst_listing = sql_by_inst.get(inst_key) if inst_key else None
+        if inst_listing is not None:
+            _fill_listing_fields(item, inst_listing, spec)
         _apply_completed_person_fields(
             item, inst=inst, sql_listing=sql_listing, completed_person=completed_person
         )
+        _overlay_last_activity_lookup(item, lookup_activity)
         out.append(item)
     for listing in extra_listings:
         item = dict(listing)
         _fill_listing_fields(item, listing, spec)
+        inst_key = _compact_id(item.get("instanceId"))
+        inst_listing = sql_by_inst.get(inst_key) if inst_key else None
+        if inst_listing is not None:
+            _fill_listing_fields(item, inst_listing, spec)
         _apply_completed_person_fields(
             item, inst=None, sql_listing=listing, completed_person=completed_person
         )
+        _overlay_last_activity_lookup(item, lookup_activity)
         out.append(item)
+    _apply_v5_timeline_fields(out, spec)
     out = await resolve_user_names(ezofis, out, tenant_id=tenant_id, db=db)
     return _shape_rows(spec, out)
 
@@ -2264,6 +2695,21 @@ async def _sql_repository_records(
     created_at_col = _sql_col(
         by_lower, "created_at", "createdat", "created_at_utc", "createdatutc"
     )
+    modified_by_col = _sql_col(
+        by_lower, "modified_by", "modifiedby", "updated_by", "updatedby"
+    )
+    modified_at_col = _sql_col(
+        by_lower,
+        "modified_at",
+        "modifiedat",
+        "modified_at_utc",
+        "modifiedatutc",
+        "updated_at",
+        "updatedat",
+        "updated_at_utc",
+        "updatedatutc",
+    )
+    last_action_col = _sql_col(by_lower, "last_action", "lastaction", "action")
     deleted_col = _sql_col(by_lower, "is_deleted", "isdeleted")
     parts = [f"CAST({quote_ident(id_col)} AS text) AS item_id"]
     if file_col:
@@ -2274,6 +2720,12 @@ async def _sql_repository_records(
         parts.append(f"CAST({quote_ident(created_by_col)} AS text) AS created_by")
     if created_at_col:
         parts.append(f"CAST({quote_ident(created_at_col)} AS text) AS created_at")
+    if modified_by_col:
+        parts.append(f"CAST({quote_ident(modified_by_col)} AS text) AS modified_by")
+    if modified_at_col:
+        parts.append(f"CAST({quote_ident(modified_at_col)} AS text) AS modified_at")
+    if last_action_col:
+        parts.append(f"CAST({quote_ident(last_action_col)} AS text) AS last_action")
     sql = f"SELECT {', '.join(parts)} FROM {qualified(schema, table)}"
     if deleted_col:
         sql += f" WHERE COALESCE({quote_ident(deleted_col)}, false) IS NOT TRUE"
@@ -2308,6 +2760,14 @@ async def _sql_repository_records(
             "CreatedAt": _parse_date(row_get(row, "created_at")),
             "Status": row_get(row, "status"),
         }
+        record.update(
+            _repo_timeline_fields(
+                status=row_get(row, "status"),
+                last_action=row_get(row, "last_action"),
+                modified_by=row_get(row, "modified_by"),
+                modified_at=row_get(row, "modified_at"),
+            )
+        )
         out.append(record)
     return out
 
@@ -2410,6 +2870,32 @@ async def _repository_item_records(
                 ),
                 "Status": _pick(row, "status", "Status"),
             }
+            record.update(
+                _repo_timeline_fields(
+                    status=_pick(row, "status", "Status"),
+                    last_action=_pick(row, "lastAction", "last_action", "LastAction"),
+                    modified_by=_pick(
+                        row,
+                        "modifiedBy",
+                        "ModifiedBy",
+                        "modified_by",
+                        "updatedBy",
+                        "UpdatedBy",
+                        "updated_by",
+                    ),
+                    modified_at=_pick(
+                        row,
+                        "modifiedAt",
+                        "ModifiedAt",
+                        "modified_at",
+                        "modifiedAtUtc",
+                        "updatedAt",
+                        "UpdatedAt",
+                        "updated_at",
+                        "updatedAtUtc",
+                    ),
+                )
+            )
             if not str(record.get("itemId") or "").strip() or isinstance(record.get("itemId"), dict):
                 record["itemId"] = str(_pick(row, "itemId", "item_id") or "").strip()
             out.append(record)
@@ -2506,6 +2992,7 @@ async def _repository_rows(
     records = await _repository_item_records(
         ezofis, spec, tenant_id, repository_name=repository_name, db=db
     )
+    _apply_v5_timeline_fields(records, spec)
     return _shape_rows(spec, _aggregate_repository(spec, records))
 
 
@@ -2549,6 +3036,7 @@ async def attach_repository_fields_to_form_rows(
             item["Repository_Name"] = want
             item["Repository"] = want
         out.append(item)
+    _apply_v5_timeline_fields(out, spec)
     out = await resolve_user_names(ezofis, out, tenant_id=tenant_id, db=db)
     return _shape_rows(spec, out)
 

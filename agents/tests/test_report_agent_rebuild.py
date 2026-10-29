@@ -3306,3 +3306,89 @@ async def test_run_echoes_highlight_on_columns():
     row_bucket = resp.rows[0].get("Aging_Bucket")
     assert row_bucket in aging_values
     assert "Approved" not in aging_values
+
+
+def test_listing_from_sql_row_splits_stage_and_last_action():
+    from app.report_agent.catalog_execute import _listing_from_sql_row
+
+    listing = _listing_from_sql_row(
+        {
+            "request_no": "REQ-1",
+            "stage": "Quotation Approver",
+            "last_action": "Submitted",
+            "last_action_by": "admin@ezofis.com",
+            "last_action_on": "2026-10-20T10:00:00Z",
+            "status": "In Progress",
+            "started_by": "starter@ezofis.com",
+            "acted_by": "actor@ezofis.com",
+            "instance_id": "inst-1",
+            "item_id": "item-1",
+        },
+        "Quote Request Process",
+    )
+    assert listing["Stage"] == "Quotation Approver"
+    assert listing["lastAction"] == "Submitted"
+    assert listing["lastActionBy"] == "admin@ezofis.com"
+    assert listing["lastActionOn"] == "2026-10-20T10:00:00Z"
+
+
+def test_apply_v5_timeline_computes_duration_and_days_open():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.catalog_execute import _apply_v5_timeline_fields
+
+    spec = ReportSpec(
+        report_type="specific_workflow",
+        columns=[
+            ReportSpecColumn(key="duration", label="Duration", kind="default", selected=True),
+            ReportSpecColumn(key="daysOpen", label="Days Open", kind="default", selected=True),
+            ReportSpecColumn(key="createdAtUtc", label="Created At", kind="default", selected=True),
+        ],
+    )
+    rows = [
+        {
+            "createdAtUtc": "2026-10-01T08:00:00Z",
+            "lastActionOn": "2026-10-03T14:00:00Z",
+            "completedAtUtc": "2026-10-03T14:00:00Z",
+            "status": "Completed",
+        }
+    ]
+    _apply_v5_timeline_fields(rows, spec)
+    assert rows[0]["duration"] == "2 day(s) 6 hour(s)"
+    assert rows[0]["daysOpen"] == 2
+
+
+def test_repo_timeline_fields_map_modified_metadata():
+    from app.report_agent.catalog_execute import _repo_timeline_fields
+
+    fields = _repo_timeline_fields(
+        status="Active",
+        modified_by="editor@ezofis.com",
+        modified_at="2026-10-15T12:00:00Z",
+    )
+    assert fields["lastAction"] == "Active"
+    assert fields["lastActionBy"] == "editor@ezofis.com"
+    assert fields["lastActionOn"] == "2026-10-15T12:00:00Z"
+
+
+def test_apply_v5_timeline_uses_created_at_for_repository_rows():
+    from app.models.report_agent import ReportSpec, ReportSpecColumn
+    from app.report_agent.catalog_execute import _apply_v5_timeline_fields
+
+    spec = ReportSpec(
+        report_type="specific_repository",
+        columns=[
+            ReportSpecColumn(key="duration", label="Duration", kind="default", selected=True),
+            ReportSpecColumn(key="daysOpen", label="Days Open", kind="default", selected=True),
+            ReportSpecColumn(key="CreatedAt", label="Created At", kind="default", selected=True),
+        ],
+    )
+    rows = [
+        {
+            "CreatedAt": "2026-10-01",
+            "lastActionOn": "2026-10-05T10:00:00Z",
+            "Status": "Active",
+        }
+    ]
+    _apply_v5_timeline_fields(rows, spec)
+    assert rows[0]["duration"]
+    assert rows[0]["daysOpen"] == 4
