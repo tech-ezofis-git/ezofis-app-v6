@@ -13,7 +13,9 @@ IMAGE_AGENTS="${IMAGE_AGENTS:-ghcr.io/tech-ezofis-git/ezofis-app-v6/agents}"
 SMOKE_BASE="${SMOKE_BASE_URL:-https://cloud.ezofis.com}"
 SMOKE_ATTEMPTS="${SMOKE_ATTEMPTS:-20}"   # ~20 min at 60s
 SMOKE_SLEEP_SEC="${SMOKE_SLEEP_SEC:-60}"
-PROD_SETTINGS="${PROD_SETTINGS:-api/src/Api/appsettings.Production.json}"
+# JWT signing key comes only from the EZOFIS_SIGNING_KEY GitHub secret, never from
+# a committed file. When it is empty, the key already set in Azure is left untouched.
+EZOFIS_SIGNING_KEY="${EZOFIS_SIGNING_KEY:-}"
 
 DEPLOY_APP="${DEPLOY_APP:-false}"
 DEPLOY_API="${DEPLOY_API:-false}"
@@ -100,10 +102,6 @@ apply_compose() {
 
 restart_once() {
   echo "Applying runtime app settings + restart once..."
-  local signing_key=""
-  if [[ -f "$PROD_SETTINGS" ]]; then
-    signing_key="$(jq -r '.EzofisAuth.SigningKey // empty' "$PROD_SETTINGS")"
-  fi
   local settings=(
     HttpsRedirection__Enabled=false
     Swagger__Enabled=true
@@ -113,15 +111,18 @@ restart_once() {
     Hangfire__ApiWorkerCount=1
     DEPLOY_SHA="$SHORT_SHA"
     DOCKER_ENABLE_CI=true
+    EzofisAuth__Issuer=Ezofis
+    EzofisAuth__Audience=Ezofis
   )
-  if [[ -n "$signing_key" && "$signing_key" != "null" ]]; then
-    settings+=(
-      EzofisAuth__SigningKey="$signing_key"
-      EzofisAuth__Issuer=Ezofis
-      EzofisAuth__Audience=Ezofis
-    )
+  if [[ -n "$EZOFIS_SIGNING_KEY" ]]; then
+    if (( ${#EZOFIS_SIGNING_KEY} < 32 )); then
+      echo "Error: EZOFIS_SIGNING_KEY secret is shorter than 32 characters; refusing to deploy it." >&2
+      exit 1
+    fi
+    settings+=(EzofisAuth__SigningKey="$EZOFIS_SIGNING_KEY")
+    echo "Setting EzofisAuth__SigningKey from the EZOFIS_SIGNING_KEY secret."
   else
-    echo "Warning: EzofisAuth.SigningKey not found in $PROD_SETTINGS; skipping auth key update"
+    echo "EZOFIS_SIGNING_KEY secret not set; keeping the signing key already configured in Azure."
   fi
   az webapp config appsettings set \
     --resource-group "$RG" \
