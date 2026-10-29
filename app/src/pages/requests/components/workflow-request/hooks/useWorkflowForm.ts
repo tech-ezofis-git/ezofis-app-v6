@@ -842,6 +842,7 @@ export const useWorkflowForm = (
         error: errorMsg,
         missingFieldIds: missingList.map((m) => m.id),
         missingFieldLabels: missing,
+        missingFields: missingList.map((m) => ({ id: m.id, label: m.label })),
         success: false,
       }
     }

@@ -35,6 +35,21 @@ const guessMimeFromName = (fileName: string): string => {
   return byExtension[ext] ?? 'application/pdf'
 }
 
+const normalizeFileName = (name: string | undefined): string =>
+  String(name ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9.]/g, '')
+
+// The server copy of an uploaded file keeps its name (possibly cleaned up), so
+// a different name means a different file, such as a generated quote PDF that
+// arrives later on the same request.
+const isSameFileName = (a: string, b: string): boolean => {
+  const first = normalizeFileName(a)
+  const second = normalizeFileName(b)
+  if (!first || !second) return true
+  return first === second || first.includes(second) || second.includes(first)
+}
+
 const getMimeTypeFromBase64 = (base64: string): string => {
   if (base64.startsWith('/9j/')) return 'image/jpeg'
   if (base64.startsWith('iVBORw0KGgo')) return 'image/png'
@@ -122,6 +137,7 @@ export function useAttachmentPreviewUrl(
   // the preview key does not change and nothing reloads.
   const keptRef = useRef<{
     contentType: string
+    fileName: string
     itemId: string
     legacyFileId: typeof rawLegacyFileId
     localUrl: string
@@ -129,6 +145,7 @@ export function useAttachmentPreviewUrl(
     requestKey: string
   } | null>(null)
   const requestKey = options?.requestKey ?? ''
+  const localFileName = String(file?.fileName || file?.name || '')
   if (!options?.keepLocalPreview) {
     keptRef.current = null
   } else if (keptRef.current && keptRef.current.requestKey !== requestKey) {
@@ -137,6 +154,7 @@ export function useAttachmentPreviewUrl(
   if (options?.keepLocalPreview && rawLocalUrl) {
     keptRef.current = {
       contentType: rawContentType,
+      fileName: localFileName,
       itemId: rawItemId,
       legacyFileId: rawLegacyFileId,
       localUrl: rawLocalUrl,
@@ -144,8 +162,13 @@ export function useAttachmentPreviewUrl(
       requestKey,
     }
   }
-  const localFileName = String(file?.fileName || file?.name || '')
-  const kept = !rawLocalUrl && rawItemId ? keptRef.current : null
+  const kept =
+    !rawLocalUrl &&
+    rawItemId &&
+    keptRef.current &&
+    isSameFileName(keptRef.current.fileName, localFileName)
+      ? keptRef.current
+      : null
 
   const localUrl = kept ? kept.localUrl : rawLocalUrl
   const repoId = kept ? kept.repoId : rawRepoId

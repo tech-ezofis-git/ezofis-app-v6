@@ -95,6 +95,52 @@ type SidePanel = 'attachments' | 'comments'
 // Accounts Payable: resolves the workflow's form (via workflow.formId),
 // renders it with the app's existing form-control components, and submits
 // it to start a new workflow instance.
+// Missing mandatory fields grouped by the form section (panel) they sit in, in
+// form order. Fields that belong to no section (repository fields) go last.
+const groupMissingByPanel = (
+  panels: any[],
+  missing: { id: string; label: string }[],
+): { labels: string[]; title: string }[] => {
+  const labelById = new Map(missing.map((m) => [String(m.id), m.label]))
+  const used = new Set<string>()
+  const groups: { labels: string[]; title: string }[] = []
+  ;(panels || []).forEach((panel, index) => {
+    const labels = new Set<string>()
+    for (const field of panel?.fields || []) {
+      const key = [field?.id, field?.jsonId]
+        .map((value) => String(value ?? ''))
+        .find((value) => labelById.has(value))
+      if (!key || used.has(key)) continue
+      used.add(key)
+      labels.add(labelById.get(key) as string)
+    }
+    if (labels.size > 0) {
+      groups.push({
+        labels: [...labels],
+        title: panel?.settings?.title || `Section ${index + 1}`,
+      })
+    }
+  })
+  // A repository field and the form field it maps to share one label and
+  // are the same field to the user: list it once, under its section.
+  const listed = new Set(
+    groups.flatMap((group) =>
+      group.labels.map((label) => label.trim().toLowerCase()),
+    ),
+  )
+  const rest = new Set(
+    missing
+      .filter(
+        (m) =>
+          !used.has(String(m.id)) &&
+          !listed.has(String(m.label).trim().toLowerCase()),
+      )
+      .map((m) => m.label),
+  )
+  if (rest.size > 0) groups.push({ labels: [...rest], title: '' })
+  return groups
+}
+
 const WorkflowRequest = ({
   allowSubWorkflow = true,
   prefill,
@@ -605,15 +651,28 @@ const WorkflowRequest = ({
       const missingIds =
         ('missingFieldIds' in result && result.missingFieldIds) || []
       if (missingLabels.length > 0) {
-        const firstLabel = missingLabels[0]
-        const count = missingLabels.length
+        const missingFields =
+          ('missingFields' in result && result.missingFields) || []
+        const groups = groupMissingByPanel(panels, missingFields)
+        // Missing mandatory fields are guidance, not a failure: info toast,
+        // listing each section with its missing fields.
         showToast({
-          keepVariant: true,
-          message:
-            count === 1
-              ? t`"${firstLabel}" is mandatory. Please fill it in to submit.`
-              : t`${count} mandatory fields are missing, starting with "${firstLabel}". Please fill them in to submit.`,
-          variant: 'error',
+          autoClose: 8000,
+          id: 'mandatory-validation',
+          message: (
+            <div className='flex flex-col gap-1'>
+              <span>{t`Please fill these mandatory fields to submit:`}</span>
+              <ul className='m-0 list-none space-y-0.5 p-0'>
+                {groups.map((group) => (
+                  <li key={group.title || 'other'}>
+                    {group.title ? <strong>{group.title}: </strong> : null}
+                    {group.labels.join(', ')}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ),
+          variant: 'info',
         })
         // Scroll to and focus the first missing field that is on screen
         // (a repo field may not be rendered in every layout).

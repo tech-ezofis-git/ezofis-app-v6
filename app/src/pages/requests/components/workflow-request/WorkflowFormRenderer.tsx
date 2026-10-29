@@ -1043,27 +1043,31 @@ const WorkflowFormRenderer = ({
                   type='button'
                   className={cn(
                     'flex shrink-0 cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-12 font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary-6 active:scale-[0.98]',
-                    isActive
-                      ? 'border-primary-6 bg-primary-1 text-primary-11'
-                      : meta.errorCount > 0
-                        ? 'border-red-6 bg-surface text-red-9 hover:bg-red-1'
-                        : 'border-gray-3 bg-surface text-gray-11 hover:border-primary-5 hover:text-gray-13',
+                    // A section with missing mandatory fields stays red even
+                    // when it is the open one (a stronger red marks it as open).
+                    isActive && meta.errorCount > 0
+                      ? 'border-red-8 bg-red-2 text-red-11 focus-visible:ring-red-6'
+                      : isActive
+                        ? 'border-primary-6 bg-primary-1 text-primary-11'
+                        : meta.errorCount > 0
+                          ? 'border-red-6 bg-surface text-red-9 hover:bg-red-1'
+                          : 'border-gray-3 bg-surface text-gray-11 hover:border-primary-5 hover:text-gray-13',
                   )}
                   onClick={() => goToStep(idx)}
                 >
                   <span
                     className={cn(
                       'flex size-5 items-center justify-center rounded-full text-11 font-bold',
-                      isActive
-                        ? 'bg-primary-9 text-white'
-                        : meta.errorCount > 0
-                          ? 'bg-red-9 text-white'
+                      meta.errorCount > 0
+                        ? 'bg-red-9 text-white'
+                        : isActive
+                          ? 'bg-primary-9 text-white'
                           : isComplete
                             ? 'bg-green-9 text-white'
                             : 'bg-gray-3 text-gray-11',
                     )}
                   >
-                    {meta.errorCount > 0 && !isActive ? (
+                    {meta.errorCount > 0 ? (
                       <Icon className='size-3' name='tabler:exclamation-mark' />
                     ) : isComplete ? (
                       <Icon className='size-3' name='tabler:check' />
