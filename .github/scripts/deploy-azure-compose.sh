@@ -132,19 +132,24 @@ restart_once() {
   az webapp restart --name "$APP" --resource-group "$RG" --output none
 }
 
+# Each argument is a path, optionally with accepted status codes: "/path=200|401".
+# Without codes, only 200 counts as healthy.
 smoke() {
   local paths=("$@")
   echo "Smoke check: ${paths[*]} (up to ${SMOKE_ATTEMPTS} x ${SMOKE_SLEEP_SEC}s)"
-  local i code url
+  local i code url p accepted
   for ((i = 1; i <= SMOKE_ATTEMPTS; i++)); do
     local ok=1
     local line=""
-    for p in "${paths[@]}"; do
+    for entry in "${paths[@]}"; do
+      p="${entry%%=*}"
+      accepted="200"
+      [[ "$entry" == *=* ]] && accepted="${entry#*=}"
       url="${SMOKE_BASE}${p}"
       # Follow redirects: /swagger returns 301 -> /swagger/index.html
       code=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 25 "$url" || echo "000")
       line+="${p}=${code} "
-      if [[ "$code" != "200" ]]; then
+      if [[ "|${accepted}|" != *"|${code}|"* ]]; then
         ok=0
       fi
     done
@@ -181,7 +186,9 @@ if [[ "$DEPLOY_API" == "true" ]]; then
   write_compose "$APP_TAG" "$API_TAG" "$AGENTS_TAG" "$TMP"
   apply_compose "$TMP"
   restart_once
-  smoke / /swagger /hangfire
+  # /hangfire is answered by the API: 401 = password-protected, 404 = dashboard off.
+  # A 5xx/000 still fails, so this keeps checking that the API is up.
+  smoke / /swagger "/hangfire=200|401|404"
 fi
 
 if [[ "$DEPLOY_AGENTS" == "true" ]]; then
