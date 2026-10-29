@@ -7,6 +7,16 @@ namespace SaaSApp.Users.Infrastructure.Persistence;
 
 public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
 {
+    /// <summary>
+    /// Categories only TenantAdmin/Admin get by default. The builtin TenantUser role never has them
+    /// (removed if present), so e.g. the Settings menu is hidden from ordinary users. Admins can
+    /// still grant them to specific users through a custom role.
+    /// </summary>
+    private static readonly HashSet<string> AdminOnlyCategoryKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "settings"
+    };
+
     private readonly UsersDbContext _context;
     private readonly ITenantContext _tenantContext;
 
@@ -84,7 +94,8 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
             tenantId,
             User.RoleTenantUser,
             "Standard tenant user.",
-            cancellationToken);
+            cancellationToken,
+            excludedKeys: AdminOnlyCategoryKeys);
         return new BuiltinRoles(tenantAdminRole, adminRole, tenantUserRole);
     }
 
@@ -93,7 +104,8 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
         Guid tenantId,
         string roleName,
         string description,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlySet<string>? excludedKeys = null)
     {
         var categoryKeys = await context.PermissionCategories
             .AsNoTracking()
@@ -111,6 +123,9 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
                 categoryKeys.Add(key);
         }
 
+        if (excludedKeys is { Count: > 0 })
+            categoryKeys.RemoveAll(excludedKeys.Contains);
+
         var existing = await context.Roles
             .Include(r => r.Permissions)
             .FirstOrDefaultAsync(r => r.Name == roleName, cancellationToken);
@@ -120,6 +135,7 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
             // Backfill: builtin roles were only granted categories present at first create.
             // New categories (or empty create) left some options as Visible:false in the UI.
             EnsureAllCategoryPermissions(existing, categoryKeys);
+            RemoveExcludedPermissions(existing, excludedKeys);
             return existing;
         }
 
@@ -143,6 +159,13 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
         var missing = categoryKeys.Where(k => !existing.Contains(k)).ToList();
         if (missing.Count > 0)
             role.AssignPermissions(missing);
+    }
+
+    /// <summary>Drop admin-only categories a builtin role was granted earlier (e.g. settings on TenantUser).</summary>
+    private static void RemoveExcludedPermissions(Role role, IReadOnlySet<string>? excludedKeys)
+    {
+        if (excludedKeys is { Count: > 0 })
+            role.RemovePermissions(excludedKeys);
     }
 
     /// <summary>

@@ -109,9 +109,15 @@ internal static class PdfSignatureStampService
         if (x + width > dispW) x = Math.Max(0, dispW - width);
         if (y + height > dispH) y = Math.Max(0, dispH - height);
 
+        // Fit the image inside the requested box keeping its aspect ratio (centred), so the
+        // stamp is never larger or more stretched than the box the user placed.
+        var (drawW, drawH) = FitInside(image.PixelWidth, image.PixelHeight, width, height);
+        var insetX = (width - drawW) / 2.0;
+        var insetY = (height - drawH) / 2.0;
+
         if (rotate == 0)
         {
-            gfx.DrawImage(image, offsetX + x, offsetY + y, width, height);
+            gfx.DrawImage(image, offsetX + x + insetX, offsetY + y + insetY, drawW, drawH);
             return;
         }
 
@@ -122,8 +128,17 @@ internal static class PdfSignatureStampService
         gfx.Save();
         gfx.TranslateTransform(cx, cy);
         gfx.RotateTransform(-rotate);
-        gfx.DrawImage(image, -width / 2.0, -height / 2.0, width, height);
+        gfx.DrawImage(image, -drawW / 2.0, -drawH / 2.0, drawW, drawH);
         gfx.Restore();
+    }
+
+    private static (double Width, double Height) FitInside(int imageW, int imageH, double boxW, double boxH)
+    {
+        if (imageW <= 0 || imageH <= 0)
+            return (boxW, boxH);
+
+        var scale = Math.Min(boxW / imageW, boxH / imageH);
+        return (imageW * scale, imageH * scale);
     }
 
     private static int NormalizeRotate(int rotate) =>
@@ -156,8 +171,9 @@ internal static class PdfSignatureStampService
     {
         try
         {
+            // Keep the drawn image as-is (no trimming of blank margins): trimming made the ink
+            // fill the whole box, so the stamp looked larger than the size the user placed.
             using var image = Image.Load<Rgba32>(signatureImageBytes);
-            TrimTransparentOrNearWhite(image);
             image.Mutate(ctx => ctx.BackgroundColor(Color.White));
 
             using var ms = new MemoryStream();
@@ -178,57 +194,4 @@ internal static class PdfSignatureStampService
         }
     }
 
-    private static void TrimTransparentOrNearWhite(Image<Rgba32> image)
-    {
-        var minX = image.Width;
-        var minY = image.Height;
-        var maxX = -1;
-        var maxY = -1;
-
-        image.ProcessPixelRows(accessor =>
-        {
-            for (var y = 0; y < accessor.Height; y++)
-            {
-                var row = accessor.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++)
-                {
-                    ref readonly var px = ref row[x];
-                    if (!IsInkPixel(px))
-                        continue;
-
-                    if (x < minX) minX = x;
-                    if (y < minY) minY = y;
-                    if (x > maxX) maxX = x;
-                    if (y > maxY) maxY = y;
-                }
-            }
-        });
-
-        if (maxX < minX || maxY < minY)
-            return;
-
-        const int pad = 2;
-        minX = Math.Max(0, minX - pad);
-        minY = Math.Max(0, minY - pad);
-        maxX = Math.Min(image.Width - 1, maxX + pad);
-        maxY = Math.Min(image.Height - 1, maxY + pad);
-
-        var cropW = maxX - minX + 1;
-        var cropH = maxY - minY + 1;
-        if (cropW >= image.Width && cropH >= image.Height)
-            return;
-
-        image.Mutate(ctx => ctx.Crop(new Rectangle(minX, minY, cropW, cropH)));
-    }
-
-    private static bool IsInkPixel(Rgba32 px)
-    {
-        if (px.A < 16)
-            return false;
-
-        if (px.R > 245 && px.G > 245 && px.B > 245 && px.A > 200)
-            return false;
-
-        return true;
-    }
 }

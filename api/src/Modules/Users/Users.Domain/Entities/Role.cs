@@ -78,6 +78,13 @@ public sealed class Role : Entity<Guid>, ITenantEntity
         AssignPermissions(permissionKeys);
     }
 
+    /// <summary>Remove only the given permission keys, leaving the others untouched.</summary>
+    public void RemovePermissions(IEnumerable<string> permissionKeys)
+    {
+        var remove = new HashSet<string>(permissionKeys, StringComparer.OrdinalIgnoreCase);
+        _permissions.RemoveAll(p => remove.Contains(p.PermissionKey));
+    }
+
     public void AssignMenus(IEnumerable<(Guid MenuId, bool IsDefaultLanding)> menus)
     {
         foreach (var (menuId, isDefaultLanding) in menus)

@@ -37,6 +37,7 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
     private readonly IConfiguration _configuration;
     private readonly IWorkflowSecurityService _workflowSecurity;
     private readonly IRepositorySecurityService _repositorySecurity;
+    private readonly IWorkflowMoveNotificationService _moveNotifications;
     private readonly ILogger<WorkflowStartBootstrapService> _logger;
 
     public WorkflowStartBootstrapService(
@@ -52,6 +53,7 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
         IConfiguration configuration,
         IWorkflowSecurityService workflowSecurity,
         IRepositorySecurityService repositorySecurity,
+        IWorkflowMoveNotificationService moveNotifications,
         ILogger<WorkflowStartBootstrapService> logger,
         StagedFileEzfbBinder stagedFileEzfbBinder,
         IWorkflowStartAttachmentUploader? attachmentUploader = null,
@@ -69,6 +71,7 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
         _configuration = configuration;
         _workflowSecurity = workflowSecurity;
         _repositorySecurity = repositorySecurity;
+        _moveNotifications = moveNotifications;
         _logger = logger;
         _stagedFileEzfbBinder = stagedFileEzfbBinder;
         _attachmentUploader = attachmentUploader;
@@ -289,6 +292,7 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
 
         // After initiate + move-next: initiator/submitter is sent, next user is inbox.
         await SyncAdvanceMailboxAsync(workflow.Id, reviewSync, cancellationToken);
+        await NotifyStartAsync(workflow, instance, startStep, apAgentStep, reviewSync, userId, cancellationToken);
 
         _logger.LogInformation(
             "Start bootstrap completed for instance {InstanceId}: transaction {TransactionId}, form entry {FormEntryId}",
@@ -493,6 +497,7 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
 
         // After initiate + move-next: initiator/submitter is sent, next user is inbox.
         await SyncAdvanceMailboxAsync(workflow.Id, reviewSync, cancellationToken);
+        await NotifyStartAsync(workflow, instance, startStep, nextDefinitionStep, reviewSync, userId, cancellationToken);
 
         _logger.LogInformation(
             "Normal start bootstrap completed for instance {InstanceId}: transaction {TransactionId}, form entry {FormEntryId}, next step {NextStep}",
@@ -510,6 +515,37 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
             blobRelativePath,
             payload.ToDictionary(kv => kv.Key, kv => (object?)kv.Value));
     }
+
+    /// <summary>
+    /// Ticket raised: "Ticket Requested" to the initiator and "Ticket Received" to the first assignee
+    /// (or "Ticket Completed" when the start already finished the workflow). Never throws.
+    /// </summary>
+    private Task NotifyStartAsync(
+        Domain.Entities.Workflow workflow,
+        WorkflowInstance instance,
+        WorkflowStep startStep,
+        WorkflowStep? nextStep,
+        WorkflowLegacyTransactionSyncResult reviewSync,
+        Guid userId,
+        CancellationToken cancellationToken) =>
+        _moveNotifications.TryInsertMoveNotificationsAsync(
+            new WorkflowMoveNotificationContext(
+                workflow.Id,
+                instance.Id,
+                workflow.Name,
+                ResolveStartProceedReview(startStep),
+                startStep.Name,
+                string.IsNullOrWhiteSpace(startStep.StageType) ? "START" : startStep.StageType,
+                reviewSync.WorkflowCompleted ? null : nextStep?.Name,
+                reviewSync.WorkflowCompleted ? null : nextStep?.StageType,
+                userId,
+                reviewSync.NextCreatedByUserId ?? userId,
+                instance.ReferenceNumber,
+                reviewSync.CurrentTransactionId,
+                reviewSync.WorkflowCompleted ? null : reviewSync.NextTransactionId,
+                WorkflowCompleted: reviewSync.WorkflowCompleted,
+                InitiatorUserId: instance.StartedBy == Guid.Empty ? userId : instance.StartedBy),
+            cancellationToken);
 
     /// <summary>
     /// Start/submit already called move-next. Sync the completed row to sent first, then the open

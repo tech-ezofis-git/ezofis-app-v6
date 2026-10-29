@@ -9,6 +9,8 @@ namespace SaaSApp.Workflow.Infrastructure.Services;
 public sealed class WorkflowMoveNotificationService : IWorkflowMoveNotificationService
 {
     private const string TicketReceived = "Ticket Received";
+    private const string TicketRequested = "Ticket Requested";
+    private const string TicketCompleted = "Ticket Completed";
     private const string SeverityInfo = "Info";
     private const string DetailsTab = "Details";
 
@@ -62,55 +64,61 @@ public sealed class WorkflowMoveNotificationService : IWorkflowMoveNotificationS
                 openOnly: false,
                 cancellationToken);
 
-            var receivedTxn = context.NextTransactionId is int nextId
-                ? await LoadTransactionByIdAsync(connection, transactionTable, nextId, cancellationToken)
-                : await LoadOpenTransactionAsync(connection, transactionTable, context.InstanceId, cancellationToken);
-
-            receivedTxn ??= submittedTxn;
-
-            var receivedStageName = FirstNonEmpty(receivedTxn?.StageName, context.NextStageName, context.CurrentStageName) ?? string.Empty;
-            var receivedStageType = FirstNonEmpty(receivedTxn?.StageType, context.NextStageType, context.CurrentStageType) ?? string.Empty;
-
             var submittedActor = submittedTxn?.ActivityUserId is Guid submittedActorId && submittedActorId != Guid.Empty
                 ? submittedActorId
                 : context.SubmittedModifiedByUserId;
-            var receivedActor = receivedTxn?.ActivityUserId is Guid receivedActorId && receivedActorId != Guid.Empty
-                ? receivedActorId
-                : context.ReceivedCreatedByUserId is Guid receivedFallback && receivedFallback != Guid.Empty
-                    ? receivedFallback
-                    : submittedActor;
+            var initiator = context.InitiatorUserId is Guid initiatorId && initiatorId != Guid.Empty
+                ? initiatorId
+                : (Guid?)null;
+            var currentStageType = FirstNonEmpty(context.CurrentStageType, submittedTxn?.StageType);
+            var currentStageName = FirstNonEmpty(submittedTxn?.StageName, context.CurrentStageName) ?? string.Empty;
 
-            var receivedCreatedAtUtc = receivedTxn?.CreatedAt;
-            var receivedLegacyId = await FormMasterFileNotificationStore.TryResolveLegacyUserIdAsync(
-                connection, receivedActor, cancellationToken);
+            // 1. Requested: the start step was just submitted -> tell the person who raised it.
+            var requester = initiator ?? submittedActor;
+            if (IsStartStage(currentStageType) && requester != Guid.Empty)
+            {
+                var text = WorkflowNotificationMessageMapper.RequestedMessage(
+                    context.WorkflowName, context.RequestNo, context.InstanceId);
+                await InsertAsync(connection, TicketRequested, text, context, currentStageName,
+                    currentStageType ?? string.Empty, review, submittedTxn, requester, submittedTxn?.ModifiedAt, category,
+                    cancellationToken);
+            }
 
-            var receivedData = BuildData(
-                context,
-                receivedStageName,
-                receivedStageType,
-                review,
-                receivedTxn);
+            if (context.WorkflowCompleted)
+            {
+                // 2. Completed: tell the person who raised the ticket (no "received" for the END stage).
+                if (requester != Guid.Empty)
+                {
+                    var text = WorkflowNotificationMessageMapper.CompletedMessage(
+                        context.WorkflowName, context.RequestNo, context.InstanceId);
+                    await InsertAsync(connection, TicketCompleted, text, context, currentStageName,
+                        currentStageType ?? string.Empty, review, submittedTxn, requester, null, category,
+                        cancellationToken);
+                }
+            }
+            else
+            {
+                // 3. Received: only when a different step is now open for someone.
+                var receivedTxn = context.NextTransactionId is int nextId
+                    ? await LoadTransactionByIdAsync(connection, transactionTable, nextId, cancellationToken)
+                    : await LoadOpenTransactionAsync(connection, transactionTable, context.InstanceId, cancellationToken);
 
-            var receivedText = WorkflowNotificationMessageMapper.ReceivedMessage(
-                context.WorkflowName,
-                context.InstanceId);
-
-            await FormMasterFileNotificationStore.InsertMoveNotificationAsync(
-                connection,
-                title: receivedText,
-                status: TicketReceived,
-                message: receivedText,
-                data: receivedData,
-                severity: SeverityInfo,
-                createdAtUtc: receivedCreatedAtUtc,
-                createdByGuid: receivedActor,
-                createdByLegacyId: receivedLegacyId,
-                category: category,
-                cancellationToken);
-
-            _logger.LogInformation(
-                "Inserted Ticket Received notification for instance {InstanceId}.",
-                context.InstanceId);
+                if (receivedTxn != null && receivedTxn.Id != submittedTxn?.Id)
+                {
+                    var receivedActor = receivedTxn.ActivityUserId is Guid receivedActorId && receivedActorId != Guid.Empty
+                        ? receivedActorId
+                        : context.ReceivedCreatedByUserId is Guid receivedFallback && receivedFallback != Guid.Empty
+                            ? receivedFallback
+                            : submittedActor;
+                    var receivedStageName = FirstNonEmpty(receivedTxn.StageName, context.NextStageName) ?? string.Empty;
+                    var receivedStageType = FirstNonEmpty(receivedTxn.StageType, context.NextStageType) ?? string.Empty;
+                    var text = WorkflowNotificationMessageMapper.ReceivedMessage(
+                        context.WorkflowName, context.RequestNo, context.InstanceId, receivedStageName);
+                    await InsertAsync(connection, TicketReceived, text, context, receivedStageName,
+                        receivedStageType, review, receivedTxn, receivedActor, receivedTxn.CreatedAt, category,
+                        cancellationToken);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -120,6 +128,46 @@ public sealed class WorkflowMoveNotificationService : IWorkflowMoveNotificationS
                 context.InstanceId);
         }
     }
+
+    private async Task InsertAsync(
+        NpgsqlConnection connection,
+        string status,
+        string text,
+        WorkflowMoveNotificationContext context,
+        string stageName,
+        string stageType,
+        string review,
+        TransactionNotifyRow? txn,
+        Guid recipient,
+        DateTime? createdAtUtc,
+        string category,
+        CancellationToken cancellationToken)
+    {
+        var legacyId = await FormMasterFileNotificationStore.TryResolveLegacyUserIdAsync(
+            connection, recipient, cancellationToken);
+
+        await FormMasterFileNotificationStore.InsertMoveNotificationAsync(
+            connection,
+            title: text,
+            status: status,
+            message: text,
+            data: BuildData(context, stageName, stageType, review, txn),
+            severity: SeverityInfo,
+            createdAtUtc: createdAtUtc,
+            createdByGuid: recipient,
+            createdByLegacyId: legacyId,
+            category: category,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Inserted {Status} notification for instance {InstanceId} (user {UserId}).",
+            status,
+            context.InstanceId,
+            recipient);
+    }
+
+    private static bool IsStartStage(string? stageType) =>
+        string.Equals(stageType?.Trim(), "START", StringComparison.OrdinalIgnoreCase);
 
     private static object BuildData(
         WorkflowMoveNotificationContext context,

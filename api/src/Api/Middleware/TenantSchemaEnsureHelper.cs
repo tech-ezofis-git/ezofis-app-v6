@@ -174,7 +174,7 @@ internal static class TenantSchemaEnsureHelper
         CancellationToken cancellationToken) =>
         EnsureOnceAsync(
             tenantId,
-            "users-builtin-roles-v5",
+            "users-builtin-roles-v6",
             connectionString,
             """
             SELECT 1
@@ -231,6 +231,7 @@ internal static class TenantSchemaEnsureHelper
                 SELECT 1
                 FROM users."PermissionCategories" pc
                 WHERE pc."IsActive" = true
+                  AND lower(pc."Key") <> 'settings'
                   AND NOT EXISTS (
                       SELECT 1
                       FROM users."Roles" r
@@ -239,6 +240,14 @@ internal static class TenantSchemaEnsureHelper
                         AND r."IsDeleted" = false
                         AND lower(rp."PermissionKey") = lower(pc."Key")
                   )
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM users."Roles" r
+                INNER JOIN users."RolePermissions" rp ON rp."RoleId" = r."Id"
+                WHERE r."Name" = 'TenantUser'
+                  AND r."IsDeleted" = false
+                  AND lower(rp."PermissionKey") = 'settings'
             )
             AND EXISTS (
                 SELECT 1 FROM information_schema.tables

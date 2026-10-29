@@ -65,7 +65,7 @@ public sealed class EmlAttachmentExtractionService : IEmlAttachmentExtractionSer
 
         var source = sourceItemId is { } explicitItemId && explicitItemId != Guid.Empty
             ? await ResolveExplicitSourceAsync(connection, suffix, instanceId, sourceRepositoryId, explicitItemId, cancellationToken)
-            : await FindLatestEmlAttachmentAsync(connection, suffix, instanceId, cancellationToken);
+            : await EmlSourceMetadata.FindLatestEmlAttachmentAsync(connection, suffix, instanceId, cancellationToken);
 
         if (source is null)
             throw new InvalidOperationException("No .eml attachment was found on this workflow instance.");
@@ -285,15 +285,6 @@ public sealed class EmlAttachmentExtractionService : IEmlAttachmentExtractionSer
         _ => ".bin"
     };
 
-    private static readonly HashSet<string> MetadataCopyExcludedColumns = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Id", "Code", "TenantId", "RepositoryId", "FolderId", "StorageProviderId",
-        "FilePath", "FileName", "FileType", "FileSize", "TotalPages", "IsDeleted",
-        "CreatedAtUtc", "CreatedBy", "ModifiedAtUtc", "ModifiedBy",
-        "WorkflowInstanceId", "OcrText", "OcrJson", "SummaryJson", "ActiveItem", "IsVerified",
-        "FileVersion", "Revision", "StageStatus", "MailId", "ArchivedFrom", "ArchivedAt"
-    };
-
     /// <summary>
     /// Builds archive metadata JSON from the source .eml item's custom/folder fields so extracted
     /// PDF/PNG siblings land in the same Document Details / browse folders.
@@ -307,31 +298,7 @@ public sealed class EmlAttachmentExtractionService : IEmlAttachmentExtractionSer
         try
         {
             var item = await _itemQuery.GetItemAsync(repositoryId, tenantId, itemId, cancellationToken);
-            if (item?.Fields is not { Count: > 0 })
-                return null;
-
-            var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var (key, raw) in item.Fields)
-            {
-                if (string.IsNullOrWhiteSpace(key) || MetadataCopyExcludedColumns.Contains(key))
-                    continue;
-                if (raw is null || raw is DBNull)
-                    continue;
-
-                var text = raw switch
-                {
-                    string s => s.Trim(),
-                    DateTime dt => dt.ToString("O"),
-                    DateTimeOffset dto => dto.ToString("O"),
-                    _ => Convert.ToString(raw, System.Globalization.CultureInfo.InvariantCulture)?.Trim()
-                };
-                if (string.IsNullOrWhiteSpace(text))
-                    continue;
-
-                metadata[key.Trim()] = text;
-            }
-
-            return metadata.Count == 0 ? null : JsonSerializer.Serialize(metadata);
+            return EmlSourceMetadata.ToMetadataJson(item?.Fields);
         }
         catch (Exception ex)
         {
@@ -395,31 +362,6 @@ public sealed class EmlAttachmentExtractionService : IEmlAttachmentExtractionSer
         cmd.Parameters.AddWithValue("@ItemId", itemId);
         var result = await cmd.ExecuteScalarAsync(cancellationToken);
         return result as string;
-    }
-
-    /// <summary>Most recently archived .eml-shaped attachment on this instance.</summary>
-    private static async Task<(Guid RepositoryId, Guid ItemId, string FileName)?> FindLatestEmlAttachmentAsync(
-        NpgsqlConnection connection,
-        string workflowSuffix,
-        Guid instanceId,
-        CancellationToken cancellationToken)
-    {
-        var sql = $"""
-            SELECT repository_id, item_id, file_name
-            FROM workflow.workflow_attachments_{workflowSuffix}
-            WHERE workflow_instance_id = @InstanceId
-              AND is_deleted = false
-              AND (file_name ILIKE '%.eml' OR content_type ILIKE '%rfc822%')
-            ORDER BY created_at_utc DESC
-            LIMIT 1;
-            """;
-        await using var cmd = new NpgsqlCommand(sql, connection);
-        cmd.Parameters.AddWithValue("@InstanceId", instanceId);
-        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        if (!await reader.ReadAsync(cancellationToken))
-            return null;
-
-        return (reader.GetGuid(0), reader.GetGuid(1), reader.IsDBNull(2) ? "message.eml" : reader.GetString(2));
     }
 
     private static async Task EnsureTrackingTableAsync(NpgsqlConnection connection, CancellationToken cancellationToken)

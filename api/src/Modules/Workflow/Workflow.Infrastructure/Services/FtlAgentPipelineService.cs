@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using SaaSApp.MultiTenancy;
+using SaaSApp.Repository.Application.Contracts;
 using SaaSApp.SharedKernel.Options;
 using SaaSApp.Workflow.Application.Contracts;
 using SaaSApp.Workflow.Domain.Entities;
@@ -32,6 +33,7 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
     private readonly IWorkflowLegacyMailboxSyncService _mailbox;
     private readonly IWorkflowJsonStorageService _workflowJsonStorage;
     private readonly IWorkflowAttachmentArchiveService _attachmentArchive;
+    private readonly IRepositoryItemQueryService _itemQuery;
     private readonly IWorkflowApAgentMoveNextService _moveNextSupport;
     private readonly IMediator _mediator;
     private readonly IFormJsonStorageService _formJsonStorage;
@@ -52,6 +54,7 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         IWorkflowLegacyMailboxSyncService mailbox,
         IWorkflowJsonStorageService workflowJsonStorage,
         IWorkflowAttachmentArchiveService attachmentArchive,
+        IRepositoryItemQueryService itemQuery,
         IWorkflowApAgentMoveNextService moveNextSupport,
         IMediator mediator,
         IFormJsonStorageService formJsonStorage,
@@ -67,6 +70,7 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         _mailbox = mailbox;
         _workflowJsonStorage = workflowJsonStorage;
         _attachmentArchive = attachmentArchive;
+        _itemQuery = itemQuery;
         _moveNextSupport = moveNextSupport;
         _mediator = mediator;
         _formJsonStorage = formJsonStorage;
@@ -572,6 +576,11 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         var repositoryId = ParseGuid(args.RepositoryId) ?? ParseGuid(workflow.RepositoryId)
             ?? throw new InvalidOperationException("Workflow repositoryId is not configured for the document PDF.");
 
+        // Generated quote PDFs get the same metadata as the ticket's source .eml, so they are
+        // archived into the same Document Details / folders instead of with no fields.
+        var emlMetadataJson = await ResolveSourceEmlMetadataJsonAsync(
+            args.TenantId, args.WorkflowId, args.InstanceId, cancellationToken);
+
         // One Python call per quote: quoteType tells Python which section's
         // line items / totals to render (quote_1 = "Line Item", quote_2 = "quote_2 Line Item",
         // quote_3 = "quote_3 Line Item" + matching totals).
@@ -611,7 +620,7 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
                 fileName,
                 "application/pdf",
                 pdfBytes.Length,
-                metadataJson: null,
+                metadataJson: emlMetadataJson,
                 transactionId: null,
                 args.UserId,
                 cancellationToken,
@@ -832,6 +841,51 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         var (responseJson, _) = await PostDocumentAsync(sessionId, chatUrl, namedFormData, template, normalizedQuoteType, cancellationToken);
         var (pdfBytes, fileName) = ReadGeneratedPdf(responseJson);
         return new FtlDocumentPreviewResult(fileName, Convert.ToBase64String(pdfBytes), namedFormData, normalizedQuoteType);
+    }
+
+    /// <summary>
+    /// Metadata JSON copied from the .eml archived on this instance (same fields the EML attachment
+    /// extraction copies). Null when there is no .eml or it has no fields; never throws.
+    /// </summary>
+    private async Task<string?> ResolveSourceEmlMetadataJsonAsync(
+        Guid tenantId,
+        Guid workflowId,
+        Guid instanceId,
+        CancellationToken cancellationToken)
+    {
+        var tenantCs = _connectionProvider.ConnectionString;
+        if (string.IsNullOrWhiteSpace(tenantCs) || tenantId == Guid.Empty)
+            return null;
+
+        try
+        {
+            (Guid RepositoryId, Guid ItemId, string FileName)? eml;
+            await using (var connection = new NpgsqlConnection(tenantCs))
+            {
+                await connection.OpenAsync(cancellationToken);
+                eml = await EmlSourceMetadata.FindLatestEmlAttachmentAsync(
+                    connection, workflowId.ToString("N")[..8], instanceId, cancellationToken);
+            }
+
+            if (eml is not { } source)
+            {
+                _logger.LogInformation(
+                    "FTL document: no source .eml on instance {InstanceId}; generated PDFs archive without inherited metadata.",
+                    instanceId);
+                return null;
+            }
+
+            var item = await _itemQuery.GetItemAsync(source.RepositoryId, tenantId, source.ItemId, cancellationToken);
+            return EmlSourceMetadata.ToMetadataJson(item?.Fields);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(
+                ex,
+                "FTL document: could not copy metadata from the source .eml on instance {InstanceId}; generated PDFs archive without it.",
+                instanceId);
+            return null;
+        }
     }
 
     /// <summary>
