@@ -69,6 +69,13 @@ This app was built in a Claude chat session from 25 to 27 Oct 2026 and moved her
    - A required `DYNAMIC_TABLE` (or any type not in `controls.jsx`) still blocks New request with the "start it on the web" notice.
 11. **Design canvas:** the C5/C6 file-viewer proposals in `docs/design-canvas/` were replaced by the 70/30 layout that is now in the app.
 
+## Release build (Google Play)
+- Upload key: `C:\Users\ARUN\EZOFIS-release-key\ezofis-upload.jks` + `keystore.properties` (passwords). Outside the repo; back both up. `mobile/android/keystore.properties` is a git-ignored copy the build reads.
+- Upload key SHA-1 `61:38:A0:02:57:91:0B:F5:CC:0A:C9:03:9A:89:71:9D:33:F7:25:88`, signature hash `YTigAleRC/XMCskDmolxnTP3JYg=`.
+- Build: `npm run build && npx cap sync android`, then `gradlew bundleRelease` (AAB for Play) / `assembleRelease` (APK to sideload). Version in `android/app/build.gradle` (versionCode must go up for every upload).
+- Microsoft sign-in redirect is per signing key: `src/debug|release/res/raw/msal_config.json` and `msalSignatureHash` in `app/build.gradle`.
+- Play App Signing re-signs store installs with Google's app signing key: after the first upload, register that key's SHA-1 (Play Console → App integrity) in Google Cloud and Firebase, and its signature hash in Azure, and switch the release `msal_config.json` / `msalSignatureHash` to it.
+
 ## Push notifications setup (Firebase)
 1. Firebase project `ezofis-mobile`, Android app `com.ezofis.mobile` (debug SHA-1 34:D9:…:DB; add the release SHA-1 too).
 2. `google-services.json` → `mobile/android/app/` (git-ignored: the repository is public). Rebuild; push is built in when the file is there.

@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+// Release signing: android/keystore.properties (git-ignored) points at the upload key kept outside the repo
+// (C:\Users\ARUN\EZOFIS-release-key). Without it, release builds are left unsigned.
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) { keystorePropsFile.withInputStream { keystoreProps.load(it) } }
+
 android {
     namespace "com.ezofis.mobile"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +13,9 @@ android {
         applicationId "com.ezofis.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // keep in step with apk-shell/build_apk.py and Settings (Play needs a higher versionCode for every upload)
+        versionCode 36
+        versionName "0.6.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +23,26 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    buildTypes {
+    signingConfigs {
         release {
+            if (keystorePropsFile.exists()) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+    buildTypes {
+        // Microsoft sign-in (MSAL) redirect = msauth://com.ezofis.mobile/<base64 SHA-1 of the signing key>, so each key has
+        // its own: manifest path here, redirect_uri in src/<buildType>/res/raw/msal_config.json. Both must be registered in Azure.
+        debug {
+            manifestPlaceholders = [msalSignatureHash: '/NNnZgQ9Ckk0W1wpT4DQIj/Kq1Ns=']
+        }
+        release {
+            // upload key; with Play App Signing, Play re-signs with its own key: add that key's hash in Azure and here
+            manifestPlaceholders = [msalSignatureHash: '/YTigAleRC/XMCskDmolxnTP3JYg=']
+            if (keystorePropsFile.exists()) { signingConfig signingConfigs.release }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

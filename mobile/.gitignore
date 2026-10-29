@@ -2,6 +2,7 @@ node_modules/
 dist/
 dist-single/
 *.apk
+*.aab
 apk-shell/__pycache__/
 # test signing key for apk-shell (generate locally; never commit keys)
 apk-shell/*.pem
