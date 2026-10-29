@@ -409,16 +409,26 @@ if (eventLogEnabled)
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Hangfire dashboard (protect in production with auth)
+// Hangfire dashboard: password-protected (HTTP Basic). Without both settings it is not mapped at all.
 if (hangfireEnabled)
 {
-    // Default Hangfire auth is localhost-only; that blocks the dashboard
-    // behind Azure nginx. Same public model as /swagger for now.
-    app.MapHangfireDashboard("/hangfire", new DashboardOptions
+    var dashboardAuth = HangfireDashboardBasicAuthFilter.TryCreate(
+        app.Configuration["Hangfire:DashboardUser"],
+        app.Configuration["Hangfire:DashboardPassword"]);
+    if (dashboardAuth is not null)
     {
-        Authorization = Array.Empty<IDashboardAuthorizationFilter>(),
-        IgnoreAntiforgeryToken = true
-    });
+        app.MapHangfireDashboard("/hangfire", new DashboardOptions
+        {
+            Authorization = new IDashboardAuthorizationFilter[] { dashboardAuth },
+            IgnoreAntiforgeryToken = true
+        });
+    }
+    else
+    {
+        Log.Warning(
+            "Hangfire dashboard is off: set Hangfire:DashboardUser and Hangfire:DashboardPassword (at least {MinLength} characters) to enable /hangfire.",
+            HangfireDashboardBasicAuthFilter.MinimumPasswordLength);
+    }
 
     var emailIngestHangfire = app.Configuration.GetValue("EmailIngest:HangfireEnabled", false);
     try
