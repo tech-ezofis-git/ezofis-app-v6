@@ -38,30 +38,37 @@ const TONE_DOT = { p: '#8300E6', t: '#0A7C89', a: '#B45309', r: '#C2264B' };
 
 export function Notifications() {
   const nav = useNavigate();
-  const { notifs, markAllRead, markRead, unread, live, showToast } = useStore();
+  const { notifs, markAllRead, markRead, removeNotif, refreshNotifs, unread, live, showToast } = useStore();
   const [f, setF] = useState('all');
   const [perm, setPerm] = useState(null);
+  const [loading, setLoading] = useState(false);
   useEffect(() => { permission().then(setPerm); }, []);
+  // signed in: the list is the server's (GET /api/notifications), read again whenever this screen opens
+  useEffect(() => { if (!live) return; setLoading(true); refreshNotifs().finally(() => setLoading(false)); }, [live, refreshNotifs]);
   const allow = async () => { const p = await requestPermission(); setPerm(p); if (p === 'granted') { setPhonePref(true); showToast('Phone notifications are on'); } else if (p === 'denied') showToast('Allow notifications for EZOFIS in your phone settings.', { tone: 'bad' }); };
-  const list = notifs.filter((n) => f === 'all' || n.type === f);
-  const today = list.filter((n) => !/yesterday/i.test(n.time));
-  const earlier = list.filter((n) => /yesterday/i.test(n.time));
+  const list = notifs.filter((n) => f === 'all' || (f === 'unread' ? n.unread : n.type === f));
+  const isToday = (n) => (n.server ? n.today : !/yesterday/i.test(n.time));
+  const today = list.filter(isToday);
+  const earlier = list.filter((n) => !isToday(n));
   const Item = ({ n }) => (
-    <button type="button" className="card" onClick={() => { markRead(n.id); nav(n.to); }} style={{ background: TONE_BG[n.tone], display: 'flex', gap: 12, position: 'relative' }}>
-      <span style={{ flex: 'none', width: 38, height: 38, borderRadius: 999, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ width: 12, height: 12, borderRadius: 999, background: TONE_DOT[n.tone] }} /></span>
+    <div className="notif-row">
+    <button type="button" className={'card' + (n.unread ? '' : ' read')} aria-label={`${n.unread ? 'Unread: ' : ''}${n.title}`} onClick={() => { markRead(n.id); nav(n.to); }} style={{ background: n.unread ? TONE_BG[n.tone] : '#fff', display: 'flex', gap: 12, position: 'relative', flex: 1, minWidth: 0, textAlign: 'left' }}>
+      <span style={{ flex: 'none', width: 38, height: 38, borderRadius: 999, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ width: 12, height: 12, borderRadius: 999, background: n.unread ? TONE_DOT[n.tone] : '#D6D0E2' }} /></span>
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span className="row-between"><span style={{ fontSize: 14, fontWeight: 600, color: TONE_FG[n.tone] }}>{n.title}</span><span className="muted" style={{ flex: 'none', fontSize: 11 }}>{n.time}</span></span>
+        <span className="row-between"><span style={{ fontSize: 14, fontWeight: n.unread ? 600 : 500, color: n.unread ? TONE_FG[n.tone] : 'var(--body)' }}>{n.title}</span><span className="muted" style={{ flex: 'none', fontSize: 11 }}>{n.time}</span></span>
         <span style={{ display: 'block', fontSize: 13, color: 'var(--body)', marginTop: 2, lineHeight: 1.4 }}>{n.body}</span>
       </span>
       {n.unread ? <span aria-label="Unread" style={{ position: 'absolute', left: 6, top: 6, width: 8, height: 8, borderRadius: 999, background: '#8300E6' }} /> : null}
     </button>
+    {n.server ? <button type="button" className="icon-btn notif-del" aria-label={`Delete ${n.title}`} onClick={() => { removeNotif(n.id); showToast('Notification deleted'); }}><Icon name="close" size={16} color="#9C96AB" /></button> : null}
+    </div>
   );
   return (
     <div className="screen">
       <TopBar title="Notifications" back right={<button type="button" className="text-btn" onClick={markAllRead} disabled={!unread}>Mark all read</button>} />
       <div style={{ background: 'var(--surface)', padding: '0 var(--gutter) 14px' }}>
         <div className="chips">
-          {[['all', `All${unread ? ' · ' + unread + ' new' : ''}`], ['wf', 'Workflow'], ['files', 'Files']].map(([k, l]) => <button key={k} type="button" className={'chip' + (f === k ? ' on' : '')} onClick={() => setF(k)}>{l}</button>)}
+          {(live ? [['all', 'All'], ['unread', `Unread${unread ? ' · ' + unread : ''}`], ['wf', 'Workflow']] : [['all', `All${unread ? ' · ' + unread + ' new' : ''}`], ['wf', 'Workflow'], ['files', 'Files']]).map(([k, l]) => <button key={k} type="button" className={'chip' + (f === k ? ' on' : '')} onClick={() => setF(k)}>{l}</button>)}
         </div>
       </div>
       <div className="content">
@@ -72,7 +79,8 @@ export function Notifications() {
         {today.map((n) => <Item key={n.id} n={n} />)}
         {earlier.length ? <div className="sec-label">Earlier</div> : null}
         {earlier.map((n) => <Item key={n.id} n={n} />)}
-        {!list.length ? <div className="empty"><Icon name="bell" size={40} color="#CFC8DC" />No notifications here.</div> : null}
+        {loading && !notifs.length ? <div className="notice info"><span className="spinner" /><span className="grow">Loading notifications…</span></div> : null}
+        {!list.length && !loading ? <div className="empty"><Icon name="bell" size={40} color="#CFC8DC" />{f === 'unread' ? "You're all caught up." : 'No notifications here.'}</div> : null}
       </div>
     </div>
   );
@@ -180,7 +188,7 @@ export function Settings() {
           <button type="button" className="setting-row" onClick={() => showToast('Opening help.ezofis.com')}><span className="ic"><Icon name="help" size={20} /></span><span className="tx">Help center<small>Guides for inbox, folders and uploads</small></span><Icon name="chevR" size={18} color="#5E5873" /></button>
           <button type="button" className="setting-row" onClick={signOut}><span className="ic" style={{ background: 'var(--tint-r)', color: 'var(--bad)' }}><Icon name="logout" size={20} /></span><span className="tx" style={{ color: 'var(--bad)' }}>Sign out</span></button>
         </div>
-        <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 10 }}>EZOFIS Mobile · V6 · 0.6.0</p>
+        <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 10 }}>EZOFIS Mobile · V6 · 0.6.1</p>
       </div>
       <Sheet open={lang} onClose={() => setLang(false)} title="Language">
         <div className="sheet-list">{['English', 'Tamil', 'Hindi', 'Arabic', 'French'].map((l) => <button key={l} type="button" className={'opt' + (l === language ? ' on' : '')} onClick={() => { setLanguage(l); setLang(false); }}>{l}</button>)}</div>

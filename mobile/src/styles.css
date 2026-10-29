@@ -892,3 +892,6 @@ b.hl { color: var(--deep); background: linear-gradient(transparent 62%, rgba(92,
 .bg-hist span { color: var(--deep); font-weight: 600; text-align: right; }
 .bg-hist b { grid-column: 1 / -1; font-weight: 500; overflow-wrap: anywhere; }
 .bg-row b.ok { color: #0E8A5F; } .bg-row b.bad { color: var(--bad); }
+.notif-row { display: flex; align-items: stretch; gap: 6px; }
+.notif-row .card.read { border: 1px solid var(--line); box-shadow: none; }
+.notif-row .notif-del { flex: none; align-self: center; }

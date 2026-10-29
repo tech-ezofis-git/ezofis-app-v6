@@ -14,7 +14,7 @@ tests/e2e/run_all.sh              # mock end-to-end checks (Playwright + Python)
 python3 apk-shell/build_apk.py dist-single/index.html apk-shell/ic_launcher.png /tmp/u.apk && \
 python3 apk-shell/sign_v2.py /tmp/u.apk EZOFIS-Mobile-test.apk apk-shell     # SDK-free test APK
 ```
-Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 35 / 0.6.0.
+Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 36 / 0.6.1.
 
 ## Code map
 - `src/api.js`: sign-in (`loggedFrom: "MOBILE"`, 2FA, tenants), session storage, `authed()` (Bearer + `X-Tenant-Id`). A 401 dispatches `SESSION_EXPIRED`, which sends the user back to login.
@@ -28,6 +28,7 @@ Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py
 - `src/formEngine.js`: New-request form with web-form parity: defaults, master-data options, cascades, formulas, conditional required, OCR fill, payload.
 - `src/store.jsx`: app state. `live` = signed in, otherwise sample data from `src/data.js`. `bumpLive()` refreshes live screens.
 - `src/repo.js`: repository (Folders) client `repoApi`: browse tree, items query, metadata/delete, staged files (index list, save, export, delete), bulk upload jobs (tracked on the device per tenant). `docApi` (MOBILE_APP_REPOSITORY_API): intelligent upload (classify → OCR → stage → archive), AI summary + `parseSummary`, share / revoke / shared with me, sign requests and signing.
+- `src/notifications.js`: server notifications (MOBILE_APP_NOTIFICATIONS_API: GET /api/notifications, PATCH …/read, DELETE …), `relTime` for the `minutesAgo(N)` codes, `toItem`. The store's `notifs` is the server list when signed in (`refreshNotifs`, `markRead`, `removeNotif`).
 - `src/background.js` + `public/runners/inbox.js`: background inbox check with `@capacitor/background-runner` (Android WorkManager, about every 15 minutes, also while the app is closed). The app passes the session and the requests already shown; the runner posts a phone notification for new ones. No-op on the web and in the SDK-free test APK.
 - `src/LiveWatcher.jsx`: auto-refresh poller (45 s while open, 2 min in the background). Adds new requests to in-app notifications and sends a phone notification.
 - `src/notify.js`: phone notifications. Capacitor LocalNotifications, or the test-APK `prompt('ezofis:…')` bridge, or the Web Notification API.

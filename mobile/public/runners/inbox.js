@@ -1,4 +1,4 @@
-// EZOFIS background inbox check (Capacitor Background Runner, Android WorkManager about every 15 minutes, also while
+// EZOFIS background notification check (Capacitor Background Runner, Android WorkManager about every 15 minutes, also while
 // the app is closed). No DOM here: only fetch, CapacitorKV (app-private storage) and CapacitorNotifications.
 // The app sends the session ("session" event) and the requests it has already shown ("seen" event); this runner
 // notifies only requests that are new since then, so nothing is announced twice. Every run records its outcome under
@@ -55,24 +55,25 @@ addEventListener('checkInbox', async function (resolve, reject, args) {
     if (!s || !s.token) { record('not signed in'); resolve(); return; }
     if (s.enabled === false) { record('notifications off'); resolve(); return; }
     if (s.expiresAt && s.expiresAt < Date.now()) { record('sign-in expired'); resolve(); return; }
-    var res = await fetch(API + '/Workflows/inbox/all-workflows?itemsPerWorkflow=10', { method: 'GET', headers: { Authorization: 'Bearer ' + s.token, 'X-Tenant-Id': s.tenantId, Accept: 'application/json' } });
+    // the server's notifications (GET /api/notifications, the web's bell list): unread ones not seen before are announced
+    var res = await fetch(API + '/notifications', { method: 'GET', headers: { Authorization: 'Bearer ' + s.token, 'X-Tenant-Id': s.tenantId, Accept: 'application/json' } });
     // the runner's fetch may not expose res.ok, so the status code decides when there is one
     var code = res && typeof res.status === 'number' ? res.status : 0;
     if (code && (code < 200 || code >= 300)) { record('server answered ' + code); resolve(); return; }
     var d = await res.json();
-    var rows = [];
-    ((d && d.workflows) || []).forEach(function (g) { (g.items || []).forEach(function (r) { rows.push(r); }); });
+    var list = Array.isArray(d) ? d : ((d && (d.items || d.data)) || []);
+    var unread = list.filter(function (n) { return n && !n.isRead; });
     var seen = kvJson('seen');
-    CapacitorKV.set('seen', JSON.stringify(rows.map(keyOf).slice(0, 300)));
-    if (!seen) { record('first check, ' + rows.length + ' waiting'); resolve(); return; } // remember what's there, announce nothing
-    var fresh = rows.filter(function (r) { return seen.indexOf(keyOf(r)) < 0; });
+    CapacitorKV.set('seen', JSON.stringify(unread.map(function (n) { return String(n.id); }).slice(0, 300)));
+    if (!seen) { record('first check, ' + unread.length + ' unread'); resolve(); return; } // remember what's there, announce nothing
+    var fresh = unread.filter(function (n) { return seen.indexOf(String(n.id)) < 0; });
     if (fresh.length) {
       var one = fresh[0];
       notify(Math.floor(Date.now() / 1000) % 2000000000,
-        fresh.length === 1 ? 'New request · ' + (one.referenceNumber || one.name) : fresh.length + ' new requests',
-        fresh.length === 1 ? (one.name || 'A request') + (one.stage ? ' · ' + one.stage : '') + ' is waiting for you' : ((d && d.totalCount) || rows.length) + ' waiting in your EZOFIS inbox');
+        fresh.length === 1 ? (one.title || one.message || 'New notification') : fresh.length + ' new notifications',
+        fresh.length === 1 ? ((one.data && one.data.workflowName) || 'EZOFIS') : unread.length + ' unread in EZOFIS');
     }
-    record(fresh.length ? fresh.length + ' new, notified' : 'no new requests', { waiting: rows.length, newest: rows[0] ? (rows[0].referenceNumber || rows[0].name || '') : '' });
+    record(fresh.length ? fresh.length + ' new, notified' : 'nothing new', { waiting: unread.length, newest: unread[0] ? String(unread[0].title || unread[0].message || '').slice(0, 60) : '' });
     resolve();
   } catch (e) { record('error: ' + String((e && e.message) || e).slice(0, 120)); resolve(); } // tried again next time
 });

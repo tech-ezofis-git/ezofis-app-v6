@@ -26,7 +26,7 @@ def ap_row(i, ref, h):
       'itemId': 'item-ap-1', 'repositoryItem': {'fileName': 'INV-2026-3005.pdf', 'fileType': 'application/pdf', 'fileSize': 47306, 'fields': {'OcrText': 'INVOICE ... lots of text', 'TenantId': 'b843b988', 'WorkflowInstanceId': 'inst', 'StorageProviderId': 'sp1', 'RepositoryId': 'repo-ap', 'Currency': 'CAD', 'DocumentType': 'INVOICE', 'InvoiceAmount': '949.2', 'InvoiceNo': 'INV-2026-3005', 'MatchedStatus': 'Duplicate', 'OcrJson': '{}', 'Id': 'x'}}}
 STATE = {'inbox': [exp_row(1, 'EXP-2026-92', 2, '41.16', 'Beertown Public House'), exp_row(2, 'EXP-2026-90', 30, '120.00', 'Air Canada'), ap_row(1, 'REQ-194', 1), dict(ap_row(2, 'REQ-193', 900), agentResponse=AGENT2)],
          'sent': [], 'completed': [dict(exp_row(9, 'EXP-2026-93', 5, '10.00', 'Tim Hortons'), stage='Approved', stageType='END', completedAtUtc=iso(4), activityId='yAZy')],
-         'comments': {}, 'calls': [], 'fail401': False, 'uploads': [], 'started': [], 'masterCalls': [], 'ocr': [], 'ocrUpload': []}
+         'comments': {}, 'calls': [], 'fail401': False, 'notifications': [], 'uploads': [], 'started': [], 'masterCalls': [], 'ocr': [], 'ocrUpload': []}
 WORKFLOWS = {'items': [{'id': EXP, 'name': 'Expense Reimbursement', 'status': 1}, {'id': AP, 'name': 'Accounts Payable', 'status': 1}, {'id': 'draft', 'name': 'Draft wf', 'status': 0}]}
 META = {
   EXP: {'id': EXP, 'name': 'Expense Reimbursement', 'formId': 'form-exp-real' if USE_REAL else 'form-exp', 'repositoryId': 'repo-exp', 'steps': [], 'workflowJson': {
@@ -322,6 +322,16 @@ def handle(method, path, qs, body):
     STATE['calls'].append((method, path, qs, body))
     if STATE['fail401']: return 401, {'message': 'Unauthorized'}
     if path == '/repositories/assistant/chatbot' and method == 'POST': return chatbot(body)
+    # MOBILE_APP_NOTIFICATIONS_API: the bell list (newest first), mark read, delete
+    if path == '/notifications' and method == 'GET':
+        cat = qs.get('category')
+        return 200, [n for n in STATE['notifications'] if not n.get('_deleted') and (not cat or n['category'] == cat)]
+    nm = re.match(r'^/notifications/(\w+)(/read)?$', path)
+    if nm:
+        n = next((x for x in STATE['notifications'] if x['id'] == nm.group(1) and not x.get('_deleted')), None)
+        if not n: return 404, {'error': 'Notification not found'}
+        if nm.group(2) and method == 'PATCH': n['isRead'] = True; return 200, {'id': n['id'], 'isRead': True}
+        if method == 'DELETE': n['_deleted'] = True; return 204, None
     if path == '/me/tenants': return 200, {'tenants': [{'tenantId': 't1', 'name': 'EZOFIS Admin', 'role': 'Lawyers'}]}  # token check before signing out on a 401
     if path == '/usersession': return 200, {'id': 'u1', 'email': 'student.lawyer@example.com', 'displayName': 'Student Lawyer', 'role': 'User', 'Job Title': None, 'department': 'Legal', 'MFAuthentication': 'No', 'configuration': 1}
     p = path[len('/Workflows'):] if path.startswith('/Workflows') else None
@@ -388,3 +398,13 @@ def handle(method, path, qs, body):
             return 200, {'attachments': [{'id': 'a1', 'fileName': 'BeerTown Food receipt with Tip.pdf', 'contentType': 'application/pdf', 'fileSize': 90108, 'uploadedBy': 'admin@example.com', 'createdAtUtc': iso(2), 'repositoryId': 'repo-exp', 'itemId': 'item-1'}]}
     if p and p.count('/') == 1 and p[1:] in META: return 200, META[p[1:]]
     return 404, {'message': 'mock: no route ' + path}
+
+
+def notif(i, ref, mins, read=False, wf=None, inst='inst-exp-1', stage='Approver'):
+    wf = wf or EXP
+    code = f'minutesAgo({mins})' if mins < 1440 else f'daysAgo({mins // 1440})'
+    t = f'Ticket {ref} received for Expense Reimbursement ({stage})'
+    return {'id': str(i), 'actor': {'name': 'Student Lawyer', 'email': 'student.lawyer@example.com'}, 'category': 'workflow', 'createdAtUtc': code,
+            'data': {'processId': inst, 'transactionId': f'tx-{i}', 'workflowId': wf, 'workflowName': 'Expense Reimbursement'}, 'isRead': read,
+            'message': t, 'severity': 'info', 'target': {'route': 'requests', 'search': {'processId': inst, 'transactionId': f'tx-{i}', 'workflowId': wf}}, 'title': t}
+STATE['notifications'] = [notif(1287, 'EXP-2026-92', 5), notif(1286, 'EXP-2026-90', 300, read=True, inst='inst-exp-2'), notif(1280, 'EXP-2026-88', 2 * 1440, read=True, inst='inst-exp-2')]
