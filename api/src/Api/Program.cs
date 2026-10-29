@@ -9,6 +9,7 @@ using SaaSApp.Api.Configuration;
 using SaaSApp.Api.Options;
 using SaaSApp.Api.Services;
 using SaaSApp.Api.Services.Jira;
+using SaaSApp.Api.Services.MobilePush;
 using SaaSApp.Api.Swagger;
 using SaaSApp.Billing.Application;
 using SaaSApp.Billing.Infrastructure;
@@ -87,6 +88,11 @@ builder.Services.Configure<JiraOptions>(
 builder.Services.Configure<AgentsChatOptions>(
     builder.Configuration.GetSection(AgentsChatOptions.SectionName));
 builder.Services.AddHttpClient<JiraIssueClient>();
+// Phone push for new inbox requests (EZOFIS mobile app): device tokens, Firebase sender, recurring inbox check.
+builder.Services.Configure<MobilePushOptions>(builder.Configuration.GetSection(MobilePushOptions.SectionName));
+builder.Services.AddScoped<MobilePushDeviceStore>();
+builder.Services.AddHttpClient<FcmSender>();
+builder.Services.AddScoped<RunMobilePushPollJob>();
 builder.Services.AddScoped<SupportTicketStore>();
 builder.Services.AddScoped<LoginHistoryStore>();
 builder.Services.AddScoped<SupportTicketEmailService>();
@@ -444,6 +450,25 @@ if (hangfireEnabled)
     catch (Exception ex)
     {
         Log.Warning(ex, "Hangfire storage could not be reached. API will start without the email-ingest recurring job.");
+    }
+
+    try
+    {
+        if (app.Configuration.GetValue("MobilePush:Enabled", false))
+        {
+            var cron = app.Configuration.GetValue("MobilePush:Cron", "* * * * *") ?? "* * * * *";
+            RecurringJob.AddOrUpdate<RunMobilePushPollJob>("mobile-push-poll", job => job.Execute(), cron);
+            Log.Information("Registered Hangfire mobile-push-poll cron={Cron}", cron);
+        }
+        else
+        {
+            RecurringJob.RemoveIfExists("mobile-push-poll");
+            Log.Information("Mobile push disabled (MobilePush:Enabled=false)");
+        }
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Hangfire storage could not be reached. API will start without the mobile-push recurring job.");
     }
 }
 
