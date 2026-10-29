@@ -42,6 +42,50 @@ env:
   SMOKE_BASE_URL: https://cloud.ezofis.com
 
 jobs:
+  # Warning only (free plan can't enforce approvals): flag pushes to main that
+  # did not come from a PR approved by tech-ezofis-git. Never blocks the deploy.
+  # After the switch-over, deploy-azure will require approved == 'true'.
+  approval-check:
+    name: Approved PR check (warning only)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      approved: ${{ steps.check.outputs.approved }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          APPROVER: tech-ezofis-git
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual run by ${{ github.actor }}."
+            echo "approved=${{ github.actor == 'tech-ezofis-git' }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          PR=$(gh api "repos/$REPO/commits/$SHA/pulls" \
+            --jq '[.[] | select(.merged_at != null and .base.ref == "main")][0].number // empty' || true)
+          APPROVED=false
+          if [ -n "$PR" ]; then
+            if gh api "repos/$REPO/pulls/$PR/reviews" --paginate \
+                 --jq ".[] | select(.state == \"APPROVED\" and .user.login == \"$APPROVER\") | .id" | grep -q .; then
+              APPROVED=true
+            fi
+          fi
+          echo "approved=$APPROVED" >> "$GITHUB_OUTPUT"
+          if [ "$APPROVED" = "true" ]; then
+            echo "OK: commit came from PR #$PR, approved by $APPROVER." | tee -a "$GITHUB_STEP_SUMMARY"
+          elif [ -n "$PR" ]; then
+            echo "::warning::PR #$PR was merged to main without an approval from $APPROVER."
+            echo "Warning: PR #$PR was merged without approval from $APPROVER (not blocking yet)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Commit $SHA was pushed to main directly by ${{ github.actor }}, not through a PR."
+            echo "Warning: direct push to main by ${{ github.actor }}, no PR (not blocking yet)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   changes:
     name: Detect changed services
     runs-on: ubuntu-latest
