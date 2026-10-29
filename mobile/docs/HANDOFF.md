@@ -72,6 +72,7 @@ This app was built in a Claude chat session from 25 to 27 Oct 2026 and moved her
 ## Release build (Google Play)
 - Upload key: `C:\Users\ARUN\EZOFIS-release-key\ezofis-upload.jks` + `keystore.properties` (passwords). Outside the repo; back both up. `mobile/android/keystore.properties` is a git-ignored copy the build reads.
 - Upload key SHA-1 `61:38:A0:02:57:91:0B:F5:CC:0A:C9:03:9A:89:71:9D:33:F7:25:88`, signature hash `YTigAleRC/XMCskDmolxnTP3JYg=`.
+- Play app signing key SHA-1 `AF:99:EF:47:1F:47:C7:E3:09:4C:57:C2:E5:97:1F:63:DC:0C:74:C7`, signature hash `r5nvRx9Hx+MJTFfC5ZcfY9wMdMc=`: used by release builds (Play re-signs installs with it). Register it in Azure (Android platform) and as an Android OAuth client in Google Cloud.
 - Build: `npm run build && npx cap sync android`, then `gradlew bundleRelease` (AAB for Play) / `assembleRelease` (APK to sideload). Version in `android/app/build.gradle` (versionCode must go up for every upload).
 - Microsoft sign-in redirect is per signing key: `src/debug|release/res/raw/msal_config.json` and `msalSignatureHash` in `app/build.gradle`.
 - Play App Signing re-signs store installs with Google's app signing key: after the first upload, register that key's SHA-1 (Play Console → App integrity) in Google Cloud and Firebase, and its signature hash in Azure, and switch the release `msal_config.json` / `msalSignatureHash` to it.

@@ -14,7 +14,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // keep in step with apk-shell/build_apk.py and Settings (Play needs a higher versionCode for every upload)
-        versionCode 37
+        versionCode 38
         versionName "0.6.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -40,8 +40,9 @@ android {
             manifestPlaceholders = [msalSignatureHash: '/NNnZgQ9Ckk0W1wpT4DQIj/Kq1Ns=']
         }
         release {
-            // upload key; with Play App Signing, Play re-signs with its own key: add that key's hash in Azure and here
-            manifestPlaceholders = [msalSignatureHash: '/YTigAleRC/XMCskDmolxnTP3JYg=']
+            // Play app signing key (Play re-signs every install with it), not the upload key: a release build installed
+            // straight from the Mac (upload key) can't use Microsoft sign-in
+            manifestPlaceholders = [msalSignatureHash: '/r5nvRx9Hx+MJTFfC5ZcfY9wMdMc=']
             if (keystorePropsFile.exists()) { signingConfig signingConfigs.release }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
