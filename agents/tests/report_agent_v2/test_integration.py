@@ -589,3 +589,23 @@ async def test_document_activity_and_credit_column_order(world, make_client):
         "Document", "Folder", "Repository", "When"]
     assert [c.label for c in TEMPLATES["ai_credit_consumption"].columns if c.role != "link"][:3] == [
         "Request No", "Workflow", "Skill"]
+
+
+async def test_default_report_spec_follows_template_and_keeps_highlights(world, make_client):
+    client = await make_client()
+    admin = _h(world, world.admin, role="Admin")
+    ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
+    rid = ids["ai_credit_consumption"]
+    # Simulate a report installed from an older template: different columns, one highlighted.
+    stale = {"title": "AI Credit Consumption", "columns": [
+        {"key": "Skill", "label": "Skill", "highlight": {"rules": [{"color": "red", "op": "eq", "value": "x"}]}},
+        {"key": "Old Column", "label": "Old Column"}],
+        "agentSpec": {"kind": "system", "template": "ai_credit_consumption"}}
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}") as conn:
+        conn.execute('UPDATE reporting."ReportAiDefinitions" SET "ReportSpecJson" = %s WHERE "Id" = %s',
+                     (json.dumps(stale), rid))
+    spec = (await client.get(f"/api/report-agent-v2/definitions/{rid}", headers=admin)).json()["reportSpec"]
+    keys = [c["key"] for c in spec["columns"]]
+    assert keys[0] == "Request No" and "Old Column" not in keys
+    assert next(c for c in spec["columns"] if c["key"] == "Skill")["highlight"]["rules"][0]["color"] == "red"

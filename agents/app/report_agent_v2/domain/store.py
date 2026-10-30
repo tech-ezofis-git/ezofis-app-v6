@@ -57,7 +57,30 @@ async def load_definition(conn: AsyncConnection, tenant_id: uuid.UUID, report_id
         row["SharedUsers"] = _json_list(row["SharedUsers"])
         row["SharedGroups"] = _json_list(row["SharedGroups"])
         row["Domain"] = row["WorkflowName"] or row["RepositoryName"] or ""
+        _refresh_default_spec(row)
     return row
+
+
+def _refresh_default_spec(row: dict) -> None:
+    """A default report's columns come from its template, which can change after it was installed:
+    rebuild its ReportSpec from the current template and keep the highlights set on it."""
+    from app.report_agent_v2.domain.system_reports import TEMPLATES
+
+    template = TEMPLATES.get(system_template_key(row) or "")
+    if template is None:
+        return
+    fresh, _ = build_system_ai_spec(template)
+    kept = {
+        col.get("key"): col.get("highlight")
+        for lst in ("columns", "defaultColumns")
+        for col in (row["ReportSpec"].get(lst) or [])
+        if isinstance(col, dict) and col.get("highlight")
+    }
+    for lst in ("columns", "defaultColumns"):
+        for col in fresh.get(lst) or []:
+            if col.get("key") in kept:
+                col["highlight"] = kept[col["key"]]
+    row["ReportSpec"] = fresh
 
 
 async def load_active_spec(conn: AsyncConnection, tenant_id: uuid.UUID, report_id: uuid.UUID) -> dict | None:
