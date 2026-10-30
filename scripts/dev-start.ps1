@@ -8,6 +8,8 @@
   - app/.env must point VITE_BASE_URL / VITE_V6_BASE_URL at the local API, not cloud.ezofis.com
   - api/src/Api/appsettings.Development.json must not use the production Hangfire schema
   - agents/.env must point EZOFIS_API_BASE at the local API, not cloud.ezofis.com
+  - required values (database login, UAT login) must not still be REPLACE_ME / YOUR_... placeholders;
+    optional ones (LLM keys, file storage) only produce a warning
   Each part opens in its own PowerShell window. Close a window to stop that part.
 
 .EXAMPLE
@@ -26,6 +28,11 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 $ProductionHost = 'cloud.ezofis.com'
 $Problems = New-Object System.Collections.Generic.List[string]
+$Warnings = New-Object System.Collections.Generic.List[string]
+
+function Test-Placeholder([string]$Value) {
+    return $Value -match 'REPLACE_ME|YOUR_[A-Z_]+'
+}
 
 function Read-EnvFile([string]$Path) {
     $values = @{}
@@ -68,6 +75,19 @@ function Test-Api {
         $Problems.Add("api/src/Api/appsettings.Development.json is not valid JSON: $($_.Exception.Message)")
         return
     }
+    $connection = $null
+    if ($settings.ConnectionStrings) { $connection = $settings.ConnectionStrings.DefaultConnection }
+    if (-not $connection -or (Test-Placeholder $connection)) {
+        $Problems.Add("appsettings.Development.json: ConnectionStrings.DefaultConnection still has a placeholder. Fill in the tester database login.")
+    }
+    $blob = $null
+    if ($settings.EzofisBlobStorage) { $blob = $settings.EzofisBlobStorage.ConnectionString }
+    if ($blob -and (Test-Placeholder $blob)) {
+        $Problems.Add("appsettings.Development.json: EzofisBlobStorage.ConnectionString is a placeholder, which makes every request fail. Set it to """" (no file storage) or to a TEST storage connection string.")
+    }
+    elseif (-not $blob) {
+        $Warnings.Add("File storage is off (EzofisBlobStorage.ConnectionString is empty): uploads and document previews won't work.")
+    }
     $schema = $null
     if ($settings.Hangfire) { $schema = $settings.Hangfire.SchemaName }
     if ($schema -eq 'hangfire') {
@@ -91,6 +111,18 @@ function Test-Agents {
     }
     elseif ($apiBase -like "*$ProductionHost*") {
         $Problems.Add("agents/.env: EZOFIS_API_BASE points at production ($apiBase). Set it to http://host.docker.internal:5000/api.")
+    }
+    foreach ($key in 'CATALOG_DATABASE_URL', 'EZOFIS_LOGIN_EMAIL', 'EZOFIS_LOGIN_PASSWORD') {
+        if ($values[$key] -and (Test-Placeholder $values[$key])) {
+            $Problems.Add("agents/.env: $key still has a placeholder. Fill it in.")
+        }
+    }
+    if ($values['EZOFIS_ENV'] -eq 'live') {
+        $Problems.Add("agents/.env: EZOFIS_ENV is 'live', which makes the AP pipeline take real final actions. Use 'trial' locally.")
+    }
+    $missingKeys = @($values.Keys | Where-Object { $_ -like '*_API_KEY' -and (Test-Placeholder $values[$_]) } | Sort-Object)
+    if ($missingKeys.Count -gt 0) {
+        $Warnings.Add("agents/.env: $($missingKeys -join ', ') not filled in yet: AI features that use them won't work.")
     }
     if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
         $Problems.Add("docker is not installed. Install Docker Desktop.")
@@ -125,6 +157,7 @@ if ($Problems.Count -gt 0) {
 }
 
 Write-Host "Settings OK: nothing points at production." -ForegroundColor Green
+foreach ($warning in $Warnings) { Write-Host "  Note: $warning" -ForegroundColor Yellow }
 if ($DryRun) {
     Write-Host "Dry run: would start $($Only -join ', ')."
     exit 0

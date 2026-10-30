@@ -4,7 +4,8 @@
   changes need. Running dev servers (scripts/dev-start.ps1) reload code changes by themselves.
 
 .DESCRIPTION
-  1. Stops if you have uncommitted changes (commit or stash them first).
+  1. Stops if you have uncommitted changes (commit or stash them first). Files the dev server
+     regenerates (routeTree.gen.ts, tsconfig.tsbuildinfo, locale messages) are reset instead.
   2. Switches to `testing` and pulls it (fast-forward only).
   3. Lists the PRs/commits that came in.
   4. Looks at which files changed and:
@@ -47,11 +48,26 @@ function Test-PortListening([int]$Port) {
     }
 }
 
-$dirty = Invoke-Git status --porcelain --untracked-files=no
-if ($dirty) {
+# Files the running dev servers regenerate (often only line endings change). They don't count
+# as your changes: they're reset to the committed version and regenerated after the pull.
+$generatedFiles = @(
+    'app/src/routeTree.gen.ts',
+    'app/tsconfig.tsbuildinfo',
+    'app/src/locales/ar/messages.po', 'app/src/locales/ar/messages.ts',
+    'app/src/locales/en/messages.po', 'app/src/locales/en/messages.ts',
+    'app/src/locales/fr/messages.po', 'app/src/locales/fr/messages.ts',
+    'app/src/locales/ms/messages.po', 'app/src/locales/ms/messages.ts'
+)
+$dirtyFiles = @(Invoke-Git status --porcelain --untracked-files=no | ForEach-Object { $_.Substring(3).Trim('"') })
+$ownChanges = @($dirtyFiles | Where-Object { $generatedFiles -notcontains $_ })
+if ($ownChanges.Count -gt 0) {
     Write-Host "You have uncommitted changes. Commit or stash them first:" -ForegroundColor Red
-    $dirty | ForEach-Object { Write-Host "  $_" }
+    $ownChanges | ForEach-Object { Write-Host "  $_" }
     exit 1
+}
+if ($dirtyFiles.Count -gt 0) {
+    Write-Host "Resetting files the dev server regenerated: $($dirtyFiles -join ', ')"
+    Invoke-Git checkout -- @dirtyFiles | Out-Null
 }
 
 $current = (Invoke-Git rev-parse --abbrev-ref HEAD | Out-String).Trim()
