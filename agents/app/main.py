@@ -146,6 +146,7 @@ from app.agents.chatbot_agent import ChatbotAgent
 from app.agents.dashboard_agent import DashboardAgent
 from app.agents.report_agent import ReportAgent
 from app.report_agent import ReportAgentService
+from app import report_agent_v2
 from app.models.report_agent import (
     GeneratePromptRequest,
     GeneratePromptResponse,
@@ -712,7 +713,15 @@ async def lifespan(app: FastAPI):
     app.state.form_sync_agent = form_sync_agent
     app.state.ftl_quote_estimator_agent = ftl_quote_estimator_agent
 
+    # Mounted sub-apps don't get their own lifespan, so open the v2 pools here. It plans
+    # with the same LLM adapter + tenant "report" model selection as report_agent_service.
+    if _report_agent_v2_app is not None:
+        await report_agent_v2.startup(_report_agent_v2_app, llm_adapter, catalog_store)
+
     yield
+
+    if _report_agent_v2_app is not None:
+        await report_agent_v2.shutdown(_report_agent_v2_app)
 
     try:
         from app.agent_packs import set_catalog_store
@@ -737,6 +746,11 @@ app.add_middleware(ConsoleAuthMiddleware)
 # other static asset dropped in app/static/. Same-origin, so the console
 # page's fetch() calls to /chat etc. need no CORS setup either.
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
+# Report Agent v2 (prompt -> saved report spec -> live run) at /api/report-agent-v2/*.
+# A separate sub-app with its own JWT/tenant middleware; nothing else routes through it.
+_report_agent_v2_app = report_agent_v2.build_mounted_app()
+if _report_agent_v2_app is not None:
+    app.mount(report_agent_v2.MOUNT_PATH, _report_agent_v2_app, name="report_agent_v2")
 
 
 @app.get("/health")
