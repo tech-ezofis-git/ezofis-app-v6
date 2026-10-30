@@ -165,6 +165,11 @@ class Settings(BaseSettings):
     # Hard cap for LLM provider calls — prevents /chat from hanging forever
     # when a preset endpoint is unreachable.
     llm_request_timeout_seconds: float = 60.0
+    # Burgr only chooses which catalog model to try first. The provider
+    # call still uses the catalog preset's own key. Empty key disables routing.
+    burgr_api_key: Optional[str] = None
+    burgr_api_base: str = "https://burgr.ai"
+    burgr_goal: str = "balanced"
     azure_storage_connection_string: Optional[str] = None
     azure_blob_container_prefix: str = "ezts"
 

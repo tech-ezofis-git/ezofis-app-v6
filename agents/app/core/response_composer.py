@@ -165,12 +165,15 @@ class ResponseComposer:
         pdf_filename: Optional[str] = None,
         form_sync_result: Optional[dict] = None,
     ) -> ChatResponse:
+        from app.llm.burgr_route import routing_snapshot
+
         return ChatResponse(
             session_id=session_id,
             reply=reply,
             correlation_id=correlation_id,
             latency_ms=latency_ms,
             token_usage=TokenUsage(**token_usage) if token_usage else None,
+            routing=routing_snapshot(),
             chunk_ids=chunk_ids,
             document_id=document_id,
             cited_data_points=cited_data_points,
