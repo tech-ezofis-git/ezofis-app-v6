@@ -64,6 +64,8 @@ Use the dev servers, not IIS, Caddy or production Docker images. They reload by 
 ./scripts/dev-start.ps1 -Only app,api
 ./scripts/dev-start.ps1 -DryRun    # checks only
 ./scripts/dev-pull.ps1             # switch to testing, pull, and do only the extra steps needed
+./scripts/release-pr.ps1 -Pr 184   # release ONE merged testing PR to main (opens the release PR)
+./scripts/release-pr.ps1 -Pr 184 -NoPush   # same checks, pushes nothing
 ```
 
 Local settings (all git-ignored). `dev-start.ps1` refuses to start if any of them points at production:

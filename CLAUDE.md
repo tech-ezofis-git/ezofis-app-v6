@@ -20,6 +20,7 @@ Work from **`testing`**, not `main`: `feature/…` → PR into `testing` → eve
 # Whole stack locally, with auto-reload (checks that nothing points at production)
 ./scripts/dev-start.ps1
 ./scripts/dev-pull.ps1                     # update from testing
+./scripts/release-pr.ps1 -Pr <number>      # release one merged testing PR to main only
 # Web app
 cd app && npm install && npm run dev      # http://localhost:3000
 npm run build | npm test | npm run type-check | npm run lint
