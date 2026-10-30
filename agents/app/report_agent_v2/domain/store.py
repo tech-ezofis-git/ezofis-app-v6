@@ -311,3 +311,29 @@ async def list_definitions(conn: AsyncConnection, tenant_id: uuid.UUID, search: 
         row["SharedUsers"] = _json_list(row["SharedUsers"])
         row["SharedGroups"] = _json_list(row["SharedGroups"])
     return rows
+
+
+async def update_highlights(
+    conn: AsyncConnection, *, tenant_id: uuid.UUID, user_id: uuid.UUID, report_id: uuid.UUID, highlights: dict[str, dict | None]
+) -> dict | None:
+    """Set column highlight rules in a saved report's ReportSpecJson (any kind, default reports too).
+
+    Only the "highlight" of the named columns changes; the report itself is not regenerated.
+    """
+    definition = await load_definition(conn, tenant_id, report_id)
+    if definition is None:
+        return None
+    spec = definition.get("ReportSpec") or {}
+    for lst in ("columns", "defaultColumns", "agentColumns", "userdefinedColumns"):
+        for col in spec.get(lst) or []:
+            if isinstance(col, dict) and col.get("key") in highlights:
+                rule = highlights[col["key"]]
+                col["highlight"] = rule if rule and rule.get("rules") else None
+    async with conn.transaction():
+        await conn.execute(
+            """UPDATE reporting."ReportAiDefinitions"
+               SET "ReportSpecJson" = %s, "ModifiedAtUtc" = now(), "ModifiedBy" = %s
+               WHERE "Id" = %s AND "TenantId" = %s AND "IsDeleted" = false""",
+            (json.dumps(spec, ensure_ascii=False), user_id, report_id, tenant_id),
+        )
+    return await load_definition(conn, tenant_id, report_id)

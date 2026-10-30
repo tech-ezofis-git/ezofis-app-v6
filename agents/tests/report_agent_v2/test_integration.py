@@ -536,3 +536,56 @@ async def test_preview_needs_prompt_or_spec_and_ignores_unknown_ui_refs(world, m
     body = r.json()
     assert "evil" not in [c["label"] for c in body["preview"]["columns"]]
     assert any("no such field" in w for w in body["warnings"])
+
+
+# --- row links, highlights on default reports, Action By fallback ------------------------------
+
+async def test_list_rows_carry_hidden_request_links_but_grouped_rows_do_not(world, make_client):
+    client = await make_client(StubPlanner([LIST_SPEC, AP_AGING_SPEC]))
+    src = {"sourceType": "Workflow", "workflowName": "Accounts Payable"}
+    body = (await client.post("/api/report-agent-v2/definitions/preview", json={"prompt": "list all invoices", **src},
+                              headers=_h(world, world.owner))).json()
+    labels = [c["label"] for c in body["preview"]["columns"]]
+    assert "instanceId" not in labels and "workflowId" not in labels  # hidden, not columns
+    assert "instanceId" not in [c["key"] for c in body["reportSpec"]["columns"]]
+    rows = body["preview"]["rows"]
+    assert rows and all(r["instanceId"] and r["workflowId"] == str(world.workflow_id) for r in rows)
+    grouped = (await client.post("/api/report-agent-v2/definitions/preview", json={"prompt": AP_PROMPT, **src},
+                                 headers=_h(world, world.owner))).json()
+    assert all("instanceId" not in r for r in grouped["preview"]["rows"])
+
+
+async def test_default_report_highlights_and_action_by_fallback(world, make_client):
+    client = await make_client()
+    admin = _h(world, world.admin, role="Admin")
+    ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
+    pending_id = ids["pending_workflow_requests"]
+    run = (await client.get(f"/api/report-agent-v2/reports/{pending_id}/execute", headers=admin)).json()
+    assert run["rows"] and all(r["instanceId"] and r["workflowId"] for r in run["rows"])
+    # Every pending request here has an inbox row (name only) or none: Action By is never blank.
+    assert all(r["Action By"] for r in run["rows"])
+
+    rule = {"rules": [{"color": "red", "op": "gt", "value": 30, "label": "Overdue"}], "default": None}
+    r = await client.put(f"/api/report-agent-v2/definitions/{pending_id}/highlights",
+                         json={"columns": {"Days Pending": rule, "No Such Column": rule}}, headers=admin)
+    assert r.status_code == 200, r.text
+    col = next(c for c in r.json()["reportSpec"]["columns"] if c["key"] == "Days Pending")
+    assert col["highlight"]["rules"][0]["color"] == "red"
+    saved = (await client.get(f"/api/report-agent-v2/definitions/{pending_id}", headers=admin)).json()
+    assert next(c for c in saved["reportSpec"]["columns"] if c["key"] == "Days Pending")["highlight"]
+    # Clearing works; a user who can't manage it is refused.
+    r = await client.put(f"/api/report-agent-v2/definitions/{pending_id}/highlights",
+                         json={"columns": {"Days Pending": None}}, headers=admin)
+    assert next(c for c in r.json()["reportSpec"]["columns"] if c["key"] == "Days Pending")["highlight"] is None
+    r = await client.put(f"/api/report-agent-v2/definitions/{pending_id}/highlights",
+                         json={"columns": {"Days Pending": rule}}, headers=_h(world, world.owner))
+    assert r.status_code == 404  # private default report: not visible to a regular user
+
+
+async def test_document_activity_and_credit_column_order(world, make_client):
+    from app.report_agent_v2.domain.system_reports import TEMPLATES
+
+    assert [c.label for c in TEMPLATES["document_recent_activity"].columns if c.role != "link"][:4] == [
+        "Document", "Folder", "Repository", "When"]
+    assert [c.label for c in TEMPLATES["ai_credit_consumption"].columns if c.role != "link"][:3] == [
+        "Request No", "Workflow", "Skill"]

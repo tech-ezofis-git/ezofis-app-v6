@@ -58,6 +58,9 @@ def cell(value: object) -> object:
 
 
 def shape_result(columns: list[ColumnMeta], rows: list[tuple]) -> tuple[list[dict], list[dict], dict | None]:
+    """Columns with role "link" (instanceId, workflowId, itemId, repositoryId) are hidden row
+    fields: present in each row so the UI can open the request / file, but not listed as columns."""
+    shown = [c for c in columns if c.role != "link"]
     column_payload = [
         {
             "key": c.key,
@@ -70,14 +73,14 @@ def shape_result(columns: list[ColumnMeta], rows: list[tuple]) -> tuple[list[dic
             "role": c.role,
             "ref": c.ref,
         }
-        for c in columns
+        for c in shown
     ]
     out_rows = [{c.key: cell(v) for c, v in zip(columns, row)} for row in rows]
 
     totals = None
-    if any(c.total for c in columns) and out_rows:
+    if any(c.total for c in shown) and out_rows:
         totals = {}
-        for i, c in enumerate(columns):
+        for i, c in enumerate(shown):
             if c.total:
                 s = sum((r[c.key] for r in out_rows if isinstance(r[c.key], (int, float))), 0)
                 totals[c.key] = round(s, 6) if isinstance(s, float) else s

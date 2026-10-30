@@ -204,6 +204,8 @@ def build_ai_spec(
 
     columns, defaults, agents = [], [], []
     for col in compiled.columns:
+        if col.role == "link":  # hidden row ids, not report columns
+            continue
         is_agent = col.ref in formulas
         column = ReportSpecColumn(
             key=col.key, label=col.label, formula=formulas.get(col.ref), editable=True,

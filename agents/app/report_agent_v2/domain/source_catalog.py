@@ -324,7 +324,9 @@ def _add_workflow_system_fields(c: SourceCatalog) -> None:
         if {"stage", "name"} & c.inbox_columns.keys():
             add("sys.current_stage", "Stage", "text", "mb", "current_stage", {"inbox"})
         if {"activity_user_email", "transaction_created_by_email", "transaction_created_by", "user_id", "created_by_name"} & c.inbox_columns.keys():
-            add("sys.last_action_by", "Action By", "text", "mb", "last_action_by", {"inbox"})
+            # A request nobody has acted on yet falls back to its creator (submitting is its last action).
+            starter = {"instances"} if c.instances_table and c.process_form_table and "started_by" in ic else set()
+            add("sys.last_action_by", "Action By", "text", "mb", "last_action_by", {"inbox"} | starter)
         if {"started_at_utc", "created_at_utc", "transaction_created_at"} & c.inbox_columns.keys():
             add("sys.stage_since", "In Stage Since", "date", "mb", "stage_since", {"inbox"})
 

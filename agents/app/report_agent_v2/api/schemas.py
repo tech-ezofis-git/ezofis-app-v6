@@ -113,3 +113,23 @@ class ExecuteReportRequest(_Body):
     as_of_date: date | None = Field(default=None, alias="asOfDate")
     filters: list[Condition] = Field(default_factory=list, max_length=20)
     limit: int | None = Field(default=None, ge=1, le=100_000)
+
+
+class HighlightRule(_Body):
+    color: str = Field(max_length=32)
+    op: str = Field(max_length=32)
+    value: str | int | float | bool | None = None
+    value2: str | int | float | None = None
+    compare_field: str | None = Field(default=None, alias="compareField", max_length=256)
+    label: str | None = Field(default=None, max_length=128)
+
+
+class ColumnHighlight(_Body):
+    rules: list[HighlightRule] = Field(default_factory=list, max_length=20)
+    default: str | None = Field(default=None, max_length=32)
+
+
+class HighlightsRequest(_Body):
+    """PUT /definitions/{id}/highlights: column key -> highlight rules (null or no rules clears it)."""
+
+    columns: dict[str, ColumnHighlight | None] = Field(max_length=100)

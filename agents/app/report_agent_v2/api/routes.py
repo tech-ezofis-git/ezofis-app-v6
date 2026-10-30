@@ -21,6 +21,7 @@ from app.report_agent_v2.agents.execution_agent import ExecutionOptions, load_re
 from app.report_agent_v2.api.schemas import (
     CreateDefinitionRequest,
     ExecuteReportRequest,
+    HighlightsRequest,
     PreviewDefinitionRequest,
     RegenerateDefinitionRequest,
     SaveDefinitionRequest,
@@ -288,6 +289,28 @@ async def regenerate_definition(
     )
     return {**_definition_dto(row, access, spec_version=version, model=gen.model),
             "durationMs": round(duration_ms, 2), "attempts": gen.attempts}
+
+
+@router.put("/definitions/{report_id}/highlights")
+async def update_report_highlights(
+    report_id: uuid.UUID,
+    body: HighlightsRequest,
+    ctx: TenantContext = Depends(tenant_user),
+    conn: AsyncConnection = Depends(tenant_connection),
+) -> dict:
+    """Set column highlight rules on a saved report, default reports included (owner or Admin).
+
+    Keys are the report's column keys; a column the report does not have is ignored.
+    """
+    _, access = await load_report_for_user(conn, ctx, report_id)
+    if not access.can_manage:
+        raise ForbiddenError("Only the owner or an Admin can change this report's highlights.")
+    highlights = {key: (h.model_dump(by_alias=True, exclude_none=True) if h else None) for key, h in body.columns.items()}
+    row = await store.update_highlights(conn, tenant_id=ctx.tenant_id, user_id=ctx.user_id, report_id=report_id,
+                                        highlights=highlights)
+    spec_row = await store.load_active_spec(conn, ctx.tenant_id, report_id)
+    return _definition_dto(row, access, spec_version=spec_row["Version"] if spec_row else None,
+                           model=spec_row["Model"] if spec_row else None)
 
 
 @router.get("/definitions/{report_id}")

@@ -54,7 +54,7 @@ class ColumnMeta:
     label: str
     ref: str
     dtype: str
-    role: str  # dimension | measure | value
+    role: str  # dimension | measure | value | link (hidden id field, see executor.shape_result)
     is_calculated: bool
     total: bool
 
@@ -190,6 +190,11 @@ class _Compiler:
                 parts += [_user_email(_ident("mb", col)) for col in ("transaction_created_by", "user_id") if col in c.inbox_columns]
             if "created_by_name" in c.inbox_columns:
                 parts.append(sql.SQL("NULLIF(btrim(({})::text), '')").format(_ident("mb", "created_by_name")))
+            # No inbox action yet: the creator submitted it, so that is the last action.
+            if self.catalog.has_users and "instances" in f.requires:
+                parts.append(_user_email(_ident("wi", "started_by")))
+            if self.catalog.has_users and "created_by" in c.process_form_columns:
+                parts.append(_user_email(_ident("pf", "created_by")))
             return Expr(sql.SQL("COALESCE({})").format(sql.SQL(", ").join(parts)), "text")
         if f.system == "stage_since":
             return Expr(self._coalesce_inbox(["started_at_utc", "created_at_utc", "transaction_created_at"], "date"), "date")
@@ -598,6 +603,24 @@ class _Compiler:
                     is_calculated=col.ref in derived_ids or role == "measure", total=bool(total),
                 )
             )
+
+        # One row per record: hidden ids so the UI can open the row's request (workflow) or file
+        # (folder). Not added to grouped reports, where a row is many records.
+        if not grouped:
+            c = self.catalog
+            links: list[tuple[str, sql.Composable]] = []
+            if c.source_type == "Workflow" and "instances" in self.requires:
+                links.append(("instanceId", sql.SQL("(wi.id)::text")))
+                workflow = (_ident("wi", "workflow_id") if "workflow_id" in c.instances_columns
+                            else self.bind(str(c.source_id)))
+                links.append(("workflowId", sql.SQL("({})::text").format(workflow)))
+            elif c.source_type == "Folder" and "id" in c.items_columns:
+                links.append(("itemId", sql.SQL("(e.id)::text")))
+                links.append(("repositoryId", sql.SQL("({})::text").format(self.bind(str(c.source_id)))))
+            for key, expr in links:
+                select_parts.append(sql.SQL("{} AS {}").format(expr, sql.Identifier(f"l_{key}")))
+                columns.append(ColumnMeta(key=key, label=key, ref=key, dtype="text", role="link",
+                                          is_calculated=False, total=False))
 
         order_parts: list[sql.Composable] = []
         for o in s.order_by:
