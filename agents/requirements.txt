@@ -52,3 +52,10 @@ PyYAML==6.0.2
 # format; see app/control/metrics.py.
 prometheus-client==0.21.0
 
+
+# Report Agent v2 (app/report_agent_v2): psycopg 3 pools with READ ONLY
+# transactions, JWT validation (HS256 + Auth0/Entra JWKS). The LLM goes through
+# the shared LiteLLM adapter above.
+psycopg[binary]==3.3.6
+psycopg-pool==3.3.3
+PyJWT[crypto]==2.15.1

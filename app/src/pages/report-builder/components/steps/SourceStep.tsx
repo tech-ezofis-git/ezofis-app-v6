@@ -25,11 +25,8 @@ import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import {
   agentRunToReportRunResult,
   agentScopeForSource,
-  ALL_FOLDERS_SOURCE_ID,
-  ALL_WORKFLOWS_SOURCE_ID,
   buildAgentConfigFromDraft,
   draftPatchFromPromptResult,
-  isAllScopeSource,
   readableObjective,
 } from '../../utils/agentReport'
 import { isHiddenReportColumn } from '../../utils/hiddenColumns'
@@ -55,20 +52,6 @@ const PROMPT_EXAMPLES_FOLDER = [
     query: 'Show documents uploaded recently with file sizes',
     title: 'Recent uploads & sizes',
   },
-]
-
-// Descriptions the report agent has recipes for today (see agent API guide).
-const PROMPT_EXAMPLES_ALL_WORKFLOWS = [
-  { query: 'Aging', title: 'Aging' },
-  { query: 'SLA', title: 'SLA' },
-  { query: 'Total Inbox', title: 'Total inbox' },
-  { query: 'Total tickets processed', title: 'Tickets processed' },
-]
-
-const PROMPT_EXAMPLES_ALL_FOLDERS = [
-  { query: 'Total documents', title: 'Total documents' },
-  { query: 'Document aging', title: 'Document aging' },
-  { query: 'Document Retention Status', title: 'Retention status' },
 ]
 
 interface Props {
@@ -115,34 +98,31 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     ...getWorkflowListQueryOptions(workflowBrowsePayload),
     enabled: selectedSourceType === 'Workflow',
   })
-  const workflowOptions: Option[] = useMemo(() => {
-    return [
-      { id: ALL_WORKFLOWS_SOURCE_ID, name: t`All workflows` },
-      ...mapPublishedBrowseResponseToOptions(workflowsQuery.data ?? null).map(
+  // One workflow or folder per AI report; tenant-wide views are the default reports.
+  const workflowOptions: Option[] = useMemo(
+    () =>
+      mapPublishedBrowseResponseToOptions(workflowsQuery.data ?? null).map(
         (w) => ({
           id: String(w.id),
           name: w.name || String(w.id),
         }),
       ),
-    ]
-  }, [workflowsQuery.data, t])
+    [workflowsQuery.data],
+  )
 
   // Fetch Folders
   const foldersQuery = useQuery({
     ...getRepositoriesQueryOptions(),
     enabled: selectedSourceType === 'Folder',
   })
-  const folderOptions: Option[] = useMemo(() => {
-    return [
-      { id: ALL_FOLDERS_SOURCE_ID, name: t`All folders` },
-      ...(foldersQuery.data ?? []).map((f: any) => ({
+  const folderOptions: Option[] = useMemo(
+    () =>
+      (foldersQuery.data ?? []).map((f: { id: unknown; name: unknown }) => ({
         id: String(f.id),
         name: String(f.name),
       })),
-    ]
-  }, [foldersQuery.data, t])
-
-  const isAllScope = isAllScopeSource(draft.sourceId)
+    [foldersQuery.data],
+  )
 
   const handleSelectSourceType = (type: ReportSourceType) => {
     setSelectedSourceType(type)
@@ -186,21 +166,19 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     const workflowName = String(option.name)
 
     let wFormId = ''
-    if (workflowId !== ALL_WORKFLOWS_SOURCE_ID) {
-      try {
-        const res = await workflowsApiV6.getWorkflowById(workflowId)
-        if (res.data) {
-          const wf = res.data
-          wFormId = String(
-            wf.formId ??
-              wf.wFormId ??
-              wf.settings?.general?.initiateUsing?.formId ??
-              '',
-          )
-        }
-      } catch (e) {
-        console.error('Failed to load workflow form id:', e)
+    try {
+      const res = await workflowsApiV6.getWorkflowById(workflowId)
+      if (res.data) {
+        const wf = res.data
+        wFormId = String(
+          wf.formId ??
+            wf.wFormId ??
+            wf.settings?.general?.initiateUsing?.formId ??
+            '',
+        )
       }
+    } catch (e) {
+      console.error('Failed to load workflow form id:', e)
     }
 
     setDraft({
@@ -301,14 +279,15 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     )
     // Keep one session across generate → run for the whole wizard session.
     const sessionId = draft.agent?.sessionId || createReportAgentSessionId()
-    // Generate saves the report; regenerating sends its id so the saved
-    // report is overwritten instead of piling up copies in the library.
+    // Generate only previews (nothing is saved until Save). A regenerated
+    // report keeps the id it was saved under, so saving updates it.
     const { data, error } = await generateReportAiPrompt({
       description: text,
       id: draft.agent?.id || null,
       reportType: scope.reportType,
       repositoryName: scope.repositoryName,
       sessionId,
+      sourceId: draft.sourceId,
       workflowName: scope.workflowName,
     })
     setIsThinking(false)
@@ -319,7 +298,10 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
       return
     }
 
-    const patch = draftPatchFromPromptResult(data, { ...scope, sessionId })
+    const patch = draftPatchFromPromptResult(
+      { ...data, id: draft.agent?.id || data.id },
+      { ...scope, sessionId },
+    )
     setDraft({
       ...patch,
       aiPrompt: text,
@@ -332,14 +314,22 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
       showAiBuilder: true,
     })
     onPlanGenerated?.(true)
-    void runPreview(buildAgentConfigFromDraft(patch.agent, patch))
+    // The generate call already ran the report: show its rows directly.
+    if (data.preview) {
+      setPreviewRows(
+        agentRunToReportRunResult(data.preview, {
+          domain: draft.domain,
+          name: patch.name,
+          reportId: null,
+        }).rows,
+      )
+    } else {
+      void runPreview(buildAgentConfigFromDraft(patch.agent, patch))
+    }
   }
 
-  const promptExamples = isAllScope
-    ? draft.sourceType === 'Folder'
-      ? PROMPT_EXAMPLES_ALL_FOLDERS
-      : PROMPT_EXAMPLES_ALL_WORKFLOWS
-    : draft.sourceType === 'Folder'
+  const promptExamples =
+    draft.sourceType === 'Folder'
       ? PROMPT_EXAMPLES_FOLDER
       : PROMPT_EXAMPLES_WORKFLOW
 
@@ -506,7 +496,7 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
                       <Icon className='size-4' name='lucide:check' />
                     }
                   />
-                  {onProceedManual && !isAllScope && (
+                  {onProceedManual && (
                     <Button
                       color='gray'
                       icon='lucide:arrow-right'

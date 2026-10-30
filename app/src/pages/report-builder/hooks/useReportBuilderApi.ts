@@ -4,10 +4,19 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import type { ReportSpecHighlight } from '@/api/v6/reportAgent'
 import type {
   ReportBuilderPayloadSource,
   ReportRunResult,
 } from '@/api/v6/reportBuilder'
+import {
+  deleteReportAiReport,
+  getReportAiReport,
+  listReportAiReports,
+  runReportAiReport,
+  saveReportAiReport,
+  updateReportAiHighlights,
+} from '@/api/v6/reportAgent'
 import {
   createReportBuilderReport,
   deleteReportBuilderReport,
@@ -18,13 +27,6 @@ import {
   publishReportBuilderReport,
   updateReportBuilderReport,
 } from '@/api/v6/reportBuilder'
-import {
-  deleteReportAiReport,
-  getReportAiReport,
-  listReportAiReports,
-  runReportAiReport,
-  updateReportAiReport,
-} from '@/api/v6/reportAgent'
 import type {
   Report,
   ReportAgentConfig,
@@ -47,7 +49,7 @@ export const reportBuilderKeys = {
 }
 
 /**
- * Manual (/report-builder) and AI (/report-ai-builder) reports in one list,
+ * Manual (/report-builder) and AI (Report Agent v2) reports in one list,
  * newest first. A failing AI list doesn't hide the manual reports.
  */
 export const useReportBuilderListQuery = () =>
@@ -66,8 +68,8 @@ export const useReportBuilderListQuery = () =>
   })
 
 /**
- * Loads a report by id from /report-builder, falling back to
- * /report-ai-builder (AI report ids aren't known to the manual builder).
+ * Loads a report by id from /report-builder, falling back to Report Agent v2
+ * (AI report ids aren't known to the manual builder).
  */
 export const getAnyReportById = async (
   id: string,
@@ -110,12 +112,12 @@ export const useAiReportSourceNames = (reports: Report[]) => {
   return useQueries({
     combine: toSourceNames,
     queries: pending.map((report) => ({
+      queryKey: reportBuilderKeys.detail(report.id),
+      staleTime: 5 * 60 * 1000,
       queryFn: async () => {
         const { data } = await getReportAiReport(report.id)
         return data ? aiRecordToReport(data) : null
       },
-      queryKey: reportBuilderKeys.detail(report.id),
-      staleTime: 5 * 60 * 1000,
     })),
   })
 }
@@ -135,9 +137,9 @@ export const useReportBuilderDataQuery = (id: string | null | undefined) =>
 const AGENT_REPORT_PAGE_SIZE = 500
 
 /**
- * Runs a saved AI report by id (/report-ai-builder/{id}/run) and adapts the
- * result to the same `ReportRunResult` shape `/data` returns. Disabled for
- * reports without an agent config.
+ * Runs a saved AI report by id (Report Agent v2 /reports/{id}/execute, the
+ * saved definition as-is) and adapts the result to the same `ReportRunResult`
+ * shape `/data` returns. Disabled for reports without an agent config.
  */
 export const useReportAgentDataQuery = (report: Report | null | undefined) => {
   const agent = report?.agentConfig
@@ -149,12 +151,11 @@ export const useReportAgentDataQuery = (report: Report | null | undefined) => {
       report?.id ?? '',
       report?.modified ?? '',
     ],
+    retry: false,
     queryFn: async () => {
       const { data, error } = await runReportAiReport(agent!.id, {
         page: 1,
         pageSize: AGENT_REPORT_PAGE_SIZE,
-        reportPrompt: agent!.reportPrompt,
-        reportSpec: agent!.reportSpec,
       })
       if (error || !data) throw new Error(error || 'Failed to run report')
       return {
@@ -167,7 +168,6 @@ export const useReportAgentDataQuery = (report: Report | null | undefined) => {
         warnings: data.warnings ?? [],
       }
     },
-    retry: false,
   })
 }
 
@@ -237,9 +237,10 @@ export const useDeleteReportBuilderReportMutation = () => {
 }
 
 /**
- * Saves an AI report's edits (name, description, prompt, spec incl. column
- * highlights) with PATCH /report-ai-builder/{id}. AI reports are already
- * saved at generate time, so there's no create here.
+ * Saves an AI report exactly as edited in the wizard (name, description,
+ * columns, labels, filters, highlights, sharing, status) with Report Agent v2
+ * /definitions/save: creates it when it has no id yet (a previewed report),
+ * updates it otherwise. No LLM call.
  */
 export const useSaveReportAiMutation = () => {
   const queryClient = useQueryClient()
@@ -248,14 +249,16 @@ export const useSaveReportAiMutation = () => {
       agent: ReportAgentConfig
       description: string
       name: string
+      prompt?: string
       sharedGroups: string[]
       sharedUsers: string[]
       status?: ReportStatus
       visibility: ReportVisibility
     }) => {
-      const result = await updateReportAiReport(payload.agent.id, {
+      const result = await saveReportAiReport(payload.agent.id || null, {
         description: payload.description,
         name: payload.name,
+        prompt: payload.prompt,
         reportPrompt: payload.agent.reportPrompt,
         reportSpec: payload.agent.reportSpec,
         sharedGroups: payload.sharedGroups,
@@ -265,6 +268,32 @@ export const useSaveReportAiMutation = () => {
       })
       if (result.error || !result.data) {
         throw new Error(result.error || 'Failed to save the AI report')
+      }
+      return aiRecordToReport(result.data)
+    },
+    onSuccess: (saved) => {
+      void queryClient.invalidateQueries({ queryKey: reportBuilderKeys.list() })
+      void queryClient.invalidateQueries({
+        queryKey: reportBuilderKeys.detail(saved.id),
+      })
+    },
+  })
+}
+
+/**
+ * Saves column highlight rules on a saved AI report (default reports
+ * included) and reloads it, so the report table shows them.
+ */
+export const useSaveReportHighlightsMutation = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: {
+      columns: Record<string, ReportSpecHighlight | null>
+      id: string
+    }) => {
+      const result = await updateReportAiHighlights(payload.id, payload.columns)
+      if (result.error || !result.data) {
+        throw new Error(result.error || 'Failed to save the highlights')
       }
       return aiRecordToReport(result.data)
     },
