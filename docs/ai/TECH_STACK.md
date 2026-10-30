@@ -43,7 +43,9 @@ Versions are taken from the manifest files on `main` (October 2026). For the web
 - Tests: Playwright + Python mock e2e (`mobile/tests/e2e/`)
 
 ## Databases
-- **Catalog DB** (tenant registry) plus **one database per tenant**, all PostgreSQL. Azure host `ezv6psql.postgres.database.azure.com` (`.env.azure.example`)
+- **Catalog DB** (tenant registry, `ezofis_catalog_new`) plus **one database per tenant**, all PostgreSQL on one Azure flexible server with two names:
+  - `ezv6psql.postgres.database.azure.com`: **private** (VNet-only) name, used by the containers inside Azure (`.env.azure.example`). It doesn't resolve from a laptop.
+  - `postgrev6southinddb.postgres.database.azure.com`: **public** name, used from developer machines (local `appsettings.Development.json`, `agents/.env`). Your IP must be allowed under the server's Networking settings.
 - **Agents** use their own `orchestrator` DB and also read the catalog DB
 
 ## Hosting
