@@ -106,6 +106,15 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IWorkflowInstanceHistoryService, WorkflowInstanceHistoryService>();
         services.AddScoped<IWorkflowProcessAddonService, WorkflowProcessAddonService>();
         services.AddScoped<WorkflowDelegationMailService>();
+        services.Configure<TwilioSmsOptions>(configuration.GetSection(TwilioSmsOptions.SectionName));
+        services.AddHttpClient(nameof(TwilioSmsSender), client => client.Timeout = TimeSpan.FromSeconds(20));
+        services.AddScoped<ISmsSender, TwilioSmsSender>();
+        services.AddScoped<WorkflowSlaNotifier>();
+        services.AddScoped<WorkflowSlaTimerService>();
+        services.AddScoped<WorkflowSlaOutboxSender>();
+        services.Configure<WorkflowSlaOptions>(configuration.GetSection(WorkflowSlaOptions.SectionName));
+        if (configuration.GetValue($"{WorkflowSlaOptions.SectionName}:Enabled", false))
+            services.AddHostedService<WorkflowSlaBackgroundService>();
         services.AddScoped<IWorkflowLegacyTransactionSyncService, WorkflowLegacyTransactionSyncService>();
         services.AddScoped<IWorkflowInboxShareAssignmentService, WorkflowInboxShareAssignmentService>();
         services.AddScoped<IApDashboardQueryService, ApDashboardQueryService>();

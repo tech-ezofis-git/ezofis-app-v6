@@ -23,7 +23,10 @@ public record WorkflowSettingsDto(
     WorkflowGeneralDto? General = null,
     WorkflowPublishDto? Publish = null,
     /// <summary>PO Master for AP Agent (works for DOCUMENT / DOCUMENT_FORM without email mailbox).</summary>
-    WorkflowPoMasterDto? PoMaster = null
+    WorkflowPoMasterDto? PoMaster = null,
+    /// <summary>Workflow-level resolution SLA (designer Workflow Settings → SLA).</summary>
+    [property: JsonPropertyName("SlaSettings")]
+    WorkflowSlaConfigurationDto? SlaSettings = null
 );
 
 /// <summary>PO / vendor master binding mirrored from mailbox masterSource fields.</summary>
@@ -135,7 +138,13 @@ public record WorkflowBlockSettingsDto(
     string[]? GeneratePDFFields = null,
     /// <summary>Designer Data Integration: copy mapped fields onto a master form on step complete.</summary>
     [property: JsonPropertyName("endSync")]
-    WorkflowEndSyncSettingsDto? EndSync = null
+    WorkflowEndSyncSettingsDto? EndSync = null,
+    /// <summary>Block-level response SLA (designer Block Settings → SLA).</summary>
+    [property: JsonPropertyName("SlaSettings")]
+    WorkflowSlaConfigurationDto? SlaSettings = null,
+    /// <summary>Designer node kind (e.g. "manual_user", "gmail"); START blocks can be either a person or a trigger.</summary>
+    [property: JsonPropertyName("toolType")]
+    string? ToolType = null
 );
 
 public record WorkflowEndSyncSettingsDto(

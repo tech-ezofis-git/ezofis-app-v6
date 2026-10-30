@@ -19,7 +19,10 @@ public interface IWorkflowLegacyTransactionSyncService
         string? review,
         MailboxFormSnapshot? mailboxForm = null,
         CancellationToken cancellationToken = default,
-        bool endWorkflow = false);
+        bool endWorkflow = false,
+        /// <summary>Route the reviewed step to this step instead of the ProceedAction / next-order step
+        /// (used by SLA "Escalate to Stage"). The review is recorded but not matched against actions.</summary>
+        WorkflowStep? overrideNextStep = null);
 
     /// <summary>
     /// Legacy process FlowStatus for the instance (0 = running, 1 = completed), or null if no process row exists.
