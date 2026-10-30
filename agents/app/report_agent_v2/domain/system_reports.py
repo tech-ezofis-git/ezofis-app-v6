@@ -363,12 +363,98 @@ async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
 _DOC_COLS = (Col("Document"), Col("Folder"), Col("Repository"), Col("When", "date", "value"), Col("Activity"),
              Col("Details"), Col("By")) + _FILE_LINKS
 
-# items_<x>_history.history_operation is a trigger code (I/U/D, or the full word).
-_DOC_OPERATION = sql.SQL(
-    "(CASE upper(btrim(h.history_operation::text)) WHEN 'I' THEN 'Uploaded' WHEN 'INSERT' THEN 'Uploaded' "
-    "WHEN 'U' THEN 'Updated' WHEN 'UPDATE' THEN 'Updated' WHEN 'D' THEN 'Deleted' WHEN 'DELETE' THEN 'Deleted' "
-    "ELSE initcap(h.history_operation::text) END)"
-)
+# Built-in columns of a repository items table; every other column is an index (metadata) field.
+_ITEM_BUILTIN = {
+    "id", "tenant_id", "repository_id", "folder_id", "storage_provider_id", "file_path", "file_name", "file_type",
+    "file_size", "total_pages", "is_verified", "status", "ocr_score", "ai_status", "ocr_text", "ocr_json",
+    "summary_json", "workflow_instance_id", "active_item", "created_at_utc", "modified_at_utc", "created_by",
+    "modified_by", "is_deleted", "file_version", "Month", "Year", "Date",
+}
+_HISTORY_COLS = {"history_id", "history_operation", "history_recorded_at"}
+_MAX_INDEX_FIELDS = 60  # index fields compared per repository
+
+
+def _doc_change_part(
+    ctx: _Ctx, repo_id: uuid.UUID, repo_name: str, items_table: str, cols: set[str], labels: dict[str, str],
+    has_folders: bool,
+) -> sql.Composable:
+    """Activity rows of one repository from its items_<x>_history table.
+
+    The history trigger stores a document's values *before* each change (operation U) or before
+    deletion (D). So a history row is the "before" picture; the "after" picture is the item's next
+    history row, or the current item when there is none. Comparing the two names what was done.
+    """
+    def old(c: str) -> sql.Composable:
+        return sql.SQL("(h.{})::text").format(sql.Identifier(c))
+
+    def new(c: str) -> sql.Composable:
+        return sql.SQL("(CASE WHEN h.next_hid IS NULL THEN (c.{c})::text ELSE (nx.{c})::text END)").format(c=sql.Identifier(c))
+
+    def norm(expr: sql.Composable) -> sql.Composable:
+        # JSON values (e.g. extracted line items) are re-serialized with different spacing; ignore it.
+        return sql.SQL(r"(CASE WHEN {e} ~ '^\s*[\[{{]' THEN regexp_replace({e}, '\s+', '', 'g') ELSE {e} END)").format(e=expr)
+
+    def changed(*names: str) -> sql.Composable:
+        present = [n for n in names if n in cols]
+        if not present:
+            return sql.SQL("false")
+        return sql.SQL(" OR ").join(sql.SQL("({} IS DISTINCT FROM {})").format(norm(old(n)), norm(new(n))) for n in present)
+
+    index_fields = [c for c in sorted(cols) if c not in _ITEM_BUILTIN and c not in _HISTORY_COLS][:_MAX_INDEX_FIELDS]
+
+    def folder_name(expr: sql.Composable) -> sql.Composable:
+        if not has_folders:
+            return sql.SQL("NULL::text")
+        return sql.SQL('(SELECT f."Name" FROM repository."Folders" f WHERE (f."Id")::text = {})').format(expr)
+
+    actions = [
+        sql.SQL("CASE WHEN {} THEN CASE WHEN {} = 'true' THEN 'Deleted' ELSE 'Restored' END END").format(
+            changed("is_deleted"), new("is_deleted")) if "is_deleted" in cols else None,
+        sql.SQL("CASE WHEN {} THEN CASE WHEN {} IS NULL THEN 'Unlinked from request' ELSE 'Linked to request' END END").format(
+            changed("workflow_instance_id"), new("workflow_instance_id")) if "workflow_instance_id" in cols else None,
+        sql.SQL("CASE WHEN {} THEN 'Moved' END").format(changed("folder_id")),
+        sql.SQL("CASE WHEN {} THEN 'Renamed' END").format(changed("file_name")),
+        sql.SQL("CASE WHEN {} THEN 'New version' END").format(changed("file_version", "file_size")),
+        sql.SQL("CASE WHEN {} THEN 'Text extracted (OCR)' END").format(changed("ocr_text", "ocr_json")),
+        sql.SQL("CASE WHEN {} THEN 'AI summary generated' END").format(changed("summary_json")),
+        sql.SQL("CASE WHEN {} THEN 'Status changed' END").format(changed("status", "ai_status", "is_verified", "ocr_score")),
+        sql.SQL("CASE WHEN {} THEN 'Index updated' END").format(changed(*index_fields)) if index_fields else None,
+    ]
+    details = [
+        sql.SQL("CASE WHEN {ch} AND {n} IS NOT NULL THEN 'Request ' || COALESCE((SELECT r.ref FROM insts r WHERE r.wi_id = {n}), {n}) END").format(
+            ch=changed("workflow_instance_id"), n=new("workflow_instance_id")) if "workflow_instance_id" in cols else None,
+        sql.SQL("CASE WHEN {} THEN 'to ' || COALESCE({}, '-') END").format(changed("folder_id"), folder_name(new("folder_id")))
+        if "folder_id" in cols else None,
+        sql.SQL("CASE WHEN {} THEN 'from ' || COALESCE({}, '-') END").format(changed("file_name"), old("file_name"))
+        if "file_name" in cols else None,
+        sql.SQL("CASE WHEN {} THEN 'status ' || COALESCE({}, '-') || ' -> ' || COALESCE({}, '-') END").format(
+            changed("status"), old("status"), new("status")) if "status" in cols else None,
+    ] + [
+        sql.SQL(r"CASE WHEN {ch} THEN {lbl} || CASE WHEN {n} ~ '^\s*[\[{{]' THEN ': updated' ELSE ': ' || "
+                "COALESCE(NULLIF(left({o}, 40), ''), '-') || ' -> ' || COALESCE(NULLIF(left({n}, 40), ''), '-') END END").format(
+            ch=changed(f), lbl=ctx.bind(labels.get(f.lower(), f)), o=old(f), n=new(f))
+        for f in index_fields
+    ]
+    activity = sql.SQL("concat_ws(', ', {})").format(sql.SQL(", ").join(a for a in actions if a is not None))
+    detail = sql.SQL("concat_ws('; ', {})").format(sql.SQL(", ").join(d for d in details if d is not None) or sql.SQL("NULL"))
+    by = (sql.SQL("COALESCE(CASE WHEN h.next_hid IS NULL THEN c.modified_by ELSE nx.modified_by END, h.modified_by, h.created_by)")
+          if {"modified_by", "created_by"} <= cols else sql.SQL("NULL::uuid"))
+    hist = _t("repository", f"{items_table}_history")
+    return sql.SQL(
+        "SELECT h.history_recorded_at AS at, {repo}::text AS repo, {folder} AS folder, h.file_name::text AS doc, "
+        "CASE WHEN upper(btrim(h.history_operation::text)) IN ('D', 'DELETE') THEN 'Deleted' "
+        "ELSE COALESCE(NULLIF({activity}, ''), 'Saved (no changes)') END AS activity, "
+        "CASE WHEN upper(btrim(h.history_operation::text)) IN ('D', 'DELETE') THEN NULL ELSE NULLIF(left({detail}, 500), '') END AS details, "
+        "{by} AS by_id, (h.id)::text AS item_id, {rid}::text AS repo_id "
+        "FROM (SELECT x.*, lead(x.history_id) OVER (PARTITION BY x.id ORDER BY x.history_recorded_at, x.history_id) AS next_hid "
+        "      FROM {hist} x WHERE x.history_recorded_at >= {since} AND x.history_recorded_at < {until}) h "
+        "LEFT JOIN {hist} nx ON nx.history_id = h.next_hid "
+        "LEFT JOIN {items} c ON h.next_hid IS NULL AND c.id = h.id"
+    ).format(
+        repo=ctx.bind(repo_name), folder=folder_name(sql.SQL("(h.folder_id)::text")), activity=activity, detail=detail,
+        by=by, rid=ctx.bind(str(repo_id)), hist=hist, items=_t("repository", items_table),
+        since=ctx.bind(ctx.since), until=ctx.bind(ctx.until),
+    )
 
 
 async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
@@ -381,51 +467,58 @@ async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str
     )
     repos = await cur.fetchall()
     has_folders = bool(await _columns(ctx.conn, "repository", "Folders"))
-    has_meta = {"RepositoryId", "ItemId", "FieldName", "OldValue", "NewValue", "ChangedBy", "ChangedAtUtc"} <= await _columns(
-        ctx.conn, "repository", "ItemMetadataHistory")
     has_users = bool(await _columns(ctx.conn, "users", "Users"))
+    has_field_names = {"RepositoryId", "Name", "SqlColumnName"} <= await _columns(ctx.conn, "repository", "RepositoryFields")
+
     parts = []
     for repo_id, repo_name, items_table in repos:
         if not items_table or not _ITEMS_TABLE.match(items_table):
             continue
         item_cols = await _columns(ctx.conn, "repository", items_table)
         hist_cols = await _columns(ctx.conn, "repository", f"{items_table}_history")
-
-        def folder_of(alias: str) -> sql.Composable:
-            if not has_folders:
-                return sql.SQL("NULL::text")
-            return sql.SQL('(SELECT f."Name" FROM repository."Folders" f WHERE f."Id" = {}.folder_id)').format(sql.Identifier(alias))
-
-        if {"history_recorded_at", "history_operation", "file_name", "folder_id"} <= hist_cols:
-            by = sql.SQL("COALESCE(h.modified_by, h.created_by)") if {"modified_by", "created_by"} <= hist_cols else sql.SQL("NULL::uuid")
+        if not {"id", "file_name"} <= item_cols:
+            continue
+        # Uploads: the item's own creation (the history trigger only records changes).
+        if "created_at_utc" in item_cols:
             parts.append(sql.SQL(
-                "SELECT h.history_recorded_at AS at, {repo}::text AS repo, {folder} AS folder, h.file_name::text AS doc, "
-                "{op} AS activity, NULLIF(concat_ws(' ', h.status, h.file_type), '') AS details, {by} AS by_id, "
-                "(h.id)::text AS item_id, {rid}::text AS repo_id "
-                "FROM {t} h WHERE h.history_recorded_at >= {since} AND h.history_recorded_at < {until}").format(
-                repo=ctx.bind(repo_name), folder=folder_of("h"), op=_DOC_OPERATION, rid=ctx.bind(str(repo_id)),
-                by=by, t=_t("repository", f"{items_table}_history"), since=ctx.bind(ctx.since), until=ctx.bind(ctx.until)))
-        if has_meta:
-            join_items = {"id", "file_name", "folder_id"} <= item_cols
-            parts.append(sql.SQL(
-                "SELECT m.\"ChangedAtUtc\" AS at, {repo}::text AS repo, {folder} AS folder, {doc} AS doc, "
-                "'Metadata changed'::text AS activity, concat(m.\"FieldName\", ': ', COALESCE(m.\"OldValue\", '-'), ' -> ', COALESCE(m.\"NewValue\", '-')) AS details, "
-                "m.\"ChangedBy\" AS by_id, (m.\"ItemId\")::text AS item_id, (m.\"RepositoryId\")::text AS repo_id "
-                "FROM repository.\"ItemMetadataHistory\" m {join} "
-                "WHERE m.\"RepositoryId\" = {rid} AND m.\"ChangedAtUtc\" >= {since} AND m.\"ChangedAtUtc\" < {until}").format(
+                "SELECT c.created_at_utc AS at, {repo}::text AS repo, {folder} AS folder, c.file_name::text AS doc, "
+                "'Uploaded'::text AS activity, {ftype} AS details, {by} AS by_id, (c.id)::text AS item_id, {rid}::text AS repo_id "
+                "FROM {items} c WHERE c.created_at_utc >= {since} AND c.created_at_utc < {until}").format(
                 repo=ctx.bind(repo_name),
-                folder=folder_of("i") if join_items else sql.SQL("NULL::text"),
-                doc=sql.SQL("COALESCE(i.file_name::text, m.\"ItemId\"::text)") if join_items else sql.SQL("m.\"ItemId\"::text"),
-                join=sql.SQL("LEFT JOIN {} i ON i.id = m.\"ItemId\"").format(_t("repository", items_table)) if join_items else sql.SQL(""),
-                rid=ctx.bind(repo_id), since=ctx.bind(ctx.since), until=ctx.bind(ctx.until)))
+                folder=(sql.SQL('(SELECT f."Name" FROM repository."Folders" f WHERE f."Id" = c.folder_id)')
+                        if has_folders and "folder_id" in item_cols else sql.SQL("NULL::text")),
+                ftype=sql.SQL("c.file_type::text") if "file_type" in item_cols else sql.SQL("NULL::text"),
+                by=sql.SQL("c.created_by") if "created_by" in item_cols else sql.SQL("NULL::uuid"),
+                rid=ctx.bind(str(repo_id)), items=_t("repository", items_table),
+                since=ctx.bind(ctx.since), until=ctx.bind(ctx.until)))
+        if {"history_id", "history_operation", "history_recorded_at"} <= hist_cols:
+            labels: dict[str, str] = {}
+            if has_field_names:
+                rows = await (await ctx.conn.execute(
+                    'SELECT "SqlColumnName", "Name" FROM repository."RepositoryFields" WHERE "RepositoryId" = %s',
+                    (repo_id,))).fetchall()
+                labels = {str(c).lower(): str(n) for c, n in rows if c and n}
+            parts.append(_doc_change_part(ctx, repo_id, repo_name, items_table, item_cols & hist_cols, labels,
+                                          has_folders))
     if not parts:
         return _empty(_DOC_COLS), ["No document activity is recorded for this organization."]
-    user = (sql.SQL('COALESCE((SELECT u."Email" FROM users."Users" u WHERE u."Id" = s.by_id), s.by_id::text)') if has_users
-            else sql.SQL("s.by_id::text"))
-    q = sql.SQL("SELECT s.doc AS c0, s.folder AS c1, s.repo AS c2, s.at AS c3, s.activity AS c4, s.details AS c5, {user} AS c6, "
-                "s.item_id AS c7, s.repo_id AS c8 "
-                "FROM ({u}) s ORDER BY s.at DESC LIMIT {limit}").format(
-        user=user, u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
+
+    # request id -> Request No, for "Linked to request" details
+    inst_parts = [
+        sql.SQL("SELECT (w.id)::text AS wi_id, {ref} AS ref FROM {t} w").format(
+            ref=sql.SQL("w.reference_number::text") if "reference_number" in cols else sql.SQL("(w.id)::text"),
+            t=_t("workflow", table))
+        for _, table, cols in await _workflow_tables(ctx, "workflow_instances_", {"id"})
+    ]
+    insts = sql.SQL(" UNION ALL ").join(inst_parts) if inst_parts else sql.SQL(
+        "SELECT NULL::text AS wi_id, NULL::text AS ref WHERE false")
+    user = (sql.SQL('COALESCE((SELECT u."Email" FROM users."Users" u WHERE (u."Id")::text = (s.by_id)::text), (s.by_id)::text)')
+            if has_users else sql.SQL("(s.by_id)::text"))
+    q = sql.SQL(
+        "WITH insts AS ({insts}) "
+        "SELECT s.doc AS c0, s.folder AS c1, s.repo AS c2, s.at AS c3, s.activity AS c4, s.details AS c5, {user} AS c6, "
+        "s.item_id AS c7, s.repo_id AS c8 FROM ({u}) s ORDER BY s.at DESC LIMIT {limit}"
+    ).format(insts=insts, user=user, u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
     return q, []
 
 
@@ -445,7 +538,8 @@ TEMPLATES: dict[str, Template] = {t.key: t for t in (
              "All open (pending, running, paused) requests across workflows with current stage and days pending.",
              "all_workflows", 0, _PENDING_COLS, _pending_workflow_requests),
     Template("document_recent_activity", "Document Recent Activity",
-             "Document uploads, changes and metadata edits across all repositories and folders over the last 30 days.",
+             "What was done to each document across all repositories and folders over the last 30 days: uploaded, "
+             "index fields updated (old -> new), linked to a request, text extracted, moved, renamed, deleted...",
              "all_repositories", 30, _DOC_COLS, _document_recent_activity),
 )}
 
