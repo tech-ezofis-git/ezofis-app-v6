@@ -33,7 +33,8 @@ dotnet build SaaSApp.sln
 dotnet test SaaSApp.sln                  # xUnit: Workflow.Infrastructure.Tests, Reporting.Infrastructure.Tests
 cd src/Api && dotnet run                 # https://localhost:5001/swagger, /health, /hangfire
 ```
-Config: copy `api/src/Api/appsettings.example.json` to `appsettings.Development.json`. DB setup: see `api/scripts/00_MASTER_SETUP_README.md` and `api/scripts/SCRIPTS_INDEX.md`. `api/README.md` still describes the older SQL Server `CreateDatabase.ps1` flow, so it may be out of date.
+Config: copy `api/src/Api/appsettings.example.json` to `appsettings.Development.json`.
+Background jobs: a local run (`Development`) uses its own Hangfire schema, `hangfire_local`, created on first start. Jobs queued locally stay there and never reach the production server. The database login needs permission to create that schema once. The local Hangfire server is off by default; set `Hangfire:RunServerInApi=true` to run queued jobs locally. DB setup: see `api/scripts/00_MASTER_SETUP_README.md` and `api/scripts/SCRIPTS_INDEX.md`. `api/README.md` still describes the older SQL Server `CreateDatabase.ps1` flow, so it may be out of date.
 Lint/format: no analyzer or `dotnet format` config was found. Unknown – needs confirmation.
 
 ## Agents — `agents/`

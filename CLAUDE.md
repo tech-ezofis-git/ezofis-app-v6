@@ -38,7 +38,7 @@ More details: @docs/ai/SETUP_AND_COMMANDS.md
 - **Never commit secrets**, real customer data, or `.env` / `appsettings.*.json` with real values. Use `@example.com` test data. The repo is private now, but v6api is still public.
 - **A merge to `main` deploys to production** (`.github/workflows/docker-ghcr.yml` → Azure `ezofis-app-v6`, `https://cloud.ezofis.com`), but **only if it came from a PR whose final commit was approved by `tech-ezofis-git`**. A direct push to `main`, or an unapproved PR, is not built or deployed. PRs into `testing` and `main` run the `PR checks` workflow (`.github/workflows/pr-checks.yml`).
 - Secrets live in Azure App Settings only: `EzofisAuth__SigningKey`, `Hangfire__DashboardUser` / `Hangfire__DashboardPassword` (API) and `CONSOLE_USER` / `CONSOLE_PASSWORD` (agents). The deploy script never copies keys from files.
-- Local testing against the shared database is **not safe yet**: a local API queues Hangfire jobs that production runs. Wait for the Hangfire separation fix.
+- Local API runs use their own Hangfire schema: in `Development`, `Hangfire:SchemaName` defaults to `hangfire_local` (production keeps `hangfire`), so jobs queued on a laptop never reach the production server. Never set it to `hangfire` locally. See `api/src/Api/Configuration/HangfireStorageSchema.cs`.
 - Never call write endpoints on `cloud.ezofis.com` from scripts or tests.
 - Multi-tenant: every API call is scoped to a tenant (`X-Tenant-Id` header or JWT `tid`). Never mix tenant data.
 - Web: thin routes in `src/routes`, UI in `src/pages`; use `components/base`; new APIs in `src/api/v6`; strings via Lingui; run `npm run lint`, which auto-sorts.
