@@ -42,11 +42,13 @@ env:
   SMOKE_BASE_URL: https://cloud.ezofis.com
 
 jobs:
-  # Warning only (free plan can't enforce approvals): flag pushes to main that
-  # did not come from a PR approved by tech-ezofis-git. Never blocks the deploy.
-  # After the switch-over, deploy-azure will require approved == 'true'.
+  # Deploy gate (the free plan can't block merges, so this blocks deploys):
+  # a push to main builds and deploys only when it came from a PR whose final
+  # commit was approved by tech-ezofis-git. A manual run deploys only when
+  # started by tech-ezofis-git. Otherwise this job fails and nothing is built
+  # or deployed (enforced since the switch-over, 30 Oct 2026).
   approval-check:
-    name: Approved PR check (warning only)
+    name: Approved PR check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -62,32 +64,45 @@ jobs:
           APPROVER: tech-ezofis-git
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual run by ${{ github.actor }}."
-            echo "approved=${{ github.actor == 'tech-ezofis-git' }}" >> "$GITHUB_OUTPUT"
-            exit 0
+            if [ "${{ github.actor }}" = "$APPROVER" ]; then
+              echo "approved=true" >> "$GITHUB_OUTPUT"
+              echo "OK: manual deploy started by $APPROVER." | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "approved=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Manual deploys can only be started by $APPROVER (started by ${{ github.actor }})."
+            echo "Blocked: manual deploy by ${{ github.actor }}. Only $APPROVER can start one." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
           PR=$(gh api "repos/$REPO/commits/$SHA/pulls" \
             --jq '[.[] | select(.merged_at != null and .base.ref == "main")][0].number // empty' || true)
           APPROVED=false
           if [ -n "$PR" ]; then
+            # The approval must be for the PR's final commit, so a push after
+            # the approval needs a new one.
+            HEAD_SHA=$(gh api "repos/$REPO/pulls/$PR" --jq '.head.sha')
             if gh api "repos/$REPO/pulls/$PR/reviews" --paginate \
-                 --jq ".[] | select(.state == \"APPROVED\" and .user.login == \"$APPROVER\") | .id" | grep -q .; then
+                 --jq ".[] | select(.state == \"APPROVED\" and .user.login == \"$APPROVER\" and .commit_id == \"$HEAD_SHA\") | .id" | grep -q .; then
               APPROVED=true
             fi
           fi
           echo "approved=$APPROVED" >> "$GITHUB_OUTPUT"
           if [ "$APPROVED" = "true" ]; then
             echo "OK: commit came from PR #$PR, approved by $APPROVER." | tee -a "$GITHUB_STEP_SUMMARY"
-          elif [ -n "$PR" ]; then
-            echo "::warning::PR #$PR was merged to main without an approval from $APPROVER."
-            echo "Warning: PR #$PR was merged without approval from $APPROVER (not blocking yet)." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "::warning::Commit $SHA was pushed to main directly by ${{ github.actor }}, not through a PR."
-            echo "Warning: direct push to main by ${{ github.actor }}, no PR (not blocking yet)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
+          if [ -n "$PR" ]; then
+            echo "::error::Not deployed: PR #$PR was merged without an approval from $APPROVER on its final commit."
+            echo "Blocked: PR #$PR had no approval from $APPROVER on its final commit. Nothing was built or deployed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::Not deployed: commit $SHA was pushed to main directly by ${{ github.actor }}, not through a PR."
+            echo "Blocked: direct push to main by ${{ github.actor }}. Nothing was built or deployed. Open a PR instead." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit 1
 
   changes:
     name: Detect changed services
+    needs: approval-check
     runs-on: ubuntu-latest
     outputs:
       app: ${{ steps.select.outputs.app }}

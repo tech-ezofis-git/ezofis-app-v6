@@ -8,7 +8,9 @@ Found by reading the code (October 2026). Nothing was run. Secret values are del
 - The Hangfire dashboard needs a password (v6api #169). The smoke check accepts 401 (PR #171).
 - The agents `/console` needs a login (AIorchestrator #106).
 - `ezofis-app-v6` was made private. **v6api is still public.**
-- Still open: rotate the Gemini/Qwen keys, change the pilot user password, remove the old values from `appsettings.Production.json` in v6api, and make v6api private.
+- PR checks run on every PR into `testing` and `main` (PR #173).
+- **30 Oct 2026, switch-over:** all code now lives in this repo. The v6api and AIorchestrator copy robots are off, and deploys need a PR approved by `tech-ezofis-git`.
+- Still open: rotate the Gemini/Qwen keys, change the pilot user password, remove the old values from `api/src/Api/appsettings.Production.json` (now in this repo), archive v6api and AIorchestrator, and make v6api private.
 
 ## 🔴 Security — fix first
 1. **Secrets committed to a public repo** (this was the state on 29 Oct 2026, before the fixes above):

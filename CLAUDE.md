@@ -10,7 +10,7 @@ In production, nginx in the `app` container routes `/api/*` to `api` and a few p
 
 ## Read first
 - `app/CLAUDE.md` and `mobile/CLAUDE.md` have detailed per-project rules.
-- Until the switch-over, `api/` and `agents/` are **copies synced from other repos** (`v6api` and `AIorchestrator`) with `rsync --delete`. Make API changes in v6api and agents changes in AIorchestrator, or the next sync erases them.
+- Since the switch-over (30 Oct 2026), **all code is developed here**, including `api/` and `agents/`. The old `v6api` and `AIorchestrator` repos are no longer used and no longer copy into this repo.
 
 ## Branch flow
 Work from **`testing`**, not `main`: `feature/…` → PR into `testing` → everyone tests locally with the test tenant → one PR `testing` → `main`, approved by `tech-ezofis-git` → deploy. Open PRs from your own GitHub account, never as `tech-ezofis-git`. Details: @docs/ai/CONVENTIONS.md
@@ -36,7 +36,7 @@ More details: @docs/ai/SETUP_AND_COMMANDS.md
 
 ## Important rules
 - **Never commit secrets**, real customer data, or `.env` / `appsettings.*.json` with real values. Use `@example.com` test data. The repo is private now, but v6api is still public.
-- **A push or merge to `main` deploys to production** (`.github/workflows/docker-ghcr.yml` → Azure `ezofis-app-v6`, `https://cloud.ezofis.com`). Never push to `main` directly. PRs into `testing` and `main` run the `PR checks` workflow (`.github/workflows/pr-checks.yml`).
+- **A merge to `main` deploys to production** (`.github/workflows/docker-ghcr.yml` → Azure `ezofis-app-v6`, `https://cloud.ezofis.com`), but **only if it came from a PR whose final commit was approved by `tech-ezofis-git`**. A direct push to `main`, or an unapproved PR, is not built or deployed. PRs into `testing` and `main` run the `PR checks` workflow (`.github/workflows/pr-checks.yml`).
 - Secrets live in Azure App Settings only: `EzofisAuth__SigningKey`, `Hangfire__DashboardUser` / `Hangfire__DashboardPassword` (API) and `CONSOLE_USER` / `CONSOLE_PASSWORD` (agents). The deploy script never copies keys from files.
 - Local testing against the shared database is **not safe yet**: a local API queues Hangfire jobs that production runs. Wait for the Hangfire separation fix.
 - Never call write endpoints on `cloud.ezofis.com` from scripts or tests.
