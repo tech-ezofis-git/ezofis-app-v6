@@ -22,6 +22,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional, Sequence
 
+from app.llm.burgr_route import pick_candidate, suppress_routing
 from app.llm.model_presets import apply_preset, get_preset, resolve_preset_overrides
 
 logger = logging.getLogger("orchestrator.catalog")
@@ -72,9 +73,40 @@ async def chat_completion_with_fallbacks(
     primary: Optional[dict[str, Any]] = None,
     fallbacks: Sequence[dict[str, Any]] = (),
 ) -> dict[str, Any]:
-    """Call chat_completion on primary, then each fallback, in order."""
+    """Call chat_completion on primary, then each fallback, in order.
+
+    When Burgr is configured, the catalog attempts are reordered so the
+    model it picks for this prompt is tried first. Later attempts stay
+    the catalog fallbacks and do not call Burgr again.
+    """
     attempts = [primary if isinstance(primary, dict) else {}]
     attempts.extend(fallback_override_chain(fallbacks))
+    token = suppress_routing.set(True)
+    try:
+        routed = await pick_candidate(messages, [item for item in attempts if item])
+    finally:
+        suppress_routing.reset(token)
+    if routed is not None:
+        chosen_model = str(routed.get("model") or "").strip().lower()
+        moved = [item for item in attempts if str(item.get("model") or "").strip().lower() == chosen_model]
+        rest = [item for item in attempts if str(item.get("model") or "").strip().lower() != chosen_model]
+        # Burgr may pick another catalog model, such as gpt-5.4-nano, that
+        # was not this agent's primary. Call that one first, then the chain.
+        if not moved:
+            moved = [{k: v for k, v in routed.items() if k in {"model", "api_base", "api_key", "api_version"}}]
+        attempts = moved + rest
+    token = suppress_routing.set(True)
+    try:
+        return await _run_fallback_attempts(llm, messages, attempts)
+    finally:
+        suppress_routing.reset(token)
+
+
+async def _run_fallback_attempts(
+    llm: Any,
+    messages: list[dict[str, str]],
+    attempts: list[dict[str, Any]],
+) -> dict[str, Any]:
     last_exc: Optional[BaseException] = None
     for index, overrides in enumerate(attempts):
         try:

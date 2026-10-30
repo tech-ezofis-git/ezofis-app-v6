@@ -147,6 +147,16 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         if (targetDefinitionStep == null)
             throw new InvalidOperationException($"No workflow step found for activityId '{request.ActivityId.Trim()}'.");
 
+        WorkflowStep? overrideNextStep = null;
+        if (!string.IsNullOrWhiteSpace(request.TargetActivityId))
+        {
+            overrideNextStep = ResolveStepByActivityId(orderedSteps, request.TargetActivityId)
+                ?? throw new InvalidOperationException(
+                    $"No workflow step found for target activityId '{request.TargetActivityId.Trim()}'.");
+            if (string.IsNullOrWhiteSpace(request.Review))
+                throw new InvalidOperationException("A review is required to move to a target activity.");
+        }
+
         var isApAgentMoveNext = ApAgentStepDetector.IsApAgentMoveNext(targetDefinitionStep, request.ActivityId);
         var isApAgentStep = WorkflowStepTransitionHelper.IsApAgentStep(targetDefinitionStep) || isApAgentMoveNext;
         var routesByAction = WorkflowStepActionsHelper.HasMatchingAction(targetDefinitionStep, request.Review)
@@ -283,7 +293,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             request.Review,
             mailboxForm,
             cancellationToken,
-            endWorkflow: request.EndWorkflow);
+            endWorkflow: request.EndWorkflow,
+            overrideNextStep: overrideNextStep);
 
         // Assignee (verify/sign, approve, or Forward) must see this workflow in the menu.
         if (legacySync.NextActivityUserId is Guid assignedUserId && assignedUserId != Guid.Empty)
@@ -311,7 +322,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         {
             // PDF is created only by the Document Generate Agent. Leaving Manual User
             // (or any other step) into that agent must not generate a PDF here.
-            var upcomingStep = WorkflowStepActionsHelper.ResolveNextStepByReview(
+            var upcomingStep = overrideNextStep ?? WorkflowStepActionsHelper.ResolveNextStepByReview(
                 targetDefinitionStep, request.Review, orderedSteps);
             var routesToDocumentAgent = upcomingStep != null
                 && FtlAgentStepDetector.IsDocumentGenerateAgent(upcomingStep);
@@ -358,7 +369,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                 }
             }
 
-            nextDefinitionStep = WorkflowStepActionsHelper.ResolveNextStepByReview(
+            nextDefinitionStep = overrideNextStep
+                ?? WorkflowStepActionsHelper.ResolveNextStepByReview(
                     targetDefinitionStep, request.Review, orderedSteps)
                 ?? orderedSteps
                     .Where(s => s.Order > targetDefinitionStep.Order)

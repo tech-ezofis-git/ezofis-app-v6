@@ -239,11 +239,20 @@ if (hangfireEnabled)
     };
     var hangfireConnectionString = hangfireCsBuilder.ConnectionString;
 
+    // Development defaults to its own schema so a laptop never queues jobs into production's.
+    var hangfireSchema = HangfireStorageSchema.Resolve(
+        builder.Configuration["Hangfire:SchemaName"], builder.Environment.IsDevelopment());
+    if (builder.Environment.IsDevelopment() && hangfireSchema == HangfireStorageSchema.Production)
+        Log.Warning("Hangfire:SchemaName is the production schema: jobs queued here can run on the production server.");
+    Log.Information("Hangfire storage schema: {HangfireSchema}", hangfireSchema);
+
     var hangfireStorageOptions = new PostgreSqlStorageOptions
     {
+        SchemaName = hangfireSchema,
         // Catalog hangfire.lock already has updatecount; auto-migrate loops on
-        // "column already exists" and hangs /hangfire (504). Schema is present — skip install.
-        PrepareSchemaIfNecessary = false,
+        // "column already exists" and hangs /hangfire (504). Production schema is present — skip install.
+        // Any other schema (hangfire_local) is created on first start.
+        PrepareSchemaIfNecessary = HangfireStorageSchema.PrepareSchemaIfNecessary(hangfireSchema),
         // Reduce catalog DB polling so HTTP requests are not competing with Hangfire every few seconds.
         QueuePollInterval = TimeSpan.FromSeconds(15),
         JobExpirationCheckInterval = TimeSpan.FromHours(1),

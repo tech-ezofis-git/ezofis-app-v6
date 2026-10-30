@@ -33,7 +33,8 @@ dotnet build SaaSApp.sln
 dotnet test SaaSApp.sln                  # xUnit: Workflow.Infrastructure.Tests, Reporting.Infrastructure.Tests
 cd src/Api && dotnet run                 # https://localhost:5001/swagger, /health, /hangfire
 ```
-Config: copy `api/src/Api/appsettings.example.json` to `appsettings.Development.json`. DB setup: see `api/scripts/00_MASTER_SETUP_README.md` and `api/scripts/SCRIPTS_INDEX.md`. `api/README.md` still describes the older SQL Server `CreateDatabase.ps1` flow, so it may be out of date.
+Config: copy `api/src/Api/appsettings.example.json` to `appsettings.Development.json`.
+Background jobs: a local run (`Development`) uses its own Hangfire schema, `hangfire_local`, created on first start. Jobs queued locally stay there and never reach the production server. The database login needs permission to create that schema once. The local Hangfire server is off by default; set `Hangfire:RunServerInApi=true` to run queued jobs locally. DB setup: see `api/scripts/00_MASTER_SETUP_README.md` and `api/scripts/SCRIPTS_INDEX.md`. `api/README.md` still describes the older SQL Server `CreateDatabase.ps1` flow, so it may be out of date.
 Lint/format: no analyzer or `dotnet format` config was found. Unknown – needs confirmation.
 
 ## Agents — `agents/`
@@ -48,6 +49,38 @@ python -m app.evals.run                           # eval harness: calls REAL LLM
 
 ## Mobile — `mobile/`
 See `mobile/CLAUDE.md`: `npm install`, `npm run dev`, `npm run build`, `tests/e2e/run_all.sh`.
+
+## Run everything locally (auto-reload)
+Use the dev servers, not IIS, Caddy or production Docker images. They reload by themselves when files change, so `git pull` updates the running stack.
+
+| Part | Started by `dev-start.ps1` with | Reloads after a pull |
+|---|---|---|
+| Web app | `npm run dev` (Vite, http://localhost:3000) | Browser page reloads |
+| API | `dotnet watch run` (http://localhost:5000) | Rebuilds and restarts |
+| Agents | `docker compose up` (uvicorn `--reload`, http://localhost:8010) | Restarts in the container |
+
+```powershell
+./scripts/dev-start.ps1            # checks settings, then opens one window per part
+./scripts/dev-start.ps1 -Only app,api
+./scripts/dev-start.ps1 -DryRun    # checks only
+./scripts/dev-pull.ps1             # switch to testing, pull, and do only the extra steps needed
+```
+
+Local settings (all git-ignored). `dev-start.ps1` refuses to start if any of them points at production:
+
+| File | Setting | Local value |
+|---|---|---|
+| `app/.env` | `VITE_BASE_URL`, `VITE_V6_BASE_URL` | `http://localhost:5000/api` (the example file points at production) |
+| `agents/.env` | `EZOFIS_API_BASE` | `http://host.docker.internal:5000/api` (the default is production) |
+| `api/src/Api/appsettings.Development.json` | `ConnectionStrings:DefaultConnection` | the tester database login |
+| same file | `Hangfire:SchemaName` | `hangfire_local` (never `hangfire`) |
+| same file | `EzofisBlobStorage:ConnectionString` | empty (file storage off) or a **test** storage account. Never a placeholder: that makes every request fail |
+| `agents/.env` | `EZOFIS_LOGIN_EMAIL`, `EZOFIS_LOGIN_PASSWORD` | the EZOFIS UAT test-tenant login |
+| `agents/.env` | `EZOFIS_ENV` | `trial` (never `live`) |
+
+`dev-start.ps1` also refuses while required values (database login, UAT login, `CATALOG_DATABASE_URL`) still contain `REPLACE_ME` / `YOUR_…` placeholders, and shows a note for optional ones (LLM keys, file storage).
+
+`dev-pull.ps1` runs `npm ci` when `app/package-lock.json` changed (or tells you to stop the web app first if it's running), rebuilds the agents container when `agents/requirements.txt` or `agents/Dockerfile` changed, and warns when database schema code changed, because the first request then changes tables in the shared database. Files the dev server regenerates (`app/src/routeTree.gen.ts`, `app/tsconfig.tsbuildinfo`, locale `messages.*`) don't count as your changes: `dev-pull.ps1` resets them and continues.
 
 ## Whole stack with Docker
 ```bash

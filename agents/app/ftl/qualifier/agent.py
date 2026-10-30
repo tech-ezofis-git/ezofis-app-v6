@@ -987,6 +987,18 @@ def run_qualification(
     )
 
     config = resolve_llm_config(llm_overrides)
+    from app.llm.burgr_route import apply_routed_config, suggest_with_tools_sync
+
+    tool_messages = [
+        {"role": "system", "content": build_system_prompt(skill, is_json_mode=False)},
+        {"role": "user", "content": candidate_text},
+    ]
+    tool_defs = [_SEARCH_PRICELIST_TOOL, _submit_decision_tool(skill)]
+    try:
+        routed = suggest_with_tools_sync(tool_messages, [config], tool_defs)
+        config = apply_routed_config(config, routed)
+    except Exception:
+        logger.warning("qualifier_burgr_tool_route_failed")
 
     def _execute_loop(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         client, deploy_model = open_client(cfg)
