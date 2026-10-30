@@ -36,7 +36,8 @@ public sealed partial class FormService
                 f."createdBy",
                 f."modifiedBy",
                 cb."Email" AS "CreatedByName",
-                COALESCE(mb."Email", cb."Email") AS "ModifiedByName"
+                COALESCE(mb."Email", cb."Email") AS "ModifiedByName",
+                f.type
             FROM dbo."wForm" f
             LEFT JOIN users."Users" cb ON cb."Id" = {TryCastUuid("f.\"createdBy\"")} AND cb."IsDeleted" = false
             LEFT JOIN users."Users" mb ON mb."Id" = {TryCastUuid("f.\"modifiedBy\"")} AND mb."IsDeleted" = false
@@ -56,7 +57,8 @@ public sealed partial class FormService
                 CreatedBy: reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                 ModifiedBy: reader.IsDBNull(3) ? null : reader.GetString(3),
                 CreatedByName: reader.IsDBNull(4) ? null : reader.GetString(4),
-                ModifiedByName: reader.IsDBNull(5) ? null : reader.GetString(5)));
+                ModifiedByName: reader.IsDBNull(5) ? null : reader.GetString(5),
+                Type: reader.IsDBNull(6) ? null : reader.GetString(6)));
         }
 
         return new FormListResponse(items);
@@ -143,7 +145,8 @@ public sealed partial class FormService
                 f."createdAt",
                 f."modifiedAt",
                 cb."Email" AS "CreatedByName",
-                COALESCE(mb."Email", cb."Email") AS "ModifiedByName"
+                COALESCE(mb."Email", cb."Email") AS "ModifiedByName",
+                f.type
             FROM dbo."wForm" f
             LEFT JOIN users."Users" cb ON cb."Id" = {TryCastUuid("f.\"createdBy\"")} AND cb."IsDeleted" = false
             LEFT JOIN users."Users" mb ON mb."Id" = {TryCastUuid("f.\"modifiedBy\"")} AND mb."IsDeleted" = false
@@ -181,7 +184,8 @@ public sealed partial class FormService
                     CreatedAt: ParseFormDate(reader.IsDBNull(6) ? null : reader.GetValue(6)),
                     ModifiedAt: ParseFormDate(reader.IsDBNull(7) ? null : reader.GetValue(7)),
                     CreatedByName: reader.IsDBNull(8) ? null : reader.GetString(8),
-                    ModifiedByName: reader.IsDBNull(9) ? null : reader.GetString(9)));
+                    ModifiedByName: reader.IsDBNull(9) ? null : reader.GetString(9),
+                    Type: reader.IsDBNull(10) ? null : reader.GetString(10)));
             }
         }
 
