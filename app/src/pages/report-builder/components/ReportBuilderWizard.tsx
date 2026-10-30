@@ -15,11 +15,11 @@ import {
 } from '../hooks/useReportBuilderApi'
 import useReportBuilderDraftStore from '../stores/useReportBuilderDraftStore'
 import { buildAgentConfigFromDraft } from '../utils/agentReport'
-import SourceStep from './steps/SourceStep'
 import DetailsStep from './steps/DetailsStep'
 import FieldsStep from './steps/FieldsStep'
 import FiltersStep from './steps/FiltersStep'
 import ScheduleStep from './steps/ScheduleStep'
+import SourceStep from './steps/SourceStep'
 
 const STEP_IDS = ['source', 'details', 'fields', 'filters', 'schedule'] as const
 
@@ -71,10 +71,6 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     { description: string; label: string }
   > = useMemo(
     () => ({
-      source: {
-        description: t`Choose data source`,
-        label: t`Source`,
-      },
       details: {
         description: t`Name, description & sharing`,
         label: t`Details`,
@@ -82,6 +78,10 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       fields: { description: t`Choose columns`, label: t`Fields` },
       filters: { description: t`Narrow down rows`, label: t`Filters` },
       schedule: { description: t`Automated delivery`, label: t`Schedule` },
+      source: {
+        description: t`Choose data source`,
+        label: t`Source`,
+      },
     }),
     [t],
   )
@@ -176,12 +176,14 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
 
     try {
       if (draft.agent) {
-        // AI reports were saved by generate; PATCH their edits (columns,
-        // labels, filters, highlights) under the same id.
+        // AI reports are only previewed while building; save stores exactly
+        // what was previewed plus the edits (columns, labels, filters,
+        // highlights). A previewed report has no id yet and is created here.
         await saveAiReportMutation.mutateAsync({
           agent: buildAgentConfigFromDraft(draft.agent, draft),
           description: draft.description,
           name: draft.name || t`Untitled Report`,
+          prompt: draft.aiPrompt,
           sharedGroups:
             draft.visibility === 'Selected Groups' ? draft.sharedGroups : [],
           sharedUsers:
@@ -262,11 +264,6 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   return (
     <SettingsWizardLayout
       activeStep={activeIndex}
-      // The Fields step lays out two column lists side by side plus inline
-      // highlight-rule editors, so it gets more room than the other steps.
-      contentClassName={
-        STEP_IDS[activeIndex] === 'fields' ? 'max-w-7xl' : undefined
-      }
       headerDescription={t`Build a custom report from any of your organization's data domains.`}
       headerTitle={draft.editingReportId ? t`Edit Report` : t`Report Builder`}
       isNextDisabled={isNextDisabled}
@@ -276,6 +273,11 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       saveLabel={t`Save & Publish`}
       skipLabel={t`Skip for now`}
       steps={steps}
+      // The Fields step lays out two column lists side by side plus inline
+      // highlight-rule editors, so it gets more room than the other steps.
+      contentClassName={
+        STEP_IDS[activeIndex] === 'fields' ? 'max-w-7xl' : undefined
+      }
       setupTitle={t`Report Builder`}
       onBack={() => goToStep(Math.max(0, activeIndex - 1))}
       onBackToSettings={handleCancel}

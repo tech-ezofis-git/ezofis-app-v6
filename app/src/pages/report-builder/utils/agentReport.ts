@@ -48,21 +48,21 @@ export const agentScopeForSource = (
   if (sourceType === 'Folder') {
     return sourceId === ALL_FOLDERS_SOURCE_ID
       ? {
-          repositoryName: null,
           reportType: 'all_repositories',
+          repositoryName: null,
           workflowName: null,
         }
       : {
-          repositoryName: domain,
           reportType: 'specific_repository',
+          repositoryName: domain,
           workflowName: null,
         }
   }
   return sourceId === ALL_WORKFLOWS_SOURCE_ID
-    ? { repositoryName: null, reportType: 'all_workflows', workflowName: null }
+    ? { reportType: 'all_workflows', repositoryName: null, workflowName: null }
     : {
-        repositoryName: null,
         reportType: 'specific_workflow',
+        repositoryName: null,
         workflowName: domain,
       }
 }
@@ -170,7 +170,7 @@ const draftFilterToSpec = (
 }
 
 /** Status-column rules → the agent's `highlight` shape (inverse of fromReportSpec). */
-const fieldSettingToHighlight = (
+export const fieldSettingToHighlight = (
   key: string,
   setting: ReportFieldSetting | undefined,
 ): ReportSpecHighlight | null => {
@@ -439,8 +439,12 @@ const AGENT_TYPE_DOMAIN: Record<ReportAgentType, string> = {
 const isAllScopeType = (reportType: ReportAgentType) =>
   reportType === 'all_workflows' || reportType === 'all_repositories'
 
+/** Source label of the fixed, tenant-wide default reports. */
+export const DEFAULT_REPORT_DOMAIN = 'Default report'
+
 /** The workflow/folder name for a specific-scope report, else its scope label. */
 const aiReportDomain = (item: ReportAiListItem) =>
+  (item.kind === 'default' && DEFAULT_REPORT_DOMAIN) ||
   (!isAllScopeType(item.reportType) &&
     (item.workflowName || item.repositoryName)) ||
   AGENT_TYPE_DOMAIN[item.reportType] ||
@@ -470,8 +474,9 @@ const toReportVisibility = (
     (value) => value.toLowerCase() === String(visibility || '').toLowerCase(),
   ) ?? 'Private'
 
-/** A /report-ai-builder list row as a (summary) `Report` for the reports list. */
+/** A Report Agent v2 list row as a (summary) `Report` for the reports list. */
 export const aiListItemToReport = (item: ReportAiListItem): Report => ({
+  canEdit: item.canEdit,
   createdAt: item.createdAtUtc,
   customFields: [],
   description: readableObjective(item.description),
@@ -501,14 +506,14 @@ export const aiListItemToReport = (item: ReportAiListItem): Report => ({
 })
 
 /**
- * A full saved AI report (GET /report-ai-builder/{id}) as a `Report` whose
+ * A full saved AI report (Report Agent v2 GET /definitions/{id}) as a `Report` whose
  * fields/fieldSettings/filters come from its spec, ready for the wizard draft
  * and the report page.
  */
 export const aiRecordToReport = (record: ReportAiRecord): Report => {
   const scope = {
-    repositoryName: record.repositoryName,
     reportType: record.reportType,
+    repositoryName: record.repositoryName,
     sessionId: record.sessionId || createReportAgentSessionId(),
     workflowName: record.workflowName,
   }
