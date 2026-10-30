@@ -20,6 +20,7 @@ feature/xyz ──PR──► testing ──(everyone pulls & tests locally, tes
    - **Urgent production fix:** branch from `main`, PR into `main` (approved by tech), then merge `main` back into `testing`.
    - Open PRs from **your own GitHub account**. `tech-ezofis-git` only approves, because GitHub never lets an account approve its own PR.
    - Pushing to `testing` never deploys. Only `main` deploys.
+   - Every PR is labelled automatically by `.github/workflows/pr-target-label.yml`: **`into: testing`** or **`into: main`**. A PR into `main` that doesn't come from `testing` also gets **`direct to main`** and one comment explaining the rule. Filter with `label:"into: main"` to see what will go to production.
 6. Free plan note: GitHub can't block direct pushes here, so the deploy workflow blocks the **deploy** instead. A change on `main` is built and deployed only if it came from a PR whose **final commit** was approved by `tech-ezofis-git`. A direct push, an unapproved PR, or a PR with commits added after the approval fails the `Approved PR check` job, and nothing is built or deployed. Manual deploys can only be started by `tech-ezofis-git`.
 
 ## Where code changes go

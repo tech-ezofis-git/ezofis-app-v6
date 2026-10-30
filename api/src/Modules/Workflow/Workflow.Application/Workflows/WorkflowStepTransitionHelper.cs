@@ -27,6 +27,12 @@ public static class WorkflowStepTransitionHelper
         string.Equals(step.StageType, "AP_AGENT", StringComparison.OrdinalIgnoreCase)
         || string.Equals(step.Name, "Ap Agent", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Designer CONDITION (or legacy RULES) block: the API checks its rules and routes on its own.</summary>
+    public static bool IsConditionStep(WorkflowStep step) =>
+        step.StepType == StepType.Condition
+        || string.Equals(step.StageType?.Trim(), "CONDITION", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(step.StageType?.Trim(), "RULES", StringComparison.OrdinalIgnoreCase);
+
     public static bool IsApproveReview(string? review) =>
         string.Equals(review?.Trim(), "Approve", StringComparison.OrdinalIgnoreCase);
 
