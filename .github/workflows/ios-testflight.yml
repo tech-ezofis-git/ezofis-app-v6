@@ -69,18 +69,53 @@ jobs:
           done
           [ -z "$missing" ]
 
+      - name: Write the App Store Connect API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          printf '%s\n' "$ASC_KEY_P8" | tr -d '\r' > "$RUNNER_TEMP/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
+
+      # Signs in to the App Store Connect API with the key before the long build, and says which part is wrong
+      # if Apple refuses it (Xcode only reports "Communication with Apple failed (401)").
+      - name: Check the API key with Apple
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          node - <<'JS'
+          const crypto = require('crypto');
+          const fs = require('fs');
+          const keyId = process.env.ASC_KEY_ID.trim();
+          const issuer = process.env.ASC_ISSUER_ID.trim();
+          const fail = (m) => { console.log('::error::' + m); process.exit(1); };
+          if (!/^[A-Z0-9]{10}$/.test(keyId)) fail(`ASC_KEY_ID should be the 10-character Key ID (letters and digits), but it is ${keyId.length} characters long.`);
+          if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(issuer)) fail(`ASC_ISSUER_ID should look like 12345678-1234-1234-1234-123456789abc (${issuer.length} characters found).`);
+          let key;
+          try { key = crypto.createPrivateKey(fs.readFileSync(process.env.RUNNER_TEMP + '/AuthKey.p8', 'utf8')); }
+          catch (e) { fail('ASC_KEY_P8 is not a valid .p8 key: paste the whole file text, from -----BEGIN PRIVATE KEY----- to -----END PRIVATE KEY-----.'); }
+          const b64 = (o) => Buffer.from(typeof o === 'string' ? o : JSON.stringify(o)).toString('base64url');
+          const now = Math.floor(Date.now() / 1000);
+          const body = b64({ alg: 'ES256', kid: keyId, typ: 'JWT' }) + '.' + b64({ iss: issuer, iat: now, exp: now + 600, aud: 'appstoreconnect-v1' });
+          const sig = crypto.sign('sha256', Buffer.from(body), { key, dsaEncoding: 'ieee-p1363' }).toString('base64url');
+          (async () => {
+            const r = await fetch('https://api.appstoreconnect.apple.com/v1/apps?filter[bundleId]=com.ezofis.ezofismobile', { headers: { Authorization: `Bearer ${body}.${sig}` } });
+            const j = await r.json().catch(() => ({}));
+            const why = (j.errors || []).map((e) => `${e.code}: ${e.detail || e.title}`).join('; ');
+            if (r.status === 401) fail(`Apple refused the API key (401 ${why}). ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_P8 must all come from the same key under Users and Access → Integrations → App Store Connect API → Team Keys (not Individual Keys), and the key must not be revoked.`);
+            if (r.status === 403) fail(`The API key works but is not allowed to do this (403 ${why}). Give the key the Admin role.`);
+            if (!r.ok) fail(`App Store Connect answered ${r.status}: ${why}`);
+            const app = (j.data || [])[0];
+            if (!app) fail('The API key works, but this team has no App Store Connect app with bundle ID com.ezofis.ezofismobile.');
+            console.log(`API key OK. App Store Connect app: ${app.attributes.name} (${app.attributes.bundleId}, Apple ID ${app.id}).`);
+          })().catch((e) => fail('Could not reach App Store Connect: ' + e.message));
+          JS
+
       - name: Build the web app and sync iOS
         run: |
           npm ci --no-audit --no-fund
           npm run build
           npx cap sync ios
-
-      - name: Write the App Store Connect API key
-        env:
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-        run: |
-          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
-          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
 
       - name: Archive
         env:
