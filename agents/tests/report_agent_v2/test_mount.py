@@ -100,3 +100,43 @@ async def test_unreachable_catalog_is_503_not_500():
                         headers={"Authorization": f"Bearer {make_token(uuid.uuid4(), tid)}", "X-Tenant-Id": str(tid)})
     assert r.status_code == 503
     assert "unavailable" in r.json()["error"]
+
+
+def _fresh_settings(monkeypatch, **env):
+    from app.report_agent_v2.config import get_settings
+
+    for name in ("REPORT_AGENT_V2_ENABLED", "REPORT_AGENT_CATALOG_CONNECTION_STRING", "CATALOG_DATABASE_URL",
+                 "REPORT_AGENT_EZOFIS_AUTH_SIGNING_KEY", "EZOFIS_AUTH_SIGNING_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
+    get_settings.cache_clear()
+    return get_settings
+
+
+def test_off_by_default_even_with_a_catalog(monkeypatch):
+    get_settings = _fresh_settings(monkeypatch, CATALOG_DATABASE_URL="postgresql://db.example.com:5432/catalog",
+                                   EZOFIS_API_BASE="https://v6.example.com/api")
+    try:
+        assert report_agent_v2.build_mounted_app() is None
+    finally:
+        get_settings.cache_clear()
+
+
+def test_mounted_when_enabled(monkeypatch):
+    get_settings = _fresh_settings(monkeypatch, REPORT_AGENT_V2_ENABLED="true",
+                                   CATALOG_DATABASE_URL="postgresql://db.example.com:5432/catalog",
+                                   EZOFIS_API_BASE="https://v6.example.com/api")
+    try:
+        assert report_agent_v2.build_mounted_app() is not None
+    finally:
+        get_settings.cache_clear()
+
+
+def test_safe_defaults_and_no_shared_signing_key_fallback(monkeypatch):
+    _fresh_settings(monkeypatch, EZOFIS_AUTH_SIGNING_KEY="x" * 40)
+    s = Settings()
+    assert s.enabled is False
+    assert s.ezofis_auth_signing_key is None  # the API's key is never picked up implicitly
+    assert s.catalog_pool_max_size + s.tenant_pool_max_size * s.tenant_pool_cache_size <= 42

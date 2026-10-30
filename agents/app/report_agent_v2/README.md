@@ -83,17 +83,41 @@ Wizard mapping: **Source** step (Workflow/Folder + workflow) and **Build with AI
 
 ## Configuration
 
-Add to the orchestrator's `.env`. Every name is prefixed `REPORT_AGENT_` so nothing collides with
-orchestrator settings. The module is **not mounted** (and the orchestrator starts normally) when
-no catalog connection is configured.
+Set these as agents App Settings (Azure) or in a local `agents/.env`. Every name is prefixed
+`REPORT_AGENT_` so nothing collides with orchestrator settings. The module ships **off**: nothing is
+mounted at `/api/report-agent-v2` (and the orchestrator starts normally) unless
+`REPORT_AGENT_V2_ENABLED=true` **and** a catalog connection is configured.
 
 | Variable | Notes |
 |---|---|
+| `REPORT_AGENT_V2_ENABLED` | `true` to mount the module. Default `false` |
 | `REPORT_AGENT_CATALOG_CONNECTION_STRING` | v6api `DefaultConnection`. Falls back to `CATALOG_DATABASE_URL` |
-| `REPORT_AGENT_EZOFIS_AUTH_SIGNING_KEY` | Same key v6api signs JWTs with (>= 32 bytes). Falls back to `EZOFIS_AUTH_SIGNING_KEY` |
-| `REPORT_AGENT_V6_API_BASE` | V6 API that issued the token (falls back to `EZOFIS_API_BASE`). When the signing key is unset or no longer matches (rotated), `GET {base}/usersession` with the caller's token decides; cached `REPORT_AGENT_V6_SESSION_CACHE_SECONDS` (120) per token |
-| `REPORT_AGENT_TENANT_DB_USERNAME` / `_PASSWORD` | Least-privilege login (strongly recommended) |
+| `REPORT_AGENT_V6_API_BASE` | V6 API that issued the token (falls back to `EZOFIS_API_BASE`). Tokens are checked by `GET {base}/usersession` with the caller's token (accepted only if the token is valid and the user exists in the token's tenant); cached `REPORT_AGENT_V6_SESSION_CACHE_SECONDS` (120) per token. **This is the recommended setup** |
+| `REPORT_AGENT_EZOFIS_AUTH_SIGNING_KEY` | Optional, **not recommended**: with the API's HS256 key the agents could also mint tokens. Explicit opt-in only; never read from a shared `EZOFIS_AUTH_SIGNING_KEY` |
+| `REPORT_AGENT_TENANT_DB_USERNAME` / `_PASSWORD` | Least-privilege login `report_agent_rt` (strongly recommended). Without it the owner credentials stored in the catalog are used; queries are still `READ ONLY` per transaction |
+| `REPORT_AGENT_CATALOG_POOL_MAX_SIZE` / `REPORT_AGENT_TENANT_POOL_MAX_SIZE` / `REPORT_AGENT_TENANT_POOL_CACHE_SIZE` | Default 2 / 2 / 20: at most 2 + 2 × 20 = **42** connections per agents process to the shared Postgres server (opened lazily, closed after 20 s idle). Check against the server's `max_connections` before raising them |
 | `REPORT_AGENT_MAX_ROWS`, `REPORT_AGENT_STATEMENT_TIMEOUT_MS`, `REPORT_AGENT_CORS_ORIGINS`, ... | See `config.py` |
+
+## Release steps
+
+Before switching it on in an environment (in this order):
+
+1. **nginx**: `app/nginx.conf` must route `^~ /api/report-agent-v2/` to the agents container (in this
+   PR). Without it the path falls through to `^~ /api/` and the .NET API returns 404.
+2. **Least-privilege login** (DB admin, once per server): create `report_agent_rt` from
+   `migrations/002_least_privilege_roles.sql` (password from the secret store, never in git), then set
+   `REPORT_AGENT_TENANT_DB_USERNAME` / `_PASSWORD` in the agents App Settings.
+3. **Tables** (DB admin, owner credentials): run `python -m app.report_agent_v2.cli.migrate` for every
+   active tenant, or `--tenant <guid>` per tenant. Additive only (`CREATE ... IF NOT EXISTS`);
+   `reporting."ReportAiDefinitions"` matches `ReportSchemaSql.cs`. Without it, preview works but save
+   and execute fail.
+4. **Check pool sizes** against the Postgres server's `max_connections` (see the table above).
+5. **Model**: each tenant needs a working catalog model for agent `report` (or a working process
+   default); otherwise preview fails for that tenant. Default reports and saved-report runs make no
+   LLM call.
+6. **Switch on**: set `REPORT_AGENT_V2_ENABLED=true` (keep the signing key unset) and restart the
+   agents container. Check the startup log for "Report Agent v2 not mounted" messages.
+7. **Default reports**: a tenant admin calls `POST /api/report-agent-v2/defaults/install` once per tenant.
 
 ## Model
 

@@ -26,6 +26,9 @@ def build_mounted_app() -> FastAPI | None:
 
     try:
         settings = get_settings()
+        if not settings.enabled:
+            logger.info("Report Agent v2 not mounted: REPORT_AGENT_V2_ENABLED is not true.")
+            return None
         if not is_configured(settings):
             logger.info("Report Agent v2 not mounted: set REPORT_AGENT_CATALOG_CONNECTION_STRING or CATALOG_DATABASE_URL.")
             return None

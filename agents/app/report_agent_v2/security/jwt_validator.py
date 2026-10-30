@@ -91,7 +91,7 @@ class JwtValidator:
                 )
             )
         if not self._providers and not self._v6_base:
-            raise RuntimeError("No JWT provider configured (set EZOFIS_AUTH_SIGNING_KEY or EZOFIS_API_BASE).")
+            raise RuntimeError("No JWT provider configured (set EZOFIS_API_BASE, or REPORT_AGENT_EZOFIS_AUTH_SIGNING_KEY).")
 
     async def aclose(self) -> None:
         if self._v6_client is not None:

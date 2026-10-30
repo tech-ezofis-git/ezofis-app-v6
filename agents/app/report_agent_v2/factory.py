@@ -40,7 +40,7 @@ from app.report_agent_v2.security.jwt_validator import JwtValidator
 
 
 def is_configured(settings: Settings) -> bool:
-    return bool(settings.catalog_connection_string)
+    return settings.enabled and bool(settings.catalog_connection_string)
 
 
 def create_app(settings: Settings | None = None, planner: ReportPlanner | None = None, pools: PoolRegistry | None = None) -> FastAPI:
