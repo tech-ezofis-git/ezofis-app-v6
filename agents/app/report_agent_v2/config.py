@@ -80,7 +80,8 @@ class Settings(BaseSettings):
     agent_max_repair_attempts: int = Field(default=2, alias="REPORT_AGENT_AGENT_MAX_REPAIR_ATTEMPTS")
 
     # --- HTTP ------------------------------------------------------------------------------
-    cors_origins: list[str] = Field(default_factory=list, alias="REPORT_AGENT_CORS_ORIGINS")
+    # Comma-separated. Kept as text: pydantic-settings would JSON-decode a list-typed env value.
+    cors_origins_raw: str = Field(default="", alias="REPORT_AGENT_CORS_ORIGINS")
     log_prompts: bool = Field(default=False, alias="REPORT_AGENT_LOG_PROMPTS")
 
     @field_validator("ezofis_auth_signing_key")
@@ -91,12 +92,9 @@ class Settings(BaseSettings):
             raise ValueError("REPORT_AGENT_EZOFIS_AUTH_SIGNING_KEY must be at least 32 bytes.")
         return value.strip() if value else value
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def _split_origins(cls, value: object) -> object:
-        if isinstance(value, str):
-            return [v.strip() for v in value.split(",") if v.strip()]
-        return value
+    @property
+    def cors_origins(self) -> list[str]:
+        return [v.strip() for v in self.cors_origins_raw.split(",") if v.strip()]
 
 
 @lru_cache

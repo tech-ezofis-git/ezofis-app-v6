@@ -140,3 +140,8 @@ def test_safe_defaults_and_no_shared_signing_key_fallback(monkeypatch):
     assert s.enabled is False
     assert s.ezofis_auth_signing_key is None  # the API's key is never picked up implicitly
     assert s.catalog_pool_max_size + s.tenant_pool_max_size * s.tenant_pool_cache_size <= 42
+
+
+def test_cors_origins_are_read_as_comma_separated_text(monkeypatch):
+    _fresh_settings(monkeypatch, REPORT_AGENT_CORS_ORIGINS="http://localhost:3000, https://app.example.com")
+    assert Settings().cors_origins == ["http://localhost:3000", "https://app.example.com"]
