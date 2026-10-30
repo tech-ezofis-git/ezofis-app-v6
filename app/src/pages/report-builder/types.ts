@@ -7,28 +7,6 @@ export interface DomainField {
   type: ReportFieldType
 }
 
-export type ReportAgentType =
-  | 'all_workflows'
-  | 'specific_workflow'
-  | 'all_repositories'
-  | 'specific_repository'
-
-/**
- * An AI (report agent) report as saved by /report-ai-builder: its saved id
- * plus the agent's JSON `reportPrompt` string and the edited `reportSpec`,
- * sent back on run/PATCH exactly as the agent expects them.
- */
-export interface ReportAgentConfig {
-  /** Saved /report-ai-builder report id, returned by generate. */
-  id: string
-  reportPrompt: string
-  reportSpec: Record<string, unknown>
-  reportType: ReportAgentType
-  sessionId: string
-  repositoryName?: string | null
-  workflowName?: string | null
-}
-
 export interface Report {
   createdAt: string
   customFields: Question[]
@@ -53,13 +31,37 @@ export interface Report {
   agentConfig?: ReportAgentConfig | null
   /** Prompt the user typed to generate an AI report (its `userPrompt`). */
   aiPrompt?: string
-  /** Lives in /report-ai-builder rather than /report-builder. */
+  /** Whether the viewer may change it (AI reports: owner or admin). */
+  canEdit?: boolean
+  /** Lives in Report Agent v2 rather than /report-builder. */
   isAiReport?: boolean
   /** Who last changed the report (name, email or user id); falls back to owner. */
   modifiedBy?: string
   sourceFormId?: string
   sourceId?: string
 }
+
+/**
+ * An AI (report agent) report as saved by /report-ai-builder: its saved id
+ * plus the agent's JSON `reportPrompt` string and the edited `reportSpec`,
+ * sent back on run/PATCH exactly as the agent expects them.
+ */
+export interface ReportAgentConfig {
+  /** Saved /report-ai-builder report id, returned by generate. */
+  id: string
+  reportPrompt: string
+  reportSpec: Record<string, unknown>
+  reportType: ReportAgentType
+  sessionId: string
+  repositoryName?: string | null
+  workflowName?: string | null
+}
+
+export type ReportAgentType =
+  | 'all_workflows'
+  | 'specific_workflow'
+  | 'all_repositories'
+  | 'specific_repository'
 
 export type ReportCalc = 'None' | 'Sum' | 'Average' | 'Count' | 'Min' | 'Max'
 
@@ -106,6 +108,19 @@ export type ReportFilterOperator =
   | 'isEmpty'
   | 'isNotEmpty'
 
+export type ReportHighlightOperator =
+  | 'eq'
+  | 'neq'
+  | 'contains'
+  | 'notContains'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'between'
+  | 'empty'
+  | 'notEmpty'
+
 export interface ReportSchedule {
   cc: string[]
   day: string
@@ -125,19 +140,6 @@ export type ReportScheduleRecurrence = 'Daily' | 'Weekly' | 'Monthly'
 export type ReportSourceType = 'Workflow' | 'Folder' | 'Master' | ''
 
 export type ReportStatus = 'Draft' | 'Published'
-
-export type ReportHighlightOperator =
-  | 'eq'
-  | 'neq'
-  | 'contains'
-  | 'notContains'
-  | 'gt'
-  | 'gte'
-  | 'lt'
-  | 'lte'
-  | 'between'
-  | 'empty'
-  | 'notEmpty'
 
 export interface ReportStatusRule {
   color: string

@@ -27,7 +27,11 @@ import {
   useReportAgentDataQuery,
   useReportBuilderDataQuery,
 } from '@/pages/report-builder/hooks/useReportBuilderApi'
-import { isHiddenReportColumn } from '@/pages/report-builder/utils/hiddenColumns'
+import { DEFAULT_REPORT_DOMAIN } from '@/pages/report-builder/utils/agentReport'
+import {
+  isHiddenReportColumn,
+  isIdColumn,
+} from '@/pages/report-builder/utils/hiddenColumns'
 import { resolveFieldStatus } from '@/pages/report-builder/utils/resolveFieldStatus'
 import Request from '@/pages/requests/components/request/Request'
 import useInlineRequestOverview from '@/pages/requests/hooks/useInlineRequestOverview'
@@ -168,8 +172,14 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     const columns = runResult?.columns ?? []
     return (
       columns
-        // Internal identifier columns are fetched but never displayed.
-        .filter((col) => !isHiddenReportColumn(col.key, col.label))
+        // Internal identifier columns are fetched but never displayed. Default
+        // reports span every workflow/folder, so their Workflow / Repository
+        // column is real data there, not the report's own source name.
+        .filter((col) =>
+          report.domain === DEFAULT_REPORT_DOMAIN
+            ? !isIdColumn(col.key, col.label)
+            : !isHiddenReportColumn(col.key, col.label),
+        )
         .map((col) => {
           const fieldId = isAgentReport
             ? col.key
@@ -179,7 +189,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
           return { id: fieldId, label: col.label }
         })
     )
-  }, [runResult, isAgentReport, report.fields, fieldSettings])
+  }, [runResult, isAgentReport, report.fields, report.domain, fieldSettings])
 
   // Hidden workflow/instance id columns of the run, used to open a row's
   // request from its Req No cell.
