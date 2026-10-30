@@ -23,7 +23,10 @@ public record MoveToNextStepCommand(
     string? CommentAuthorName = null,
     /// <summary>Internal: move to this activity instead of the ProceedAction target (SLA "Escalate to Stage").
     /// Not bound from the public API.</summary>
-    string? TargetActivityId = null
+    string? TargetActivityId = null,
+    /// <summary>Internal: conditions already routed in this chain by <see cref="IWorkflowConditionRouter"/>.
+    /// Not bound from the public API.</summary>
+    int ConditionDepth = 0
 ) : IRequest<MoveToNextStepCommandResult>;
 
 public record MoveToNextStepCommandResult(

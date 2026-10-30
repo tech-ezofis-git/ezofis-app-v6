@@ -93,7 +93,7 @@ public static class WorkflowEndSyncJson
         return new WorkflowEndSyncConfig(enabled, target, masterFormId, mappings);
     }
 
-    private static bool BlockMatches(JsonElement block, string blockId, string? stepName)
+    internal static bool BlockMatches(JsonElement block, string blockId, string? stepName)
     {
         var id = ReadString(block, "id", "Id");
         if (KeyEquals(id, blockId) || KeyEquals(id, stepName))
@@ -167,7 +167,7 @@ public static class WorkflowEndSyncJson
         return false;
     }
 
-    private static bool TryGetArray(JsonElement parent, out JsonElement child, params string[] names)
+    internal static bool TryGetArray(JsonElement parent, out JsonElement child, params string[] names)
     {
         foreach (var name in names)
         {
@@ -178,7 +178,7 @@ public static class WorkflowEndSyncJson
         return false;
     }
 
-    private static bool TryGetObject(JsonElement parent, out JsonElement child, params string[] names)
+    internal static bool TryGetObject(JsonElement parent, out JsonElement child, params string[] names)
     {
         foreach (var name in names)
         {
@@ -189,7 +189,7 @@ public static class WorkflowEndSyncJson
         return false;
     }
 
-    private static string? ReadString(JsonElement obj, params string[] names)
+    internal static string? ReadString(JsonElement obj, params string[] names)
     {
         foreach (var name in names)
         {
@@ -212,7 +212,7 @@ public static class WorkflowEndSyncJson
         return null;
     }
 
-    private static bool? ReadBool(JsonElement obj, params string[] names)
+    internal static bool? ReadBool(JsonElement obj, params string[] names)
     {
         foreach (var name in names)
         {

@@ -24,6 +24,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
     private readonly IWorkflowSecurityService _security;
     private readonly IMjbUsMailWorkflowStarter _mjbMailStarter;
     private readonly IEmlAttachmentExtractionService _emlAttachmentExtraction;
+    private readonly IWorkflowConditionRouter _conditionRouter;
     private readonly ILogger<StartWorkflowCommandHandler> _logger;
 
     public StartWorkflowCommandHandler(
@@ -41,6 +42,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
         IWorkflowSecurityService security,
         IMjbUsMailWorkflowStarter mjbMailStarter,
         IEmlAttachmentExtractionService emlAttachmentExtraction,
+        IWorkflowConditionRouter conditionRouter,
         ILogger<StartWorkflowCommandHandler> logger)
     {
         _repository = repository;
@@ -57,6 +59,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
         _security = security;
         _mjbMailStarter = mjbMailStarter;
         _emlAttachmentExtraction = emlAttachmentExtraction;
+        _conditionRouter = conditionRouter;
         _logger = logger;
     }
 
@@ -310,6 +313,11 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
                         instance.Id);
                 }
             }
+
+            // First stage after Start is a condition block: check it and move on now.
+            // AP Agent workflows open the AP_AGENT step instead, so they never stop on a condition here.
+            if (dedicatedApAgent == null)
+                await _conditionRouter.TryRouteAsync(instance.Id, cancellationToken: cancellationToken);
 
             return new StartWorkflowCommandResult(
                 instance.Id,
