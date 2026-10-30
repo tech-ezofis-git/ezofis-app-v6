@@ -119,6 +119,8 @@ async def save_definition(
     shared_users: list[str],
     shared_groups: list[str],
     session_id: str | None = None,
+    ui_spec: dict | None = None,
+    status: str | None = None,
 ) -> tuple[uuid.UUID, int, dict]:
     """Insert or update the AI definition and append a new active spec version, atomically.
 
@@ -142,7 +144,9 @@ async def save_definition(
             (tenant_id, report_id),
         )
         version = int((await cur.fetchone())[0]) + 1
-        spec_json, prompt_text = build_ai_spec(spec, compiled, catalog, prompt=prompt, warnings=warnings, spec_version=version)
+        spec_json, prompt_text = build_ai_spec(
+            spec, compiled, catalog, prompt=prompt, warnings=warnings, spec_version=version, ui_spec=ui_spec
+        )
         row = {
             "id": report_id, "tenant": tenant_id, "user": user_id, "now": now,
             "session": (session_id or f"report-{uuid.uuid4()}")[:128],
@@ -151,6 +155,7 @@ async def save_definition(
             "repository_name": catalog.source_name[:256] if rtype == "specific_repository" else None,
             "prompt": prompt_text, "spec": json.dumps(spec_json, ensure_ascii=False),
             "visibility": vis, "shared_users": json.dumps(users), "shared_groups": json.dumps(groups),
+            "status": status or (existing["Status"] if existing else "Draft"),
         }
         if existing is None:
             await conn.execute(
@@ -161,7 +166,7 @@ async def save_definition(
                      "CreatedAtUtc", "ModifiedAtUtc", "CreatedBy", "ModifiedBy", "IsDeleted",
                      "Visibility", "SharedUsers", "SharedGroups")
                 VALUES (%(id)s, %(tenant)s, %(user)s, %(session)s, %(name)s, %(description)s, %(report_type)s,
-                        %(workflow_name)s, %(repository_name)s, %(prompt)s, %(spec)s, 'Draft', 0,
+                        %(workflow_name)s, %(repository_name)s, %(prompt)s, %(spec)s, %(status)s, 0,
                         %(now)s, %(now)s, %(user)s, %(user)s, false,
                         %(visibility)s, %(shared_users)s, %(shared_groups)s)
                 """,
@@ -175,7 +180,7 @@ async def save_definition(
                     "ReportType" = %(report_type)s, "WorkflowName" = %(workflow_name)s,
                     "RepositoryName" = %(repository_name)s, "ReportPrompt" = %(prompt)s, "ReportSpecJson" = %(spec)s,
                     "Visibility" = %(visibility)s, "SharedUsers" = %(shared_users)s, "SharedGroups" = %(shared_groups)s,
-                    "ModifiedAtUtc" = %(now)s, "ModifiedBy" = %(user)s
+                    "Status" = %(status)s, "ModifiedAtUtc" = %(now)s, "ModifiedBy" = %(user)s
                 WHERE "Id" = %(id)s AND "TenantId" = %(tenant)s AND "IsDeleted" = false
                 """,
                 row,

@@ -17,7 +17,7 @@ from app.models.report_agent import ReportSpecColumn, ReportSpecFilter, ReportSp
 from app.report_agent.report_spec import report_spec_to_prompt
 from app.report_agent_v2.domain.compiler import CompiledQuery
 from app.report_agent_v2.domain.source_catalog import SourceCatalog
-from app.report_agent_v2.domain.spec import Condition, Derived, Measure, ReportSpec
+from app.report_agent_v2.domain.spec import Condition, Derived, Measure, OutputColumn, ReportSpec
 
 AGENT_SPEC_KEY = "agentSpec"
 
@@ -75,6 +75,115 @@ def _measure_formula(m: Measure, label: _Labels) -> str:
     return text
 
 
+# Wizard filter ops (the existing ReportSpecFilter vocabulary) -> v2 condition ops.
+_UI_FILTER_OP = {
+    "eq": "equals", "=": "equals", "equals": "equals",
+    "ne": "notEquals", "neq": "notEquals", "!=": "notEquals", "notequals": "notEquals",
+    "gt": "gt", ">": "gt", "gte": "gte", ">=": "gte", "lt": "lt", "<": "lt", "lte": "lte", "<=": "lte",
+    "contains": "contains", "not_contains": "notContains", "starts_with": "startsWith", "ends_with": "endsWith",
+    "in": "in", "not_in": "notIn",
+    "is_null": "isEmpty", "is_empty": "isEmpty", "not_null": "isNotEmpty", "is_not_null": "isNotEmpty",
+}
+
+
+def _as_text(value: object) -> str:
+    return "" if value is None else (str(value).lower() if isinstance(value, bool) else str(value))
+
+
+def apply_ui_edits(
+    spec: ReportSpec, ui: dict | None, catalog: SourceCatalog, compiled: CompiledQuery
+) -> tuple[ReportSpec, list[str]]:
+    """Apply the wizard's edits on a reportSpec (V6 format) to the executable v2 spec.
+
+    `compiled` is the unedited spec compiled against `catalog`: its column keys are the keys the
+    reportSpec columns carry. Applied: selected columns (order + labels), filters, title and
+    objective. Columns or filter fields the spec does not know are ignored (with a warning), so a
+    reportSpec can never reference anything the compiler has not already validated.
+    """
+    if not isinstance(ui, dict):
+        return spec, []
+    warnings: list[str] = []
+    update: dict = {}
+
+    columns = ui.get("columns")
+    if isinstance(columns, list) and columns:
+        by_key = {c.key: c for c in compiled.columns}
+        picked = []
+        for col in columns:
+            if not isinstance(col, dict) or col.get("selected") is False:
+                continue
+            meta = by_key.get(str(col.get("key") or ""))
+            if meta is None:
+                continue
+            picked.append(OutputColumn(ref=meta.ref, label=(str(col.get("label") or "").strip() or meta.label)))
+        if picked:
+            update["columns"] = picked
+
+    filters = ui.get("filters")
+    if isinstance(filters, list):
+        # A field may be sent as an id or a label; ids win, then derived/measure labels, then catalog labels.
+        refs: dict[str, str] = {f.label.lower(): fid for fid, f in catalog.fields.items()}
+        refs.update({m.label.lower(): m.id for m in spec.measures})
+        refs.update({d.label.lower(): d.id for d in spec.derived})
+        refs.update({c.key.lower(): c.ref for c in compiled.columns})
+        known = set(catalog.fields) | {d.id for d in spec.derived} | {m.id for m in spec.measures}
+        conditions: list[Condition] = []
+        for item in filters:
+            if not isinstance(item, dict):
+                continue
+            field = str(item.get("field") or "").strip()
+            ref = field if field in known else refs.get(field.lower())
+            op_name = str(item.get("op") or "eq").strip().lower()
+            value = item.get("value")
+            if not ref:
+                warnings.append(f"Filter on '{field}' was ignored: the report has no such field.")
+                continue
+            if op_name == "between":
+                bounds = value if isinstance(value, list) else [v for v in _as_text(value).replace(" and ", ",").split(",")]
+                bounds = [_as_text(b).strip() for b in bounds if _as_text(b).strip()]
+                if len(bounds) == 2:
+                    conditions += [Condition(ref=ref, op="gte", value=bounds[0]), Condition(ref=ref, op="lte", value=bounds[1])]
+                else:
+                    warnings.append(f"Filter on '{field}' was ignored: 'between' needs two values.")
+                continue
+            op = _UI_FILTER_OP.get(op_name)
+            if op is None:
+                warnings.append(f"Filter on '{field}' was ignored: unsupported operator '{op_name}'.")
+                continue
+            if isinstance(value, list):
+                conditions.append(Condition(ref=ref, op=op, values=[_as_text(v) for v in value]))
+            else:
+                conditions.append(Condition(ref=ref, op=op, value=None if op in ("isEmpty", "isNotEmpty") else _as_text(value)))
+        update["filters"] = conditions
+
+    if str(ui.get("title") or "").strip():
+        update["title"] = str(ui["title"]).strip()
+    if str(ui.get("objective") or "").strip():
+        update["description"] = str(ui["objective"]).strip()
+    return (spec.model_copy(update=update) if update else spec), warnings
+
+
+def _keep_highlights(spec_json: dict, ui: dict | None) -> None:
+    """Carry the wizard's column highlight rules (keyed by column key) into a rebuilt ReportSpecJson."""
+    if not isinstance(ui, dict):
+        return
+    # Keyed by the column's key and by its (possibly edited) label: a renamed column gets a new key.
+    rules = {
+        str(name): col["highlight"]
+        for lst in ("columns", "defaultColumns", "agentColumns", "userdefinedColumns")
+        for col in (ui.get(lst) or [])
+        if isinstance(col, dict) and col.get("highlight")
+        for name in (col.get("key"), col.get("label"))
+        if name
+    }
+    if not rules:
+        return
+    for lst in ("columns", "defaultColumns", "agentColumns", "userdefinedColumns"):
+        for col in spec_json.get(lst) or []:
+            if col.get("key") in rules:
+                col["highlight"] = rules[col["key"]]
+
+
 def build_ai_spec(
     spec: ReportSpec,
     compiled: CompiledQuery,
@@ -83,8 +192,12 @@ def build_ai_spec(
     prompt: str,
     warnings: list[str],
     spec_version: int | None = None,
+    ui_spec: dict | None = None,
 ) -> tuple[dict, str]:
-    """Return (ReportSpecJson dict, ReportPrompt text) in the V6 report AI definition format."""
+    """Return (ReportSpecJson dict, ReportPrompt text) in the V6 report AI definition format.
+
+    `ui_spec`: the reportSpec the wizard sent; its column highlight rules are kept.
+    """
     label = _Labels(spec, catalog)
     formulas = {d.id: _derived_formula(d, label) for d in spec.derived}
     formulas.update({m.id: _measure_formula(m, label) for m in spec.measures})
@@ -128,6 +241,7 @@ def build_ai_spec(
     prompt_text = report_spec_to_prompt(ai, workflow_name=workflow_name, repository_name=repository_name, user_prompt=prompt)
 
     spec_json = ai.model_dump(by_alias=True, mode="json")
+    _keep_highlights(spec_json, ui_spec)
     spec_json[AGENT_SPEC_KEY] = {
         "engine": "report-agent-v2",
         "specVersion": spec_version,

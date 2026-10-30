@@ -474,3 +474,65 @@ async def test_pending_default_report_shows_creator_email(world, make_client):
     assert [c["label"] for c in body["columns"]] == ["Workflow", "Request No", "Status", "Stage", "Created By", "Action By",
                                                      "Created At", "Modified At", "Days Pending"]
     assert body["rows"] and all(row["Created By"] == "owner@a.example.com" for row in body["rows"])
+
+
+# --- wizard round trip: preview, edit, re-preview without LLM, save with highlight + status ----
+
+async def test_edited_spec_is_rerun_without_llm_and_saved_with_highlights(world, make_client):
+    planner = StubPlanner([LIST_SPEC])  # exactly one generation for the whole round trip
+    client = await make_client(planner)
+    src = {"sourceType": "Workflow", "workflowName": "Accounts Payable"}
+    first = (await client.post("/api/report-agent-v2/definitions/preview", json={"prompt": "list all invoices", **src},
+                               headers=_h(world, world.owner))).json()
+    ui = copy.deepcopy(first["reportSpec"])
+    keys = [c["key"] for c in ui["columns"]]
+    assert "Supplier" in keys and "Invoice No" in keys
+
+    # The user drops "Supplier", renames "Invoice No", adds a filter and a highlight, retitles.
+    ui["columns"] = [c for c in ui["columns"] if c["key"] != "Supplier"]
+    for c in ui["columns"]:
+        if c["key"] == "Invoice No":
+            c["label"] = "Invoice #"
+            c["highlight"] = {"default": None, "rules": [{"color": "red", "op": "eq", "value": "INV-1"}]}
+    ui["filters"] = [{"field": "Supplier", "op": "eq", "value": "Acme", "editable": True}]
+    ui["title"] = "Acme invoices"
+
+    r = await client.post("/api/report-agent-v2/definitions/preview", json={"reportSpec": ui, **src},
+                          headers=_h(world, world.owner))
+    assert r.status_code == 200, r.text
+    edited = r.json()
+    labels = [c["label"] for c in edited["preview"]["columns"]]
+    assert "Supplier" not in labels and "Invoice #" in labels
+    assert edited["preview"]["rows"] and all(row["Request No"] for row in edited["preview"]["rows"])
+    assert edited["title"] == "Acme invoices"
+    assert len(planner.feedback) == 1  # no second LLM call
+
+    r = await client.post("/api/report-agent-v2/definitions/save",
+                          json={"prompt": "list all invoices", "reportSpec": ui, "status": "Published", **src},
+                          headers=_h(world, world.owner))
+    assert r.status_code == 201, r.text
+    saved = r.json()
+    assert saved["status"] == "Published" and saved["name"] == "Acme invoices"
+    col = next(c for c in saved["reportSpec"]["columns"] if c["key"] == "Invoice #")
+    assert col["highlight"]["rules"][0]["color"] == "red"
+    assert saved["reportSpec"]["filters"][0]["field"] == "Supplier"
+    run = (await client.get(f"/api/report-agent-v2/reports/{saved['id']}/execute", headers=_h(world, world.owner))).json()
+    assert run["rowCount"] == edited["preview"]["rowCount"]
+
+
+async def test_preview_needs_prompt_or_spec_and_ignores_unknown_ui_refs(world, make_client):
+    client = await make_client(StubPlanner([LIST_SPEC]))
+    src = {"sourceType": "Workflow", "workflowName": "Accounts Payable"}
+    r = await client.post("/api/report-agent-v2/definitions/preview", json=src, headers=_h(world, world.owner))
+    assert r.status_code == 400
+    first = (await client.post("/api/report-agent-v2/definitions/preview", json={"prompt": "list all invoices", **src},
+                               headers=_h(world, world.owner))).json()
+    ui = copy.deepcopy(first["reportSpec"])
+    ui["columns"].append({"key": 'x"; DROP TABLE y; --', "label": "evil", "selected": True})
+    ui["filters"] = [{"field": "no such field", "op": "eq", "value": "1"}]
+    r = await client.post("/api/report-agent-v2/definitions/preview", json={"reportSpec": ui, **src},
+                          headers=_h(world, world.owner))
+    assert r.status_code == 200
+    body = r.json()
+    assert "evil" not in [c["label"] for c in body["preview"]["columns"]]
+    assert any("no such field" in w for w in body["warnings"])

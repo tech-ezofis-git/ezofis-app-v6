@@ -21,14 +21,17 @@ from app.report_agent_v2.agents.execution_agent import ExecutionOptions, load_re
 from app.report_agent_v2.api.schemas import (
     CreateDefinitionRequest,
     ExecuteReportRequest,
+    PreviewDefinitionRequest,
     RegenerateDefinitionRequest,
     SaveDefinitionRequest,
     SourceSelection,
+    _SpecPayload,
 )
 from app.report_agent_v2.domain import source_catalog, store, system_reports
-from app.report_agent_v2.domain.ai_definition import build_ai_spec, report_type
-from app.report_agent_v2.domain.compiler import SpecValidationError, compile_spec
+from app.report_agent_v2.domain.ai_definition import apply_ui_edits, build_ai_spec, report_type
+from app.report_agent_v2.domain.compiler import CompiledQuery, SpecValidationError, compile_spec
 from app.report_agent_v2.domain.executor import run_compiled, shape_result
+from app.report_agent_v2.domain.source_catalog import SourceCatalog
 from app.report_agent_v2.domain.spec import ReportSpec
 from app.report_agent_v2.errors import BadRequestError, ConflictError, ForbiddenError, UnprocessableError
 from app.report_agent_v2.security.authorization import ReportAccess, evaluate_report_access, tenant_admin, tenant_user
@@ -52,9 +55,11 @@ def _iso(value) -> str | None:
     return value.isoformat() if value else None
 
 
-def _generated_payload(gen: GeneratedDefinition, prompt: str, duration_ms: float) -> dict:
+def _generated_payload(gen: GeneratedDefinition, prompt: str, duration_ms: float, ui_spec: dict | None = None) -> dict:
     """ReportAiDefinitionDto fields that come from a fresh generation (V6 "report AI definition")."""
-    spec_json, prompt_text = build_ai_spec(gen.spec, gen.compiled, gen.catalog, prompt=prompt, warnings=gen.warnings)
+    spec_json, prompt_text = build_ai_spec(
+        gen.spec, gen.compiled, gen.catalog, prompt=prompt, warnings=gen.warnings, ui_spec=ui_spec
+    )
     rtype = report_type(gen.catalog)
     return {
         "title": gen.spec.title,
@@ -133,21 +138,62 @@ async def source_fields(
 # ---------------------------------------------------------------------------------------------
 
 
+async def _spec_from_payload(
+    conn: AsyncConnection, ctx: TenantContext, body: _SpecPayload, source: SourceRef, settings
+) -> tuple[ReportSpec, SourceCatalog, CompiledQuery, list[str]]:
+    """Validate a client-sent reportSpec, apply the wizard's edits, compile and probe it read-only.
+
+    The spec comes from the client, so it is treated like any other input: it must match the
+    closed spec schema, and both the original and the edited spec must compile against the live
+    source catalog and pass a read-only LIMIT 1 probe.
+    """
+    try:
+        spec = ReportSpec.model_validate({**body.spec_dict(), "schemaVersion": 1})
+    except (ValueError, ValidationError) as exc:
+        details = [f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors()[:20]] if isinstance(exc, ValidationError) else [str(exc)]
+        raise BadRequestError("reportSpec is not a valid report definition.", extra={"details": details}) from exc
+    catalog = await load_catalog(conn, ctx, source)
+    try:
+        original = compile_spec(with_ticket_columns(spec, catalog), catalog, max_rows=settings.max_rows, limit_override=1)
+        spec, edit_warnings = apply_ui_edits(with_ticket_columns(spec, catalog), body.report_spec, catalog, original)
+        spec = with_ticket_columns(spec, catalog)
+        compiled = compile_spec(spec, catalog, max_rows=settings.max_rows, limit_override=1)
+        await run_compiled(conn, compiled, settings.statement_timeout_ms)
+    except SpecValidationError as exc:
+        raise UnprocessableError("reportSpec does not match this data source. Preview the report again.",
+                                 extra={"details": exc.errors}) from exc
+    except PgError as exc:
+        raise UnprocessableError("reportSpec could not be run against this data source. Preview the report again.") from exc
+    return spec, catalog, compiled, edit_warnings
+
+
 @router.post("/definitions/preview")
 async def preview_definition(
-    body: CreateDefinitionRequest,
+    body: PreviewDefinitionRequest,
     request: Request,
     ctx: TenantContext = Depends(tenant_user),
     conn: AsyncConnection = Depends(tenant_connection),
 ) -> dict:
-    """Generate and run a definition without saving it (the wizard's "Generate Report" preview)."""
+    """Generate and run a definition without saving it (the wizard's "Generate Report" preview).
+
+    With a prompt: the LLM generates the spec. With reportSpec (from an earlier preview or a
+    saved report) instead: that spec is re-run with the wizard's edits applied (selected columns,
+    labels, filters, title), without any LLM call.
+    """
     started = time.perf_counter()
-    gen = await request.app.state.definition_agent.generate(conn, ctx, _source(body), body.prompt, body.name)
+    settings = request.app.state.settings
+    if body.has_spec():
+        spec, catalog, probe, edit_warnings = await _spec_from_payload(conn, ctx, body, _source(body), settings)
+        gen = GeneratedDefinition(spec, catalog, probe, probe.warnings + edit_warnings, attempts=0, model=None)
+        prompt = body.prompt or str((body.report_spec or {}).get("userPrompt") or "")
+    else:
+        gen = await request.app.state.definition_agent.generate(conn, ctx, _source(body), body.prompt, body.name)
+        prompt = body.prompt
     duration_ms = (time.perf_counter() - started) * 1000
-    compiled = compile_spec(gen.spec, gen.catalog, max_rows=request.app.state.settings.max_rows, limit_override=PREVIEW_ROWS)
-    rows = await run_compiled(conn, compiled, request.app.state.settings.statement_timeout_ms)
+    compiled = compile_spec(gen.spec, gen.catalog, max_rows=settings.max_rows, limit_override=PREVIEW_ROWS)
+    rows = await run_compiled(conn, compiled, settings.statement_timeout_ms)
     columns, out_rows, totals = shape_result(compiled.columns, rows)
-    return {**_generated_payload(gen, body.prompt, duration_ms),
+    return {**_generated_payload(gen, prompt, duration_ms, ui_spec=body.report_spec),
             "preview": {"columns": columns, "rows": out_rows, "totals": totals, "rowCount": len(out_rows)}}
 
 
@@ -160,41 +206,28 @@ async def save_previewed_definition(
 ) -> dict:
     """Save the definition returned by /definitions/preview, exactly as previewed (no LLM call).
 
-    The spec comes from the client, so it is treated like any other input: it must match the
-    closed spec schema, compile against the live source catalog and pass a read-only probe.
-    Send "id" to overwrite an existing report (owner or Admin only).
+    The wizard's edits on reportSpec (selected columns, labels, filters, title, highlight rules)
+    are applied and kept. Send "id" to overwrite an existing report (owner or Admin only), and
+    "status" ("Draft" / "Published") to change its status.
     """
-    try:
-        spec = ReportSpec.model_validate({**body.spec_dict(), "schemaVersion": 1})
-    except (ValueError, ValidationError) as exc:
-        details = [f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors()[:20]] if isinstance(exc, ValidationError) else [str(exc)]
-        raise BadRequestError("reportSpec is not a valid report definition.", extra={"details": details}) from exc
-
     existing, access = None, ReportAccess(True, True, "owner")
     if body.report_id is not None:
         existing, access = await load_report_for_user(conn, ctx, body.report_id)
         if not access.can_manage:
             raise ForbiddenError("Only the owner or an Admin can update this report.")
 
-    settings = request.app.state.settings
-    catalog = await load_catalog(conn, ctx, _source(body))
-    spec = with_ticket_columns(spec, catalog)
-    try:
-        compiled = compile_spec(spec, catalog, max_rows=settings.max_rows, limit_override=1)
-        await run_compiled(conn, compiled, settings.statement_timeout_ms)
-    except SpecValidationError as exc:
-        raise UnprocessableError("reportSpec does not match this data source. Preview the report again.",
-                                 extra={"details": exc.errors}) from exc
-    except PgError as exc:
-        raise UnprocessableError("reportSpec could not be run against this data source. Preview the report again.") from exc
+    spec, catalog, compiled, edit_warnings = await _spec_from_payload(
+        conn, ctx, body, _source(body), request.app.state.settings
+    )
 
     report_id, version, row = await store.save_definition(
         conn, tenant_id=ctx.tenant_id, user_id=ctx.user_id, report_id=body.report_id, existing=existing,
         name=body.name or (existing or {}).get("Name") or spec.title,
         description=body.description if body.description is not None else ((existing or {}).get("Description") or spec.description),
-        prompt=body.prompt, catalog=catalog, spec=spec, compiled=compiled, warnings=compiled.warnings,
+        prompt=body.prompt, catalog=catalog, spec=spec, compiled=compiled, warnings=compiled.warnings + edit_warnings,
         model=body.model, visibility=body.visibility, shared_users=[str(u) for u in body.shared_users],
         shared_groups=[str(g) for g in body.shared_groups], session_id=body.session_id,
+        ui_spec=body.report_spec, status=body.status,
     )
     return _definition_dto(row, access, spec_version=version, model=body.model)
 
