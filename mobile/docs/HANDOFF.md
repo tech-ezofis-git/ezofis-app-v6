@@ -41,8 +41,9 @@ This app was built in a Claude chat session from 25 to 27 Oct 2026 and moved her
 2. **Security (backend):** the "Users" master form returns a plain-text Password column from `/form/{id}/entry/all`.
 3. **Google / Microsoft sign-in:** works on Android with the debug key (README → Google and Microsoft sign-in).
    - Needs backend token verification before release.
-   - Release key: register its SHA-1 in Google Cloud and its signature hash in Azure. iOS is not wired.
-4. **Release builds:** a real signing key and Gradle build from `android/`, and an iOS build in Xcode (set the Team).
+   - Release key: register its SHA-1 in Google Cloud and its signature hash in Azure.
+   - iOS is not wired: the login screen hides both buttons on iOS (`socialShown` in `src/social.js`). Adding them on iOS also needs Sign in with Apple (App Store guideline 4.8).
+4. **Release builds:** Android from `android/` (see *Release build (Google Play)*); iOS through GitHub Actions (see *Release build (App Store)*).
 5. **Not wired yet:**
    - AP agent job polling after start is not shown.
 6. **Not tested on a real device yet:**
@@ -76,6 +77,12 @@ This app was built in a Claude chat session from 25 to 27 Oct 2026 and moved her
 - Build: `npm run build && npx cap sync android`, then `gradlew bundleRelease` (AAB for Play) / `assembleRelease` (APK to sideload). Version in `android/app/build.gradle` (versionCode must go up for every upload).
 - Microsoft sign-in redirect is per signing key: `src/debug|release/res/raw/msal_config.json` and `msalSignatureHash` in `app/build.gradle`.
 - Play App Signing re-signs store installs with Google's app signing key: after the first upload, register that key's SHA-1 (Play Console → App integrity) in Google Cloud and Firebase, and its signature hash in Azure, and switch the release `msal_config.json` / `msalSignatureHash` to it.
+
+## Release build (App Store)
+- Xcode 26 is required for App Store uploads (macOS 15.6+), so iOS builds run on a GitHub macOS runner: `.github/workflows/ios-testflight.yml`. Push a tag `ios-*` (e.g. `ios-0.6.1-1`), or Actions → "iOS build to TestFlight" → Run workflow once the file is on the default branch. It runs `npm ci`, `npm run build`, `npx cap sync ios`, archives with automatic signing and uploads to TestFlight.
+- Repository secrets: `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` (App Store Connect API key, Admin role). The app record (bundle ID `com.ezofis.mobile`) must exist in App Store Connect first.
+- Version: `MARKETING_VERSION` in `ios/App/App.xcodeproj/project.pbxproj` (0.6.1); the build number is the workflow run number (or the `build_number` input).
+- iOS app: Swift Package Manager (`ios/App/CapApp-SPM/Package.swift`, written by `npx cap sync ios`). `@capacitor/background-runner` 2.2.0 has no Swift package, so the background check is Android-only; push (`src/push.js`) and Google / Microsoft sign-in are Android-only too. Icon and splash: `python scripts/ios_icons.py`. Permission texts (camera, photo library) and `ITSAppUsesNonExemptEncryption=false` are in `ios/App/App/Info.plist`.
 
 ## Push notifications setup (Firebase)
 1. Firebase project `ezofis-mobile`, Android app `com.ezofis.mobile` (debug SHA-1 34:D9:…:DB; add the release SHA-1 too).

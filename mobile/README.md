@@ -25,9 +25,11 @@ npx cap open android   # then Build › Build Bundle(s) / APK(s)
 ```bash
 npm install
 npm run build
-npx cap sync ios       # resolves Swift packages / CocoaPods on the Mac
+npx cap sync ios       # resolves Swift packages on the Mac
 npx cap open ios       # set your Team under Signing & Capabilities, then Run
 ```
+
+App Store builds need Xcode 26 (macOS 15.6 or later). Without such a Mac, use the GitHub Actions workflow `.github/workflows/ios-testflight.yml`, which builds on a cloud Mac and uploads to TestFlight (setup in `docs/HANDOFF.md` → Release build (App Store)).
 
 ## Test APK (v0.4.9)
 

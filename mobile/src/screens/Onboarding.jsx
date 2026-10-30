@@ -4,7 +4,7 @@ import { Icon, Sheet, Sparkle, TopBar } from '../ui.jsx';
 import { authApi, loginErrorMessage, saveSession, loadSession, clearSession, lastLogin, IS_BROWSER_PREVIEW } from '../api.js';
 import { bgSession, bgAllowNotifications } from '../background.js';
 import { pushUnregister } from '../push.js';
-import { getProviderEmail, SocialUnavailable, SocialCancelled } from '../social.js';
+import { getProviderEmail, socialShown, SocialUnavailable, SocialCancelled } from '../social.js';
 import { USER } from '../data.js';
 import markWhite from '../assets/mark-white.png';
 import markColor from '../assets/mark-color.png';
@@ -261,9 +261,13 @@ export function Login() {
               {err ? <span className="err" role="alert">{err}</span> : null}
             </div>
             <button type="submit" className="btn primary" disabled={busy}>{busy && via === 'password' ? spinner : 'Continue'}</button>
-            <div className="or">or</div>
-            <button type="button" className="sso" onClick={() => social('google')} disabled={busy}><GoogleLogo />{busy && via === 'google' ? 'Signing in…' : 'Sign in with Google'}</button>
-            <button type="button" className="sso ms" onClick={() => social('microsoft')} disabled={busy}><MicrosoftLogo />{busy && via === 'microsoft' ? 'Signing in…' : 'Sign in with Microsoft'}</button>
+            {socialShown() ? (
+              <>
+                <div className="or">or</div>
+                <button type="button" className="sso" onClick={() => social('google')} disabled={busy}><GoogleLogo />{busy && via === 'google' ? 'Signing in…' : 'Sign in with Google'}</button>
+                <button type="button" className="sso ms" onClick={() => social('microsoft')} disabled={busy}><MicrosoftLogo />{busy && via === 'microsoft' ? 'Signing in…' : 'Sign in with Microsoft'}</button>
+              </>
+            ) : null}
             <button type="button" className="text-btn" style={{ alignSelf: 'center', color: 'var(--muted)', fontWeight: 500 }} onClick={() => nav('/app/home', { replace: true })}>Explore with sample data instead</button>
           </form>
         ) : null}

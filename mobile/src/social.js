@@ -17,6 +17,10 @@ export function socialAvailable(provider) {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android' && Capacitor.isPluginAvailable('EzofisSocialAuth') && (provider === 'google' || provider === 'microsoft');
 }
 
+// The iOS app has no native Google / Microsoft sign-in yet, so the login screen hides those buttons there (App Store
+// review rejects buttons that don't work, and offering them would also require Sign in with Apple, guideline 4.8).
+export const socialShown = () => Capacitor.getPlatform() !== 'ios';
+
 export async function getProviderEmail(provider) {
   if (!socialAvailable(provider)) throw new SocialUnavailable(provider);
   const name = provider === 'microsoft' ? 'Microsoft' : 'Google';

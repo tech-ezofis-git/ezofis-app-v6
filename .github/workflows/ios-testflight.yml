@@ -1,0 +1,120 @@
+name: iOS build to TestFlight (mobile app)
+
+# Builds mobile/ (Capacitor) on a GitHub macOS runner with Xcode 26 and uploads it to App Store Connect / TestFlight.
+# Runs only when asked: push a tag named ios-* (e.g. git tag ios-0.6.1-1 && git push origin ios-0.6.1-1), or
+# "Run workflow" in the Actions tab once this file is on the default branch. It never deploys the API or the web app.
+#
+# Repository secrets (Settings → Secrets and variables → Actions); nothing secret lives in the repo:
+#   APPLE_TEAM_ID   Apple Developer Team ID (10 characters, developer.apple.com → Membership details)
+#   ASC_KEY_ID      App Store Connect API key ID (Users and Access → Integrations → App Store Connect API, role Admin)
+#   ASC_ISSUER_ID   Issuer ID shown on the same page
+#   ASC_KEY_P8      Contents of the downloaded AuthKey_XXXXXX.p8 file (the whole text, including the BEGIN/END lines)
+# Signing is automatic: Xcode creates the certificate and profile through the API key (-allowProvisioningUpdates).
+
+on:
+  push:
+    tags:
+      - 'ios-*'
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number (leave empty to use the run number)'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: macos-26
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      BUILD_NUMBER: ${{ github.event.inputs.build_number || github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Check Xcode (App Store needs Xcode 26 or later)
+        run: |
+          xcodebuild -version
+          major=$(xcodebuild -version | head -1 | sed -E 's/Xcode ([0-9]+).*/\1/')
+          if [ "$major" -lt 26 ]; then echo "::error::Xcode $major is too old for App Store uploads"; exit 1; fi
+
+      - name: Check secrets
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          for s in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            if [ -z "${!s}" ]; then echo "::error::Repository secret $s is not set"; missing=1; fi
+          done
+          [ -z "$missing" ]
+
+      - name: Build the web app and sync iOS
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npx cap sync ios
+
+      - name: Write the App Store Connect API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Archive
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcodebuild archive \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+
+      - name: Export and upload to TestFlight
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cp ios/ExportOptions.plist "$RUNNER_TEMP/ExportOptions.plist"
+          plutil -replace teamID -string "$APPLE_TEAM_ID" "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "Uploaded EZOFIS $(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleShortVersionString' "$RUNNER_TEMP/App.xcarchive/Info.plist") ($BUILD_NUMBER) to App Store Connect. It appears in TestFlight after Apple's processing (about 10–30 minutes)." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove the API key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
