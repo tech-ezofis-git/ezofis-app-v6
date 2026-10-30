@@ -1680,7 +1680,7 @@
   }
   .catalog-table th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-3); }
   .catalog-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 14px; }
-  .catalog-form.catalog-form-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .catalog-form.catalog-form-3 { grid-template-columns: 1fr 1fr 1fr 1fr; }
   .catalog-form[hidden] { display: none !important; }
   .catalog-form label { font-size: 12px; color: var(--ink-2); display: block; margin-bottom: 4px; }
   .catalog-form input, .catalog-form textarea, .catalog-form select {
@@ -3421,7 +3421,17 @@ vendor_validate</textarea>
             </svg>
             <select id="composerModelSelect" class="composer-model-select" aria-label="Model"></select>
           </label>
+          <label class="composer-model" for="composerBurgrGoal" title="Burgr picks which catalog model to try first">
+            <select id="composerBurgrGoal" class="composer-model-select" aria-label="Burgr routing goal">
+              <option value="balanced">Balanced</option>
+              <option value="cost">Cheapest</option>
+              <option value="quality">Best quality</option>
+              <option value="speed">Fastest</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
           <span class="composer-model-hint" id="composerModelHint">primary</span>
+          <span class="composer-model-hint" id="composerBurgrHint">Balanced</span>
         </div>
       </form>
     </div>
@@ -3611,7 +3621,55 @@ vendor_validate</textarea>
         <label for="catTenantFallback2">2nd fallback</label>
         <select id="catTenantFallback2"></select>
       </div>
+      <div>
+        <label for="burgrGoal">Burgr goal</label>
+        <select id="burgrGoal">
+          <option value="balanced">Balanced</option>
+          <option value="cost">Cheapest</option>
+          <option value="quality">Best quality</option>
+          <option value="speed">Fastest</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
     </form>
+    <form class="catalog-form catalog-form-3" id="burgrMixForm" style="margin-top:12px">
+      <div>
+        <label for="burgrQuality">Quality weight</label>
+        <input type="number" id="burgrQuality" min="0" max="100" value="60" />
+      </div>
+      <div>
+        <label for="burgrCost">Cost weight</label>
+        <input type="number" id="burgrCost" min="0" max="100" value="30" />
+      </div>
+      <div>
+        <label for="burgrSpeed">Speed weight</label>
+        <input type="number" id="burgrSpeed" min="0" max="100" value="10" />
+      </div>
+      <div>
+        <label for="burgrMinScore">Minimum score</label>
+        <input type="number" id="burgrMinScore" min="0" max="10" step="0.1" placeholder="optional" />
+      </div>
+      <div>
+        <label for="burgrMaxCost">Max price</label>
+        <input type="number" id="burgrMaxCost" min="0" step="0.0001" placeholder="optional" />
+      </div>
+      <div>
+        <label for="burgrMaxWait">Max wait (ms)</label>
+        <input type="number" id="burgrMaxWait" min="0" step="1" placeholder="optional" />
+      </div>
+      <div>
+        <label for="burgrMinContext">Minimum context</label>
+        <input type="number" id="burgrMinContext" min="0" step="1" placeholder="optional" />
+      </div>
+      <div>
+        <label for="burgrPromptCheck">Check prompts</label>
+        <select id="burgrPromptCheck">
+          <option value="true" selected>Let through and warn</option>
+          <option value="false">Off</option>
+        </select>
+      </div>
+    </form>
+    <p class="lede" id="burgrGoalStatus">Routing goal: Balanced. Burgr picks which catalog model to try first.</p>
     <div class="catalog-status" id="catalogTenantStatus"></div>
     <div class="catalog-toolbar">
       <strong style="font-size:13px">Agent list</strong>
@@ -4096,6 +4154,106 @@ llmDefaultSelect.addEventListener('change', () => {
 if (composerModelSelect) {
   composerModelSelect.addEventListener('change', () => { onComposerModelChange(); });
 }
+
+function burgrNumber(id) {
+  const el = document.getElementById(id);
+  if (!el || el.value === '') return null;
+  const value = Number(el.value);
+  return Number.isFinite(value) ? value : null;
+}
+
+function burgrPayload(goal) {
+  return {
+    goal: goal,
+    quality: burgrNumber('burgrQuality'),
+    cost: burgrNumber('burgrCost'),
+    speed: burgrNumber('burgrSpeed'),
+    min_score: burgrNumber('burgrMinScore'),
+    max_cost: burgrNumber('burgrMaxCost'),
+    max_latency_ms: burgrNumber('burgrMaxWait'),
+    min_context: burgrNumber('burgrMinContext'),
+    prompt_check: (document.getElementById('burgrPromptCheck') || {}).value !== 'false',
+  };
+}
+
+function setBurgrNumber(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = value == null ? '' : value;
+}
+
+function applyBurgrStatus(data) {
+  const goal = (data && data.goal) || 'balanced';
+  const label = (data && data.goal_label) || 'Balanced';
+  const mix = (data && data.mix) || {};
+  const last = (data && data.last) || {};
+  const used = last.model ? (' Last pick: ' + last.model + (last.use_case ? ' (' + last.use_case + ')' : '') + '.') : '';
+  const enabled = data && data.enabled;
+  const mixText = goal === 'custom'
+    ? (' Custom weights ' + (mix.quality ?? 60) + ' quality, ' + (mix.cost ?? 30) + ' cost, ' + (mix.speed ?? 10) + ' speed.')
+    : '';
+  const text = 'Routing goal: ' + label + '.' + mixText + (enabled ? ' Burgr chooses which catalog model to try first.' : ' Burgr key is not set, so the catalog order is used.') + used;
+  ['burgrGoal', 'composerBurgrGoal'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = goal;
+  });
+  if (data && data.mix) {
+    setBurgrNumber('burgrQuality', mix.quality);
+    setBurgrNumber('burgrCost', mix.cost);
+    setBurgrNumber('burgrSpeed', mix.speed);
+    setBurgrNumber('burgrMinScore', mix.min_score);
+    setBurgrNumber('burgrMaxCost', mix.max_cost);
+    setBurgrNumber('burgrMaxWait', mix.max_latency_ms);
+    setBurgrNumber('burgrMinContext', mix.min_context);
+  }
+  const check = document.getElementById('burgrPromptCheck');
+  if (check && data && typeof data.prompt_check === 'boolean') check.value = data.prompt_check ? 'true' : 'false';
+  const status = document.getElementById('burgrGoalStatus');
+  if (status) status.textContent = text;
+  const hint = document.getElementById('composerBurgrHint');
+  if (hint) hint.textContent = label;
+}
+
+async function loadBurgrGoal() {
+  try {
+    const res = await fetch('/console/burgr');
+    if (res.ok) applyBurgrStatus(await res.json());
+  } catch (err) { /* catalog order remains */ }
+}
+
+async function saveBurgrGoal(goal) {
+  const selected = goal || (document.getElementById('burgrGoal') || {}).value || 'balanced';
+  const res = await fetch('/console/burgr', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(burgrPayload(selected)),
+  });
+  if (res.ok) applyBurgrStatus(await res.json());
+}
+
+['burgrGoal', 'composerBurgrGoal'].forEach((id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('change', () => { saveBurgrGoal(el.value); });
+});
+['burgrQuality', 'burgrCost', 'burgrSpeed', 'burgrMinScore', 'burgrMaxCost', 'burgrMaxWait', 'burgrMinContext'].forEach((id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('change', () => {
+    const goal = (document.getElementById('burgrGoal') || {}).value || 'custom';
+    if (document.getElementById('burgrGoal')) document.getElementById('burgrGoal').value = 'custom';
+    if (document.getElementById('composerBurgrGoal')) document.getElementById('composerBurgrGoal').value = 'custom';
+    saveBurgrGoal('custom');
+  });
+});
+const burgrPromptCheck = document.getElementById('burgrPromptCheck');
+if (burgrPromptCheck) {
+  burgrPromptCheck.addEventListener('change', () => {
+    const goal = (document.getElementById('burgrGoal') || {}).value || 'balanced';
+    saveBurgrGoal(goal);
+  });
+}
+loadBurgrGoal();
 
 async function saveLlmConfig() {
   const payload = {
@@ -8152,6 +8310,23 @@ function renderQuoteResult(rawQuote, request, body) {
     : 'msg assistant';
 
   const badges = [];
+  if (body.routing) {
+    const route = body.routing;
+    const burgrName = route.burgr_model || 'none';
+    const usedName = route.model_used || 'catalog model';
+    badges.push(`<span class="badge info">Burgr: ${escapeHtml(String(burgrName))}</span>`);
+    badges.push(`<span class="badge">Used: ${escapeHtml(String(usedName))}</span>`);
+    if (route.retires || route.days_left != null) {
+      const when = route.retires ? String(route.retires) : (String(route.days_left) + ' days left');
+      badges.push(`<span class="badge">Retires: ${escapeHtml(when)}</span>`);
+    } else if (route.retirement_warnings && route.retirement_warnings.length) {
+      badges.push(`<span class="badge">Retirement: ${escapeHtml(String(route.retirement_warnings[0]))}</span>`);
+    }
+    if (route.prompt_warnings && route.prompt_warnings.length) {
+      const first = route.prompt_warnings[0];
+      badges.push(`<span class="badge">Prompt warning: ${escapeHtml(String(first.title || first.id || 'flagged'))}</span>`);
+    }
+  }
   if (body.latency_ms != null) badges.push(`<span class="badge info">${body.latency_ms} ms</span>`);
   if (body.token_usage) badges.push(`<span class="badge">${body.token_usage.total_tokens ?? '?'} tokens</span>`);
 

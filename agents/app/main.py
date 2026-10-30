@@ -194,6 +194,7 @@ from app.integrations.ocr_engine import OcrEngineClient
 from app.knowledge.hybrid_search import HybridSearch
 from app.knowledge.vector_store import VectorStore, VectorStoreUnavailableError
 from app.llm.adapter import LLMAdapter, LLMAdapterError
+from app.llm.burgr_route import public_status, request_candidates, set_goal, set_mix, set_prompt_check
 from app.llm.embedding_adapter import EmbeddingAdapter, EmbeddingAdapterError
 from app.llm.model_presets import (
     DEFAULT_PRESET_ID,
@@ -1441,6 +1442,35 @@ async def update_llm_config(payload: LLMConfigUpdate, request: Request) -> dict:
             ) from exc
 
     return _llm_config_response(request)
+
+
+class BurgrGoalUpdate(BaseModel):
+    goal: str
+    quality: Optional[int] = None
+    cost: Optional[int] = None
+    speed: Optional[int] = None
+    max_cost: Optional[float] = None
+    max_latency_ms: Optional[float] = None
+    min_context: Optional[float] = None
+    min_score: Optional[float] = None
+    prompt_check: Optional[bool] = None
+
+
+@app.get("/console/burgr")
+async def get_burgr_goal() -> dict:
+    """Routing goal shown in the console. Never returns the Burgr key."""
+    return public_status()
+
+
+@app.post("/console/burgr")
+async def update_burgr_goal(payload: BurgrGoalUpdate) -> dict:
+    try:
+        set_goal(payload.goal)
+        set_mix(payload.model_dump())
+        set_prompt_check(payload.prompt_check)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return public_status()
 
 
 @app.post("/console/llm-test")
@@ -3360,6 +3390,8 @@ async def chat(request: Request, background_tasks: BackgroundTasks) -> ChatRespo
             document_job["catalog_fallback_preset"] = catalog_fallback_preset
         if catalog_fallback2_preset:
             document_job["catalog_fallback2_preset"] = catalog_fallback2_preset
+
+    request_candidates.set(fallback_override_chain(llm_overrides, llm_fallback_chain))
 
     try:
         if custom_agent:

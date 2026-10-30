@@ -123,6 +123,7 @@ class LLMAdapter:
         api_version: Optional[str] = None,
         reasoning_effort: Optional[str] = None,
         max_completion_tokens: Optional[int] = None,
+        tools: Optional[list] = None,
     ) -> dict:
         """Call the configured LLM with a list of {role, content} messages.
 
@@ -158,6 +159,28 @@ class LLMAdapter:
         resolved_api_base = api_base if api_base is not None else self._api_base
         resolved_api_key = api_key if api_key is not None else self._api_key
         resolved_api_version = api_version if api_version is not None else self._api_version
+
+        from app.llm.burgr_route import pick_candidate, request_candidates, suppress_routing
+
+        if not suppress_routing.get():
+            current = {
+                "model": resolved_model,
+                "api_base": resolved_api_base,
+                "api_key": resolved_api_key,
+                "api_version": resolved_api_version,
+            }
+            pool = [item for item in request_candidates.get() if isinstance(item, dict) and item.get("model")]
+            if not any(str(item.get("model") or "") == str(resolved_model or "") for item in pool):
+                pool = [current, *pool]
+            routed = await pick_candidate(messages, pool, tools=tools)
+            if routed:
+                resolved_model = routed.get("model") or resolved_model
+                if routed.get("api_base") is not None:
+                    resolved_api_base = routed.get("api_base") or None
+                if routed.get("api_key") is not None:
+                    resolved_api_key = routed.get("api_key") or None
+                if "api_version" in routed:
+                    resolved_api_version = routed.get("api_version") or None
 
         # Classic Azure (`azure/...`) keeps its prefix. A custom api_base
         # with a bare model name (no "provider/" prefix) is routed through
@@ -216,6 +239,9 @@ class LLMAdapter:
             )
             raise LLMAdapterError("The language model provider is currently unavailable.") from exc
 
+        from app.llm.burgr_route import note_model_used
+
+        note_model_used(model)
         content = response.choices[0].message.content or ""
 
         usage = None
