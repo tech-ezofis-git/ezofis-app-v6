@@ -61,6 +61,6 @@ docker compose -f docker-compose.azure.yml up    # needs .env.azure (copy .env.a
   - `app/`: type-check, `vitest`, `npm run build`
 - **`.github/workflows/docker-ghcr.yml`** runs on a push to `main` that touches `app/**`, `api/**` or `agents/**`, or by manual dispatch.
   - It builds only the services that changed, pushes `:latest` and `:sha-<short>` to GHCR, then **deploys straight to production** (Azure web app `ezofis-app-v6`) with `.github/scripts/deploy-azure-compose.sh`, and smoke-checks `https://cloud.ezofis.com`.
-  - Its first job checks whether the change came from a PR approved by `tech-ezofis-git`. For now it only logs a **warning**; it doesn't block the deploy.
+  - Its first job, `Approved PR check`, **blocks** the build and deploy unless the change came from a PR whose final commit was approved by `tech-ezofis-git`. Manual runs are allowed only for `tech-ezofis-git`.
 - The JWT signing key is read only from the optional `EZOFIS_SIGNING_KEY` GitHub secret. When that isn't set, the deploy keeps the key already in Azure.
 - The API smoke check accepts 200/401/404 from `/hangfire`, because the dashboard is password-protected.

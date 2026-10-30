@@ -20,14 +20,12 @@ feature/xyz ──PR──► testing ──(everyone pulls & tests locally, tes
    - **Urgent production fix:** branch from `main`, PR into `main` (approved by tech), then merge `main` back into `testing`.
    - Open PRs from **your own GitHub account**. `tech-ezofis-git` only approves, because GitHub never lets an account approve its own PR.
    - Pushing to `testing` never deploys. Only `main` deploys.
-6. Free plan note: GitHub can't block direct pushes here. The deploy workflow logs a **warning** when a change on `main` didn't come from a PR approved by `tech-ezofis-git`; after the switch-over it will refuse to deploy it.
+6. Free plan note: GitHub can't block direct pushes here, so the deploy workflow blocks the **deploy** instead. A change on `main` is built and deployed only if it came from a PR whose **final commit** was approved by `tech-ezofis-git`. A direct push, an unapproved PR, or a PR with commits added after the approval fails the `Approved PR check` job, and nothing is built or deployed. Manual deploys can only be started by `tech-ezofis-git`.
 
-## Where code changes go (until the switch-over)
-- `api/`: change it in the **v6api** repo. Every merge there is copied into `ezofis-app-v6/api/` and deployed.
-- `agents/`: change it in the **AIorchestrator** repo. Every merge there is copied into `ezofis-app-v6/agents/` (and `v6local/agents/`) and deployed.
-- The copies use `rsync --delete`, so a direct edit to `api/` or `agents/` here is **erased** by the next sync.
-- `app/`, `mobile/`, `.github/` and docs: change them here.
-- After the switch-over date, all of it is changed here, and the sync robots are turned off.
+## Where code changes go
+- Since the switch-over on 30 Oct 2026, **everything is changed in this repo**: `app/`, `api/`, `agents/`, `mobile/`, `.github/` and docs.
+- The old `v6api` and `AIorchestrator` repos no longer copy into this repo. Don't make changes there.
+- AIorchestrator still copies into `v6local/agents/` until that repo's future is decided.
 
 ## Web app (`app/`)
 - TypeScript + React function components. The `@` import alias maps to `app/src`.
