@@ -308,23 +308,19 @@ internal static class ApDashboardBuilder
       .Where(i => i.InvoiceDate.HasValue)
       .GroupBy(i => new { i.InvoiceDate!.Value.Year, i.InvoiceDate!.Value.Month })
       .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
-      .Select(g =>
-      {
-        var ap = g.Sum(x => x.Amount);
-        var matched = g.Count(x => IsMatched(x.MatchedStatus));
-        var matchRate = g.Count() == 0 ? 0m : Math.Round(matched * 100m / g.Count(), 1);
-        return new ApDashboardSeriesPointDto(
-          FormatMonthYearLabel(g.Key.Year, g.Key.Month),
-          ap,
-          matchRate,
-          "currency",
-          "percent");
-      })
+      .Select(g => new ApDashboardSeriesPointDto(
+        FormatMonthYearLabel(g.Key.Year, g.Key.Month),
+        g.Sum(x => x.Amount),
+        null,
+        "currency",
+        null))
       .ToList();
 
+    // AP spending only (no profit / match-rate second axis). JSON property stays
+    // profitVsApSpending so existing dashboard clients keep binding to it.
     return new ApDashboardSeriesDto(
-      "Profit vs AP spending",
-      "Dual axis: AP amount and match-rate % (proxy for profit efficiency)",
+      "Monthly AP spending",
+      "Total AP invoice amount per month",
       points);
   }
 

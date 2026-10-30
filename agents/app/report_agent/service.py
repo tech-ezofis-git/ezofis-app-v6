@@ -259,6 +259,10 @@ class ReportAgentService:
             {"role": "user", "content": user},
         ]
         primary, fallbacks = await self._resolve_llm_presets(tenant_id, model)
+        from app.llm.burgr_route import request_candidates
+        from app.catalog.tenant_llm import fallback_override_chain
+
+        request_candidates.set(fallback_override_chain(primary, fallbacks))
         if isinstance(fallbacks, dict):
             fallbacks = [fallbacks]
         elif not isinstance(fallbacks, list):
@@ -1136,63 +1140,69 @@ class ReportAgentService:
                 "Tenant database is unavailable; running this report from the local/default database."
             )
         raw_def: Optional[dict[str, Any]] = None
-        try:
-            content, _usage = await self._chat(
-                system=system,
-                user=user,
-                tenant_id=request.tenant_id,
-                model=request.model,
-            )
+        spec_ready = bool(
+            spec is not None and str(spec.source_table or "").strip() and spec.columns
+        )
+        if spec_ready:
+            raw_def = merge_spec_into_definition({}, spec)
+        else:
             try:
-                raw_def = parse_definition_json(content)
-            except ValueError as parse_exc:
-                logger.warning(
-                    "report_agent_definition_parse_retry",
-                    extra={"error": str(parse_exc)[:200], "snippet": str(content)[:240]},
-                )
-                repair_user = (
-                    "Your previous response was invalid JSON. "
-                    "Return ONLY a corrected reportDefinition JSON object. "
-                    "No markdown, no trailing commas.\n\n"
-                    f"Broken response:\n{str(content)[:4000]}\n\n"
-                    f"Original request:\n{json.dumps(user_payload, indent=2)}\n\n"
-                    f"{schema_block}\n"
-                )
-                repaired, _ = await self._chat(
+                content, _usage = await self._chat(
                     system=system,
-                    user=repair_user,
+                    user=user,
                     tenant_id=request.tenant_id,
                     model=request.model,
                 )
-                raw_def = parse_definition_json(repaired)
-        except Exception as exc:
-            logger.warning("report_agent_run_llm_failed", extra={"error": str(exc)[:200]})
-            raw_def = fallback_definition_from_prompt(
-                prompt,
-                schema,
-                report_type=rt.key if rt else request.report_type,
-                title=(request.report_type or "Report"),
-                preferred_schema=preferred.schema_name if preferred else None,
-                preferred_table=preferred.table if preferred else None,
-            )
-            if raw_def is None:
-                duration_ms = round((time.perf_counter() - t0) * 1000, 2)
-                return RunReportResponse(
-                    title="Report",
+                try:
+                    raw_def = parse_definition_json(content)
+                except ValueError as parse_exc:
+                    logger.warning(
+                        "report_agent_definition_parse_retry",
+                        extra={"error": str(parse_exc)[:200], "snippet": str(content)[:240]},
+                    )
+                    repair_user = (
+                        "Your previous response was invalid JSON. "
+                        "Return ONLY a corrected reportDefinition JSON object. "
+                        "No markdown, no trailing commas.\n\n"
+                        f"Broken response:\n{str(content)[:4000]}\n\n"
+                        f"Original request:\n{json.dumps(user_payload, indent=2)}\n\n"
+                        f"{schema_block}\n"
+                    )
+                    repaired, _ = await self._chat(
+                        system=system,
+                        user=repair_user,
+                        tenant_id=request.tenant_id,
+                        model=request.model,
+                    )
+                    raw_def = parse_definition_json(repaired)
+            except Exception as exc:
+                logger.warning("report_agent_run_llm_failed", extra={"error": str(exc)[:200]})
+                raw_def = fallback_definition_from_prompt(
+                    prompt,
+                    schema,
                     report_type=rt.key if rt else request.report_type,
-                    columns=[],
-                    rows=[],
-                    total_count=0,
-                    page=request.page,
-                    page_size=request.page_size,
-                    filters=[],
-                    summary={},
-                    warnings=[f"Model failed to produce a report definition: {exc}"],
-                    duration_ms=duration_ms,
+                    title=(request.report_type or "Report"),
+                    preferred_schema=preferred.schema_name if preferred else None,
+                    preferred_table=preferred.table if preferred else None,
                 )
-            warnings.append(
-                f"Model JSON failed ({exc}); used schema-backed fallback definition."
-            )
+                if raw_def is None:
+                    duration_ms = round((time.perf_counter() - t0) * 1000, 2)
+                    return RunReportResponse(
+                        title="Report",
+                        report_type=rt.key if rt else request.report_type,
+                        columns=[],
+                        rows=[],
+                        total_count=0,
+                        page=request.page,
+                        page_size=request.page_size,
+                        filters=[],
+                        summary={},
+                        warnings=[f"Model failed to produce a report definition: {exc}"],
+                        duration_ms=duration_ms,
+                    )
+                warnings.append(
+                    f"Model JSON failed ({exc}); used schema-backed fallback definition."
+                )
 
         if raw_def is None:
             duration_ms = round((time.perf_counter() - t0) * 1000, 2)
@@ -1347,12 +1357,43 @@ class ReportAgentService:
         from app.report_agent.catalog_execute import (
             attach_listing_fields_to_form_rows,
             attach_repository_fields_to_form_rows,
+            execute_catalog_spec,
             finish_user_columns,
             has_form_columns,
             needs_listing_fields,
             needs_repository_fields,
             _keep_valued_columns,
         )
+        if (
+            spec is not None
+            and not rows
+            and str(locked.get("reportType") or request.report_type or "").lower()
+            == "specific_workflow"
+            and needs_listing_fields(spec)
+            and self._ezofis is not None
+        ):
+            try:
+                fallback = await execute_catalog_spec(
+                    self._ezofis,
+                    spec,
+                    tenant_id=request.tenant_id or "",
+                    report_type="specific_workflow",
+                    page=request.page,
+                    page_size=request.page_size,
+                    workflow_name=request.workflow_name,
+                    repository_name=request.repository_name,
+                    db=db,
+                    force_instance=True,
+                )
+            except Exception as exc:
+                warnings.append(f"Form table had no rows; instance listing failed: {exc}")
+                fallback = None
+            if fallback is not None:
+                columns_out, rows, total_count, extra = fallback
+                warnings.append(
+                    "Form items table has 0 rows; showing live workflow instances instead."
+                )
+                warnings.extend(extra)
 
         if spec is not None:
             if needs_listing_fields(spec) and has_form_columns(spec):

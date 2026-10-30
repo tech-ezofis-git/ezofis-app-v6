@@ -1,6 +1,10 @@
 namespace SaaSApp.Workflow.Application.Contracts;
 
-/// <summary>Inserts a dbo.notification row for move-next (Ticket Received only).</summary>
+/// <summary>
+/// Inserts dbo.notification rows for a ticket move: "Ticket Requested" (to the initiator, when the
+/// start step is submitted), "Ticket Received" (to the next assignee), "Ticket Completed" (to the
+/// initiator, when the workflow ends).
+/// </summary>
 public interface IWorkflowMoveNotificationService
 {
     Task TryInsertMoveNotificationsAsync(
@@ -23,4 +27,8 @@ public sealed record WorkflowMoveNotificationContext(
     Guid? ReceivedCreatedByUserId,
     string? RequestNo = null,
     int? CurrentTransactionId = null,
-    int? NextTransactionId = null);
+    int? NextTransactionId = null,
+    /// <summary>True when this move ended the workflow: send "Ticket Completed" instead of "Ticket Received".</summary>
+    bool WorkflowCompleted = false,
+    /// <summary>User who raised the ticket (instance StartedBy): receives Requested / Completed.</summary>
+    Guid? InitiatorUserId = null);

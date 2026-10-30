@@ -84,6 +84,7 @@ public sealed record ApDashboardResult(
   IReadOnlyList<ApDashboardKpiDto> Kpis,
   /// <summary>Supplier Risk Radar donut (Low / Medium / High).</summary>
   ApDashboardSupplierRiskRadarDto SupplierRiskRadar,
+  /// <summary>Monthly AP spending (Primary = AP amount; Secondary is always null). Name kept for client compatibility.</summary>
   ApDashboardSeriesDto ProfitVsApSpending,
   ApDashboardSeriesDto MonthlyPaymentTrend,
   ApDashboardSeriesDto CashFlowForecast,

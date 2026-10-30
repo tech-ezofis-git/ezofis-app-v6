@@ -174,7 +174,7 @@ internal static class TenantSchemaEnsureHelper
         CancellationToken cancellationToken) =>
         EnsureOnceAsync(
             tenantId,
-            "users-builtin-roles-v5",
+            "users-builtin-roles-v7",
             connectionString,
             """
             SELECT 1
@@ -214,31 +214,17 @@ internal static class TenantSchemaEnsureHelper
                 SELECT 1 FROM users."Roles" r
                 WHERE r."Name" = 'TenantUser' AND r."IsDeleted" = false
             )
+            -- Admin/TenantUser are no longer required to hold every category (admins may remove
+            -- some in Roles); new categories are granted to them once via the grant log, and the
+            -- TenantAdmin check above re-runs provisioning whenever a new category appears.
+            AND to_regclass('users."BuiltinRoleCategoryGrants"') IS NOT NULL
             AND NOT EXISTS (
                 SELECT 1
-                FROM users."PermissionCategories" pc
-                WHERE pc."IsActive" = true
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM users."Roles" r
-                      INNER JOIN users."RolePermissions" rp ON rp."RoleId" = r."Id"
-                      WHERE r."Name" = 'Admin'
-                        AND r."IsDeleted" = false
-                        AND lower(rp."PermissionKey") = lower(pc."Key")
-                  )
-            )
-            AND NOT EXISTS (
-                SELECT 1
-                FROM users."PermissionCategories" pc
-                WHERE pc."IsActive" = true
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM users."Roles" r
-                      INNER JOIN users."RolePermissions" rp ON rp."RoleId" = r."Id"
-                      WHERE r."Name" = 'TenantUser'
-                        AND r."IsDeleted" = false
-                        AND lower(rp."PermissionKey") = lower(pc."Key")
-                  )
+                FROM users."Roles" r
+                INNER JOIN users."RolePermissions" rp ON rp."RoleId" = r."Id"
+                WHERE r."Name" = 'TenantUser'
+                  AND r."IsDeleted" = false
+                  AND lower(rp."PermissionKey") = 'settings'
             )
             AND EXISTS (
                 SELECT 1 FROM information_schema.tables

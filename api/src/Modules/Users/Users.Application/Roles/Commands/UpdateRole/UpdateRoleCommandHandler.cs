@@ -7,6 +7,8 @@ namespace SaaSApp.Users.Application.Roles.Commands.UpdateRole;
 
 public sealed class UpdateRoleCommandHandler : IRequestHandler<UpdateRoleCommand, UpdateRoleCommandResult>
 {
+    private const string SettingsCategoryKey = "settings";
+
     private readonly IRoleRepository _roleRepository;
     private readonly IUserRepository _userRepository;
     private readonly IPermissionCategoryRepository _categoryRepository;
@@ -124,22 +126,26 @@ public sealed class UpdateRoleCommandHandler : IRequestHandler<UpdateRoleCommand
             if (categoryKeys.Count == 0)
                 return Fail("At least one permission is required.");
 
-            // Built-in Admin/TenantUser always keep the full active catalog so the sidebar
-            // cannot lose Workflow/Task/Workspace after a partial Roles save.
-            if (isBuiltin)
+            // Save exactly what the Roles screen sent (built-in roles included; previously built-ins
+            // were merged with the full catalog, so unchecking e.g. Settings on TenantUser did nothing).
+            // Lock-out guards: TenantAdmin (tenant owner) always keeps every category, and Admin
+            // always keeps Settings so admins can still reach Roles to fix permissions.
+            if (string.Equals(role.Name, User.RoleTenantAdmin, StringComparison.OrdinalIgnoreCase))
             {
                 var allActive = await _categoryRepository.ListActiveAsync(cancellationToken);
-                var merged = allActive
+                categoryKeys = allActive
                     .Select(c => c.Key)
                     .Concat(categoryKeys)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
-                role.ReplacePermissions(merged);
             }
-            else
+            else if (string.Equals(role.Name, User.RoleAdmin, StringComparison.OrdinalIgnoreCase)
+                     && !categoryKeys.Contains(SettingsCategoryKey, StringComparer.OrdinalIgnoreCase))
             {
-                role.ReplacePermissions(categoryKeys);
+                categoryKeys = categoryKeys.Append(SettingsCategoryKey).ToList();
             }
+
+            role.ReplacePermissions(categoryKeys);
         }
 
         return new UpdateRoleCommandResult(Success: true, StatusCode: 204);

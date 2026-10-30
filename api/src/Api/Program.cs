@@ -239,11 +239,20 @@ if (hangfireEnabled)
     };
     var hangfireConnectionString = hangfireCsBuilder.ConnectionString;
 
+    // Development defaults to its own schema so a laptop never queues jobs into production's.
+    var hangfireSchema = HangfireStorageSchema.Resolve(
+        builder.Configuration["Hangfire:SchemaName"], builder.Environment.IsDevelopment());
+    if (builder.Environment.IsDevelopment() && hangfireSchema == HangfireStorageSchema.Production)
+        Log.Warning("Hangfire:SchemaName is the production schema: jobs queued here can run on the production server.");
+    Log.Information("Hangfire storage schema: {HangfireSchema}", hangfireSchema);
+
     var hangfireStorageOptions = new PostgreSqlStorageOptions
     {
+        SchemaName = hangfireSchema,
         // Catalog hangfire.lock already has updatecount; auto-migrate loops on
-        // "column already exists" and hangs /hangfire (504). Schema is present — skip install.
-        PrepareSchemaIfNecessary = false,
+        // "column already exists" and hangs /hangfire (504). Production schema is present — skip install.
+        // Any other schema (hangfire_local) is created on first start.
+        PrepareSchemaIfNecessary = HangfireStorageSchema.PrepareSchemaIfNecessary(hangfireSchema),
         // Reduce catalog DB polling so HTTP requests are not competing with Hangfire every few seconds.
         QueuePollInterval = TimeSpan.FromSeconds(15),
         JobExpirationCheckInterval = TimeSpan.FromHours(1),
@@ -409,16 +418,26 @@ if (eventLogEnabled)
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Hangfire dashboard (protect in production with auth)
+// Hangfire dashboard: password-protected (HTTP Basic). Without both settings it is not mapped at all.
 if (hangfireEnabled)
 {
-    // Default Hangfire auth is localhost-only; that blocks the dashboard
-    // behind Azure nginx. Same public model as /swagger for now.
-    app.MapHangfireDashboard("/hangfire", new DashboardOptions
+    var dashboardAuth = HangfireDashboardBasicAuthFilter.TryCreate(
+        app.Configuration["Hangfire:DashboardUser"],
+        app.Configuration["Hangfire:DashboardPassword"]);
+    if (dashboardAuth is not null)
     {
-        Authorization = Array.Empty<IDashboardAuthorizationFilter>(),
-        IgnoreAntiforgeryToken = true
-    });
+        app.MapHangfireDashboard("/hangfire", new DashboardOptions
+        {
+            Authorization = new IDashboardAuthorizationFilter[] { dashboardAuth },
+            IgnoreAntiforgeryToken = true
+        });
+    }
+    else
+    {
+        Log.Warning(
+            "Hangfire dashboard is off: set Hangfire:DashboardUser and Hangfire:DashboardPassword (at least {MinLength} characters) to enable /hangfire.",
+            HangfireDashboardBasicAuthFilter.MinimumPasswordLength);
+    }
 
     var emailIngestHangfire = app.Configuration.GetValue("EmailIngest:HangfireEnabled", false);
     try

@@ -238,7 +238,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                     nextAfterAp,
                     submittedModifiedByUserId: userId,
                     receivedCreatedByUserId: userId,
-                    cancellationToken);
+                    cancellationToken,
+                    workflowCompleted: instance.Status == WorkflowInstanceStatus.Completed);
 
                 return new MoveToNextStepCommandResult(
                     true,
@@ -475,7 +476,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             receivedCreatedByUserId: isCompleted ? userId : (legacySync.NextCreatedByUserId ?? userId),
             cancellationToken,
             currentTransactionId: legacySync.CurrentTransactionId,
-            nextTransactionId: isCompleted ? null : legacySync.NextTransactionId);
+            nextTransactionId: isCompleted ? null : legacySync.NextTransactionId,
+            workflowCompleted: isCompleted);
 
         // HANA invoices only: Paid when review is Paid, or when moving to / completing a Paid-named step.
         // Uses apAgent.connectorId (or PoMaster.masterConnectorId) → PO_INVOICE_MATCH.
@@ -693,7 +695,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         Guid? receivedCreatedByUserId,
         CancellationToken cancellationToken,
         int? currentTransactionId = null,
-        int? nextTransactionId = null)
+        int? nextTransactionId = null,
+        bool workflowCompleted = false)
         => _moveNotifications.TryInsertMoveNotificationsAsync(
             new WorkflowMoveNotificationContext(
                 instance.WorkflowId,
@@ -708,7 +711,9 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                 receivedCreatedByUserId,
                 instance.ReferenceNumber,
                 currentTransactionId,
-                nextTransactionId),
+                nextTransactionId,
+                WorkflowCompleted: workflowCompleted,
+                InitiatorUserId: instance.StartedBy == Guid.Empty ? null : instance.StartedBy),
             cancellationToken);
 
     private static string? FirstNonBlank(params string?[] values)
