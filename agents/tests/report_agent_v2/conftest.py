@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import secrets
 import sys
 import time
 import uuid
@@ -21,7 +22,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent  # tests/report_agent_v2
 MODULE = Path(__file__).resolve().parents[2] / "app" / "report_agent_v2"
-SIGNING_KEY = "test-signing-key-0123456789-abcdefghijklmnop"
+SIGNING_KEY = secrets.token_hex(32)  # random per test run: no key-like literal in the repo
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

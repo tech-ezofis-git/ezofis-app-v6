@@ -70,9 +70,10 @@ def test_not_mounted_without_catalog(monkeypatch):
 
 def test_catalog_falls_back_to_orchestrator_url(monkeypatch):
     monkeypatch.delenv("REPORT_AGENT_CATALOG_CONNECTION_STRING", raising=False)
-    monkeypatch.setenv("CATALOG_DATABASE_URL", "postgresql://u:p@db:5432/catalog")
+    url = "postgresql://db.example.com:5432/catalog"
+    monkeypatch.setenv("CATALOG_DATABASE_URL", url)
     monkeypatch.setitem(Settings.model_config, "env_file", None)  # ignore a local agents/.env
-    assert Settings().catalog_connection_string == "postgresql://u:p@db:5432/catalog"
+    assert Settings().catalog_connection_string == url
 
 
 async def test_unreachable_catalog_is_503_not_500():

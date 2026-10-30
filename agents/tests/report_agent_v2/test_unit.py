@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import time
 import uuid
 
@@ -20,15 +21,17 @@ from tests.report_agent_v2.conftest import SIGNING_KEY, make_token
 # --- connection strings ------------------------------------------------------------------------
 
 def test_npgsql_connection_string_is_translated_and_credentials_overridden():
+    # Random per run, so the repo holds nothing that looks like a credential.
+    stored, runtime = secrets.token_hex(8), secrets.token_hex(8)
     info = npgsql_to_conninfo(
-        "Host=db.example.com;Port=5432;Database=SaaSApp_Tenant_01;Username=owner;Password=s3cret;"
+        f"Host=db.example.com;Port=5432;Database=SaaSApp_Tenant_01;Username=owner;Password={stored};"
         "SSL Mode=Require;Trust Server Certificate=true;Maximum Pool Size=20;Command Timeout=0",
-        username="report_agent_rt", password="rt-pass",
+        username="report_agent_rt", password=runtime,
     )
     assert "host=db.example.com" in info and "dbname=SaaSApp_Tenant_01" in info
-    assert "user=report_agent_rt" in info and "password=rt-pass" in info
+    assert "user=report_agent_rt" in info and f"password={runtime}" in info
     assert "sslmode=require" in info
-    assert "owner" not in info and "s3cret" not in info and "Pool" not in info
+    assert "owner" not in info and stored not in info and "Pool" not in info
 
 
 # --- naming (ported from EzfbColumnNaming / FormIdNaming) -------------------------------------

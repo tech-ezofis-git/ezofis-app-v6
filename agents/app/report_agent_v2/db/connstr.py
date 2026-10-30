@@ -1,7 +1,7 @@
 """Translate Npgsql connection strings (as stored in catalog."Tenants") into libpq conninfo.
 
 v6api stores ADO.NET-style strings such as
-``Host=x;Port=5432;Database=t1;Username=u;Password=p;SSL Mode=Require;Trust Server Certificate=true``.
+``Host=x;Port=5432;Database=t1;Username=<user>;Password=<password>;SSL Mode=Require;Trust Server Certificate=true``.
 psycopg needs libpq keywords instead. Pool-size keys are dropped: pooling is owned by this
 service (see TenantConnectionPool.Apply in v6api for the equivalent caps).
 """
