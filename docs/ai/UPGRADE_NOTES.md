@@ -10,7 +10,8 @@ Found by reading the code (October 2026). Nothing was run. Secret values are del
 - `ezofis-app-v6` was made private. **v6api is still public.**
 - PR checks run on every PR into `testing` and `main` (PR #173).
 - **30 Oct 2026, switch-over:** all code now lives in this repo. The v6api and AIorchestrator copy robots are off, and deploys need a PR approved by `tech-ezofis-git`.
-- Still open: rotate the Gemini/Qwen keys, change the pilot user password, remove the old values from `api/src/Api/appsettings.Production.json` (now in this repo), archive v6api and AIorchestrator, and make v6api private.
+- The old JWT signing key was removed from `api/src/Api/appsettings.Production.json`. Production reads `EzofisAuth__SigningKey` from Azure App Settings. The pilot password was removed from the example files.
+- Still open: rotate the Gemini/Qwen keys; change the pilot user password, set it as `TenantPilotUser__Password` in Azure, then remove it from `appsettings.Production.json` (it is still there because production may read it from that file); archive v6api and AIorchestrator; make v6api private.
 
 ## 🔴 Security — fix first
 1. **Secrets committed to a public repo** (this was the state on 29 Oct 2026, before the fixes above):
