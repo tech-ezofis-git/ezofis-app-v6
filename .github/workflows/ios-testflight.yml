@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       build_number:
-        description: 'Build number (leave empty to use the run number)'
+        description: 'Build number (leave empty for 100 + the run number)'
         required: false
 
 permissions:
@@ -35,10 +35,15 @@ jobs:
     defaults:
       run:
         working-directory: mobile
-    env:
-      BUILD_NUMBER: ${{ github.event.inputs.build_number || github.run_number }}
     steps:
       - uses: actions/checkout@v4
+
+      # The App Store app's last build before V6 was 19 (version 1.0.10), so builds count up from 100.
+      - name: Build number
+        env:
+          INPUT_BUILD: ${{ github.event.inputs.build_number }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: echo "BUILD_NUMBER=${INPUT_BUILD:-$((100 + RUN_NUMBER))}" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v4
         with:
