@@ -14,7 +14,7 @@ tests/e2e/run_all.sh              # mock end-to-end checks (Playwright + Python)
 python3 apk-shell/build_apk.py dist-single/index.html apk-shell/ic_launcher.png /tmp/u.apk && \
 python3 apk-shell/sign_v2.py /tmp/u.apk EZOFIS-Mobile-test.apk apk-shell     # SDK-free test APK
 ```
-Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 38 / 0.6.1.
+Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 38 / 6.0.0.
 
 ## Code map
 - `src/api.js`: sign-in (`loggedFrom: "MOBILE"`, 2FA, tenants), session storage, `authed()` (Bearer + `X-Tenant-Id`). A 401 dispatches `SESSION_EXPIRED`, which sends the user back to login.

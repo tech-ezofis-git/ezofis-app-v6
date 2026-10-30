@@ -45,7 +45,7 @@ import java.util.Map;
  *   - a Web OAuth client; its id goes in res/values/strings.xml as google_web_client_id
  *
  * Microsoft (Office 365 / Entra ID work accounts) uses MSAL with res/raw/msal_config.json:
- *   - an Azure app registration with an Android platform: package com.ezofis.mobile + the signature hash
+ *   - an Azure app registration with an Android platform: package com.ezofis.ezofis_mobile + the signature hash
  *     (base64 SHA-1) of the signing key; its Application (client) id goes in msal_config.json
  *   - the matching BrowserTabActivity redirect in AndroidManifest.xml
  */

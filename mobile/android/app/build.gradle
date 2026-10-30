@@ -10,12 +10,14 @@ android {
     namespace "com.ezofis.mobile"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.ezofis.mobile"
+        // The Play listing "Ezofis - Mobile" (2023, last version code 17), so V6 ships as an update to it. The Java
+        // namespace stays com.ezofis.mobile.
+        applicationId "com.ezofis.ezofis_mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // keep in step with apk-shell/build_apk.py and Settings (Play needs a higher versionCode for every upload)
         versionCode 38
-        versionName "0.6.1"
+        versionName "6.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -34,7 +36,7 @@ android {
         }
     }
     buildTypes {
-        // Microsoft sign-in (MSAL) redirect = msauth://com.ezofis.mobile/<base64 SHA-1 of the signing key>, so each key has
+        // Microsoft sign-in (MSAL) redirect = msauth://com.ezofis.ezofis_mobile/<base64 SHA-1 of the signing key>, so each key has
         // its own: manifest path here, redirect_uri in src/<buildType>/res/raw/msal_config.json. Both must be registered in Azure.
         debug {
             manifestPlaceholders = [msalSignatureHash: '/NNnZgQ9Ckk0W1wpT4DQIj/Kq1Ns=']
@@ -42,7 +44,7 @@ android {
         release {
             // Play app signing key (Play re-signs every install with it), not the upload key: a release build installed
             // straight from the Mac (upload key) can't use Microsoft sign-in
-            manifestPlaceholders = [msalSignatureHash: '/r5nvRx9Hx+MJTFfC5ZcfY9wMdMc=']
+            manifestPlaceholders = [msalSignatureHash: '/tgVXtex+pa7pqpdlUQSaxv2pUGM=']
             if (keystorePropsFile.exists()) { signingConfig signingConfigs.release }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

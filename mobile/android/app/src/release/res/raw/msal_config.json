@@ -1,7 +1,7 @@
 {
   "client_id": "315d2d09-9633-419e-8e85-18b747eb5be5",
   "authorization_user_agent": "DEFAULT",
-  "redirect_uri": "msauth://com.ezofis.mobile/r5nvRx9Hx%2BMJTFfC5ZcfY9wMdMc%3D",
+  "redirect_uri": "msauth://com.ezofis.ezofis_mobile/tgVXtex%2Bpa7pqpdlUQSaxv2pUGM%3D",
   "account_mode": "SINGLE",
   "broker_redirect_uri_registered": true,
   "authorities": [
