@@ -23,6 +23,7 @@ import {
   localizeRequestStatus,
 } from '@/pages/requests/utils/localizeRequestUi'
 import cn from '@/utils/cn'
+import { parseInsightText } from '@/utils/parseInsightText'
 import { parseUtcDate } from '@/utils/utcDate'
 import StageTrail from './StageTrail'
 
@@ -72,6 +73,8 @@ interface HeaderProps {
   subProcessCount?: number
   ticketUserId?: string
   totalAmount?: string
+  /** Workflow AI insight for the step this request is on (summary + next action). Shown without a score. */
+  workflowInsight?: null | { nextAction?: null | string; summary?: null | string }
   setRightView: (
     view: 'overview' | 'history' | 'attachments' | 'comments' | 'subProcess',
   ) => void
@@ -335,6 +338,7 @@ const Header: React.FC<HeaderProps> = ({
   subProcessCount,
   ticketUserId,
   totalAmount,
+  workflowInsight,
   setRightView,
   onApprove,
   onBack,
@@ -933,6 +937,36 @@ const Header: React.FC<HeaderProps> = ({
     )
   }
 
+  // One paragraph: summary and next action joined, with no line breaks.
+  const workflowInsightText = [workflowInsight?.summary, workflowInsight?.nextAction]
+    .map((part) => String(part ?? '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+  const hasWorkflowInsight = Boolean(workflowInsightText)
+  // General (non-AP) workflows show "AI Insights"; "Decision Details" stays for the AP agent decision.
+  const insightTitle =
+    !simple && insightContent ? t`Decision Details` : t`AI Insights`
+  const insightPanelBody = (
+    <div className='flex flex-col gap-2'>
+      {insightContent ? (
+        <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
+          {renderHighlightedContent(insightContent)}
+        </p>
+      ) : null}
+      {workflowInsightText ? (
+        <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
+          {parseInsightText(workflowInsightText)}
+        </p>
+      ) : null}
+      {!insightContent && !hasWorkflowInsight ? (
+        <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
+          {t`No decision details available for this request.`}
+        </p>
+      ) : null}
+    </div>
+  )
+
   console.log('Action value', actions)
 
   if (simple) {
@@ -1117,7 +1151,7 @@ const Header: React.FC<HeaderProps> = ({
               <AiInsightsTrigger
                 active={showAIInsights}
                 processing={isProcessing}
-                score={agentData?.score}
+                score={insightContent ? agentData?.score : undefined}
                 onClick={() =>
                   !isProcessing && setShowAIInsights(!showAIInsights)
                 }
@@ -1138,7 +1172,7 @@ const Header: React.FC<HeaderProps> = ({
                           <div className='flex items-center gap-2'>
                             <AiBrandIcon className='size-[20px] text-[var(--primary-9)]' />
                             <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
-                              {t`Decision Details`}
+                              {insightTitle}
                             </span>
                           </div>
                           <button
@@ -1149,11 +1183,7 @@ const Header: React.FC<HeaderProps> = ({
                             <Icon className='size-4' name='lucide:x' />
                           </button>
                         </div>
-                        <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
-                          {insightContent
-                            ? renderHighlightedContent(insightContent)
-                            : t`No decision details available for this request.`}
-                        </p>
+                        {insightPanelBody}
                       </div>
                     </div>
                   </motion.div>
@@ -1550,7 +1580,7 @@ const Header: React.FC<HeaderProps> = ({
               <AiInsightsTrigger
                 active={showAIInsights}
                 processing={isProcessing}
-                score={agentData?.score}
+                score={insightContent ? agentData?.score : undefined}
                 onClick={() =>
                   !isProcessing && setShowAIInsights(!showAIInsights)
                 }
@@ -1571,7 +1601,7 @@ const Header: React.FC<HeaderProps> = ({
                           <div className='flex items-center gap-2'>
                             <AiBrandIcon className='size-[20px] text-[var(--primary-9)]' />
                             <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
-                              {t`Decision Details`}
+                              {insightTitle}
                             </span>
                           </div>
                           <button
@@ -1582,11 +1612,7 @@ const Header: React.FC<HeaderProps> = ({
                             <Icon className='size-4' name='lucide:x' />
                           </button>
                         </div>
-                        <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
-                          {insightContent
-                            ? renderHighlightedContent(insightContent)
-                            : t`No decision details available for this request.`}
-                        </p>
+                        {insightPanelBody}
                       </div>
                     </div>
                   </motion.div>

@@ -104,6 +104,11 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IUserEmailLookup, UserEmailLookup>();
         services.AddScoped<IWorkflowLegacyMailboxQueryService, WorkflowLegacyMailboxQueryService>();
         services.AddScoped<IWorkflowInstanceHistoryService, WorkflowInstanceHistoryService>();
+        services.AddSingleton<WorkflowInsightQueue>();
+        services.AddSingleton<IWorkflowInsightQueue>(sp => sp.GetRequiredService<WorkflowInsightQueue>());
+        services.AddHostedService<WorkflowInsightWorker>();
+        services.AddHttpClient(nameof(WorkflowInsightService), client => client.Timeout = TimeSpan.FromSeconds(90));
+        services.AddScoped<IWorkflowInsightService, WorkflowInsightService>();
         services.AddScoped<IWorkflowProcessAddonService, WorkflowProcessAddonService>();
         services.AddScoped<WorkflowDelegationMailService>();
         services.AddScoped<IWorkflowLegacyTransactionSyncService, WorkflowLegacyTransactionSyncService>();

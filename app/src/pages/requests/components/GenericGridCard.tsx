@@ -12,6 +12,7 @@ import requestStore from '@/pages/requests/stores/useRequestStore'
 import { isInboxRowOverdue } from '@/pages/requests/utils/inboxItemDisplay'
 import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
 import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
+import { getWorkflowAiInsightText } from '@/pages/requests/utils/workflowAiInsight'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
@@ -172,6 +173,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
         qualify?.['AI Insight'] ||
         qualify?.['Ai Insight'] ||
         qualify?.aiInsight ||
+        getWorkflowAiInsightText(row) ||
         '',
     ).trim()
     return raw.replace(/^[✨\u2728\u2729\u2730\s]+/, '').trim()

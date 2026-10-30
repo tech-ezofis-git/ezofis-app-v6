@@ -150,6 +150,8 @@ interface Props {
     view: 'overview' | 'history' | 'attachments' | 'comments' | 'subProcess',
   ) => void
   onAttachmentsChanged?: () => void
+  /** Called with true while a form file upload (OCR / indexing) is in progress. */
+  onUploadingChange?: (uploading: boolean) => void
   onChecklistToggle?: (id: string, checked: boolean) => void
   onCommentsChanged?: () => Promise<void>
   onFieldChange: (fieldId: string, value: any) => void
@@ -977,6 +979,7 @@ const GenericRequestOverview = ({
   onFieldsChange,
   onSignatureToggle,
   onStagesChange,
+  onUploadingChange,
 }: Props) => {
   const { t } = useLingui()
   const kanbanMissingFieldIds = requestStore(
@@ -1288,6 +1291,13 @@ const GenericRequestOverview = ({
   const [preparingFieldId, setPreparingFieldId] = useState<string | null>(null)
   const [folderFields, setFolderFields] = useState<RepositoryFieldSchema[]>([])
   const returnToFieldIdRef = useRef<string | null>(null)
+
+  // Let the request header hold its action buttons while a file is still uploading.
+  const isUploadBusy = isUploading || preparePhase !== null
+  useEffect(() => {
+    onUploadingChange?.(isUploadBusy)
+    return () => onUploadingChange?.(false)
+  }, [isUploadBusy, onUploadingChange])
 
   useEffect(() => {
     if (pendingUpload?.fieldId) {

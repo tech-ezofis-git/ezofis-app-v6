@@ -24,6 +24,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
     private readonly IWorkflowSecurityService _security;
     private readonly IMjbUsMailWorkflowStarter _mjbMailStarter;
     private readonly IEmlAttachmentExtractionService _emlAttachmentExtraction;
+    private readonly IWorkflowInsightQueue _insightQueue;
     private readonly ILogger<StartWorkflowCommandHandler> _logger;
 
     public StartWorkflowCommandHandler(
@@ -41,6 +42,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
         IWorkflowSecurityService security,
         IMjbUsMailWorkflowStarter mjbMailStarter,
         IEmlAttachmentExtractionService emlAttachmentExtraction,
+        IWorkflowInsightQueue insightQueue,
         ILogger<StartWorkflowCommandHandler> logger)
     {
         _repository = repository;
@@ -57,6 +59,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
         _security = security;
         _mjbMailStarter = mjbMailStarter;
         _emlAttachmentExtraction = emlAttachmentExtraction;
+        _insightQueue = insightQueue;
         _logger = logger;
     }
 
@@ -178,6 +181,14 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
                 instance.Id,
                 bootstrap.FirstTransactionId,
                 bootstrap.CurrentTransactionId);
+
+            // AI insight for the first step owner; generated in the background, never blocks or fails the start.
+            _insightQueue.Enqueue(new WorkflowInsightGenerateRequest(
+                tenantId,
+                userId,
+                workflow.Id,
+                instance.Id,
+                WorkflowInsightTrigger.Start));
 
             string? apAgentJobId = null;
             object? pythonInput = null;

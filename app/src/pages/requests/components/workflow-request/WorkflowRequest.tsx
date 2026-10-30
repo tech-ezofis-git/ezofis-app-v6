@@ -598,6 +598,14 @@ const WorkflowRequest = ({
   ])
 
   const handleSubmit = async () => {
+    if (isUploadingAttachment) {
+      showToast({
+        message: t`A file is still uploading. Please wait for it to finish.`,
+        variant: 'error',
+      })
+      return
+    }
+
     const result = await submit()
     if (!result.success) {
       const missingLabels =
@@ -888,7 +896,10 @@ const WorkflowRequest = ({
           commentCount={comments.length}
           extraActions={subWorkflowActions}
           isSubmitDisabled={
-            isLoadingForm || !!loadError || Boolean(activeTableUpload)
+            isLoadingForm ||
+            !!loadError ||
+            Boolean(activeTableUpload) ||
+            isUploadingAttachment
           }
           isSubmitting={isSubmitting}
           stageTrail={stageTrail}

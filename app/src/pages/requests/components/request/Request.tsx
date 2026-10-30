@@ -1495,6 +1495,13 @@ const Request = ({
     request?.qualifyAgentResponse || selectedItem?.qualifyAgentResponse
   const hasAgentData =
     agentDataList.length > 0 || !!qualifyResponse?.qualifier_result
+  // Workflow AI insight (summary + next action) generated for the step this request is on.
+  const workflowAiInsight = selectedItem?.aiInsight || request?.aiInsight
+  const hasWorkflowAiInsight = Boolean(
+    workflowAiInsight?.summary || workflowAiInsight?.nextAction,
+  )
+  // True while a form file upload is in progress: actions wait until it finishes.
+  const [isFormUploading, setIsFormUploading] = useState(false)
 
   const currentAgentData = useMemo(() => {
     // For Generic Workflows where AI Insights comes from Qualify Agent Response
@@ -2434,6 +2441,14 @@ const Request = ({
   //    stage's mandatory fields.
   // Returns false (and toasts) on the first failure.
   const validateBeforeAction = (): boolean => {
+    if (isFormUploading) {
+      showToast({
+        message: t`A file is still uploading. Please wait for it to finish.`,
+        variant: 'error',
+      })
+      return false
+    }
+
     if (isGenericWorkflow && genericFormPanels.length > 0) {
       const allFieldIds: string[] = []
       genericFormPanels.forEach((panel: any) =>
@@ -3235,7 +3250,8 @@ const Request = ({
           assigneeLabel={assigneeLabel}
           budget={isAtEndBlock ? null : headerBudget}
           currency={currency}
-          enableAIInsights={hasAgentData}
+          enableAIInsights={hasAgentData || hasWorkflowAiInsight}
+          workflowInsight={workflowAiInsight}
           hideActions={hideActions}
           isEditing={isEditing}
           isFourthItem={isFourthItem}
@@ -3257,6 +3273,22 @@ const Request = ({
             // Quote edited after its PDF was generated: moving the request
             // on would send the stale PDF. Reject / Disqualify stay open.
             const actionLabel = String(a.label || a.value || '').toLowerCase()
+            if (isFormUploading) {
+              return {
+                ...a,
+                disabled: true,
+                renderWrapper: (btn: React.ReactNode) => (
+                  <Tooltip
+                    content={t`A file is still uploading. Please wait for it to finish.`}
+                    position='bottom'
+                    width={240}
+                  >
+                    {btn}
+                  </Tooltip>
+                ),
+                onClick: undefined,
+              }
+            }
             if (
               quoteRegenerationPending &&
               !actionLabel.includes('reject') &&
@@ -3441,6 +3473,7 @@ const Request = ({
                 onFieldsChange={handleGenericFieldsChange}
                 onSignatureToggle={setSignatureConfirmed}
                 onStagesChange={setWorkflowStages}
+                onUploadingChange={setIsFormUploading}
               />
             ) : (
               <Overview
