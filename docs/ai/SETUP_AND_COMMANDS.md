@@ -50,6 +50,33 @@ python -m app.evals.run                           # eval harness: calls REAL LLM
 ## Mobile — `mobile/`
 See `mobile/CLAUDE.md`: `npm install`, `npm run dev`, `npm run build`, `tests/e2e/run_all.sh`.
 
+## Run everything locally (auto-reload)
+Use the dev servers, not IIS, Caddy or production Docker images. They reload by themselves when files change, so `git pull` updates the running stack.
+
+| Part | Started by `dev-start.ps1` with | Reloads after a pull |
+|---|---|---|
+| Web app | `npm run dev` (Vite, http://localhost:3000) | Browser page reloads |
+| API | `dotnet watch run` (http://localhost:5000) | Rebuilds and restarts |
+| Agents | `docker compose up` (uvicorn `--reload`, http://localhost:8010) | Restarts in the container |
+
+```powershell
+./scripts/dev-start.ps1            # checks settings, then opens one window per part
+./scripts/dev-start.ps1 -Only app,api
+./scripts/dev-start.ps1 -DryRun    # checks only
+./scripts/dev-pull.ps1             # switch to testing, pull, and do only the extra steps needed
+```
+
+Local settings (all git-ignored). `dev-start.ps1` refuses to start if any of them points at production:
+
+| File | Setting | Local value |
+|---|---|---|
+| `app/.env` | `VITE_BASE_URL`, `VITE_V6_BASE_URL` | `http://localhost:5000/api` (the example file points at production) |
+| `agents/.env` | `EZOFIS_API_BASE` | `http://host.docker.internal:5000/api` (the default is production) |
+| `api/src/Api/appsettings.Development.json` | `ConnectionStrings:DefaultConnection` | the tester database login |
+| same file | `Hangfire:SchemaName` | `hangfire_local` (never `hangfire`) |
+
+`dev-pull.ps1` runs `npm ci` when `app/package-lock.json` changed (or tells you to stop the web app first if it's running), rebuilds the agents container when `agents/requirements.txt` or `agents/Dockerfile` changed, and warns when database schema code changed, because the first request then changes tables in the shared database.
+
 ## Whole stack with Docker
 ```bash
 docker compose -f docker-compose.azure.yml up    # needs .env.azure (copy .env.azure.example)
