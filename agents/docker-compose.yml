@@ -13,6 +13,9 @@ services:
       AGENT_PACKS_FROM_DB: "true"
       # Runner reads Catalog pipeline when true (default true in Settings; Phase 2).
       AP_PIPELINE_FROM_DB: "true"
+      BURGR_API_KEY: ${BURGR_API_KEY:-}
+      BURGR_API_BASE: ${BURGR_API_BASE:-https://burgr.ai}
+      BURGR_GOAL: ${BURGR_GOAL:-balanced}
     depends_on:
       postgres:
         condition: service_healthy

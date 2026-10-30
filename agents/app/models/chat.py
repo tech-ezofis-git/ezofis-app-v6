@@ -964,6 +964,13 @@ class ChatResponse(BaseModel):
     correlation_id: str
     latency_ms: float
     token_usage: Optional[TokenUsage] = None
+    routing: Optional[dict[str, Any]] = Field(
+        default=None,
+        description=(
+            "Burgr decision for this response: goal, the model Burgr returned, "
+            "the catalog model that was actually called, and whether they matched."
+        ),
+    )
     chunk_ids: Optional[list[str]] = Field(
         default=None,
         description="Chunk IDs the reply was synthesized from (Search intent only; absent/None otherwise).",

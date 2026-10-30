@@ -212,6 +212,28 @@ def preset_call_overrides(model: Optional[str]) -> Optional[dict[str, Any]]:
     return resolve_preset_overrides(name)
 
 
+def keyed_preset_overrides() -> list[dict[str, Any]]:
+    """Every catalog preset that has an API key, as chat_completion overrides.
+
+    Includes models added in the catalog UI (for example gpt-5.4-nano), not
+    only the five presets hardcoded in this file. slug and label are attached
+    so a router can match a returned name back to the row.
+    """
+    rows: list[dict[str, Any]] = []
+    for preset in _preset_source():
+        preset_id = str(preset.get("id") or "")
+        if not preset_id or not preset_has_api_key(preset_id):
+            continue
+        overrides = resolve_preset_overrides(preset_id)
+        if not overrides:
+            continue
+        overrides = dict(overrides)
+        overrides["slug"] = preset_id
+        overrides["label"] = preset.get("label") or preset_id
+        rows.append(overrides)
+    return rows
+
+
 def preset_has_api_key(preset_id: str) -> bool:
     preset = get_preset(preset_id)
     if preset is None:

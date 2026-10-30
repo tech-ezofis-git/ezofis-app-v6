@@ -259,6 +259,10 @@ class ReportAgentService:
             {"role": "user", "content": user},
         ]
         primary, fallbacks = await self._resolve_llm_presets(tenant_id, model)
+        from app.llm.burgr_route import request_candidates
+        from app.catalog.tenant_llm import fallback_override_chain
+
+        request_candidates.set(fallback_override_chain(primary, fallbacks))
         if isinstance(fallbacks, dict):
             fallbacks = [fallbacks]
         elif not isinstance(fallbacks, list):
