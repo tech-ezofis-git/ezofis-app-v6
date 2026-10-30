@@ -26,6 +26,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
     private readonly IApAgentJobProgressService _apAgentJobProgress;
     private readonly IQuanticsFormSyncJobClient _quanticsFormSync;
     private readonly IWorkflowEndSyncService _endSync;
+    private readonly IWorkflowConditionRouter _conditionRouter;
     private readonly ILogger<MoveToNextStepCommandHandler> _logger;
 
     public MoveToNextStepCommandHandler(
@@ -46,6 +47,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         IApAgentJobProgressService apAgentJobProgress,
         IQuanticsFormSyncJobClient quanticsFormSync,
         IWorkflowEndSyncService endSync,
+        IWorkflowConditionRouter conditionRouter,
         ILogger<MoveToNextStepCommandHandler> logger)
     {
         _repository = repository;
@@ -65,6 +67,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         _apAgentJobProgress = apAgentJobProgress;
         _quanticsFormSync = quanticsFormSync;
         _endSync = endSync;
+        _conditionRouter = conditionRouter;
         _logger = logger;
     }
 
@@ -603,6 +606,20 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             {
                 _logger.LogError(ex, "Quantics form sync enqueue failed for instance {InstanceId}.", instance.Id);
             }
+        }
+
+        // Condition block: the API checks its rules and moves on by itself (SATISFIED / NOT SATISFIED),
+        // after everything above has run for this move. Return where the ticket ended up.
+        if (!isCompleted
+            && nextDefinitionStep != null
+            && WorkflowStepTransitionHelper.IsConditionStep(nextDefinitionStep))
+        {
+            var routed = await _conditionRouter.TryRouteAsync(
+                instance.Id,
+                request.ConditionDepth,
+                cancellationToken);
+            if (routed != null)
+                return routed;
         }
 
         return new MoveToNextStepCommandResult(
