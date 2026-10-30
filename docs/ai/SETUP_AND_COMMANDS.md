@@ -74,8 +74,13 @@ Local settings (all git-ignored). `dev-start.ps1` refuses to start if any of the
 | `agents/.env` | `EZOFIS_API_BASE` | `http://host.docker.internal:5000/api` (the default is production) |
 | `api/src/Api/appsettings.Development.json` | `ConnectionStrings:DefaultConnection` | the tester database login |
 | same file | `Hangfire:SchemaName` | `hangfire_local` (never `hangfire`) |
+| same file | `EzofisBlobStorage:ConnectionString` | empty (file storage off) or a **test** storage account. Never a placeholder: that makes every request fail |
+| `agents/.env` | `EZOFIS_LOGIN_EMAIL`, `EZOFIS_LOGIN_PASSWORD` | the EZOFIS UAT test-tenant login |
+| `agents/.env` | `EZOFIS_ENV` | `trial` (never `live`) |
 
-`dev-pull.ps1` runs `npm ci` when `app/package-lock.json` changed (or tells you to stop the web app first if it's running), rebuilds the agents container when `agents/requirements.txt` or `agents/Dockerfile` changed, and warns when database schema code changed, because the first request then changes tables in the shared database.
+`dev-start.ps1` also refuses while required values (database login, UAT login, `CATALOG_DATABASE_URL`) still contain `REPLACE_ME` / `YOUR_…` placeholders, and shows a note for optional ones (LLM keys, file storage).
+
+`dev-pull.ps1` runs `npm ci` when `app/package-lock.json` changed (or tells you to stop the web app first if it's running), rebuilds the agents container when `agents/requirements.txt` or `agents/Dockerfile` changed, and warns when database schema code changed, because the first request then changes tables in the shared database. Files the dev server regenerates (`app/src/routeTree.gen.ts`, `app/tsconfig.tsbuildinfo`, locale `messages.*`) don't count as your changes: `dev-pull.ps1` resets them and continues.
 
 ## Whole stack with Docker
 ```bash
