@@ -9,7 +9,9 @@ public sealed record FormListItem(
     /// <summary>Creator email from users.Users.</summary>
     string? CreatedByName = null,
     /// <summary>Modifier email if modifiedBy is set; otherwise creator email.</summary>
-    string? ModifiedByName = null);
+    string? ModifiedByName = null,
+    /// <summary>Form type from wForm.type (e.g. Workflow or Master).</summary>
+    string? Type = null);
 
 public sealed record FormListResponse(IReadOnlyList<FormListItem> Items);
 
@@ -48,4 +50,5 @@ public sealed record FormAllItem(
     DateTime? CreatedAt,
     DateTime? ModifiedAt,
     string? CreatedByName = null,
-    string? ModifiedByName = null);
+    string? ModifiedByName = null,
+    string? Type = null);
