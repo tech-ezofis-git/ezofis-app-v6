@@ -32,6 +32,11 @@ import {
 import AiFormBuilder from './components/AiFormBuilder'
 import Table from './components/Table'
 
+const isWorkflowForm = (item: any) =>
+  String(item?._json?.settings?.general?.type || item?.type || '')
+    .trim()
+    .toUpperCase() === 'WORKFLOW'
+
 const isFormDraft = (item: any) => {
   const rawStatus =
     item?._json?.settings?.publish?.publishOption ||
@@ -292,7 +297,7 @@ const FormsPage = () => {
                   />
                 }
               >
-                {!isDraft && (
+                {!isDraft && !isWorkflowForm(row) && (
                   <MenuItem
                     icon='lucide:table'
                     label={t`View Entries`}
