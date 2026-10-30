@@ -66,6 +66,8 @@ public sealed class CreateWorkflowCommandHandler : IRequestHandler<CreateWorkflo
 
         var description = request.WorkflowJson?.Settings?.General?.Description ?? request.Description;
 
+        WorkflowSlaSettingsValidator.Validate(request.WorkflowJson);
+
         var existingWorkflow = await _repository.GetByNameAsync(workflowName, tenantId, cancellationToken);
         if (existingWorkflow != null)
             throw new InvalidOperationException($"Workflow with name '{workflowName}' already exists.");

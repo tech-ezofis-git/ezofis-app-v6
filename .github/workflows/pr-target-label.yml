@@ -1,0 +1,73 @@
+name: PR target label
+
+# Labels every PR with the branch it targets ("into: main" / "into: testing"), so the
+# PR list shows at a glance what goes to production. A PR into main that doesn't come
+# from testing also gets "direct to main" and one comment: normal work goes through
+# testing first; only urgent production fixes go straight to main.
+# Runs again when the PR's target branch is changed (edited).
+
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize, ready_for_review]
+    branches:
+      - main
+      - testing
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pr-target-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    name: Label PR by target branch
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+
+          # Create the labels once; --force keeps their colour and text up to date.
+          gh label create "into: main" --repo "$REPO" --force --color B60205 \
+            --description "Merging this deploys to production (after approval)"
+          gh label create "into: testing" --repo "$REPO" --force --color 0E8A16 \
+            --description "Goes to the testing branch; nothing deploys"
+          gh label create "direct to main" --repo "$REPO" --force --color FBCA04 \
+            --description "Targets main without going through testing first"
+
+          if [ "$BASE" = "main" ]; then
+            gh pr edit "$PR" --repo "$REPO" --add-label "into: main" --remove-label "into: testing"
+          else
+            gh pr edit "$PR" --repo "$REPO" --add-label "into: testing" --remove-label "into: main" --remove-label "direct to main"
+          fi
+
+          if [ "$BASE" != "main" ] || [ "$HEAD_BRANCH" = "testing" ]; then
+            echo "PR #$PR targets $BASE from $HEAD_BRANCH: normal flow." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          gh pr edit "$PR" --repo "$REPO" --add-label "direct to main"
+          echo "::warning::PR #$PR targets main directly from $HEAD_BRANCH. Normal work goes into testing first."
+          echo "PR #$PR targets main directly from $HEAD_BRANCH (labelled 'direct to main')." >> "$GITHUB_STEP_SUMMARY"
+
+          # Comment once per PR, not on every push.
+          marker="<!-- pr-target-label:direct-to-main -->"
+          if gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[].body' | grep -qF "$marker"; then
+            exit 0
+          fi
+          gh pr comment "$PR" --repo "$REPO" --body "$marker
+          ⚠️ **This PR goes straight to \`main\`**, so merging it (after approval) deploys to production without testing on \`testing\` first.
+
+          - **Normal work:** change the target to \`testing\`: **Edit** (next to the title) → base branch \`testing\`.
+          - **Urgent production fix:** keep \`main\`, and after it's merged open a PR \`main\` → \`testing\` so \`testing\` gets the fix too.
+
+          See *Branch flow* in \`docs/ai/CONVENTIONS.md\`."

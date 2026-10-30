@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import formApi from '@/api/form/form'
 import { getGroups, getUsers } from '@/api/v6/user'
@@ -1177,7 +1177,6 @@ const Request = ({
   onNext?: () => void
   onPrev?: () => void
 }) => {
-  console.log('--- REQUEST COMPONENT IS RENDERING ---')
   const { t } = useLingui()
   const {
     activeTabValue,
@@ -1721,6 +1720,43 @@ const Request = ({
     resolvedWorkflowId,
   ])
 
+  // Generate PDF moves the request to the next stage at once, but the file is
+  // written by the backend a little later, when this screen is no longer on
+  // the Document Generate step (so the polling above has not started or has
+  // stopped). Keep
+  // refreshing the attachment list for a short while after the action, until
+  // the list changes or the wait runs out.
+  const [awaitingGeneratedDoc, setAwaitingGeneratedDoc] = useState<{
+    baseline: string
+    until: number
+  } | null>(null)
+  const genericAttachmentSignature = genericAttachments
+    .map((file: any) => String(file?.itemId ?? file?.id ?? ''))
+    .join(',')
+  useEffect(() => {
+    if (!awaitingGeneratedDoc) return
+    if (
+      genericAttachmentSignature !== awaitingGeneratedDoc.baseline ||
+      Date.now() >= awaitingGeneratedDoc.until
+    ) {
+      setAwaitingGeneratedDoc(null)
+      return
+    }
+    const intervalId = window.setInterval(() => {
+      if (Date.now() >= awaitingGeneratedDoc.until) {
+        setAwaitingGeneratedDoc(null)
+        return
+      }
+      void refetchGenericAttachments()
+    }, 3000)
+    void refetchGenericAttachments()
+    return () => window.clearInterval(intervalId)
+  }, [
+    awaitingGeneratedDoc,
+    genericAttachmentSignature,
+    refetchGenericAttachments,
+  ])
+
   // Regenerated quote PDFs replace the old ones: reload the attachments.
   useEffect(() => {
     const refresh = () => void refetchGenericAttachments()
@@ -2213,7 +2249,6 @@ const Request = ({
     if (!isGenericWorkflow) return
     const activeItem = request || selectedItem
     const parsed = safeParseFormData(activeItem?.formData)
-    console.log('[inbox formData from server]', parsed)
     setGenericFormModel((prev) => {
       const next = { ...parsed }
       for (const [key, value] of Object.entries(prev)) {
@@ -2413,16 +2448,6 @@ const Request = ({
     request,
     genericInstanceId,
   ])
-
-  console.log('=== REQUEST COMPONENT DEBUG LOGS ===')
-  console.log('Prop item:', item)
-  console.log('Store SelectedItem:', storeSelectedItem)
-  console.log('Resolved SelectedItem:', selectedItem)
-  console.log('Process ID:', selectedItem?.processId)
-  console.log('Transaction ID:', selectedItem?.transactionId)
-  console.log('Selected Workflow ID:', resolvedWorkflowId)
-  console.log('UseRequestDetail Data:', request)
-  console.log('Agent Data List:', agentDataList)
 
   useEffect(() => {
     if (hasAgentData && activeTab === 'Form') {
@@ -2685,6 +2710,19 @@ const Request = ({
       // Invalidate notifications query so new ticket notifications load immediately
       void queryClient.invalidateQueries({ queryKey: ['notifications'] })
 
+      // The action may sit on the step before the Document Generate agent
+      // (e.g. a "Generate PDF" button), so match the action name as well.
+      if (
+        isGenericWorkflow &&
+        hasDocumentGenerateAgent &&
+        (onDocumentGenerateNode || /generate|pdf/i.test(action))
+      ) {
+        setAwaitingGeneratedDoc({
+          baseline: genericAttachmentSignature,
+          until: Date.now() + 120_000,
+        })
+      }
+
       const responseData = response?.data
       const nextApAgentJobId = extractApAgentJobId(responseData)
       const nextInstanceId =
@@ -2717,7 +2755,17 @@ const Request = ({
           variant: 'success',
         })
 
-        invalidateRequestLists(queryClient)
+        if (isGenericWorkflow) {
+          // Stay quick on this page: only this request is refreshed now. The
+          // lists are marked stale (reloaded when next shown) and the workflow
+          // definition is not reloaded; the job-finished step does both once.
+          void queryClient.invalidateQueries({
+            queryKey: ['inbox'],
+            refetchType: 'none',
+          })
+        } else {
+          invalidateRequestLists(queryClient)
+        }
         queryClient.invalidateQueries({
           queryKey: [
             'request-detail',
@@ -2726,7 +2774,7 @@ const Request = ({
             selectedItem?.transactionId,
           ],
         })
-        workflowRefresh()
+        if (!isGenericWorkflow) workflowRefresh()
         // Stay on the detail view so job polling can show live status messages.
         return
       }
@@ -3136,7 +3184,6 @@ const Request = ({
       statusBadge = finalStatusBadge
     }
   }
-  console.log(selectedItem, 'Selected Item')
 
   const handleShare = async (
     shares: { action: number; email: string }[],
@@ -3269,7 +3316,6 @@ const Request = ({
           status={statusBadge}
           totalAmount={totalAmount}
           actions={headerActions.map((a: any) => {
-            console.log('Header action being mapped:', a.value, a.label)
             // Quote edited after its PDF was generated: moving the request
             // on would send the stale PDF. Reject / Disqualify stay open.
             const actionLabel = String(a.label || a.value || '').toLowerCase()
@@ -3313,7 +3359,6 @@ const Request = ({
               String(a.value).toLowerCase() === 'forward' ||
               String(a.label).toLowerCase() === 'forward'
             ) {
-              console.log('Found Forward action!')
               return {
                 ...a,
                 renderWrapper: (btn: React.ReactNode) => (
@@ -3532,4 +3577,7 @@ const Request = ({
 }
 
 Request.displayName = 'Request'
-export default Request
+// Memoised: the page around it refetches its lists and counts several times
+// after an action, and each of those updates must not re-render this whole
+// screen when its own props did not change.
+export default memo(Request)

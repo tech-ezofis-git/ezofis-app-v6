@@ -442,9 +442,10 @@ def lock_report_definition(
             warnings.append(f"Dropped unknown filter field '{field}'.")
             continue
         leaf = _leaf_name(canon)
-        if op == "eq" and leaf in _SOFT_DELETE and value in (False, 0, "0", "false", "False", "FALSE", "f"):
-            op = "not_deleted"
-            value = None
+        if op == "eq" and leaf in _SOFT_DELETE:
+            if value in (None, "", False, 0, "0", "false", "False", "FALSE", "f", "F"):
+                op = "not_deleted"
+                value = None
         elif op == "eq" and isinstance(value, str) and (
             leaf in _STATUS_LEAVES or "status" in leaf
         ):
@@ -919,23 +920,52 @@ def merge_spec_into_definition(raw: dict[str, Any], spec: Any) -> dict[str, Any]
     spec_columns = list(getattr(spec, "columns", None) or []) if spec is not None else []
     spec_filters = list(getattr(spec, "filters", None) or []) if spec is not None else []
 
-    sources = [s for s in (out.get("sources") or []) if isinstance(s, dict)]
-    if source_table and (
-        not sources or all(is_catalog_table(str(s.get("table") or "")) for s in sources)
-    ):
+    if source_table:
         out["sources"] = [
             {"alias": "t", "schemaName": source_schema, "table": source_table}
         ]
         out["joins"] = []
 
+    out["availableFilters"] = []
+    out["warnings"] = []
+
     if spec_columns:
         cols: list[dict[str, Any]] = []
         report_type = str(getattr(spec, "report_type", "") or "").lower()
+        listing_sql_skip = {
+            "requestno",
+            "stage",
+            "status",
+            "startedby",
+            "startedbyid",
+            "actedby",
+            "actedbyid",
+            "workflowname",
+            "workflowid",
+            "instanceid",
+            "createdatutc",
+            "lastaction",
+            "lastactionby",
+            "lastactionon",
+            "duration",
+            "daysopen",
+            "response",
+            "slaresponse",
+            "resolution",
+            "repositoryname",
+            "repository",
+            "filename",
+            "createdby",
+            "createdbyid",
+        }
         for col in spec_columns:
             key = str(getattr(col, "key", "") or "").strip()
             if not key:
                 continue
-            if report_type == "specific_repository" and _compact_ident(key) in {
+            compact = _compact_ident(key)
+            if compact in listing_sql_skip:
+                continue
+            if report_type == "specific_repository" and compact in {
                 "repositoryname",
                 "repository",
             }:
@@ -965,9 +995,9 @@ def merge_spec_into_definition(raw: dict[str, Any], spec: Any) -> dict[str, Any]
         if getattr(f, "field", None)
     ]
 
-    group_by = [str(g).strip() for g in (getattr(spec, "group_by", None) or []) if str(g).strip()]
-    if group_by:
-        out["groupBy"] = group_by
+    out["groupBy"] = [
+        str(g).strip() for g in (getattr(spec, "group_by", None) or []) if str(g).strip()
+    ]
 
     title = str(getattr(spec, "title", "") or "").strip()
     if title:

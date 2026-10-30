@@ -57,8 +57,11 @@ function isMandatoryValidationMessage(
   )
 }
 
+const MANDATORY_TOAST_ID = 'mandatory-validation'
+
 const showToast = ({
   autoClose,
+  id,
   keepVariant,
   message,
   toastTitle,
@@ -77,9 +80,15 @@ const showToast = ({
       ? variantConfig.title
       : (toastTitle ?? variantConfig.title)
 
+  // Repeated clicks must not stack the same notice: the newest replaces the
+  // one on screen. Mandatory-field notices all share one slot.
+  const toastId = id ?? (isMandatoryNotice ? MANDATORY_TOAST_ID : undefined)
+  if (toastId) notifications.hide(toastId)
+
   return notifications.show({
     autoClose: autoClose ?? 4000,
     className: cn(variantConfig.className, 'mt-4'),
+    id: toastId,
     message,
     title,
     withCloseButton: true,

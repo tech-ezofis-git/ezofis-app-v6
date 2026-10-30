@@ -38,6 +38,7 @@ import {
   hasStoredFileValue,
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import { resolveFormLayout } from '@/pages/requests/components/workflow-request/utils/formLayout'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
 import { useStableRequestKey } from '@/pages/requests/hooks/useStableRequestKey'
 import requestStore from '@/pages/requests/stores/useRequestStore'
@@ -423,6 +424,7 @@ const DocumentFormSplitLayout = ({
   )
   const knownAttachmentKeysRef = useRef<Set<string>>(new Set())
   const hasSeededAttachmentKeysRef = useRef(false)
+  const seededRequestIdentityRef = useRef('')
   const [newAttachmentKeys, setNewAttachmentKeys] = useState<Set<string>>(
     () => new Set(),
   )
@@ -477,6 +479,7 @@ const DocumentFormSplitLayout = ({
       if (keys.length === 0) return
       knownAttachmentKeysRef.current = new Set(keys)
       hasSeededAttachmentKeysRef.current = true
+      seededRequestIdentityRef.current = requestIdentity
       const stillExists = keys.includes(viewerAttachmentKey)
       if (!stillExists) {
         setViewerAttachmentKey(attachmentKeyOf(recentDocument))
@@ -515,6 +518,30 @@ const DocumentFormSplitLayout = ({
     }
   }, [attachments, recentDocument, viewerAttachmentKey])
 
+  // A file that has just arrived is shown in the same render that lists it. The
+  // effect above only records it afterwards, which cost one more render of this
+  // large screen with the old file still on display.
+  const pendingNewAttachment = (() => {
+    if (!hasSeededAttachmentKeysRef.current) return null
+    // Right after switching to another request the old baseline is still here.
+    if (seededRequestIdentityRef.current !== requestIdentity) return null
+    const known = knownAttachmentKeysRef.current
+    const added = attachments.filter((file) => {
+      const key = attachmentKeyOf(file)
+      return Boolean(key) && !known.has(key)
+    })
+    if (!added.length) return null
+    return (
+      getRecentDocumentAttachment(added) ||
+      getLatestAttachment(added) ||
+      added[added.length - 1] ||
+      null
+    )
+  })()
+  const pendingNewAttachmentKey = pendingNewAttachment
+    ? attachmentKeyOf(pendingNewAttachment)
+    : ''
+
   // Viewer strip: original files plus anything uploaded during this visit,
   // so a freshly uploaded file shown in the viewer can be switched back to.
   const viewerStripAttachments = useMemo(
@@ -522,13 +549,26 @@ const DocumentFormSplitLayout = ({
       attachments.filter(
         (file) =>
           originalAttachments.includes(file) ||
-          sessionAddedKeys.has(attachmentKeyOf(file)),
+          sessionAddedKeys.has(attachmentKeyOf(file)) ||
+          (pendingNewAttachmentKey !== '' &&
+            attachmentKeyOf(file) === pendingNewAttachmentKey),
       ),
-    [attachments, originalAttachments, sessionAddedKeys],
+    [
+      attachments,
+      originalAttachments,
+      pendingNewAttachmentKey,
+      sessionAddedKeys,
+    ],
   )
 
   const viewerAttachment = useMemo(() => {
     if (!attachments.length) return recentDocument
+    if (pendingNewAttachmentKey) {
+      const arrived = attachments.find(
+        (file) => attachmentKeyOf(file) === pendingNewAttachmentKey,
+      )
+      if (arrived) return arrived
+    }
     return (
       attachments.find(
         (file) => attachmentKeyOf(file) === viewerAttachmentKey,
@@ -536,7 +576,12 @@ const DocumentFormSplitLayout = ({
       recentDocument ||
       attachments[0]
     )
-  }, [attachments, recentDocument, viewerAttachmentKey])
+  }, [
+    attachments,
+    pendingNewAttachmentKey,
+    recentDocument,
+    viewerAttachmentKey,
+  ])
 
   const handleSelectViewerAttachment = useCallback((file: AttachmentItem) => {
     const key = attachmentKeyOf(file)
@@ -1037,6 +1082,11 @@ const GenericRequestOverview = ({
   const panels = useMemo(
     () => getFormPanels(rawWorkflowData),
     [rawWorkflowData],
+  )
+  // Form Settings → Form Layout (Classic / Single page), as on New Request.
+  const formLayout = useMemo(
+    () => resolveFormLayout(rawWorkflowData?.formJson),
+    [rawWorkflowData?.formJson],
   )
   const workflowStages = useMemo(
     () =>
@@ -1547,6 +1597,7 @@ const GenericRequestOverview = ({
                   hiddenFieldIds={hiddenFieldIds}
                   hidePanels={true}
                   instanceId={instanceId}
+                  layout={formLayout}
                   panels={panels}
                   preparePhase={preparePhase}
                   preparingFieldId={preparingFieldId}
@@ -1673,6 +1724,7 @@ const GenericRequestOverview = ({
                     hiddenFieldIds={lineItemsHiddenFieldIds.ids}
                     hidePanels={agentBlocks.length > 0}
                     instanceId={instanceId}
+                    layout={formLayout}
                     panels={panels}
                     preparePhase={preparePhase}
                     preparingFieldId={preparingFieldId}
@@ -1774,6 +1826,7 @@ const GenericRequestOverview = ({
                       }
                       hidePanels={agentBlocks.length > 0}
                       instanceId={instanceId}
+                      layout={formLayout}
                       panels={panels}
                       preparePhase={preparePhase}
                       preparingFieldId={preparingFieldId}

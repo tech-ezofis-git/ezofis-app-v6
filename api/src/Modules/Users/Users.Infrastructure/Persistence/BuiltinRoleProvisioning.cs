@@ -126,15 +126,26 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
         if (excludedKeys is { Count: > 0 })
             categoryKeys.RemoveAll(excludedKeys.Contains);
 
+        await EnsureGrantLogTableAsync(context, cancellationToken);
+
         var existing = await context.Roles
             .Include(r => r.Permissions)
             .FirstOrDefaultAsync(r => r.Name == roleName, cancellationToken);
 
         if (existing != null)
         {
-            // Backfill: builtin roles were only granted categories present at first create.
-            // New categories (or empty create) left some options as Visible:false in the UI.
-            EnsureAllCategoryPermissions(existing, categoryKeys);
+            if (string.Equals(roleName, User.RoleTenantAdmin, StringComparison.OrdinalIgnoreCase))
+            {
+                // Tenant owner always has every category.
+                EnsureAllCategoryPermissions(existing, categoryKeys);
+            }
+            else
+            {
+                // Admin / TenantUser: grant each category once (when it is new), so a permission an
+                // admin removed in Roles is not added back on the next tenant ensure.
+                await GrantNewCategoriesOnceAsync(context, existing, categoryKeys, cancellationToken);
+            }
+
             RemoveExcludedPermissions(existing, excludedKeys);
             return existing;
         }
@@ -144,8 +155,79 @@ public sealed class BuiltinRoleProvisioning : IBuiltinRoleProvisioning
             role.AssignPermissions(categoryKeys);
 
         await context.Roles.AddAsync(role, cancellationToken);
+        await RecordGrantsAsync(context, role.Id, categoryKeys, cancellationToken);
         return role;
     }
+
+    /// <summary>
+    /// Grants categories this role has never been given (new categories). Categories already in the
+    /// grant log are left alone even if the role no longer has them -- an admin removed them.
+    /// </summary>
+    private static async Task GrantNewCategoriesOnceAsync(
+        UsersDbContext context,
+        Role role,
+        IReadOnlyList<string> categoryKeys,
+        CancellationToken cancellationToken)
+    {
+        var logged = await context.Database
+            .SqlQuery<string>($"""
+                SELECT "PermissionKey" AS "Value"
+                FROM users."BuiltinRoleCategoryGrants"
+                WHERE "RoleId" = {role.Id}
+                """)
+            .ToListAsync(cancellationToken);
+
+        if (logged.Count == 0)
+        {
+            // First run with the grant log: treat the role's current permissions and every current
+            // category as already granted, so earlier removals made in Roles are respected.
+            await RecordGrantsAsync(
+                context,
+                role.Id,
+                categoryKeys.Concat(role.Permissions.Select(p => p.PermissionKey)),
+                cancellationToken);
+            return;
+        }
+
+        var loggedSet = new HashSet<string>(logged, StringComparer.OrdinalIgnoreCase);
+        var newKeys = categoryKeys.Where(k => !loggedSet.Contains(k)).ToList();
+        if (newKeys.Count == 0)
+            return;
+
+        var has = new HashSet<string>(role.Permissions.Select(p => p.PermissionKey), StringComparer.OrdinalIgnoreCase);
+        var toGrant = newKeys.Where(k => !has.Contains(k)).ToList();
+        if (toGrant.Count > 0)
+            role.AssignPermissions(toGrant);
+
+        await RecordGrantsAsync(context, role.Id, newKeys, cancellationToken);
+    }
+
+    private static async Task RecordGrantsAsync(
+        UsersDbContext context,
+        Guid roleId,
+        IEnumerable<string> keys,
+        CancellationToken cancellationToken)
+    {
+        foreach (var key in keys.Where(k => !string.IsNullOrWhiteSpace(k)).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var normalized = key.Trim();
+            await context.Database.ExecuteSqlAsync($"""
+                INSERT INTO users."BuiltinRoleCategoryGrants" ("RoleId", "PermissionKey", "GrantedAtUtc")
+                VALUES ({roleId}, {normalized}, now())
+                ON CONFLICT ("RoleId", "PermissionKey") DO NOTHING
+                """, cancellationToken);
+        }
+    }
+
+    private static Task EnsureGrantLogTableAsync(UsersDbContext context, CancellationToken cancellationToken) =>
+        context.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS users."BuiltinRoleCategoryGrants" (
+                "RoleId" uuid NOT NULL,
+                "PermissionKey" varchar(100) NOT NULL,
+                "GrantedAtUtc" timestamptz NOT NULL DEFAULT now(),
+                CONSTRAINT "PK_BuiltinRoleCategoryGrants" PRIMARY KEY ("RoleId", "PermissionKey")
+            );
+            """, cancellationToken);
 
     /// <summary>Grant any missing active permission categories onto a builtin role (does not remove existing).</summary>
     private static void EnsureAllCategoryPermissions(Role role, IReadOnlyList<string> categoryKeys)

@@ -97,6 +97,22 @@ _WORKFLOW_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     ),
     (("duration",), "duration", "Duration"),
     (("daysopen", "days_open"), "daysOpen", "Days Open"),
+    (
+        (
+            "response",
+            "slaresponse",
+            "sla_response",
+            "responsestatus",
+            "response_status",
+        ),
+        "response",
+        "Response",
+    ),
+    (
+        ("resolution", "resolutionstatus", "resolution_status"),
+        "resolution",
+        "Resolution",
+    ),
 )
 _REPO_DEFAULTS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("repository_name", "repositoryname", "repository"), "Repository_Name", "Repository"),
@@ -149,6 +165,9 @@ _LISTING_DEFAULTS = frozenset(
         "lastactionon",
         "duration",
         "daysopen",
+        "response",
+        "slaresponse",
+        "resolution",
     }
 )
 _REPO_LISTING_DEFAULTS = frozenset(

@@ -71,7 +71,9 @@ const Header = ({
 
   return (
     <div className='flex h-13 items-center justify-between gap-3 border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
-      <div className='flex shrink-0 items-center gap-1.5'>
+      {/* Left and right groups take equal width (never narrower than their
+          content), so the stage trail between them is centred on the header. */}
+      <div className='flex min-w-fit flex-1 basis-0 items-center gap-1.5'>
         <IconButton
           aria-label={t`Back`}
           className='-ml-2'
@@ -97,12 +99,12 @@ const Header = ({
 
       {/* Same compact stage trail as the request details header. */}
       {stageTrail.length > 0 ? (
-        <div className='hidden min-w-0 flex-auto items-center justify-center md:flex'>
+        <div className='hidden min-w-0 shrink items-center justify-center md:flex'>
           <StageTrail items={stageTrail} />
         </div>
       ) : null}
 
-      <div className='flex shrink-0 items-center gap-1'>
+      <div className='flex min-w-fit flex-1 basis-0 items-center justify-end gap-1'>
         {(() => {
           const raw = String(budget ?? '').trim()
           if (!raw) return null

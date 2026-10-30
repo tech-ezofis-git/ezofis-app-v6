@@ -20,7 +20,13 @@ public record MoveToNextStepCommand(
     /// <summary>Optional author for the move comment only (e.g. the Pilot/agent user).
     /// Step transition still uses <see cref="ActivityUserId"/>.</summary>
     Guid? CommentCreatedBy = null,
-    string? CommentAuthorName = null
+    string? CommentAuthorName = null,
+    /// <summary>Internal: move to this activity instead of the ProceedAction target (SLA "Escalate to Stage").
+    /// Not bound from the public API.</summary>
+    string? TargetActivityId = null,
+    /// <summary>Internal: conditions already routed in this chain by <see cref="IWorkflowConditionRouter"/>.
+    /// Not bound from the public API.</summary>
+    int ConditionDepth = 0
 ) : IRequest<MoveToNextStepCommandResult>;
 
 public record MoveToNextStepCommandResult(

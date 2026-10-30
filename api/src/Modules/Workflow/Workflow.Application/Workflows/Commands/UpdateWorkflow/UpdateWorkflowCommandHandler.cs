@@ -98,6 +98,8 @@ public sealed class UpdateWorkflowCommandHandler : IRequestHandler<UpdateWorkflo
         if (json == null)
             throw new InvalidOperationException("workflowJson is required for a full designer update.");
 
+        WorkflowSlaSettingsValidator.Validate(json);
+
         var workflowName = json.Settings?.General?.Name ?? request.Name ?? workflow.Name;
         if (string.IsNullOrWhiteSpace(workflowName))
             throw new InvalidOperationException("Workflow name is required.");

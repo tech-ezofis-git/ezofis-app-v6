@@ -14,6 +14,10 @@ from fastapi.testclient import TestClient
 import app.main as main_module
 from tests.fakes import FakeDBPool
 
+# Test Console login (app/control/console_auth.py) — test-only values.
+CONSOLE_TEST_USER = "console-test"
+CONSOLE_TEST_PASSWORD = "console-test-password"
+
 
 class _IsolatedFakeRedis:
     """Stands in for `redis.asyncio.Redis` so `Redis.from_url(...)` (the
@@ -56,6 +60,9 @@ def client(monkeypatch):
     monkeypatch.setenv("AP_PIPELINE_FROM_DB", "false")
     # Chatbot search tests stay on keyword rules unless a test turns this on.
     monkeypatch.setenv("CHATBOT_SEARCH_LLM", "false")
+    # /console needs a login; the client below sends it on every request.
+    monkeypatch.setenv("CONSOLE_USER", CONSOLE_TEST_USER)
+    monkeypatch.setenv("CONSOLE_PASSWORD", CONSOLE_TEST_PASSWORD)
     from app.config import get_settings
 
     get_settings.cache_clear()
@@ -79,6 +86,7 @@ def client(monkeypatch):
     )
 
     with TestClient(main_module.app) as test_client:
+        test_client.auth = (CONSOLE_TEST_USER, CONSOLE_TEST_PASSWORD)
         test_client.fake_db_pool = fake_db_pool
         yield test_client
 

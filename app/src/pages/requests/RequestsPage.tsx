@@ -1279,6 +1279,15 @@ const RequestsPage = () => {
     }
   }
 
+  // Stable handlers for the open request (see the memoised Request): they
+  // always call the latest onPrev / onNext.
+  const onPrevRef = useRef(onPrev)
+  onPrevRef.current = onPrev
+  const onNextRef = useRef(onNext)
+  onNextRef.current = onNext
+  const stableOnPrev = useCallback(() => onPrevRef.current(), [])
+  const stableOnNext = useCallback(() => onNextRef.current(), [])
+
   const user = useAuthUserStore((s) => s.user)
   const session = useAuthUserStore((s) => s.session)
 
@@ -2126,8 +2135,8 @@ const RequestsPage = () => {
               key={selectedRequestKey}
               workflowId={selectedWorkflow?.id}
               onBack={closeRequest}
-              onNext={hasNext && !showAllWorkflows ? onNext : undefined}
-              onPrev={hasPrev && !showAllWorkflows ? onPrev : undefined}
+              onNext={hasNext && !showAllWorkflows ? stableOnNext : undefined}
+              onPrev={hasPrev && !showAllWorkflows ? stableOnPrev : undefined}
             />
           )}
           {!selectedItem &&

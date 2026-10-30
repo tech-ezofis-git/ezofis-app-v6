@@ -77,6 +77,12 @@ class Settings(BaseSettings):
     # /actions/{action_id}/confirm.
     rate_limit_max_requests: int = 20
     rate_limit_window_seconds: int = 60
+    # HTTP Basic login for the Test Console (GET /console + every /console/*
+    # API) — see app/control/console_auth.py. Both empty (the default) or a
+    # password under 12 characters = console switched off (404).
+    # Env: CONSOLE_USER / CONSOLE_PASSWORD. Never commit real values.
+    console_user: str = ""
+    console_password: str = ""
 
     # --- Response caching (Phase 5b) --------------------------------------
     # See app/control/response_cache.py for the full reasoning. Embedding
@@ -159,6 +165,11 @@ class Settings(BaseSettings):
     # Hard cap for LLM provider calls — prevents /chat from hanging forever
     # when a preset endpoint is unreachable.
     llm_request_timeout_seconds: float = 60.0
+    # Burgr only chooses which catalog model to try first. The provider
+    # call still uses the catalog preset's own key. Empty key disables routing.
+    burgr_api_key: Optional[str] = None
+    burgr_api_base: str = "https://burgr.ai"
+    burgr_goal: str = "balanced"
     azure_storage_connection_string: Optional[str] = None
     azure_blob_container_prefix: str = "ezts"
 
