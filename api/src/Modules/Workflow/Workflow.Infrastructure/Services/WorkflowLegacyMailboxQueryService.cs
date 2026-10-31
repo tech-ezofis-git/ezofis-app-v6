@@ -23,17 +23,62 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
     private readonly IWorkflowEzfbFormDataLoader _formDataLoader;
     private readonly IRepositoryItemQueryService _repositoryItems;
     private readonly IWorkflowLegacyMailboxSyncService _mailboxSync;
+    private readonly IWorkflowInsightService _insights;
 
     public WorkflowLegacyMailboxQueryService(
         ITenantContext tenantContext,
         IWorkflowEzfbFormDataLoader formDataLoader,
         IRepositoryItemQueryService repositoryItems,
-        IWorkflowLegacyMailboxSyncService mailboxSync)
+        IWorkflowLegacyMailboxSyncService mailboxSync,
+        IWorkflowInsightService insights)
     {
         _tenantContext = tenantContext;
         _formDataLoader = formDataLoader;
         _repositoryItems = repositoryItems;
         _mailboxSync = mailboxSync;
+        _insights = insights;
+    }
+
+    /// <summary>
+    /// Attaches the current AI insight to inbox rows only (requests waiting for the user's action);
+    /// sent and completed rows never carry one. Never fails the list: insights are optional.
+    /// </summary>
+    private async Task EnrichAiInsightsAsync(
+        Guid workflowId,
+        Guid currentUserId,
+        IList<LegacyMailboxRowDto> items,
+        Func<LegacyMailboxRowDto, bool> isInboxRow,
+        CancellationToken cancellationToken)
+    {
+        if (items.Count == 0)
+            return;
+        try
+        {
+            var ids = items
+                .Where(isInboxRow)
+                .Select(i => i.WorkflowInstanceId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Select(id => id!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (ids.Length == 0)
+                return;
+
+            var found = await _insights.GetCurrentAsync(workflowId, ids, currentUserId, cancellationToken);
+            if (found.Count == 0)
+                return;
+
+            for (var i = 0; i < items.Count; i++)
+            {
+                var key = items[i].WorkflowInstanceId;
+                if (isInboxRow(items[i]) && !string.IsNullOrWhiteSpace(key) && found.TryGetValue(key.Trim(), out var insight))
+                    items[i] = items[i] with { AiInsight = insight };
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Insights are best-effort; the mailbox list must still load.
+        }
     }
 
     public async Task<LegacyMailboxListResult> ListAsync(
@@ -99,6 +144,9 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
             var items = await ReadListPageAsync(connection, dataSql, parameters, offset, pageSize, cancellationToken);
             await EnrichFormDataAsync(connection, items, cancellationToken);
             await EnrichRepositoryItemAsync(items, cancellationToken);
+            await EnrichAiInsightsAsync(
+                request.WorkflowId, request.CurrentUserId, items,
+                _ => request.Kind == LegacyMailboxTableKind.Inbox, cancellationToken);
             return new LegacyMailboxListResult(items, -1, page, pageSize, TableExists: true);
         }
 
@@ -107,6 +155,9 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
         var pageItems = await ReadListPageAsync(connection, dataSql, parameters, offset, pageSize, cancellationToken);
         await EnrichFormDataAsync(connection, pageItems, cancellationToken);
         await EnrichRepositoryItemAsync(pageItems, cancellationToken);
+        await EnrichAiInsightsAsync(
+            request.WorkflowId, request.CurrentUserId, pageItems,
+            _ => request.Kind == LegacyMailboxTableKind.Inbox, cancellationToken);
 
         return new LegacyMailboxListResult(pageItems, totalCount, page, pageSize, TableExists: true);
     }
@@ -159,6 +210,9 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
 
         await EnrichFormDataAsync(connection, items, cancellationToken);
         await EnrichRepositoryItemAsync(items, cancellationToken);
+        await EnrichAiInsightsAsync(
+            request.WorkflowId, request.CurrentUserId, items,
+            row => string.Equals(row.Mailbox, "inbox", StringComparison.OrdinalIgnoreCase), cancellationToken);
 
         var tableExists = inboxRows.Count > 0 || sentRows.Count > 0 || completedRows.Count > 0
             || await MailboxTableExistsAsync(connection, suffix, fullWorkflowKey, cancellationToken);

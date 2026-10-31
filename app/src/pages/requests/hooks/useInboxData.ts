@@ -456,7 +456,22 @@ export const isListTicketLoading = (item: any): boolean => {
   return !hasAgentData
 }
 
-const ticketListHasLoading = (rawData: unknown): boolean => {
+/** A row raised in the last 90s with no AI insight yet: the insight is generated in the background. */
+const AI_INSIGHT_WAIT_MS = 90_000
+const isAwaitingAiInsight = (item: any, isInboxTab: boolean): boolean => {
+  if (!item || typeof item !== 'object' || item.aiInsight) return false
+  // Insights are shown on inbox items only (requests waiting for the user's action).
+  if (!isInboxTab && item.mailbox !== 'inbox') return false
+  const raw = item.transactionCreatedAt || item.createdAtUtc
+  if (typeof raw !== 'string' || !raw) return false
+  const at = Date.parse(/(Z|[+-]\d\d:?\d\d)$/.test(raw) ? raw : `${raw}Z`)
+  return Number.isFinite(at) && Date.now() - at < AI_INSIGHT_WAIT_MS
+}
+
+const ticketListHasLoading = (
+  rawData: unknown,
+  isLoadingRow: (item: any) => boolean = isListTicketLoading,
+): boolean => {
   if (!rawData) return false
 
   // Selected shape: { data: TableGroup[] } or TableGroup[]
@@ -475,13 +490,13 @@ const ticketListHasLoading = (rawData: unknown): boolean => {
           : null
       if (!rows) {
         // Flat API row nested as group itself
-        if (isListTicketLoading(group)) return true
+        if (isLoadingRow(group)) return true
         continue
       }
       for (const row of rows) {
         if (Array.isArray(row?.value)) {
-          if (row.value.some(isListTicketLoading)) return true
-        } else if (isListTicketLoading(row)) {
+          if (row.value.some(isLoadingRow)) return true
+        } else if (isLoadingRow(row)) {
           return true
         }
       }
@@ -858,7 +873,16 @@ export const useInboxData = (
       const raw = query.state?.data?.data ?? query.state?.data
       const hasLoading =
         ticketListHasLoading(selected) || ticketListHasLoading(raw)
-      return hasLoading ? 15_000 : false
+      if (hasLoading) return 15_000
+
+      // New rows get their AI insight a few seconds after the move: poll briefly
+      // so it shows without a manual refresh.
+      const isInboxTab = activeTab === 'Inbox'
+      const awaitsRow = (item: any) => isAwaitingAiInsight(item, isInboxTab)
+      const awaitsInsight =
+        ticketListHasLoading(selected, awaitsRow) ||
+        ticketListHasLoading(raw, awaitsRow)
+      return awaitsInsight ? 4_000 : false
     },
 
     select: (payload: any) => {

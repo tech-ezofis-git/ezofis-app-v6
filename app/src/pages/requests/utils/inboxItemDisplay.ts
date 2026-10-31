@@ -3,6 +3,7 @@ import {
   getItemDecision,
 } from '@/pages/requests/utils/inboxList.utils'
 import { formatUtcToLocalDate } from '@/utils/utcDate'
+import { getWorkflowAiInsightText } from './workflowAiInsight'
 
 export type InboxCardData = {
   aiNote?: string
@@ -454,7 +455,11 @@ export const mapInboxItemToRequestCard = (row: any): InboxCardData => {
         : '—'
 
   return {
-    aiNote: agent?.ai_insight || agent?.aiInsight || undefined,
+    aiNote:
+      agent?.ai_insight ||
+      agent?.aiInsight ||
+      getWorkflowAiInsightText(row) ||
+      undefined,
     amount,
     id,
     meta,

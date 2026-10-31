@@ -107,7 +107,9 @@ public sealed record LegacyMailboxRowDto(
     /// Only set by GET /inbox/all-workflows; omitted (null) on the plain inbox/sent/completed lists.
     /// </summary>
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    bool? IsNewToday = null);
+    bool? IsNewToday = null,
+    /// <summary>Short AI insight (summary + next action) for the step the ticket is on. Null when none generated yet.</summary>
+    WorkflowInsightDto? AiInsight = null);
 
 /// <summary>Repository archive item snapshot returned on mailbox rows (raise-ticket / attached file).</summary>
 public sealed record LegacyMailboxRepositoryItemDto(
