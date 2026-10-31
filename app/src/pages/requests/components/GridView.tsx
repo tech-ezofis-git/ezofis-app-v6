@@ -37,6 +37,7 @@ import {
   getCompletedOutcome,
 } from '@/pages/requests/utils/inboxItemDisplay'
 import { isAccountsPayableWorkflow } from '@/pages/requests/utils/workflow.utils'
+import { getWorkflowAiInsightText } from '@/pages/requests/utils/workflowAiInsight'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
@@ -1023,6 +1024,7 @@ export const GridRowItem = memo(
         agentData?.ai_insect ||
         row?.qualifyAgentResponse?.qualifier_result?.['AI Insight'] ||
         row?.qualifyAgentResponse?.qualifier_result?.['Ai Insight'] ||
+        getWorkflowAiInsightText(row) ||
         '',
     ).trim()
     const aiInsight = rawAiInsight
