@@ -12,5 +12,6 @@ public interface IWorkflowTableCreator
     Task EnsureLegacyTransactionTableAsync(Guid workflowId, string connectionString, CancellationToken cancellationToken = default);
     Task EnsureLegacyMailboxTablesAsync(Guid workflowId, string connectionString, CancellationToken cancellationToken = default);
     Task EnsureAgentDataValidationTableAsync(Guid workflowId, string connectionString, CancellationToken cancellationToken = default);
+    Task EnsureWorkflowInsightsTableAsync(Guid workflowId, string connectionString, CancellationToken cancellationToken = default);
     Task DropWorkflowTablesAsync(Guid workflowId, string connectionString, CancellationToken cancellationToken = default);
 }

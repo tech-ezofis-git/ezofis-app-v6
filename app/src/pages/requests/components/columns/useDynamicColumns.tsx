@@ -32,6 +32,7 @@ import {
   isAccountsPayableWorkflow,
   safeParse,
 } from '@/pages/requests/utils/workflow.utils'
+import { getWorkflowAiInsightText } from '@/pages/requests/utils/workflowAiInsight'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import { parseUtcDate } from '@/utils/utcDate'
@@ -1593,6 +1594,7 @@ const getAiInsightText = (row: any) => {
       qualify?.['AI Insight'] ||
       qualify?.['Ai Insight'] ||
       qualify?.aiInsight ||
+      getWorkflowAiInsightText(row) ||
       '',
   )
     .replace(/^[✨✨✩✰\s]+/, '')
@@ -1772,11 +1774,11 @@ const getBaseColumns = (
         ),
       },
       {
+        // "2h ago" goes stale inside a file; export the actual timestamp.
+        exportLabel: t`Last Action`,
         id: 'lastActionAt',
         label: t`Time Running`,
         size: 160,
-        // "2h ago" goes stale inside a file; export the actual timestamp.
-        exportLabel: t`Last Action`,
         exportValue: (row: any) => getLastActionText(row),
         renderCell: (row: any) => {
           // Finished (END block) requests show their time in green
@@ -1816,11 +1818,11 @@ const getBaseColumns = (
               )}
             >
               <Icon
+                name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
                 className={cn(
                   'size-3',
                   isEnd ? 'text-green-9' : 'text-orange-9',
                 )}
-                name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
               />
               <span>{runningStr}</span>
             </span>
@@ -2021,6 +2023,7 @@ const getBaseColumns = (
             qualify?.['AI Insight'] ||
             qualify?.['Ai Insight'] ||
             qualify?.aiInsight ||
+            getWorkflowAiInsightText(_row) ||
             '',
         ).trim()
         const aiInsight = rawInsight

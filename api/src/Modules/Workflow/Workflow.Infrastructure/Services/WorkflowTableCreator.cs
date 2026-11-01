@@ -29,6 +29,7 @@ public sealed class WorkflowTableCreator : IWorkflowTableCreator
 {
     private static readonly ConcurrentDictionary<string, byte> LegacyTransactionSchemaEnsured = new(StringComparer.OrdinalIgnoreCase);
     private static readonly ConcurrentDictionary<string, byte> LegacyMailboxSchemaEnsured = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, byte> WorkflowInsightsSchemaEnsured = new(StringComparer.OrdinalIgnoreCase);
 
     public async Task<bool> WorkflowCoreTablesExistAsync(
         Guid workflowId,
@@ -64,6 +65,7 @@ public sealed class WorkflowTableCreator : IWorkflowTableCreator
             await EnsureLegacyTransactionTableAsync(workflowId, connectionString, cancellationToken);
             await EnsureLegacyMailboxTablesAsync(workflowId, connectionString, cancellationToken);
             await EnsureAgentDataValidationTableAsync(workflowId, connectionString, cancellationToken);
+            await EnsureWorkflowInsightsTableAsync(workflowId, connectionString, cancellationToken);
             return;
         }
 
@@ -103,7 +105,8 @@ public sealed class WorkflowTableCreator : IWorkflowTableCreator
             GenerateEmailsTableScript(suffix),
             GenerateAiValidationsTableScript(suffix),
             GenerateAgentDataValidationTableScript(suffix),
-            GeneratePdfAnnotationsTableScript(suffix)
+            GeneratePdfAnnotationsTableScript(suffix),
+            GenerateWorkflowInsightsTableScript(suffix)
         };
 
         foreach (var script in tables)
@@ -184,6 +187,26 @@ public sealed class WorkflowTableCreator : IWorkflowTableCreator
             CommandTimeout = 120
         };
         await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <summary>Creates workflow.workflow_insights_{suffix} when missing (idempotent). Used on insight insert and workflow save.</summary>
+    public async Task EnsureWorkflowInsightsTableAsync(
+        Guid workflowId,
+        string connectionString,
+        CancellationToken cancellationToken = default)
+    {
+        var suffix = workflowId.ToString("N")[..8];
+        if (WorkflowInsightsSchemaEnsured.ContainsKey(suffix))
+            return;
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var cmd = new NpgsqlCommand(GenerateWorkflowInsightsTableScript(suffix), connection)
+        {
+            CommandTimeout = 120
+        };
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+        WorkflowInsightsSchemaEnsured.TryAdd(suffix, 0);
     }
 
     private static async Task EnsureLegacyTransactionTableAsync(
@@ -328,6 +351,7 @@ ALTER TABLE workflow.{tableName} ADD COLUMN IF NOT EXISTS user_ids text NULL;";
             $"workflow_documents_{suffix}",
             $"workflow_emails_{suffix}",
             $"workflow_ai_validations_{suffix}",
+            $"workflow_insights_{suffix}",
             $"agent_data_validation_{suffix}",
             $"workflow_pdf_annotations_{suffix}"
         };
@@ -899,6 +923,43 @@ CREATE TABLE IF NOT EXISTS workflow.workflow_ai_validations_{suffix} (
     is_deleted boolean NOT NULL DEFAULT false
 );
 CREATE INDEX IF NOT EXISTS ix_workflow_ai_validations_{suffix}_tenant_id_workflow_instance_id ON workflow.workflow_ai_validations_{suffix} (tenant_id, workflow_instance_id, is_deleted);";
+    }
+
+    /// <summary>
+    /// AI Insights for workflow transactions: one row per (instance, step, assignee) generation; the newest
+    /// row per instance has is_current = true. Insights stay short (summary + next_action).
+    /// </summary>
+    private static string GenerateWorkflowInsightsTableScript(string suffix)
+    {
+        return $@"
+CREATE TABLE IF NOT EXISTS workflow.workflow_insights_{suffix} (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL,
+    workflow_id uuid NOT NULL,
+    workflow_instance_id uuid NOT NULL,
+    step_instance_id uuid NULL,
+    transaction_id varchar(64) NULL,
+    activity_id varchar(64) NULL,
+    stage_type varchar(40) NULL,
+    step_name varchar(200) NULL,
+    assignee_user_id uuid NULL,
+    trigger_type varchar(30) NOT NULL DEFAULT 'step_change',
+    version integer NOT NULL DEFAULT 1,
+    is_current boolean NOT NULL DEFAULT true,
+    status varchar(16) NOT NULL DEFAULT 'Ready',
+    user_input text NULL,
+    summary text NULL,
+    next_action text NULL,
+    insight_json text NULL,
+    error_message text NULL,
+    model varchar(100) NULL,
+    created_by uuid NULL,
+    created_at_utc timestamptz NOT NULL DEFAULT now(),
+    completed_at_utc timestamptz NULL,
+    is_deleted boolean NOT NULL DEFAULT false
+);
+CREATE INDEX IF NOT EXISTS ix_workflow_insights_{suffix}_instance_current ON workflow.workflow_insights_{suffix} (workflow_instance_id, is_current) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS ix_workflow_insights_{suffix}_step_assignee ON workflow.workflow_insights_{suffix} (step_instance_id, assignee_user_id, created_at_utc DESC);";
     }
 
     private static string GeneratePdfAnnotationsTableScript(string suffix)
