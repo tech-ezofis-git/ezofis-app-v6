@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd api\\src\\Api && dotnet run -- --urls http://localhost:5000"],
+      "port": 5000
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd app && set VITE_SUB_WORKFLOW_API=live&& npm run dev"],
+      "port": 3000
+    }
+  ]
+}

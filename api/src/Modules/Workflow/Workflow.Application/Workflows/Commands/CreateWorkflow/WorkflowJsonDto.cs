@@ -121,7 +121,8 @@ public record WorkflowBlockSettingsDto(
     List<WorkflowSlaRuleDto>? SlaRules = null,
     WorkflowFileSettingsDto? FileSettings = null,
     WorkflowMailInitiateDto? MailInitiate = null,
-    int? SubWorkflowId = null,
+    /// <summary>Target workflow: a V6 GUID string, or 0 / "" when none is set (V5 sends an int). Kept as raw JSON.</summary>
+    JsonElement? SubWorkflowId = null,
     WorkflowOcrAgentDto? OcrAgent = null,
     WorkflowAiPredictionDto? AiPrediction = null,
     WorkflowRuleConditionsDto? RuleConditions = null,

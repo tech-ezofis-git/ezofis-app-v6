@@ -10,12 +10,14 @@ import Tooltip from '@/components/base/Tooltip'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
 import {
+  hasSubWorkflowSetup,
   isSubWorkflowEnabled,
   toLinkedProcessSummary,
   useLinkSubProcess,
   useMainProcess,
   useSubProcesses,
 } from '@/features/sub-workflow'
+import useLatestWorkflow from '@/features/sub-workflow/hooks/useLatestWorkflow'
 import useSubWorkflowInitiator from '@/features/sub-workflow/hooks/useSubWorkflowInitiator'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
@@ -2126,8 +2128,12 @@ const Request = ({
   // child's new-request form in place of this request and links the result.
   // Sub-workflow UI is localhost-only until its API is ready.
   const subWorkflowEnabled = isSubWorkflowEnabled()
+  const { data: latestWorkflow } = useLatestWorkflow(
+    resolvedWorkflowId,
+    subWorkflowEnabled,
+  )
   const subWorkflow = useSubWorkflowInitiator(
-    overviewWorkflowData || rawWorkflowData,
+    latestWorkflow,
     currentActivityId,
     {
       enabled:
@@ -2150,6 +2156,16 @@ const Request = ({
     resolvedWorkflowId,
     linkedProcessId,
   )
+  // The tab shows only when the workflow is set up for sub-workflows, even
+  // while this request has no children yet.
+  const showSubProcessTab =
+    showSubProcesses && hasSubWorkflowSetup(latestWorkflow)
+
+  useEffect(() => {
+    if (rightView === 'subProcess' && latestWorkflow && !showSubProcessTab) {
+      setRightView('overview')
+    }
+  }, [latestWorkflow, rightView, showSubProcessTab])
 
   const resolvedRequestNo = useMemo(() => {
     let raw = ''
@@ -3463,7 +3479,7 @@ const Request = ({
             selectedItem?.transactionCreatedAt || request?.transactionCreatedAt
           }
           subProcessCount={
-            showSubProcesses ? (subProcesses?.length ?? 0) : undefined
+            showSubProcessTab ? (subProcesses?.length ?? 0) : undefined
           }
           ticketUserId={
             selectedItem?.userId ||

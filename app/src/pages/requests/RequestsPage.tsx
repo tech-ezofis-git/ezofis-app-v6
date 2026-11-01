@@ -872,7 +872,12 @@ const RequestsPage = () => {
           })
         }
 
-        setRawWorflow(loaded.rawWorkflow)
+        // After a reload the default workflow can finish loading while a
+        // request from another workflow is open; keep that request's copy.
+        const openWorkflowId = requestStore.getState().selectedItem?.workflowId
+        if (!openWorkflowId || String(openWorkflowId) === String(workflowId)) {
+          setRawWorflow(loaded.rawWorkflow)
+        }
         void fetchStageCounts(workflowId, loaded.rawWorkflow)
         setSelectedWorkflow(loaded.selectedWorkflow)
         setWorkflowLoadStatus('ready')

@@ -207,6 +207,7 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IWorkflowEndSyncService, WorkflowEndSyncService>();
         services.AddScoped<IWorkflowConditionRouter, WorkflowConditionRouter>();
         services.AddScoped<IWorkflowDelegationService, WorkflowDelegationService>();
+        services.AddScoped<IWorkflowSubProcessService, WorkflowSubProcessService>();
 
         services.AddHttpClient(nameof(FieldMappingService), client =>
         {

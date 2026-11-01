@@ -5,11 +5,13 @@ import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
 import {
   isSubWorkflowIdSet,
-  isSubWorkflowMock,
   writeConnectorSettings,
 } from '@/features/sub-workflow'
 import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
-import { WORKFLOW_CONNECTOR_NODE } from '@/pages/workflows/utils/workflowConnector'
+import {
+  CONNECTOR_ENGINE_READY,
+  WORKFLOW_CONNECTOR_NODE,
+} from '@/pages/workflows/utils/workflowConnector'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
 import SubWorkflowPicker from './common/SubWorkflowPicker'
@@ -65,10 +67,10 @@ export default function WorkflowConnectorSettingsPanel({
             When a request reaches this step, a new request is started in the
             selected workflow and linked to it as a sub-process.
           </p>
-          {isSubWorkflowMock() && (
+          {!CONNECTOR_ENGINE_READY && (
             <p className='mt-1.5 flex items-start gap-1 text-xs leading-relaxed font-semibold text-pink-12'>
               <Icon className='mt-0.5 size-3.5 shrink-0' name='lucide:info' />
-              Preview only: the server can't save this step yet, so a workflow
+              Preview only: the server can't run this step yet, so a workflow
               that contains it won't save until it's removed.
             </p>
           )}

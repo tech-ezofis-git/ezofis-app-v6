@@ -33,13 +33,16 @@ export const getWorkflowConnectorErrors = (
     return []
   })
 
+// The API can store a connector step but its engine can't run one yet: the step
+// would become a manual step nobody can act on. Set to true once it can.
+export const CONNECTOR_ENGINE_READY = false
+
 export const CONNECTOR_SAVE_BLOCKED_MESSAGE =
-  "Workflows with a Workflow Connector step can't be saved yet: the server doesn't support it. Remove the step to save."
+  "Workflows with a Workflow Connector step can't be saved yet: the server can't run this step. Remove the step to save."
 
 /**
- * Save-time block for Workflow Connector steps. The V6 save API rejects the
- * WORKFLOW_CONNECTOR block type until the sub-workflow backend ships, so a
- * workflow containing one isn't sent at all. Lifts when the live API is on.
+ * Save-time block for Workflow Connector steps: until the engine runs them, a
+ * workflow containing one isn't sent at all.
  */
 export const getConnectorSaveBlock = (
   nodes: Node[],
