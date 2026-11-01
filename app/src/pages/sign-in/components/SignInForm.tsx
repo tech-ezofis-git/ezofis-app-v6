@@ -177,7 +177,9 @@ const SignInForm = ({
   } = useMemo(() => {
     const o = origin
 
-    const env = o === 'https://trial.ezofis.com'
+    const env =
+      o === 'https://trial.ezofis.com' ||
+      o === 'https://eztrialapp.azurewebsites.net'
 
     const tenant =
       o === 'https://edmsuat.sobhaapps.com' ||

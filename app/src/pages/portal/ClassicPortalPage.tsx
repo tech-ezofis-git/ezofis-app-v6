@@ -73,7 +73,9 @@ const ClassicPortalPage = ({ portalId, tenantId }: ClassicPortalPageProps) => {
       if (
         event.origin !== window.location.origin &&
         event.origin !== 'https://cloud.ezofis.com' &&
-        event.origin !== 'https://trial.ezofis.com'
+        event.origin !== 'https://app.ezofis.com' &&
+        event.origin !== 'https://trial.ezofis.com' &&
+        event.origin !== 'https://eztrialapp.azurewebsites.net'
       ) {
         return
       }
