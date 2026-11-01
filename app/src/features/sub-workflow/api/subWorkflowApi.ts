@@ -67,7 +67,7 @@ export const toSubProcessRow = (row: any): SubProcessRow => ({
   subWorkflowName: row.subWorkflowName ?? row.name ?? '',
 })
 
-const toMainProcess = (row: any): MainProcessDetails => ({
+export const toMainProcess = (row: any): MainProcessDetails => ({
   flowStatus: row.flowStatus ?? 0,
   processId: row.processId,
   requestNo: row.requestNo ?? `#${row.processId}`,

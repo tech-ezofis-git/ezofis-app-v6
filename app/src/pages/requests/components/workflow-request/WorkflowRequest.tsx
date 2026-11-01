@@ -14,6 +14,7 @@ import {
   toLinkedProcessSummary,
   useLinkSubProcess,
 } from '@/features/sub-workflow'
+import useLatestWorkflow from '@/features/sub-workflow/hooks/useLatestWorkflow'
 import useSubWorkflowInitiator from '@/features/sub-workflow/hooks/useSubWorkflowInitiator'
 import { useRequestDetail } from '@/pages/requests/hooks/useRequestDetails'
 import requestStore from '@/pages/requests/stores/useRequestStore'
@@ -532,9 +533,14 @@ const WorkflowRequest = ({
   // New request whose START step has a Workflow Initiator: children are
   // created first and linked once this request is submitted (V5
   // AddNewRequest behaviour).
-  const subWorkflow = useSubWorkflowInitiator(workflow, null, {
-    // Sub-workflow UI is localhost-only until its API is ready.
-    enabled: allowSubWorkflow && isSubWorkflowEnabled(),
+  // Sub-workflow UI is localhost-only until its API is ready.
+  const subWorkflowEnabled = allowSubWorkflow && isSubWorkflowEnabled()
+  const { data: latestWorkflow } = useLatestWorkflow(
+    workflow?.id,
+    subWorkflowEnabled,
+  )
+  const subWorkflow = useSubWorkflowInitiator(latestWorkflow, null, {
+    enabled: subWorkflowEnabled,
   })
   const linkSubProcess = useLinkSubProcess()
   const [isInitiatingSubWorkflow, setIsInitiatingSubWorkflow] = useState(false)

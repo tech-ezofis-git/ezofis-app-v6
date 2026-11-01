@@ -55,7 +55,9 @@ Until the API is ready, all sub-workflow UI is shown only on a local dev host. `
 
 Import still reads the keys (it changes nothing that's saved).
 
-**Connector save block:** the V6 save API rejects the `WORKFLOW_CONNECTOR` block type (reported 2026-10-27), so while the API is mocked (`isSubWorkflowMock()`) the builder refuses to save any workflow containing a Connector step. It shows an error toast and sends nothing (`getConnectorSaveBlock` in `utils/workflowConnector.ts`, called from `BuilderHeader.tsx`). The Connector panel tells the user it's preview-only. Setting `VITE_SUB_WORKFLOW_API=live` lifts both. **To go live:** delete `featureFlag.ts` and every `isSubWorkflowEnabled()` check (grep for it), and drop the `location` stubs in the two test files.
+**Connector save block:** the save failure reported on 2026-10-27 came from `SubWorkflowId` being `int?` in `WorkflowJsonDto.cs`, so any GUID target failed, on Initiator blocks too. That's fixed. The API can now store a `WORKFLOW_CONNECTOR` block, but the engine can't run it: it would become a manual step nobody can act on. So the builder still refuses to save a workflow containing a Connector step until `CONNECTOR_ENGINE_READY` (`utils/workflowConnector.ts`) is true, whatever `VITE_SUB_WORKFLOW_API` says. It shows an error toast and sends nothing (`getConnectorSaveBlock`, called from `BuilderHeader.tsx`), and the Connector panel tells the user it's preview-only. **To go live:** delete `featureFlag.ts` and every `isSubWorkflowEnabled()` check (grep for it), and drop the `location` stubs in the two test files.
+
+**Live API (`VITE_SUB_WORKFLOW_API=live`):** the link endpoints exist (see §4a) and the web app uses them for Initiate, the Sub Process tab and the parent link. Inbox chips and connector history stay empty in live mode until the list and history responses carry that data.
 
 ## 4. Questions for the backend (Phase 0, runs alongside the other phases)
 
@@ -65,6 +67,26 @@ Import still reads the keys (it changes nothing that's saved).
 4. V6 replacement for `POST /report/workflowAuditWithSlaFields/{id}`: how do we get a child's `requestNo / stage / flowStatus / lastAction / duration` by `processId`? Can `GET subWorkflow` return these directly?
 5. Do V6 inbox/list responses include `subworkflowTransaction[]`, and does `processHistory` include `subWorkflowHistory[]`?
 6. Cascade rules (parent withdrawn/deleted, orphan child when a new parent is abandoned) and protection against loops or deep nesting.
+
+## 4a. Backend status
+
+Built in `api/`. Tested on 2026-10-31 through a local API against a real tenant database in live mode: the save fix, all three endpoints, the 400/401/404/409 rejections, and on screen the Sub Process tab plus opening a child and returning through its parent link. The 403 access check is covered by unit tests only, and hiding rows from a user without access is untested, as both need a non-admin user. The Initiator on an existing request was also run end to end on screen: Initiate, submit the child form, automatic link, Sub Process count and row, child's parent link. Not run live: Initiate on a new request (START step), and pre-fill with real parent values, as the parent used had an empty form:
+
+- **Links:** `WorkflowSubProcessController` and `WorkflowSubProcessService` store links in `workflow.sub_process_links` (`scripts/postgres/Create_WorkflowSubProcessLinks.sql`). The table is created on the first link, because the workflow schema middleware doesn't reapply to existing tenants. Reads never run DDL.
+- **Endpoints:** `GET workflow/subWorkflow/{wId}/{pId}`, `POST workflow/postSubWorkflow` (201) and `GET workflow/getDetailsforMainworkflow/{wId}/{pId}` answer Q2. Ids are GUIDs: a process id is the workflow instance id.
+- **Rules:** a child has one parent, links are one level deep (so no loops), and repeating a link is a no-op. Linking needs access to both workflows; reads leave out rows from workflows the user can't access.
+
+Still open:
+
+- Q1 and Q6: the Connector engine, and what happens to a child when its parent is rejected, withdrawn or force-closed.
+- Q3: `putSubWorkflow` isn't built, as nothing calls it.
+- Q5: `subworkflowTransaction` and `subWorkflowHistory` on list and history responses.
+- Linking doesn't check that the parent's step really targets that child workflow, or that the user is the current assignee. The web app does check these.
+- A child created for a new parent stays unlinked if that parent is never submitted.
+- After jumping between a parent and child in different workflows, Back can land on the previous workflow's list.
+- The requests store keeps its own copy of the workflow after a publish. Sub-workflow settings now read the saved workflow (`useLatestWorkflow`), but other stage settings on an open request can still use the old copy until it's reopened.
+- The Initiate button's long label squeezes the request header on narrow windows.
+- Document workflows with no repository (`repositoryId` null, such as Document Approval on the test tenant) ignore uploads with no message (`addAttachment` in `useWorkflowForm.ts`), so they can't be used as a child.
 
 ## 5. Phases
 
@@ -188,7 +210,7 @@ Each phase ends with: the code done, a targeted type-check of the changed files,
 
 ## 6. Progress
 
-- [ ] Phase 0 — backend answers
+- [~] Phase 0 — backend answers (Q2 and Q4 answered by §4a; Q1, Q3, Q5 and Q6 open)
 - [x] Phase 1 — foundation (types, utils, mock-backed API + hooks, tests)
 - [x] Phase 2 — connector node
 - [x] Phase 3 — initiator toggle

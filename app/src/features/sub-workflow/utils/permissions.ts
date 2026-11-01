@@ -1,4 +1,8 @@
-import { readInitiatorSettings } from './blockSettings'
+import {
+  isSubWorkflowIdSet,
+  readInitiatorSettings,
+  WORKFLOW_CONNECTOR_BLOCK_TYPE,
+} from './blockSettings'
 
 interface SessionLike {
   email?: string
@@ -45,6 +49,14 @@ export const getInitiatorSubWorkflowId = (
   )
   return workflowInitiator ? subWorkflowId : 0
 }
+
+/** True when any block has a Workflow Initiator or a connector target. */
+export const hasSubWorkflowSetup = (workflow: any): boolean =>
+  getFlowBlocks(workflow).some((block) =>
+    block?.type === WORKFLOW_CONNECTOR_BLOCK_TYPE
+      ? isSubWorkflowIdSet(block?.settings?.subWorkflowId)
+      : readInitiatorSettings(block?.settings).workflowInitiator,
+  )
 
 const emailDomain = (email?: string) =>
   String(email || '')
