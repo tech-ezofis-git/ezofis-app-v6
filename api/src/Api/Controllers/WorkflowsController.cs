@@ -1784,6 +1784,7 @@ public sealed class WorkflowsController : ControllerBase
     /// <summary>
     /// Current tickets for the given stage activity ids, in the same shape as inbox, sent, and completed.
     /// A ticket is returned once, on the stage it is on now. Workflow success rows come from completed.
+    /// Send pageNumber/pageSize (max 100) to get one page; totalCount is every matching ticket.
     /// </summary>
     [HttpPost("by-activity")]
     [ProducesResponseType(typeof(LegacyMailboxListResult), StatusCodes.Status200OK)]
@@ -1806,7 +1807,11 @@ public sealed class WorkflowsController : ControllerBase
             return BadRequest(new { error = "activityIds cannot exceed 100." });
 
         var result = await _mediator.Send(
-            new GetMailboxByActivityIdsQuery(request.WorkflowId, activityIds),
+            new GetMailboxByActivityIdsQuery(
+                request.WorkflowId,
+                activityIds,
+                Math.Max(request.PageNumber ?? 1, 1),
+                Math.Max(request.PageSize ?? 0, 0)),
             cancellationToken);
         return Ok(result);
     }
@@ -2928,7 +2933,7 @@ public sealed class RaiseTicketFromRepositoryRequest
 }
 
 /// <summary>Look up specific activity ids in the current user's inbox and sent lists.</summary>
-public sealed record MailboxByActivityRequest(Guid WorkflowId, List<string>? ActivityIds);
+public sealed record MailboxByActivityRequest(Guid WorkflowId, List<string>? ActivityIds, int? PageNumber = null, int? PageSize = null);
 
 /// <summary>Request to set SLA policy for a workflow.</summary>
 public record SetWorkflowSlaRequest(SlaPriority Priority, int ResponseTimeMinutes, int ResolutionTimeMinutes, int? EscalationTimeMinutes = null, Guid? EscalateToUserId = null, string? EscalateToRole = null, bool SendNotificationOnBreach = true, string? NotificationEmails = null);
