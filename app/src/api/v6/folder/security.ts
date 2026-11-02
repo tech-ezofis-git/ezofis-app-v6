@@ -470,7 +470,11 @@ export function resolveEffectiveFolderPermissions(args: {
   if (args.allowAll) return { ...FOLDER_PERMISSIONS_ALLOW_ALL }
 
   const policies = Array.isArray(args.policies) ? args.policies : []
-  if (!policies.length) return { ...FOLDER_PERMISSIONS_ALLOW_ALL }
+  // No policies: everything allowed except the unredacted (original) PII view, which must
+  // be granted explicitly by a policy.
+  if (!policies.length) {
+    return { ...FOLDER_PERMISSIONS_ALLOW_ALL, piiRedaction: false }
+  }
 
   const userId = sanitizeGuid(String(args.userId || ''))
   const userGroupIds = sanitizeGuidArray(args.userGroupIds || [])

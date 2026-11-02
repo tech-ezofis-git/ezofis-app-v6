@@ -139,6 +139,8 @@ from app.classification_skills.contract import (
     with_contract as with_classification_contract,
 )
 from app.ftl.api import router as ftl_router
+from app.pii_fields.api import router as pii_fields_router
+from app.pii_redact.api import router as pii_redact_router
 from app.agents.ramco_ocr_agent import RamcoOcrAgent
 from app.agents.ftp_agent import FtpAgent
 from app.agents.global_search_agent import GlobalSearchAgent
@@ -739,6 +741,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AI Orchestrator", version="0.1.0", lifespan=lifespan)
 app.include_router(ftl_router)
+app.include_router(pii_fields_router)
+app.include_router(pii_redact_router)
 app.add_middleware(AuditMiddleware)
 # Added last = runs first: unauthenticated /console requests are rejected
 # before anything else. See app/control/console_auth.py.

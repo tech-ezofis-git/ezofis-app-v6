@@ -1303,6 +1303,11 @@ public sealed class RepositoriesController : ControllerBase
             if (content == null)
                 return NotFound();
 
+            // PII folders: users without the PII Redaction grant get a server-redacted copy.
+            if (await TryServePiiRedactedFileAsync(repoId, tenantId, item, content, disposition, cancellationToken)
+                is { } redacted)
+                return redacted;
+
             var inline = string.Equals(disposition, "inline", StringComparison.OrdinalIgnoreCase);
             return new FileStreamResult(content.Stream, content.ContentType)
             {
@@ -1448,6 +1453,110 @@ public sealed class RepositoriesController : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Returns the server-redacted file when the folder has PII redaction on and the caller has no
+    /// explicit PII Redaction grant (admins and share-link viewers included). Null = serve the
+    /// original as before: redaction off, explicit grant, or the tenant pilot service account (AI
+    /// extraction). Never falls back to the original: a file type that cannot be redacted gets
+    /// 403 and a failed redaction gets 503.
+    /// </summary>
+    private async Task<IActionResult?> TryServePiiRedactedFileAsync(
+        Guid repositoryId,
+        Guid tenantId,
+        RepositoryItemDetailDto item,
+        RepositoryItemFileContent content,
+        string disposition,
+        CancellationToken cancellationToken)
+    {
+        var repo = await _provisioner.GetRepositoryAsync(repositoryId, tenantId, cancellationToken);
+        if (repo is not { PiiRedactionEnabled: true })
+            return LogPiiOriginal(item.Id, "PII redaction is off for this folder");
+
+        var isShareViewer = RepositoryShareContext.TryGet(HttpContext, out var share) && share != null;
+        var userId = GetUserId();
+        if (!isShareViewer && userId is { } uid)
+        {
+            if (IsTenantPilotServiceUser())
+                return LogPiiOriginal(item.Id, "caller is the tenant pilot service account");
+            if (await _security.HasExplicitPermissionAsync(
+                    repositoryId, tenantId, uid, RepositorySecurityPermissions.PiiRedaction, cancellationToken))
+                return LogPiiOriginal(item.Id, "caller has the PII Redaction grant");
+        }
+
+        var redactor = HttpContext.RequestServices.GetRequiredService<IPiiRedactedFileService>();
+        if (!redactor.CanRedact(content.FileName ?? item.FileName, content.ContentType))
+        {
+            // Fail closed: a file type we cannot redact is never sent unredacted.
+            await content.Stream.DisposeAsync();
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                error = "This file type cannot be redacted, so it can only be opened by users with the PII Redaction permission."
+            });
+        }
+
+        // Values to hide: this document's metadata for the folder's selected PII fields.
+        var selected = new HashSet<Guid>(repo.PiiRedactionFieldIds ?? Array.Empty<Guid>());
+        var values = repo.Fields
+            .Where(field => selected.Contains(field.Id))
+            .Select(field =>
+                item.Fields.TryGetValue(field.SqlColumnName, out var bySql) && bySql != null ? bySql
+                : item.Fields.TryGetValue(field.Name, out var byName) ? byName
+                : null)
+            .Select(value => value?.ToString()?.Trim())
+            .Where(value => !string.IsNullOrEmpty(value))
+            .Select(value => value!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var piiFields = HttpContext.RequestServices.GetRequiredService<IRepositoryPiiFieldService>();
+        var labels = (await piiFields.GetRedactionLabelsAsync(repositoryId, tenantId, cancellationToken)
+                      ?? Array.Empty<PiiRedactionLabelDto>())
+            .Select(label => label.DisplayName)
+            .ToList();
+
+        byte[] original;
+        await using (var stream = content.Stream)
+        await using (var buffer = new MemoryStream())
+        {
+            await stream.CopyToAsync(buffer, cancellationToken);
+            original = buffer.ToArray();
+        }
+
+        try
+        {
+            var fileName = content.FileName ?? item.FileName ?? "document";
+            var redacted = await redactor.RedactAsync(
+                original, fileName, content.ContentType, values, labels, cancellationToken);
+            Response.Headers["X-Pii-Redacted"] = "true";
+            Response.Headers.CacheControl = "no-store";
+            var inline = string.Equals(disposition, "inline", StringComparison.OrdinalIgnoreCase);
+            // Same file name as the original (PDF stays PDF, JPEG stays JPEG).
+            return File(redacted.Content, redacted.ContentType, inline ? null : fileName);
+        }
+        catch (PiiRedactionUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "PII redaction failed for item {ItemId} in repository {RepositoryId}.", item.Id, repositoryId);
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Records why a PII folder file went out unredacted (no document values logged).</summary>
+    private IActionResult? LogPiiOriginal(Guid itemId, string reason)
+    {
+        _logger.LogInformation("PII: original file served for item {ItemId}: {Reason}", itemId, reason);
+        return null;
+    }
+
+    /// <summary>The tenant pilot account the AP / OCR agents sign in with.</summary>
+    private bool IsTenantPilotServiceUser()
+    {
+        var email = GetUserEmail();
+        var pilotEmail = _pilotUserOptions.Email?.Trim();
+        if (string.IsNullOrWhiteSpace(pilotEmail))
+            pilotEmail = "pilot@ezofis.com";
+        return !string.IsNullOrWhiteSpace(email)
+               && string.Equals(email.Trim(), pilotEmail, StringComparison.OrdinalIgnoreCase);
     }
 
     private Guid RequireTenantId() =>

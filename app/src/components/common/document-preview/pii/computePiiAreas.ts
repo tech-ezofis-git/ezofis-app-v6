@@ -1,6 +1,7 @@
 import type { RedactionArea, TextBox } from './types'
 import { detectPiiValues } from './detectPii'
 import { extractPdfTextBoxes, isSparsePdfText } from './extractPdfBoxes'
+import { findLabelValueAreas } from './labelValueAreas'
 import { matchPiiToBoxes } from './matchBoxes'
 import { extractOcrTextBoxes, extractPdfPageOcrBoxes } from './ocrBoxes'
 
@@ -12,6 +13,8 @@ type ComputePiiAreasArgs = {
   fileUrl: string
   knownOnly?: boolean
   knownValues?: string[]
+  /** Extra sensitive labels: mask the values next to / below them. */
+  labels?: string[]
   mode: 'pdf' | 'image'
   signal?: AbortSignal
   visibleChars?: number
@@ -53,7 +56,8 @@ const dedupeAreas = (areas: RedactionArea[]): RedactionArea[] => {
   )
   const kept: RedactionArea[] = []
   for (const area of sorted) {
-    if (area.width < 0.8 || area.height < 0.35) continue
+    // Exact boxes may be short values ("0", "525"); only estimated boxes need a minimum size.
+    if (!area.precise && (area.width < 0.8 || area.height < 0.35)) continue
     const value = String(area.sourceValue || '')
     const isMrz =
       /P</i.test(value) || (value.match(/</g) || []).length >= 3
@@ -88,6 +92,7 @@ export const computePiiAreas = async ({
   fileUrl,
   knownOnly = false,
   knownValues = [],
+  labels = [],
   mode,
   signal,
   visibleChars = 3,
@@ -104,7 +109,10 @@ export const computePiiAreas = async ({
       knownValues,
     })
     throwIfAborted(signal)
-    return withBackground(matchPiiToBoxes(page.boxes, piiValues, visibleChars))
+    return withBackground([
+      ...matchPiiToBoxes(page.boxes, piiValues, visibleChars),
+      ...findLabelValueAreas(page.boxes, labels, false),
+    ])
   }
 
   let pageCount = 1
@@ -133,9 +141,11 @@ export const computePiiAreas = async ({
       knownValues,
     })
     throwIfAborted(signal)
-    textMatched = withBackground(
-      matchPiiToBoxes(textBoxes, textLayerPii, visibleChars),
-    )
+    // pdf.js text items are exact glyph boxes.
+    textMatched = withBackground([
+      ...matchPiiToBoxes(textBoxes, textLayerPii, visibleChars, true),
+      ...findLabelValueAreas(textBoxes, labels, true),
+    ])
     const knownDigits = knownValues
       .map((v) => String(v).replace(/\D+/g, ''))
       .filter((d) => d.length >= 6)
@@ -194,6 +204,11 @@ export const computePiiAreas = async ({
         matchPiiToBoxes(pageTextBoxes, piiValues, visibleChars),
       )
     }
+    pageAreas.push(
+      ...withBackground(
+        findLabelValueAreas(boxesForPage, labels, page.boxes.length === 0),
+      ),
+    )
     accumulated = mergeAreasByPage(accumulated, pageAreas, i)
   }
 

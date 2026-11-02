@@ -700,6 +700,28 @@ public sealed class RepositorySecurityService : IRepositorySecurityService
             && PrincipalsMatch(r.UserIds, r.GroupIds, principalIds));
     }
 
+    public async Task<bool> HasExplicitPermissionAsync(
+        Guid repositoryId,
+        Guid tenantId,
+        Guid userId,
+        string permission,
+        CancellationToken cancellationToken = default)
+    {
+        if (userId == Guid.Empty)
+            return false;
+
+        await EnsureSchemaAsync(cancellationToken);
+        var principalIds = await ResolvePrincipalIdsAsync(tenantId, userId, cancellationToken);
+        var access = await GetEffectiveFolderAccessAsync(repositoryId, principalIds, cancellationToken);
+        if (!access.PoliciesConfigured || access.Permissions is not { } flags)
+            return false;
+        // Not HasPermission(): it lowercases the name but its cases are camelCase constants, so
+        // "piiRedaction" fell through to the View default and every viewer counted as granted.
+        return string.Equals(permission, RepositorySecurityPermissions.PiiRedaction, StringComparison.OrdinalIgnoreCase)
+            ? flags.PiiRedaction
+            : HasPermission(flags, permission);
+    }
+
     public async Task<IReadOnlyList<Guid>> FilterAccessibleRepositoryIdsAsync(
         IReadOnlyList<Guid> repositoryIds,
         Guid tenantId,

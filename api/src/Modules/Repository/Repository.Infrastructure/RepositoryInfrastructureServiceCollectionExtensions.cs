@@ -31,6 +31,10 @@ public static class RepositoryInfrastructureServiceCollectionExtensions
         {
             client.Timeout = TimeSpan.FromMinutes(5);
         });
+        services.AddHttpClient<IRepositoryPiiFieldService, RepositoryPiiFieldService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(90);
+        });
         services.AddScoped<IRepositorySchemaService, RepositorySchemaService>();
         services.AddScoped<IRepositoryStorageSeedService, RepositoryStorageSeedService>();
         services.AddScoped<IStaticRepositoryProvisioner, StaticRepositoryProvisioner>();

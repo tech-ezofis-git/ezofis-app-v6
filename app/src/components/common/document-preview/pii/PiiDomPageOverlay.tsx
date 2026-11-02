@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RedactionArea } from './types'
 import { detectPiiValues } from './detectPii'
+import { findLabelValueAreas } from './labelValueAreas'
 import { matchPiiToBoxes } from './matchBoxes'
 import { measureTextLayerBoxes } from './measureTextLayerBoxes'
 import RedactionOverlay from './RedactionOverlay'
@@ -14,6 +15,8 @@ type PiiDomPageOverlayProps = {
   isOcrScanning?: boolean
   knownOnly?: boolean
   knownValues?: string[]
+  /** Extra sensitive labels: mask the values next to / below them. */
+  labels?: string[]
   pageIndex: number
   scale?: number
   textLayerRendered: boolean
@@ -53,7 +56,8 @@ const dedupeAreas = (areas: RedactionArea[]): RedactionArea[] => {
   )
   const kept: RedactionArea[] = []
   for (const area of sorted) {
-    if (area.width < 0.8 || area.height < 0.35) continue
+    // Exact boxes may be short values ("0", "525"); only estimated boxes need a minimum size.
+    if (!area.precise && (area.width < 0.8 || area.height < 0.35)) continue
     const value = String(area.sourceValue || '')
     const isMrz =
       /P</i.test(value) || (value.match(/</g) || []).length >= 3
@@ -95,6 +99,7 @@ const PiiDomPageOverlay = ({
   isOcrScanning = false,
   knownOnly = false,
   knownValues = [],
+  labels = [],
   pageIndex,
   scale = 1,
   textLayerRendered,
@@ -103,6 +108,7 @@ const PiiDomPageOverlay = ({
   const hostRef = useRef<HTMLDivElement>(null)
   const [areas, setAreas] = useState<RedactionArea[]>([])
   const knownKey = (knownValues || []).join('\u0001')
+  const labelKey = (labels || []).join('\u0001')
   const pageFallback = fallbackAreas.filter((a) => a.pageIndex === pageIndex)
   const fallbackKey = pageFallback
     .map(
@@ -146,11 +152,11 @@ const PiiDomPageOverlay = ({
               knownValues,
             })
             if (cancelled || runId !== runIdRef.current) return
-            textMatched = matchPiiToBoxes(
-              measured.boxes,
-              piiValues,
-              visibleChars,
-            ).map((area) => ({
+            // Live text-layer spans are exact glyph boxes.
+            textMatched = [
+              ...matchPiiToBoxes(measured.boxes, piiValues, visibleChars, true),
+              ...findLabelValueAreas(measured.boxes, labels, true),
+            ].map((area) => ({
               ...area,
               backgroundColor: '#ffffff',
             }))
@@ -194,6 +200,12 @@ const PiiDomPageOverlay = ({
       // Passport / ID: keep DOM hits (correct alignment) and add OCR only for
       // MRZ + passport numbers that the text layer missed.
       if (looksLikePassport || textHasMrz || knownHasPassport) {
+        // Image-only page (PNG/JPG → PDF): no text layer to prefer, so use every OCR cover
+        // (name, dates, ids), not only the MRZ / passport-number ones.
+        if (boxCount < 3 && textMatched.length === 0 && pageFallback.length > 0) {
+          applyAreas(pageFallback)
+          return
+        }
         const ocrPassportAreas = pageFallback.filter(isMrzOrPassportArea)
         if (textMatched.length > 0 || ocrPassportAreas.length > 0) {
           // Prefer DOM; fill gaps from OCR (MRZ / passport no.).
@@ -255,6 +267,7 @@ const PiiDomPageOverlay = ({
     isOcrScanning,
     knownKey,
     knownOnly,
+    labelKey,
     pageIndex,
     scale,
     textLayerRendered,

@@ -6,9 +6,11 @@ import type {
   FolderPiiSettings,
 } from '@/pages/folders/utils/folderPiiSettings'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { AnimateFadeIn } from '@/components/common/animations'
 import cn from '@/utils/cn'
 import SettingsFormSection from '../SettingsFormSection'
+import usePiiAiSuggestions from './usePiiAiSuggestions'
 
 type PiiFieldOption = {
   fieldName: string
@@ -19,6 +21,11 @@ type PiiRedactionWizardStepProps = {
   fields: PiiFieldOption[]
   settings: FolderPiiSettings
   onChange: (next: FolderPiiSettings) => void
+  /** Wizard draft name/description, for AI suggestions before the folder is saved. */
+  folderDescription?: string | null
+  folderName?: string | null
+  /** Saved folder id; AI suggestions then use the stored folder definition. */
+  repositoryId?: string | null
 }
 
 const LEVEL_STEPS: FolderPiiLevel[] = ['low', 'medium', 'high']
@@ -54,6 +61,9 @@ const LEVEL_THEME: Record<
 
 const normalizeLabel = (value: string) => value.trim().toLowerCase()
 
+const GUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 const levelToIndex = (level: FolderPiiLevel) =>
   Math.max(0, LEVEL_STEPS.indexOf(level))
 
@@ -67,13 +77,32 @@ const PiiRedactionWizardStep = ({
   fields,
   settings,
   onChange,
+  folderDescription,
+  folderName,
+  repositoryId,
 }: PiiRedactionWizardStepProps) => {
   const { t } = useLingui()
   const [adding, setAdding] = useState(false)
   const [draftLabel, setDraftLabel] = useState('')
-  const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(
-    () => new Set(),
-  )
+  const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(() => {
+    // Editing a saved folder: start from the saved selection, so folder fields removed earlier
+    // stay removed instead of being auto-added again.
+    if (!repositoryId || !settings.enabled || settings.fieldIds.length === 0) {
+      return new Set()
+    }
+    const saved = new Set(
+      settings.fieldIds.map((raw) => {
+        const value = String(raw || '').trim()
+        const fromId = fields.find((field) => String(field.id) === value)
+        return normalizeLabel(fromId?.fieldName || value)
+      }),
+    )
+    const folderKeys = fields
+      .map((field) => normalizeLabel(String(field.fieldName || '')))
+      .filter(Boolean)
+    if (!folderKeys.some((key) => saved.has(key))) return new Set()
+    return new Set(folderKeys.filter((key) => !saved.has(key)))
+  })
 
   const availableLabels = useMemo(() => {
     const seen = new Set<string>()
@@ -106,17 +135,13 @@ const PiiRedactionWizardStep = ({
     return out
   }, [fields, settings.fieldIds])
 
-  /** Fields-step labels first, then any custom selected labels not in Fields. */
+  /** Selected labels only (AI suggestion, typed, or saved); folder fields are not added by default. */
   const displayLabels = useMemo(() => {
     const out: string[] = []
     const seen = new Set<string>()
 
-    for (const label of availableLabels) {
-      const key = normalizeLabel(label)
-      if (dismissedKeys.has(key) || seen.has(key)) continue
-      seen.add(key)
-      out.push(label)
-    }
+    // Only chosen labels (AI suggestion, typed by the user, or saved); folder fields are
+    // not listed by default.
     for (const label of selectedLabels) {
       const key = normalizeLabel(label)
       if (dismissedKeys.has(key) || seen.has(key)) continue
@@ -124,7 +149,7 @@ const PiiRedactionWizardStep = ({
       out.push(label)
     }
     return out
-  }, [availableLabels, dismissedKeys, selectedLabels])
+  }, [dismissedKeys, selectedLabels])
 
   const setLabels = (next: string[]) => {
     onChange({ ...settings, fieldIds: next })
@@ -152,6 +177,12 @@ const PiiRedactionWizardStep = ({
       return
     }
     const key = normalizeLabel(label)
+    // Not a folder field: the folder save rejects those, so keep it as an extra value (last chip).
+    if (!availableLabels.some((item) => normalizeLabel(item) === key)) {
+      addCustomField(label)
+      closeAdd()
+      return
+    }
     setDismissedKeys((prev) => {
       if (!prev.has(key)) return prev
       const next = new Set(prev)
@@ -164,26 +195,64 @@ const PiiRedactionWizardStep = ({
     closeAdd()
   }
 
-  // Visible Fields-step chips are part of the saved selection (× removes them).
+  /**
+   * Keep only the folder fields the AI marked sensitive. Dropped ones are dismissed so the
+   * auto-add below leaves them out; labels that are not folder fields are untouched.
+   */
+  const applyAiFolderSelection = (keep: string[]) => {
+    // PII was switched off while the agent was answering.
+    if (!settings.enabled) return
+    const keepKeys = new Set(keep.map(normalizeLabel))
+    const folderKeys = new Set(availableLabels.map(normalizeLabel))
+    const next = selectedLabels.filter((label) => {
+      const key = normalizeLabel(label)
+      return !folderKeys.has(key) || keepKeys.has(key)
+    })
+    for (const label of keep) {
+      if (!next.some((item) => normalizeLabel(item) === normalizeLabel(label))) {
+        next.push(label)
+      }
+    }
+    setDismissedKeys((prev) => {
+      const dismissed = new Set(prev)
+      for (const label of availableLabels) {
+        const key = normalizeLabel(label)
+        if (keepKeys.has(key)) dismissed.delete(key)
+        else dismissed.add(key)
+      }
+      return dismissed
+    })
+    setLabels(next)
+  }
+
+  /** Refresh icon: AI-found values (not folder fields) shown as chips in the same box. */
+  const {
+    addCustomField,
+    aiFields,
+    refresh: refreshAiFields,
+    refreshing: aiRefreshing,
+    removeAiField,
+  } = usePiiAiSuggestions({
+    fields,
+    folderDescription,
+    folderName,
+    onFolderFieldSelection: applyAiFolderSelection,
+    repositoryId,
+  })
+
+  // Labels typed earlier that are not folder fields (e.g. "Opening Balance") make the folder
+  // save fail; move them to the extra values. Unknown ids are left as they are.
   useEffect(() => {
     if (!settings.enabled) return
-    const missing = availableLabels.filter((label) => {
-      const key = normalizeLabel(label)
-      if (dismissedKeys.has(key)) return false
-      return !selectedLabels.some((item) => normalizeLabel(item) === key)
-    })
-    if (missing.length === 0) return
-    onChange({
-      ...settings,
-      fieldIds: [...selectedLabels, ...missing],
-    })
-  }, [
-    availableLabels,
-    dismissedKeys,
-    onChange,
-    selectedLabels,
-    settings,
-  ])
+    const folderKeys = new Set(availableLabels.map(normalizeLabel))
+    const isKept = (label: string) =>
+      folderKeys.has(normalizeLabel(label)) || GUID_RE.test(label)
+    const extra = selectedLabels.filter((label) => !isKept(label))
+    if (extra.length === 0) return
+    extra.forEach(addCustomField)
+    setLabels(selectedLabels.filter(isKept))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableLabels, selectedLabels, settings.enabled])
 
   const levelIndex = levelToIndex(settings.level)
   const committedFillPercent = (levelIndex / (LEVEL_STEPS.length - 1)) * 100
@@ -272,13 +341,15 @@ const PiiRedactionWizardStep = ({
             </div>
             <InputSwitch
               checked={settings.enabled}
-              onChange={(checked) =>
+              onChange={(checked) => {
                 onChange({
                   ...settings,
                   enabled: Boolean(checked),
                   fieldIds: checked ? settings.fieldIds : [],
                 })
-              }
+                // Turning PII on loads the AI suggestions, same as the refresh icon.
+                if (checked && !settings.enabled) void refreshAiFields()
+              }}
             />
           </div>
         </AnimateFadeIn>
@@ -295,9 +366,18 @@ const PiiRedactionWizardStep = ({
                 </p>
                                 <div className='mt-3 '>
                   <div className='flex h-40 w-full flex-wrap content-start gap-1.5 overflow-y-auto rounded-[10px] border border-gray-3 bg-surface-primary p-2.5'>
-                    {displayLabels.length === 0 ? (
+                    {displayLabels.length === 0 &&
+                    aiFields.length === 0 &&
+                    !aiRefreshing ? (
                       <p className='self-center px-1 py-2 text-13 text-gray-9'>
-                        {t`Add fields in the Fields step first, or type a label below.`}
+                        {t`Use the refresh icon for AI suggestions, or add a label with +.`}
+                      </p>
+                    ) : null}
+
+                    {aiRefreshing ? (
+                      <p className='flex w-full items-center gap-1.5 px-1 py-1 text-12 text-gray-10'>
+                        <AiBrandIcon className='size-3.5 animate-pulse' />
+                        {t`Getting sensitive field suggestions from the AI agent…`}
                       </p>
                     ) : null}
 
@@ -312,6 +392,24 @@ const PiiRedactionWizardStep = ({
                           className='inline-flex size-4 shrink-0 items-center justify-center rounded-full text-gray-9 transition-colors hover:bg-red-2 hover:text-red-10 active:scale-95'
                           type='button'
                           onClick={() => cancelLabel(label)}
+                        >
+                          <Icon className='size-3.5' icon='lucide:x' />
+                        </button>
+                      </span>
+                    ))}
+
+                    {aiFields.map(({ category, displayName, fieldKey }) => (
+                      <span
+                        key={`ai:${fieldKey}`}
+                        className='inline-flex max-w-full items-center gap-1 rounded-full border border-primary-5 bg-primary-2 px-2.5 py-1 text-12 font-medium text-gray-12'
+                        title={category}
+                      >
+                        <span className='min-w-0 truncate'>{displayName}</span>
+                        <button
+                          aria-label={t`Remove ${displayName}`}
+                          className='inline-flex size-4 shrink-0 items-center justify-center rounded-full text-gray-9 transition-colors hover:bg-red-2 hover:text-red-10 active:scale-95'
+                          type='button'
+                          onClick={() => removeAiField(fieldKey)}
                         >
                           <Icon className='size-3.5' icon='lucide:x' />
                         </button>
@@ -357,10 +455,25 @@ const PiiRedactionWizardStep = ({
                         <Icon className='size-3.5' icon='lucide:plus' />
                       </button>
                     )}
+
+                    <button
+                      aria-label={t`Refresh AI field suggestions`}
+                      className='inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-dashed border-primary-6 bg-primary-2 text-primary-11 transition-colors hover:bg-primary-3 active:scale-95 disabled:opacity-60'
+                      disabled={aiRefreshing}
+                      title={t`Get new field suggestions from the AI agent`}
+                      type='button'
+                      onClick={() => void refreshAiFields()}
+                    >
+                      <Icon
+                        className={cn('size-3.5', aiRefreshing && 'animate-spin')}
+                        icon='lucide:refresh-cw'
+                      />
+                    </button>
                   </div>
                 </div>
               </div>
             </AnimateFadeIn>
+
 
             {SHOW_REDACTION_LEVEL ? (
             <AnimateFadeIn delay={0.2}>
