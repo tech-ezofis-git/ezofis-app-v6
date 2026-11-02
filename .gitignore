@@ -1,0 +1,5 @@
+
+# Firebase: the server key (service account) must never be committed; google-services.json stays local too (public repo)
+*firebase-adminsdk*.json
+google-services.json
+GoogleService-Info.plist

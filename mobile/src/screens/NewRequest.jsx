@@ -6,8 +6,10 @@ import { useStore } from '../store.jsx';
 import { Icon, TopBar, FileThumb, Sparkle } from '../ui.jsx';
 import { apiErrorMessage } from '../api.js';
 import { wfApi, getWorkflows, getMeta, getForm, canStart, isTechnicalLabel, MAX_FILE_MB, tooBig } from '../wf.js';
-import { buildSchema, initialValues, newRow, recompute, loadMaster, validate, fileProblem, ocrExtract, ocrTargets, uploadWithOcr, toPayload, empty, NO_INPUT, FILE_TYPES } from '../formEngine.js';
+import { buildSchema, initialValues, newRow, recompute, loadMaster, validate, fileProblem, ocrExtract, ocrTargets, uploadWithOcr, toPayload, empty, shownBy, lockedBy, repoSources, rowLabel, columnTotals, resolvePreselectColumns, NO_INPUT, FILE_TYPES } from '../formEngine.js';
+import { repoApi } from '../repo.js';
 import { Skeleton, ErrorNote } from './LiveWorkflow.jsx';
+import { Control, KNOWN_TYPES, TipButton, HelpText, labelHidden, isEmptyFor } from '../controls.jsx';
 
 function PickWorkflow() {
   const nav = useNavigate();
@@ -63,14 +65,15 @@ function initials(name) {
 }
 
 // One control, rendered the way the web form does (options from master data / custom lists / people).
-function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onFile }) {
+function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onFile, locked }) {
   const id = 'nf-' + f.id + (f.table ? '-' + Math.random().toString(36).slice(2, 6) : '');
-  const ro = f.readOnly;
-  const label = <label htmlFor={id}>{f.label} {required ? <span className="req">*</span> : null}{ro && f.type !== 'CALCULATED' ? <Icon name="lock" size={12} color="#9C96AB" style={{ marginLeft: 4 }} /> : null}</label>;
+  const ro = f.readOnly || !!locked;
+  const label = labelHidden(f.settings) ? null : <label htmlFor={id}>{f.label} {required ? <span className="req">*</span> : null}{ro && f.type !== 'CALCULATED' ? <Icon name="lock" size={12} color="#9C96AB" style={{ marginLeft: 4 }} /> : null}<TipButton settings={f.settings} label={f.label} /></label>;
   let input;
   const opts = (options || []).map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
   if (FILE_TYPES.has(f.type)) {
     const v = value || null;
+    const multi = f.type === 'FILE_UPLOAD' && !f.table && !!(f.settings && f.settings.specific && f.settings.specific.allowMultipleFiles);
     input = (
       <div className="file-field">
         {v && (v.file || v.fileId) ? (
@@ -78,9 +81,9 @@ function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onF
             {ocrBusy ? <span className="ocr-pill"><span className="spinner" />Reading…</span> : v.ocrCount ? <span className="ocr-pill done"><Sparkle size={12} color="#0A6E7A" />{v.ocrCount} filled</span> : null}
             <button type="button" className="icon-btn" aria-label={'Remove ' + v.fileName} onClick={() => onChange(null)}><Icon name="close" size={18} /></button></div>
         ) : (
-          <label className="upload-btn" htmlFor={id}><Icon name="upload" size={18} />Upload file<span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> · max 20 MB</span>{f.assignOtherControls.length ? <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> · AI fills {f.assignOtherControls.length} fields</span> : null}</label>
+          <label className="upload-btn" htmlFor={id}><Icon name="upload" size={18} />{multi ? 'Upload files' : 'Upload file'}<span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> · max 20 MB</span>{f.assignOtherControls.length ? <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> · AI fills {f.assignOtherControls.length} fields</span> : null}</label>
         )}
-        <input id={id} type="file" hidden accept={f.allowedFileTypes.length ? f.allowedFileTypes.map((x) => '.' + String(x).replace(/^\./, '')).join(',') : undefined} onChange={(e) => { const file = e.target.files && e.target.files[0]; e.target.value = ''; if (file) onFile(file); }} />
+        <input id={id} type="file" hidden multiple={multi} accept={f.allowedFileTypes.length ? f.allowedFileTypes.map((x) => '.' + String(x).replace(/^\./, '')).join(',') : undefined} onChange={(e) => { const l = [...(e.target.files || [])]; e.target.value = ''; if (l[0]) onFile(l[0], l.slice(1)); }} />
       </div>
     );
   } else if (f.type === 'CALCULATED') {
@@ -92,14 +95,13 @@ function FieldInput({ f, value, options, onChange, error, required, ocrBusy, onF
     if (options === null) input = <div className="input locked"><span className="spinner" style={{ width: 14, height: 14 }} /> Loading options…</div>;
     else if (ro) input = <div className="input locked" id={id}>{value || '—'}</div>;
     else if (f.type === 'SINGLE_CHOICE' && opts.length && opts.length <= 5) input = <div className="choice-row" role="radiogroup">{opts.map((o) => <button key={o.value} type="button" role="radio" aria-checked={value === o.value} className={'chip' + (value === o.value ? ' on' : '')} onClick={() => onChange(value === o.value ? '' : o.value)}>{o.label}</button>)}</div>;
-    else input = <select id={id} className="input strong" value={value || ''} onChange={(e) => onChange(e.target.value)} disabled={!opts.length}><option value="">{opts.length ? 'Select…' : f.parent ? 'Choose the field above first' : 'No options'}</option>{opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>;
-  } else if (f.type === 'LONG_TEXT') {
-    input = <textarea id={id} className="input strong" rows={3} placeholder={f.placeholder} value={value || ''} readOnly={ro} onChange={(e) => onChange(e.target.value)} />;
+    else input = <select id={id} className="input strong" value={value || ''} onChange={(e) => onChange(e.target.value)} disabled={!opts.length}><option value="">{opts.length ? 'Select…' : (f.parent || (f.repo && f.repo.parent)) ? 'Choose the field above first' : 'No options'}</option>{opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>;
   } else {
-    const t = f.type === 'DATE' ? 'date' : f.type === 'EMAIL' ? 'email' : f.type === 'PHONE' ? 'tel' : 'text';
-    input = <input id={id} className={'input ' + (ro ? 'locked' : 'strong')} type={t} readOnly={ro} placeholder={f.placeholder || (f.fill ? 'Filled from master data' : '')} inputMode={f.type === 'NUMBER' ? 'decimal' : f.type === 'PHONE' ? 'tel' : undefined} value={value === undefined || value === null ? '' : value} onChange={(e) => onChange(e.target.value)} />;
+    input = <Control kind={f.kind} id={id} value={value} readOnly={ro} error={!!error} settings={f.settings} label={f.kind === 'consent' ? undefined : f.label} placeholder={f.placeholder || (f.fill ? 'Filled from master data' : '')} onChange={onChange} />;
   }
-  return <div className="field" data-err={error ? '1' : undefined}>{label}{input}{error ? <span className="err" role="alert">{error}</span> : null}</div>;
+  if (f.kind === 'divider') return input;
+  const wide = (f.choice && f.type !== 'SINGLE_SELECT') || FILE_TYPES.has(f.type) || ['long', 'signature', 'scale', 'rating', 'consent'].includes(f.kind);
+  return <div className={'field' + (wide ? ' wide' : '')} data-err={error ? '1' : undefined}>{label}{input}<HelpText settings={f.settings} />{error ? <span className="err" role="alert">{error}</span> : null}</div>;
 }
 
 function StartForm({ workflowId }) {
@@ -111,6 +113,8 @@ function StartForm({ workflowId }) {
   const [state, setState] = useState(null); // { vals, options, rowOptions, required }
   const [masters, setMasters] = useState({});
   const [masterErr, setMasterErr] = useState('');
+  const [facets, setFacets] = useState({}); // repository-field options by source key
+  const facetAsked = useRef(new Set());
   const [users, setUsers] = useState(null);
   const [errs, setErrs] = useState({});
   const [files, setFiles] = useState([]);
@@ -119,6 +123,7 @@ function StartForm({ workflowId }) {
   const [submitErr, setSubmitErr] = useState('');
   const [ocrBusy, setOcrBusy] = useState({});
   const [open, setOpen] = useState({});
+  const [secOpen, setSecOpen] = useState({}); // section id → false when collapsed
   const manual = useRef(new Set());
   const fileRef = useRef(null);
   const valsRef = useRef({});
@@ -132,9 +137,16 @@ function StartForm({ workflowId }) {
         const f = await getForm(m.formId);
         if (off) return;
         const sc = buildSchema(f && f.json);
+        // pre-select columns named by label: read those master forms' fields to find the column ids
+        const byLabel = [...new Set(sc.fields.filter((x) => x.preselect && x.preselect.src && !/^[0-9a-f-]{36}$/i.test(x.preselect.column)).map((x) => x.preselect.src.master.formId))];
+        if (byLabel.length) {
+          const defs = await Promise.all(byLabel.map((id) => getForm(id).catch(() => null)));
+          resolvePreselectColumns(sc, Object.fromEntries(byLabel.map((id, i) => [id, (defs[i] && defs[i].fields) || []])));
+        }
+        if (off) return;
         setMeta(m); setSchema(sc);
         valsRef.current = initialValues(sc, me, session);
-        setState(recompute(sc, valsRef.current, {}, null, manual.current));
+        setState(recompute(sc, valsRef.current, {}, null, manual.current, {}, m.repositoryId));
         // 2) master forms used by this form (only the referenced columns are kept)
         Object.entries(sc.need).forEach(([fid, cols]) => loadMaster(fid, [...cols]).then((rows) => { if (!off) setMasters((x) => ({ ...x, [fid]: rows })); }).catch(() => { if (!off) { setMasterErr("Some lists couldn't load. You can still type values or try again."); setMasters((x) => ({ ...x, [fid]: [] })); } }));
         if (Object.values(sc.byId).some((x) => x.userList)) wfApi.users().then((u) => !off && setUsers(u)).catch(() => !off && setUsers([]));
@@ -144,9 +156,21 @@ function StartForm({ workflowId }) {
   }, [workflowId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // re-run fills / options / calculations when lists arrive
-  useEffect(() => { if (schema) { const r = recompute(schema, valsRef.current, masters, users, manual.current); valsRef.current = r.vals; setState(r); } }, [masters, users, schema]);
+  useEffect(() => { if (schema) { const r = recompute(schema, valsRef.current, masters, users, manual.current, facets, meta && meta.repositoryId); valsRef.current = r.vals; setState(r); } }, [masters, users, schema, facets]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const apply = (next) => { const r = recompute(schema, next, masters, users, manual.current); valsRef.current = r.vals; setState(r); };
+  // dropdowns fed by a repository field: load each (field, parent value) combination once
+  useEffect(() => {
+    if (!schema || !meta || !state) return;
+    repoSources(schema, state.vals, meta.repositoryId).forEach((s) => {
+      if (facetAsked.current.has(s.key)) return;
+      facetAsked.current.add(s.key);
+      repoApi.facetsIn(s.repositoryId, s.field, s.scope).then((l) => (Array.isArray(l) ? l : (l && (l.values || l.items || l.data)) || []))
+        .then((l) => setFacets((x) => ({ ...x, [s.key]: [...new Set(l.map((v) => String(v && typeof v === 'object' ? v.value ?? v.name ?? '' : v)).filter(Boolean))] })))
+        .catch(() => setFacets((x) => ({ ...x, [s.key]: [] })));
+    });
+  }, [schema, meta, state]);
+
+  const apply = (next) => { const r = recompute(schema, next, masters, users, manual.current, facets, meta && meta.repositoryId); valsRef.current = r.vals; setState(r); };
   // children of a changed field go back to automatic filling
   const releaseChildren = (id) => Object.values(schema.byId).forEach((x) => { if (x.parent === id) { manual.current.delete(x.id); [...manual.current].forEach((k) => { if (k.endsWith(':' + x.id)) manual.current.delete(k); }); } });
   const setField = (f, v) => { manual.current.add(f.id); releaseChildren(f.id); setErrs((e) => ({ ...e, [f.id]: '' })); apply({ ...valsRef.current, [f.id]: v }); };
@@ -160,9 +184,14 @@ function StartForm({ workflowId }) {
   const removeRow = (t, i) => apply({ ...valsRef.current, [t.id]: (valsRef.current[t.id] || []).filter((_, j) => j !== i) });
 
   // File control: check type/size, then OCR → fill the assigned controls that are still empty (as the web form does)
-  const pickFile = async (f, file, t, i) => {
+  const pickFile = async (f, file, t, i, extra = []) => {
     const problem = fileProblem(f, file);
     if (problem) { showToast(problem, { tone: 'bad' }); return; }
+    if (extra.length) {
+      const ok = extra.filter((x) => !fileProblem(f, x));
+      if (ok.length) setFiles((l) => [...l, ...ok]);
+      showToast(`${file.name} is in ${f.label}. ${ok.length} more file${ok.length === 1 ? '' : 's'} added to Attachments${ok.length < extra.length ? ` (${extra.length - ok.length} skipped)` : ''}.`);
+    }
     const entry = { file, fileName: file.name };
     const key = t ? `${t.id}:${i}:${f.id}` : f.id;
     if (t) setCell(t, i, f, entry); else setField(f, entry);
@@ -196,17 +225,18 @@ function StartForm({ workflowId }) {
   if (err) return <div className="screen"><TopBar title="New request" back="/app/new" /><div className="content"><ErrorNote text={err} /></div></div>;
   if (!meta || !schema || !state) return <div className="screen"><TopBar title="New request" back="/app/new" /><div className="content"><Skeleton n={6} h={64} /></div></div>;
 
-  const { vals, options, rowOptions, required } = state;
-  const visible = schema.fields.filter((f) => !f.hidden && !NO_INPUT.has(f.type) && !isTechnicalLabel(f.label));
+  const { vals, options, rowOptions, required, states } = state;
+  const visible = schema.fields.filter((f) => shownBy(f, states) && (!NO_INPUT.has(f.type) || f.type === 'DIVIDER') && !isTechnicalLabel(f.label));
   const unsupported = visible.filter((f) => !SUPPORTED.has(f.type) && required.has(f.id));
   const budgetField = schema.fields.find((f) => /budget/i.test(f.label) && !empty(vals[f.id]));
   const loadingLists = Object.keys(schema.need).some((k) => !masters[k]);
 
   const submit = async () => {
-    const e = validate(schema, vals, required);
+    const e = validate(schema, vals, required, states);
     setErrs(e); setSubmitErr('');
     if (Object.keys(e).length) {
       showToast(`${Object.keys(e).length} required field${Object.keys(e).length > 1 ? 's are' : ' is'} missing`, { tone: 'bad' });
+      setSecOpen({}); // open every section so the highlighted fields can be seen
       const firstTable = Object.keys(e).find((k) => k.includes(':'));
       if (firstTable) { const [tid, idx] = firstTable.split(':'); const r = (vals[tid] || [])[Number(idx)]; if (r) setOpen((o) => ({ ...o, [r._key]: true })); }
       setTimeout(() => { const el = document.querySelector('[data-err="1"]'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 50);
@@ -230,7 +260,7 @@ function StartForm({ workflowId }) {
         if (at) { cur = { ...cur, [at.t.id]: cur[at.t.id].map((r, j) => (j === at.i ? { ...r, [f.id]: done } : r)) }; staged.push({ fieldId: f.id, fieldName: f.label, fileId: up.fileId, fileName: entry.fileName, jsonId: f.id, repositoryId: up.repositoryId }); } else cur = { ...cur, [f.id]: done };
       }
       valsRef.current = cur;
-      const formData = toPayload(schema, cur);
+      const formData = toPayload(schema, cur, states);
       setBusy(files.length ? 'Uploading and starting…' : 'Starting request…');
       const res = files.length ? await wfApi.startWithFile(workflowId, files[0], formData, staged) : await wfApi.startJson(workflowId, formData, staged);
       const instanceId = res && (res.instanceId || res.workflowInstanceId || res.id);
@@ -256,6 +286,15 @@ function StartForm({ workflowId }) {
     }
   };
 
+  // sections as on the web: a card per visible section with its mandatory-fields progress; a section a rule hides, or
+  // whose fields are all hidden, isn't shown. A single untitled section is drawn without a card.
+  const filled = (f) => (FILE_TYPES.has(f.type) ? !!(vals[f.id] && (vals[f.id].file || vals[f.id].fileId)) : f.type === 'TABLE' ? !!(vals[f.id] || []).length : !isEmptyFor(f.kind, vals[f.id]));
+  const sections = (schema.panels.length ? schema.panels : [{ id: undefined, title: '' }]).map((p, i) => {
+    const fs = visible.filter((f) => f.panel === p.id);
+    const req = fs.filter((f) => !NO_INPUT.has(f.type) && required.has(f.id) && !lockedBy(f, states));
+    return { id: p.id || 'all', title: p.title || `Section ${i + 1}`, description: p.description, header: schema.panels.length > 1 || !!p.title, fields: fs, req: req.length, done: req.filter(filled).length, shown: !(p.id && states[p.id] && !states[p.id].visible) && fs.some((f) => f.type !== 'DIVIDER') };
+  }).filter((x) => x.shown);
+
   const rowStats = (t, r) => {
     const cols = t.columns.filter((c) => !c.hidden && !NO_INPUT.has(c.type));
     const filled = cols.filter((c) => (FILE_TYPES.has(c.type) ? r[c.id] && (r[c.id].file || r[c.id].fileId) : !empty(r[c.id]))).length;
@@ -263,33 +302,57 @@ function StartForm({ workflowId }) {
     return { filled, total: cols.length, missing };
   };
 
+  const reqTotal = sections.reduce((n, x) => n + x.req, 0);
+  const reqDone = sections.reduce((n, x) => n + x.done, 0);
+  const goSection = (id) => { setSecOpen((o) => ({ ...o, [id]: true })); setTimeout(() => { const el = document.getElementById('sec-' + id); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30); };
+  const headed = sections.filter((x) => x.header);
   return (
     <div className="screen">
-      <TopBar title={meta.name} sub="New request" back="/app/new" right={budgetField ? <span className="budget-chip"><small>Budget</small>{Number(vals[budgetField.id]).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span> : <span />} />
-      <div className="content" style={{ gap: 16 }}>
+      <header className="nr-head">
+        <div className="nr-head-row">
+          <button type="button" className="circle-btn" aria-label="Back" onClick={() => nav('/app/new')}><Icon name="back" size={20} stroke={2.2} /></button>
+          <div className="nr-head-t"><small>New request</small><h1>{meta.name}</h1></div>
+          {budgetField ? <span className="budget-chip"><small>Budget</small>{Number(vals[budgetField.id]).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span> : null}
+        </div>
+        {reqTotal ? (
+          <div className="nr-prog" aria-label={`${reqDone} of ${reqTotal} required fields completed`}>
+            <span className="bar"><i style={{ width: `${Math.round((reqDone / reqTotal) * 100)}%` }} /></span>
+            <span className="txt"><b>{reqDone}</b>/{reqTotal} required</span>
+          </div>
+        ) : null}
+        {headed.length > 1 ? (
+          <nav className="nr-jump" aria-label="Sections">
+            {headed.map((x) => <button key={x.id} type="button" className={x.req && x.done === x.req ? 'done' : ''} onClick={() => goSection(x.id)}>{x.req && x.done === x.req ? <Icon name="check" size={13} stroke={3} /> : null}<span>{x.title}</span>{x.req && x.done < x.req ? <em>{x.done}/{x.req}</em> : null}</button>)}
+          </nav>
+        ) : null}
+      </header>
+      <div className="content nr-form" style={{ gap: 16 }}>
         {unsupported.length ? <div className="notice warn" role="alert"><Icon name="warn" size={18} /><span className="grow">This form has required fields the app can't fill yet ({unsupported.map((f) => f.label).join(', ')}). Start this request on cloud.ezofis.com.</span></div> : null}
         {masterErr ? <div className="notice warn"><Icon name="warn" size={18} /><span className="grow">{masterErr}</span></div> : null}
         {loadingLists ? <div className="notice info"><span className="spinner" /><span className="grow">Loading your details and lists…</span></div> : null}
-        {visible.map((f) => {
+        {sections.map((sec) => {
+          const body = sec.fields.map((f) => {
           if (f.type === 'TABLE') {
             const rows = vals[f.id] || [];
+            const fixed = f.rowsType === 'FIXED';
+            const totals = columnTotals(f, rows);
             return (
               <section key={f.id} className="nr-table" data-err={errs[f.id] ? '1' : undefined}>
-                <div className="row-between" style={{ alignItems: 'center' }}><b style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="grid" size={18} color="#643094" />{f.label}{required.has(f.id) ? <span className="req">*</span> : null}</b><button type="button" className="btn neutral small" style={{ width: 'auto', padding: '0 14px' }} onClick={() => addRow(f)}><Icon name="plus" size={16} />Add row</button></div>
+                <div className="row-between" style={{ alignItems: 'center' }}><b style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="grid" size={18} color="#643094" />{f.label}{required.has(f.id) ? <span className="req">*</span> : null}</b>{fixed ? null : <button type="button" className="btn neutral small" style={{ width: 'auto', padding: '0 14px' }} onClick={() => addRow(f)}><Icon name="plus" size={16} />Add row</button>}</div>
                 {errs[f.id] ? <span className="err" role="alert">{errs[f.id]}</span> : null}
-                {!rows.length ? <button type="button" className="nr-empty-row" onClick={() => addRow(f)}>No rows yet · tap to add {f.label}</button> : null}
+                {!rows.length && !fixed ? <button type="button" className="nr-empty-row" onClick={() => addRow(f)}>No rows yet · tap to add {f.label}</button> : null}
                 {rows.map((r, i) => {
                   const st = rowStats(f, r);
                   const isOpen = open[r._key] !== false;
                   return (
-                    <div key={r._key} className="nr-row">
+                    <div key={r._key} className="nr-trow">
                       <div className="nr-row-h">
                         <span className="nr-row-n">{i + 1}</span>
                         <button type="button" className="nr-row-t" aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [r._key]: !isOpen }))}>
-                          <b>{f.label} {i + 1}</b>
+                          <b>{rowLabel(f, i, r)}</b>
                           <span><span className="pill neu solid" style={{ height: 20, fontSize: 11 }}>{st.filled} of {st.total} filled</span>{st.missing ? <span style={{ color: 'var(--bad)', fontSize: 11, fontWeight: 600 }}>{st.missing} required missing</span> : null}</span>
                         </button>
-                        <button type="button" className="icon-btn" aria-label={`Delete row ${i + 1}`} onClick={() => removeRow(f, i)}><Icon name="close" size={18} color="#C2264B" /></button>
+                        {fixed ? null : <button type="button" className="icon-btn" aria-label={`Delete row ${i + 1}`} onClick={() => removeRow(f, i)}><Icon name="close" size={18} color="#C2264B" /></button>}
                       </div>
                       {isOpen ? (
                         <div className="nr-row-b">
@@ -301,10 +364,28 @@ function StartForm({ workflowId }) {
                     </div>
                   );
                 })}
+                {totals ? <div className="nr-totals" aria-label={`${f.label} totals`}><b>Total</b>{totals.map((x) => <span key={x.col.id}><small>{x.col.label}</small>{x.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>)}</div> : null}
               </section>
             );
           }
-          return <FieldInput key={f.id} f={f} value={vals[f.id]} options={options[f.id] !== undefined ? options[f.id] : f.customOptions} required={required.has(f.id)} error={errs[f.id]} ocrBusy={ocrBusy[f.id]} onChange={(v) => setField(f, v)} onFile={(file) => pickFile(f, file)} />;
+          return <FieldInput key={f.id} f={f} locked={lockedBy(f, states)} value={vals[f.id]} options={options[f.id] !== undefined ? options[f.id] : f.customOptions} required={required.has(f.id)} error={errs[f.id]} ocrBusy={ocrBusy[f.id]} onChange={(v) => setField(f, v)} onFile={(file, extra) => pickFile(f, file, undefined, undefined, extra)} />;
+          });
+          if (!sec.header) return <React.Fragment key={sec.id}>{body}</React.Fragment>;
+          const isOpen = secOpen[sec.id] !== false;
+          return (
+            <section key={sec.id} id={'sec-' + sec.id} className="nr-sec" aria-label={sec.title}>
+              <button type="button" className="nr-sec-h" aria-expanded={isOpen} onClick={() => setSecOpen((o) => ({ ...o, [sec.id]: !isOpen }))}>
+                <span className="ic"><Icon name="doc" size={18} color="#643094" /></span>
+                <span className="tt"><b>{sec.title}</b>{sec.description ? <small>{sec.description}</small> : null}</span>
+                {sec.req ? (sec.done === sec.req
+                  ? <span className="sec-badge ok" aria-label={`${sec.done} of ${sec.req} mandatory fields completed`}><Icon name="check" size={12} stroke={3} />Done</span>
+                  : <span className="sec-badge" aria-label={`${sec.done} of ${sec.req} mandatory fields completed`}>{sec.done}/{sec.req}</span>) : null}
+                <Icon name="chevD" size={18} color="#8A84A0" style={{ flex: 'none', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+                {sec.req ? <span className="sec-line" aria-hidden="true"><i className={sec.done === sec.req ? 'ok' : ''} style={{ width: `${Math.round((sec.done / sec.req) * 100)}%` }} /></span> : null}
+              </button>
+              {isOpen ? <div className="nr-sec-b">{body}</div> : null}
+            </section>
+          );
         })}
         <section className="nr-card">
           <b style={{ fontSize: 15 }}>Attachments <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></b>
@@ -328,8 +409,8 @@ function StartForm({ workflowId }) {
   );
 }
 
-// Controls the app can fill in on New request.
-const SUPPORTED = new Set(['SHORT_TEXT', 'LONG_TEXT', 'NUMBER', 'DATE', 'EMAIL', 'PHONE', 'SINGLE_SELECT', 'SINGLE_CHOICE', 'MULTI_SELECT', 'MULTIPLE_CHOICE', 'CALCULATED', 'TABLE', 'FILE_UPLOAD', 'IMAGE_UPLOAD', 'CURRENCY_AMOUNT', 'URL']);
+// Controls the app can fill in on New request: the shared control kinds plus choices, files and tables.
+const SUPPORTED = new Set([...KNOWN_TYPES, 'SINGLE_SELECT', 'SINGLE_CHOICE', 'MULTI_SELECT', 'MULTIPLE_CHOICE', 'TABLE', 'FILE_UPLOAD', 'IMAGE_UPLOAD']);
 
 export default function NewRequest() {
   const { wfId } = useParams();

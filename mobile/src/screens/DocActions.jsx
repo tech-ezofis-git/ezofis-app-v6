@@ -8,11 +8,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../store.jsx';
 import { FileThumb, Icon, Sheet, Sparkle, TopBar } from '../ui.jsx';
+import { SignaturePad } from '../controls.jsx';
 import { apiErrorMessage } from '../api.js';
 import { ago, fmtDate, isTechnicalLabel, prettyName } from '../wf.js';
 import FileViewer, { loadPdfjs } from './FileViewer.jsx';
 import { Skeleton, ErrorNote } from './LiveWorkflow.jsx';
-import { docApi, repoApi, SIGNER, SIGN_STATUS, extOf, sizeOf } from '../repo.js';
+import { docApi, repoApi, SIGNER, SIGN_STATUS, extOf, sizeOf, trackDraftRepo } from '../repo.js';
+import MetaForm, { toSchema, valuesFromOcr, toMetadata, toStageFields, validate } from './MetaForm.jsx';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const Tone = ({ s, map }) => { const v = map[s] || { label: s || '—', tone: 'neu' }; return <span className={'pill solid ' + v.tone}>{v.label}</span>; };
@@ -224,38 +226,6 @@ export function ToSign() {
 }
 
 // Draw a signature (transparent PNG).
-function SignaturePad({ onDone, onCancel }) {
-  const c = useRef(null);
-  const [empty, setEmpty] = useState(true);
-  const last = useRef(null);
-  useEffect(() => {
-    const cv = c.current; const r = cv.getBoundingClientRect(); const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    cv.width = r.width * dpr; cv.height = r.height * dpr;
-    const g = cv.getContext('2d'); g.scale(dpr, dpr); g.lineWidth = 2.6; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#14101F';
-  }, []);
-  const pt = (e) => { const r = c.current.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  const down = (e) => { e.preventDefault(); c.current.setPointerCapture(e.pointerId); last.current = pt(e); };
-  const move = (e) => { if (!last.current) return; const g = c.current.getContext('2d'); const p = pt(e); g.beginPath(); g.moveTo(...last.current); g.lineTo(...p); g.stroke(); last.current = p; setEmpty(false); };
-  const up = () => { last.current = null; };
-  const clear = () => { const cv = c.current; cv.getContext('2d').clearRect(0, 0, cv.width, cv.height); setEmpty(true); };
-  // crop to the drawn area so the stamp isn't mostly empty space
-  const use = () => {
-    const cv = c.current; const g = cv.getContext('2d'); const { data, width, height } = g.getImageData(0, 0, cv.width, cv.height);
-    let x0 = width; let y0 = height; let x1 = 0; let y1 = 0;
-    for (let y = 0; y < height; y += 2) for (let x = 0; x < width; x += 2) if (data[(y * width + x) * 4 + 3] > 0) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-    const pad = 8; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(width, x1 + pad); y1 = Math.min(height, y1 + pad);
-    const out = document.createElement('canvas'); out.width = Math.max(1, x1 - x0); out.height = Math.max(1, y1 - y0);
-    out.getContext('2d').drawImage(cv, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
-    onDone({ dataUrl: out.toDataURL('image/png'), ratio: out.width / out.height });
-  };
-  return (
-    <>
-      <div className="sigpad-wrap"><canvas ref={c} className="sigpad" aria-label="Draw your signature" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} /><span className="sigpad-line" aria-hidden="true" />{empty ? <span className="sigpad-hint">Sign here with your finger</span> : null}</div>
-      <div className="grid2"><button type="button" className="btn outline-grey" onClick={empty ? onCancel : clear}>{empty ? 'Cancel' : 'Clear'}</button><button type="button" className="btn primary" disabled={empty} onClick={use}>Use signature</button></div>
-    </>
-  );
-}
-
 // Render the PDF; tapping a page places the signature there (stored in PDF points from the page's top-left).
 function SignPdf({ blob, sig, place, onPlace }) {
   const box = useRef(null);
@@ -375,7 +345,8 @@ export function SignDoc() {
 // ---------- 1. intelligent upload (one file at a time: AI picks the folder, OCR fills the details, user checks, archive) ----------
 const toDate = (v) => { const s = String(v || ''); const m = /^(\d{4}-\d{2}-\d{2})/.exec(s); if (m) return m[1]; const d = new Date(s); return s && !isNaN(d) ? d.toISOString().slice(0, 10) : ''; };
 export function SmartUpload({ files, repos, onFinished, onCancel }) {
-  const { showToast } = useStore();
+  const { showToast, session } = useStore();
+  const [errs, setErrs] = useState({});
   const [i, setI] = useState(0);
   const file = files[i];
   const [step, setStep] = useState('classify'); // classify → choose → ocr → review → saving → done
@@ -402,29 +373,40 @@ export function SmartUpload({ files, repos, onFinished, onCancel }) {
   };
   useEffect(() => { if (file) classify(); }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // OCR (EZOFIS uploadForOcr) → the file is staged right away as a draft (uploadWithOcr) so it survives leaving the
+  // screen (Upload › Drafts); the reviewed values are saved to the draft and it is archived on Save.
   const readFields = async () => {
-    setStep('ocr'); setErr('');
+    setStep('ocr'); setErr(''); setErrs({});
     try {
-      const r = await docApi.ocr(file, repoId);
-      setOcr(r);
-      setVals(Object.fromEntries((r.ocrFieldList || []).filter((f) => !isTechnicalLabel(f.name)).map((f) => [f.name, f.type === 'DATE' ? toDate(f.value) : f.value == null ? '' : String(f.value)])));
+      const sc = toSchema(await repoApi.detail(repoId));
+      let r = { ocrFieldList: [] };
+      try { r = await docApi.ocr(file, repoId); } catch (e) { setErr(e && (e.status === 502 || e.status === 504) ? "AI couldn't read the details. Fill them in yourself." : apiErrorMessage(e, 'the document details')); }
+      const o = valuesFromOcr(sc, r.ocrFieldList || []);
+      const full = [...sc, ...o.extra];
+      const staged = await docApi.stage(file, repoId, toMetadata(full, o.values), r);
+      trackDraftRepo(session && session.tenantId, repoId);
+      setOcr({ ...r, ...o, schema: full, fileId: staged && staged.fileId });
+      setVals(o.values);
       setStep('review');
-    } catch (e) { setErr(apiErrorMessage(e, 'the document details')); setOcr({ ocrFieldList: [] }); setVals({}); setStep('review'); }
+    } catch (e) { setErr(e && e.status === 403 ? `You don't have permission to upload to ${repo ? repo.name : 'this folder'}.` : apiErrorMessage(e, 'the upload')); setStep('choose'); }
   };
   const save = async () => {
+    const e = validate(ocr.schema, vals);
+    setErrs(e);
+    if (Object.keys(e).length) { setErr(`Fill in ${Object.keys(e).length} required detail${Object.keys(e).length > 1 ? 's' : ''} first.`); return; }
     setStep('saving'); setErr('');
     try {
-      const staged = await docApi.stage(file, repoId, vals, ocr);
-      const fields = Object.entries(vals).map(([name, value]) => ({ name, value: value == null ? '' : String(value) }));
-      const arch = await repoApi.exportStaged(staged.fileId, repoId, fields);
+      const fields = toStageFields(ocr.schema, vals);
+      await repoApi.saveStaged(ocr.fileId, repoId, fields);
+      const arch = await repoApi.exportStaged(ocr.fileId, repoId, fields);
       setResult({ itemId: arch && arch.itemId, fileName: (arch && arch.fileName) || file.name });
       setDone((d) => [...d, { name: file.name, repo: repo && repo.name }]);
       setStep('done');
-    } catch (e) { setErr(e && e.status === 403 ? `You don't have permission to file documents in ${repo ? repo.name : 'this folder'}.` : apiErrorMessage(e, 'the upload')); setStep('review'); }
+    } catch (x) { setErr(x && x.status === 403 ? `You don't have permission to file documents in ${repo ? repo.name : 'this folder'}. It's kept in your drafts.` : `${apiErrorMessage(x, 'the upload')} It's kept in your drafts.`); setStep('review'); }
   };
-  const next = () => { if (i + 1 < files.length) setI(i + 1); else { showToast(`${done.length} file${done.length === 1 ? '' : 's'} filed with AI`, { tone: 'ok' }); onFinished(done); } };
+  const next = () => { if (i + 1 < files.length) setI(i + 1); else { if (done.length) showToast(`${done.length} file${done.length === 1 ? '' : 's'} filed with AI`, { tone: 'ok' }); onFinished(done); } };
 
-  const fieldList = ocr ? (ocr.ocrFieldList || []).filter((f) => !isTechnicalLabel(f.name)) : [];
+  const req = ocr ? ocr.schema.filter((f) => f.required && !f.readOnly).length : 0;
   return (
     <section className="smart" aria-live="polite">
       <div className="smart-head"><span className="smart-ic"><Sparkle size={18} color="#fff" /></span><span className="grow"><b>Intelligent upload</b><span>{files.length > 1 ? `File ${i + 1} of ${files.length}` : 'AI picks the folder and fills the details'}</span></span><button type="button" className="text-btn" onClick={onCancel}>Stop</button></div>
@@ -448,18 +430,13 @@ export function SmartUpload({ files, repos, onFinished, onCancel }) {
           <button type="button" className="btn primary" disabled={!repoId} onClick={readFields}>Continue with {repo ? repo.name : 'this folder'}</button>
         </>
       ) : null}
-      {step === 'ocr' ? <div className="smart-wait"><span className="spinner" /><span><b>Reading the details…</b><span>OCR is extracting the {repo ? repo.name : 'folder'} fields.</span></span></div> : null}
-      {step === 'review' || step === 'saving' ? (
+      {step === 'ocr' ? <div className="smart-wait"><span className="spinner" /><span><b>Reading the details…</b><span>EZOFIS OCR is extracting the {repo ? repo.name : 'folder'} fields, then the file is saved as a draft.</span></span></div> : null}
+      {(step === 'review' || step === 'saving') && ocr ? (
         <>
-          <div className="rv-ai"><Sparkle size={18} color="#fff" /><span className="grow"><b>{fieldList.filter((f) => f.value).length} of {fieldList.length} details found</b><span>Check them before saving to {repo && repo.name}.</span></span></div>
-          {fieldList.map((f) => (
-            <div key={f.name} className="field">
-              <label htmlFor={'sm-' + f.name}>{f.name}{f.value ? <span className="ocr-tag"><Sparkle size={10} color="#0A6E7A" />OCR</span> : null}</label>
-              <input id={'sm-' + f.name} className="input strong" type={f.type === 'DATE' ? 'date' : 'text'} inputMode={f.type === 'NUMBER' ? 'decimal' : undefined} value={vals[f.name] || ''} placeholder={f.value ? '' : 'Not found · type a value'} onChange={(e) => setVals({ ...vals, [f.name]: e.target.value })} disabled={step === 'saving'} />
-            </div>
-          ))}
-          {!fieldList.length ? <div className="muted" style={{ fontSize: 13 }}>No details to fill in for this folder.</div> : null}
-          <div className="grid2"><button type="button" className="btn outline-grey" disabled={step === 'saving'} onClick={() => setStep('choose')}>Change folder</button><button type="button" className="btn primary" disabled={step === 'saving'} onClick={save}>{step === 'saving' ? <><span className="spinner" />Saving…</> : 'Save to folder'}</button></div>
+          <div className="rv-ai"><Sparkle size={18} color="#fff" /><span className="grow"><b>{ocr.found.size} of {ocr.schema.length} details found</b><span>Saved as a draft. Check the details, then save to {repo && repo.name}.</span></span></div>
+          {req ? <p className="muted" style={{ margin: 0, fontSize: 12 }}><span className="req">*</span> {req} required detail{req > 1 ? 's' : ''}; the rest are optional.</p> : null}
+          <MetaForm repoId={repoId} schema={ocr.schema} values={vals} base={ocr.values} found={ocr.found} errors={errs} disabled={step === 'saving'} idPrefix="sm" onChange={(v, name) => { setVals(v); setErrs((x) => ({ ...x, [name]: '' })); }} />
+          <div className="grid2"><button type="button" className="btn outline-grey" disabled={step === 'saving'} onClick={next}>Finish later</button><button type="button" className="btn primary" disabled={step === 'saving'} onClick={save}>{step === 'saving' ? <><span className="spinner" />Saving…</> : 'Save to folder'}</button></div>
         </>
       ) : null}
       {step === 'done' && result ? (

@@ -23,7 +23,7 @@ async def main():
         await pg.goto(URL+'#/app/new/'+M.EXP); await pg.wait_for_timeout(1200)
         t=await pg.inner_text('.main'); print('TABLE editor:', 'Expense Receipt' in t, 'Add row' in t)
         await pg.select_option('select#nf-'+M.F['email'], 'student.lawyer@example.com'); await pg.select_option('select#nf-'+M.F['paid'], 'Cash'); await pg.fill('input#nf-'+M.F['pos'], 'Associate')
-        await pg.click('button:has-text("Add row")'); await pg.fill('.nr-row input:not([type=file]) >> nth=0', '777'); await pg.fill('.nr-row input:not([type=file]) >> nth=1', 'Uber')
+        await pg.click('button:has-text("Add row")'); await pg.fill('.nr-trow input:not([type=file]) >> nth=0', '777'); await pg.fill('.nr-trow input:not([type=file]) >> nth=1', 'Uber')
         await pg.screenshot(path=OUT+'new-table.png', full_page=True)
         await pg.click('.bottombar button:has-text("Submit")'); await pg.wait_for_timeout(1500)
         print('JSON start:', json.dumps(M.STATE['started'][-1]), '->', pg.url.split('#')[1])
