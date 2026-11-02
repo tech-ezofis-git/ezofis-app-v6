@@ -22,7 +22,7 @@ public sealed class GetMailboxByActivityIdsQueryHandler : IRequestHandler<GetMai
             ?? throw new InvalidOperationException("User context is required.");
 
         return _mailboxQuery.ListByActivityIdsAsync(
-            new LegacyMailboxByActivityRequest(request.WorkflowId, request.ActivityIds, userId),
+            new LegacyMailboxByActivityRequest(request.WorkflowId, request.ActivityIds, userId, request.PageNumber, request.PageSize),
             cancellationToken);
     }
 }
