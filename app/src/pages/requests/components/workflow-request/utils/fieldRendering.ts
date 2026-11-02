@@ -39,6 +39,7 @@ import {
 import { getSessionTableUser } from '@/pages/form-builder/helpers/tableColumnUser'
 import { getCurrentFormUser } from '@/utils/currentFormUser'
 import {
+  getDateFieldDefault,
   getFileNameWithoutExtension,
   isFilenameField,
   sortIndexingFields,
@@ -2253,6 +2254,24 @@ export const applyFilenamePreFillToFormModel = (
   return changed ? next : formModel
 }
 
+// Fills empty Year / Month repository fields with today's year and month
+// (see getDateFieldDefault), mirrored onto the matching form field.
+export const applyDateFieldDefaultsToFormModel = (
+  formModel: Record<string, any>,
+  descriptors: RepoFieldDescriptor[],
+): Record<string, any> => {
+  let next = formModel
+  for (const descriptor of descriptors) {
+    if (!isValueEmpty(getRepoFieldValue(descriptor, next))) continue
+    const value = getDateFieldDefault(descriptor.repoField)
+    if (!value) continue
+    if (next === formModel) next = { ...formModel }
+    next[descriptor.fieldId] = value
+    if (descriptor.matchedFieldId) next[descriptor.matchedFieldId] = value
+  }
+  return next
+}
+
 export const stringifyFieldValue = (value: any): string => {
   if (isValueEmpty(value)) return ''
   return formatRuntimeFieldDisplayValue(value)
@@ -2495,14 +2514,6 @@ export const fillRepoMetadataFromTableRow = (
   return next
 }
 
-const NUMERIC_REPO_TYPES = new Set([
-  'NUMBER',
-  'COUNTER',
-  'CURRENCY_AMOUNT',
-  'INTEGER',
-  'DECIMAL',
-])
-
 // Repository metadata for a file picked in a table row, plus the names of the
 // mandatory repository fields that are still empty. Values come from the
 // row's matching columns, the form's matching top-level fields, and the file
@@ -2537,20 +2548,8 @@ export const getTableRowRepoMetadata = (
   for (const descriptor of descriptors) {
     const name = descriptor.repoField.name!
     if (extra?.[name]?.trim()) metadata[name] = extra[name].trim()
-    // Year / Month repository fields default to today's year and month
-    // (the month as a number for numeric fields, else its name).
     if (!metadata[name]) {
-      const key = normalizeName(name)
-      const now = new Date()
-      if (key === 'year') {
-        metadata[name] = String(now.getFullYear())
-      } else if (key === 'month') {
-        metadata[name] = NUMERIC_REPO_TYPES.has(
-          descriptor.repoField.dataType || '',
-        )
-          ? String(now.getMonth() + 1)
-          : now.toLocaleString('en-US', { month: 'long' })
-      }
+      metadata[name] = getDateFieldDefault(descriptor.repoField)
     }
     if (
       !metadata[name] &&

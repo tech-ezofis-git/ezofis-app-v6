@@ -17,6 +17,7 @@ import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
 import { resolveFormLayout } from '../utils/formLayout'
 import {
+  applyDateFieldDefaultsToFormModel,
   applyFilenamePreFillToFormModel,
   buildInitialFormModel,
   buildRepoFieldDescriptors,
@@ -375,15 +376,19 @@ export const useWorkflowForm = (
   )
 
   // Same as folder / inbox indexing: fill empty Filename from the uploaded
-  // file (without extension) so a mandatory filename field is ready in the
-  // repository-field list instead of sitting blank at the bottom.
+  // file (without extension) and empty Year / Month with today's, so those
+  // mandatory fields are ready in the repository-field list instead of
+  // sitting blank at the bottom.
   useEffect(() => {
     if (!pendingUploadFileName || repoFieldDescriptors.length === 0) return
     setFormModel((prev) => {
-      const patched = applyFilenamePreFillToFormModel(
-        prev,
+      const patched = applyDateFieldDefaultsToFormModel(
+        applyFilenamePreFillToFormModel(
+          prev,
+          repoFieldDescriptors,
+          pendingUploadFileName,
+        ),
         repoFieldDescriptors,
-        pendingUploadFileName,
       )
       if (patched === prev) return prev
       return applyCalculatedFields(panels, patched, formRules)
@@ -727,13 +732,16 @@ export const useWorkflowForm = (
     if (!hasPendingFiles()) return
     if (decidedForCurrentBatchRef.current) return
 
-    // Don't decide until Filename has been seeded from the upload — otherwise
-    // a mandatory filename field looks empty and jumps the user to the
-    // indexing list even though we already know the value.
-    const withFilename = applyFilenamePreFillToFormModel(
-      formModel,
+    // Don't decide until Filename / Year / Month have been seeded — otherwise
+    // a mandatory one looks empty and jumps the user to the indexing list
+    // even though we already know the value.
+    const withFilename = applyDateFieldDefaultsToFormModel(
+      applyFilenamePreFillToFormModel(
+        formModel,
+        repoFieldDescriptors,
+        pendingUploadFileName,
+      ),
       repoFieldDescriptors,
-      pendingUploadFileName,
     )
     if (withFilename !== formModel) {
       setFormModel(applyCalculatedFields(panels, withFilename))

@@ -166,6 +166,61 @@ export const applyFilenamePreFill = (
   return next
 }
 
+const NUMERIC_FIELD_TYPES = new Set([
+  'COUNTER',
+  'CURRENCY_AMOUNT',
+  'DECIMAL',
+  'INTEGER',
+  'NUMBER',
+])
+
+// Year / Month fields default to today's year and month (the month as a
+// number for numeric fields, else its name). Empty for any other field, or
+// when the field's fixed options don't include that value.
+export const getDateFieldDefault = (
+  field: Partial<
+    Pick<
+      RepositoryFieldSchema,
+      'dataType' | 'name' | 'optionsJson' | 'sqlColumnName'
+    >
+  >,
+  now: Date = new Date(),
+): string => {
+  const keys = [field.name, field.sqlColumnName].map((key) =>
+    normalizeIndexingKey(key || ''),
+  )
+  let value = ''
+  if (keys.includes('year')) {
+    value = String(now.getFullYear())
+  } else if (keys.includes('month')) {
+    value = NUMERIC_FIELD_TYPES.has(String(field.dataType || '').toUpperCase())
+      ? String(now.getMonth() + 1)
+      : now.toLocaleString('en-US', { month: 'long' })
+  }
+  if (!value) return ''
+  const options = parseFieldOptionValues({
+    optionsJson: field.optionsJson ?? null,
+  })
+  return options.length && !options.includes(value) ? '' : value
+}
+
+// Fills empty Year / Month fields (see getDateFieldDefault).
+export const applyDateFieldDefaults = (
+  values: Record<string, string>,
+  folderFields: RepositoryFieldSchema[],
+  now: Date = new Date(),
+): Record<string, string> => {
+  let next = values
+  for (const field of folderFields) {
+    if (String(values[field.sqlColumnName] || '').trim()) continue
+    const value = getDateFieldDefault(field, now)
+    if (!value) continue
+    if (next === values) next = { ...values }
+    next[field.sqlColumnName] = value
+  }
+  return next
+}
+
 interface WorkspaceFieldRow {
   key?: string
   label?: string
