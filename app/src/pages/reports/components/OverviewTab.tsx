@@ -1,7 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import type { ReportSpec } from '@/api/v6/reportAgent'
 import type { Row } from '@/components/base/data-table/types'
 import type {
@@ -93,6 +93,17 @@ const FILE_NAME_NAMES = [
 
 const normalizeName = (value: string | undefined) =>
   (value ?? '').toLowerCase().replace(/[\s_\-.#]/g, '')
+
+// Columns a report's totals are split by (normalized names).
+const BREAKDOWN_COLUMN_NAMES = ['skill', 'activity', 'activitytype']
+
+const toNumber = (value: unknown) => {
+  const num = Number(String(value ?? '').replace(/[^0-9.-]/g, ''))
+  return Number.isFinite(num) ? num : 0
+}
+
+const formatTotal = (value: number) =>
+  value.toLocaleString(undefined, { maximumFractionDigits: 2 })
 
 // View, download and print only; editing and workflow actions stay on the
 // Folders page.
@@ -257,12 +268,12 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
         WORKFLOW_ID_NAMES,
         linkColumns.workflow,
       )
-      if (isFolderReport) {
-        mapped[FILE_ITEM_ID_KEY] = read(row, ITEM_ID_NAMES, linkColumns.item)
-        mapped[FILE_REPOSITORY_ID_KEY] =
-          read(row, REPOSITORY_ID_NAMES, linkColumns.repository) ||
-          reportRepositoryId
-      }
+      // Folder reports link every file; other reports (e.g. AI credits) link
+      // the rows that carry a file's item and repository ids.
+      mapped[FILE_ITEM_ID_KEY] = read(row, ITEM_ID_NAMES, linkColumns.item)
+      mapped[FILE_REPOSITORY_ID_KEY] =
+        read(row, REPOSITORY_ID_NAMES, linkColumns.repository) ||
+        (isFolderReport ? reportRepositoryId : '')
       return mapped
     })
   }, [
@@ -359,13 +370,31 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
           size: 180,
           accessorFn: (row: Row) => row[key],
           renderCell: (row: Row) => {
+            // A highlighted link cell (file name, Req No) keeps its link,
+            // inside the highlight color.
+            const status =
+              setting?.colType === 'status'
+                ? resolveFieldStatus(
+                    setting,
+                    row as unknown as Record<string, string>,
+                  )
+                : null
+            const highlighted = (content: ReactNode) =>
+              status ? (
+                <StatusPill color={status.color} label={status.label}>
+                  {content}
+                </StatusPill>
+              ) : (
+                content
+              )
             if (
-              isFolderReport &&
-              isFileNameColumn(col) &&
+              (isFolderReport
+                ? isFileNameColumn(col)
+                : isRequestNumberColumn(col) && !row[INSTANCE_ID_KEY]) &&
               row[FILE_ITEM_ID_KEY] &&
               row[FILE_REPOSITORY_ID_KEY]
             ) {
-              return (
+              return highlighted(
                 <button
                   className='cursor-pointer truncate font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70'
                   type='button'
@@ -389,7 +418,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
             ) {
               const isOpening =
                 requestOverview.loadingInstanceId === row[INSTANCE_ID_KEY]
-              return (
+              return highlighted(
                 <button
                   className='inline-flex cursor-pointer items-center gap-1.5 font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70 disabled:cursor-wait'
                   disabled={Boolean(requestOverview.loadingInstanceId)}
@@ -416,10 +445,6 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               )
             }
             if (setting?.colType === 'status') {
-              const status = resolveFieldStatus(
-                setting,
-                row as unknown as Record<string, string>,
-              )
               return status ? (
                 <StatusPill color={status.color} label={status.label} />
               ) : (
@@ -630,6 +655,48 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     columnTypes,
   ])
 
+  // Totals of the columns the run marks "Sum" (e.g. Credits), over the
+  // filtered rows so they follow the search and filters.
+  const columnTotals = useMemo(() => {
+    const sumKeys = new Set(
+      (runResult?.columns ?? [])
+        .filter((col) => col.calc === 'Sum')
+        .flatMap((col) => [col.key, col.label]),
+    )
+    return previewColumns
+      .filter((col) => sumKeys.has(col.id) || sumKeys.has(col.label))
+      .map((col) => ({
+        id: col.id,
+        label: col.label,
+        total: filteredRows.reduce(
+          (sum, row) => sum + toNumber(row[col.id]),
+          0,
+        ),
+      }))
+  }, [runResult, previewColumns, filteredRows])
+
+  // The last summed column (e.g. Credits) split by a Skill / Activity column,
+  // when the report has one.
+  const totalsBreakdown = useMemo(() => {
+    const measure = columnTotals[columnTotals.length - 1]
+    const by = previewColumns.find((col) =>
+      BREAKDOWN_COLUMN_NAMES.includes(normalizeName(col.label)),
+    )
+    if (!measure || !by) return null
+    const sums = new Map<string, number>()
+    filteredRows.forEach((row) => {
+      const name = String(row[by.id] || '-')
+      sums.set(name, (sums.get(name) ?? 0) + toNumber(row[measure.id]))
+    })
+    return {
+      by: by.label,
+      items: [...sums.entries()]
+        .map(([name, total]) => ({ name, total }))
+        .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)),
+      measure: measure.label,
+    }
+  }, [columnTotals, previewColumns, filteredRows])
+
   const paginatedRows = useMemo(() => {
     if (pageSize === 0) return filteredRows
     const start = (page - 1) * pageSize
@@ -779,6 +846,44 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
             setPage(1)
           }}
         />
+
+        {columnTotals.length > 0 && filteredRows.length > 0 && (
+          // Label column + chips column, so both rows' chips start at the same edge.
+          <div className='grid shrink-0 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
+            <span className='text-12 text-gray-11'>{t`Totals:`}</span>
+            <div className='flex flex-wrap items-center gap-2'>
+              {columnTotals.map(({ label, total }) => (
+                <span
+                  key={label}
+                  className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
+                >
+                  {t`Total ${label}`}
+                  <span className='font-semibold'>{formatTotal(total)}</span>
+                </span>
+              ))}
+            </div>
+            {totalsBreakdown && totalsBreakdown.items.length > 1 && (
+              <>
+                <span className='text-12 text-gray-11'>
+                  {t`${totalsBreakdown.measure} by ${totalsBreakdown.by}:`}
+                </span>
+                <div className='flex flex-wrap items-center gap-2 text-12 text-gray-11'>
+                  {totalsBreakdown.items.map(({ name, total }) => (
+                    <span
+                      key={name}
+                      className='inline-flex items-center gap-1 rounded-full border border-gray-4 px-2.5 py-0.5'
+                    >
+                      {name}
+                      <span className='font-semibold text-gray-13'>
+                        {formatTotal(total)}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
           <DataTable

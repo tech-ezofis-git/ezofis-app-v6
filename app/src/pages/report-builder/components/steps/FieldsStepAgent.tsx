@@ -18,6 +18,7 @@ import {
   agentColumnCatalog,
   agentRunToReportRunResult,
   buildAgentConfigFromDraft,
+  hasStatusColors,
 } from '../../utils/agentReport'
 import { isHiddenReportColumn } from '../../utils/hiddenColumns'
 import FieldsPreviewTable from './FieldsPreviewTable'
@@ -248,8 +249,7 @@ const FieldsStepAgent = () => {
                     const setting = settingFor(key)
                     const isExpanded = expandedKey === key
                     const hasHighlight =
-                      setting.colType === 'status' &&
-                      Boolean(setting.statusRules?.length)
+                      setting.colType === 'status' && hasStatusColors(setting)
 
                     return (
                       <motion.li

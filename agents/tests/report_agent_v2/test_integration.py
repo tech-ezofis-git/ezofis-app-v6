@@ -652,3 +652,67 @@ async def test_document_activity_names_what_was_done(world):
     assert by_when[("inv.pdf", "2026-10-22")]["Activity"] == "Saved (no changes)"
     assert by_when[("old.pdf", "2026-10-23")]["Activity"] == "Deleted"
     assert all(r["itemId"] and r["repositoryId"] == str(repo) for r in out if r["Document"] == "inv.pdf")
+
+
+async def test_credit_report_includes_v6_billing_credits(world, make_client):
+    """AI summary / OCR / intelligent upload credits come from the V6 billing ledger in the catalog DB
+    (dbo."creditTransaction_MMyy"); AP agent charges there are skipped (they are in ap_credit_ledger)."""
+    from datetime import datetime as _dt
+    from datetime import timezone as _tz
+
+    now = _dt.now(_tz.utc)
+    table = f"creditTransaction_{now:%m%y}"
+    async with await psycopg.AsyncConnection.connect(npgsql_to_conninfo(world.catalog_cs), autocommit=True) as conn:
+        await conn.execute("CREATE SCHEMA IF NOT EXISTS dbo")
+        await conn.execute(f'''CREATE TABLE IF NOT EXISTS dbo."{table}" ("id" integer GENERATED ALWAYS AS IDENTITY,
+            "tenantId" uuid NOT NULL, "activityType" varchar(100), "subActivityType" varchar(100), "credit" integer,
+            "remarks" varchar(500), "identifyTable" varchar(100), "createdAt" timestamptz, "isDeleted" boolean)''')
+        await conn.execute(f'ALTER TABLE dbo."{table}" ADD COLUMN IF NOT EXISTS "identifyTable" varchar(100)')
+        repo, summary_item = uuid.uuid4(), uuid.uuid4()
+        rows = [
+            (world.tenant_a, "Document Summary", "DocumentSummary", 1, f"AI summary for item {summary_item}",
+             f"repository.items/{repo}/{summary_item}", False),
+            (world.tenant_a, "OCR Agent", "AI OCR", 1, "OCR: scan.pdf", f"repository.items/{repo}", False),
+            # the upload screen OCRs a working copy and saves the file without the _vN suffix
+            (world.tenant_a, "OCR Agent", "AI OCR", 1, "OCR: Scan_v3.pdf", "repository.items", False),
+            (world.tenant_a, "Intelligent Upload", "DocumentClassification", 1, "Intelligent upload a.pdf", "repository.items", False),
+            (world.tenant_a, "AP_AGENT", "po_match", 1, "INV-1", "repository.items", False),  # in ap_credit_ledger already
+            (world.tenant_a, "OCR Agent", "AI OCR", 1, "OCR: deleted.pdf", "repository.items", True),  # soft-deleted
+            (world.tenant_b, "OCR Agent", "AI OCR", 5, "OCR: other.pdf", "repository.items", False),  # other tenant
+        ]
+        for tid, act, sub, credit, remarks, identify, deleted in rows:
+            await conn.execute(
+                f'INSERT INTO dbo."{table}" ("tenantId","activityType","subActivityType","credit","remarks","identifyTable","createdAt","isDeleted") '
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)", (tid, act, sub, credit, remarks, identify, now, deleted))
+
+    # The tenant's own AP ledger, so the report merges both ledgers.
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo(await _tenant_cs(world)).split() if p.startswith("dbname"))
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        conn.execute("""CREATE TABLE IF NOT EXISTS public.ap_credit_ledger (id uuid DEFAULT gen_random_uuid(), run_id uuid,
+                        tenant_id text, skill_id text, credits int, identify text, status text, created_at timestamptz)""")
+        conn.execute("INSERT INTO public.ap_credit_ledger (tenant_id, skill_id, credits, identify, status, created_at) "
+                     "VALUES (%s, 'po_match', 1, 'INV-9', 'failed', %s)", (str(world.tenant_a), now))
+        # A folder holding the OCR'd and summarized files (a.pdf is in no folder: no link).
+        conn.execute("CREATE SCHEMA IF NOT EXISTS repository")
+        conn.execute('CREATE TABLE IF NOT EXISTS repository."Repositories" ("Id" uuid, "TenantId" uuid, "Name" text, "ItemsTableName" text, "IsDeleted" boolean)')
+        conn.execute("CREATE TABLE IF NOT EXISTS repository.items_c0ffee01 (id uuid, file_name text, created_at_utc timestamptz)")
+        conn.execute('INSERT INTO repository."Repositories" VALUES (%s,%s,%s,%s,false)', (repo, world.tenant_a, "Receipts", "items_c0ffee01"))
+        conn.execute("INSERT INTO repository.items_c0ffee01 VALUES (%s,'scan.pdf',%s), (%s,'summary.pdf',%s)",
+                     (uuid.uuid4(), now, summary_item, now))
+
+    client = await make_client()
+    admin = _h(world, world.admin, role="Admin")
+    ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
+    run = (await client.get(f"/api/report-agent-v2/reports/{ids['ai_credit_consumption']}/execute", headers=admin)).json()
+    ap = next(r for r in run["rows"] if r["Request No"] == "INV-9")
+    assert ap["Skill"] == "PO Match" and ap["Billing Status"] == "Not charged (billing call failed)"
+    billing = {(r["Skill"], r["Request No"]): r for r in run["rows"] if r["Billing Status"] == "Charged"}
+    ocr = billing[("OCR Agent", "scan.pdf")]
+    assert ocr["Credits"] == 2 and ocr["Runs"] == 2 and ocr["Workflow"] == "Receipts"
+    assert ocr["repositoryId"] == str(repo) and ocr["itemId"]
+    summary = billing[("Document Summary", "summary.pdf")]
+    assert summary["itemId"] == str(summary_item) and summary["repositoryId"] == str(repo)
+    upload = billing[("Intelligent Upload", "a.pdf")]
+    assert upload["Credits"] == 1 and upload["itemId"] is None
+    assert not any(k[0] == "AP_AGENT" or k[1] in ("deleted.pdf", "other.pdf") for k in billing)
+    assert run["totals"]["Credits"] >= 4

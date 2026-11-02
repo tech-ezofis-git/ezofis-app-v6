@@ -169,6 +169,12 @@ const draftFilterToSpec = (
   }
 }
 
+/** A column is highlighted by its rules or, with none, by a default color for every value. */
+export const hasStatusColors = (setting: {
+  statusDefault?: string
+  statusRules?: unknown[]
+}) => Boolean(setting.statusRules?.length || setting.statusDefault)
+
 /** Status-column rules → the agent's `highlight` shape (inverse of fromReportSpec). */
 export const fieldSettingToHighlight = (
   key: string,
@@ -178,13 +184,13 @@ export const fieldSettingToHighlight = (
     !setting ||
     setting.colType !== 'status' ||
     setting.statusBase !== key ||
-    !setting.statusRules?.length
+    !hasStatusColors(setting)
   ) {
     return null
   }
   return {
     default: setting.statusDefault || null,
-    rules: setting.statusRules.map((rule) => ({
+    rules: (setting.statusRules ?? []).map((rule) => ({
       color: rule.color,
       compareField: rule.compareField || null,
       label: rule.label || null,
@@ -379,7 +385,7 @@ export const agentRunToReportRunResult = (
   meta: { domain: string; name: string; reportId: string | null },
 ): ReportRunResult => {
   const columns = result.columns.map((column) => ({
-    calc: 'None',
+    calc: column.calc === 'Sum' ? 'Sum' : 'None',
     colType: 'value',
     isCalculated: Boolean(column.formula),
     key: column.key,
@@ -418,7 +424,10 @@ export const runResultFieldSettings = (
 ): Record<string, ReportFieldSetting> =>
   Object.fromEntries(
     result.columns
-      .filter((column) => column.highlight?.rules?.length)
+      .filter(
+        (column) =>
+          column.highlight?.rules?.length || column.highlight?.default,
+      )
       .map((column) => [column.key, reportSpecColumnToFieldSetting(column)]),
   )
 

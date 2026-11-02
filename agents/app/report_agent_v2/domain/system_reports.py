@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Awaitable, Callable
 
@@ -66,6 +66,8 @@ class _Ctx:
     as_of: date
     limit: int
     params: dict
+    # Credits charged through V6 billing (catalog DB): (activity, sub activity, credit, created_at, remarks, identify)
+    billing: list = field(default_factory=list)
 
     def bind(self, value: object, cast: str | None = None) -> sql.Composable:
         name = f"p{len(self.params)}"
@@ -125,9 +127,103 @@ def _status_label(expr: sql.Composable) -> sql.Composable:
 # Templates
 # ---------------------------------------------------------------------------------------------
 
-_CREDIT_COLS = (Col("Request No"), Col("Workflow"), Col("Skill"), Col("Status"),
+_CREDIT_COLS = (Col("Request No"), Col("Workflow"), Col("Skill"), Col("Billing Status"),
                 Col("Runs", "number", "measure", True), Col("Credits", "number", "measure", True),
-                Col("Last Used", "date", "value")) + _REQUEST_LINKS
+                Col("Last Used", "date", "value")) + _REQUEST_LINKS + _FILE_LINKS
+
+
+# Skill names initcap() would get wrong; the rest read as "Extract Invoice", "Vendor Validate", ...
+_SKILL_LABELS = {"po_match": "PO Match", "backorder_detect": "BackOrder Detect"}
+
+_GUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+# Remark prefixes the V6 API writes before the file name (ActivityCreditTypes / RepositoriesController).
+_REMARK_PREFIX = re.compile(r"^(OCR on upload:|OCR:|Intelligent upload|AI summary for item)\s*", re.I)
+# The upload screen OCRs a working copy ("receipt_v4.pdf") and saves the file as "receipt.pdf":
+# names match without a trailing _vN, case-insensitively (same rule in SQL below).
+_VERSION_SUFFIX = re.compile(r"_v[0-9]+(\.[^.]*)?$")
+_VERSION_SUFFIX_SQL = r"_v[0-9]+(\.[^.]*)?$"
+
+
+def _match_name(name: str) -> str:
+    return _VERSION_SUFFIX.sub(lambda m: m.group(1) or "", name).lower()
+
+
+def _billing_entry(row: tuple) -> tuple:
+    """(activity, file name, item id, repository id, credit, at) from a billing ledger row. identifyTable
+    is repository.items/{repositoryId}/{itemId} (older rows: just repository.items, item in the remark)."""
+    activity, sub, credit, at, remarks, identify = (tuple(row) + ("",))[:6]
+    parts = (identify or "").split("/")
+    repo = parts[1] if len(parts) > 1 and _GUID.fullmatch(parts[1]) else None
+    item = parts[2] if len(parts) > 2 and _GUID.fullmatch(parts[2]) else None
+    remark = (remarks or "").strip()
+    if not item and remark.lower().startswith("ai summary for item"):
+        found = _GUID.search(remark)
+        item = found.group(0) if found else None
+    name = _REMARK_PREFIX.sub("", remark).strip() or None
+    if name and _GUID.fullmatch(name):
+        name = None
+    return activity or sub or "AI credit", name, item and item.lower(), repo and repo.lower(), int(credit or 0), at
+
+
+async def _billing_rows(ctx: _Ctx) -> sql.Composable:
+    """V6 billing charges (AI summary, OCR, intelligent upload, ...) read from the catalog DB, one row per
+    activity and file, in the same columns as the AP ledger rows. The file is found by its item id, else by
+    name (in its folder when known, nearest upload time), so the row can open it. Only successful charges
+    are written to that ledger, so they are all "Charged"."""
+    if not ctx.billing:
+        return sql.SQL(
+            "SELECT NULL::text AS c0, NULL::text AS c1, NULL::text AS c2, NULL::text AS c3, 0::bigint AS c4, "
+            "0::bigint AS c5, NULL::timestamptz AS c6, NULL::text AS c7, NULL::text AS c8, NULL::text AS c9, "
+            "NULL::text AS c10 WHERE false")
+    entries = [_billing_entry(r) for r in ctx.billing]
+    item_ids = sorted({e[2] for e in entries if e[2]})
+    names = sorted({_match_name(e[1]) for e in entries if e[1]})
+
+    file_parts = []
+    if (item_ids or names) and {"Id", "Name", "ItemsTableName", "TenantId", "IsDeleted"} <= await _columns(
+            ctx.conn, "repository", "Repositories"):
+        cur = await ctx.conn.execute(
+            """SELECT "Id", "Name", "ItemsTableName" FROM repository."Repositories" WHERE "TenantId" = %s AND "IsDeleted" = false""",
+            (ctx.tenant_id,),
+        )
+        ids_param, names_param = ctx.bind(item_ids, "text[]"), ctx.bind(names, "text[]")
+        for repo_id, repo_name, items_table in await cur.fetchall():
+            if not (items_table and _ITEMS_TABLE.match(items_table)):
+                continue
+            cols = await _columns(ctx.conn, "repository", items_table)
+            if not {"id", "file_name"} <= cols:
+                continue
+            created = sql.SQL("i.created_at_utc") if "created_at_utc" in cols else sql.SQL("NULL::timestamptz")
+            file_parts.append(sql.SQL(
+                "SELECT * FROM (SELECT lower(i.id::text) AS id, {repo}::text AS repo_id, {repo_name}::text AS repo_name, "
+                "i.file_name::text AS file_name, lower(regexp_replace(i.file_name, {suffix}, '\\1')) AS match_name, "
+                "{created} AS created_at FROM {t} i) x WHERE x.id = ANY({ids}) OR x.match_name = ANY({names})"
+            ).format(repo=ctx.bind(str(repo_id).lower()), repo_name=ctx.bind(repo_name), created=created,
+                     suffix=sql.Literal(_VERSION_SUFFIX_SQL), t=_t("repository", items_table), ids=ids_param, names=names_param))
+    files = sql.SQL(" UNION ALL ").join(file_parts) if file_parts else sql.SQL(
+        "SELECT NULL::text AS id, NULL::text AS repo_id, NULL::text AS repo_name, NULL::text AS file_name, "
+        "NULL::text AS match_name, NULL::timestamptz AS created_at WHERE false")
+    values = sql.SQL(", ").join(
+        sql.SQL("({}, {}, {}, {}, {}, {}, {})").format(
+            ctx.bind(activity, "text"), ctx.bind(name, "text"), ctx.bind(name and _match_name(name), "text"),
+            ctx.bind(item, "text"), ctx.bind(repo, "text"), ctx.bind(credit, "bigint"), ctx.bind(at, "timestamptz"))
+        for activity, name, item, repo, credit, at in entries
+    )
+    return sql.SQL(
+        """WITH files AS ({files}), v(activity, fname, mname, item, repo, credit, at) AS (VALUES {values})
+           SELECT COALESCE(f.file_name, v.fname, '-') AS c0, f.repo_name AS c1, v.activity AS c2, 'Charged'::text AS c3,
+                  COUNT(*)::bigint AS c4, SUM(v.credit)::bigint AS c5, MAX(v.at) AS c6, NULL::text AS c7, NULL::text AS c8,
+                  f.id AS c9, f.repo_id AS c10
+           FROM v
+           LEFT JOIN LATERAL (
+               SELECT * FROM files f
+               WHERE (v.item IS NOT NULL AND f.id = v.item)
+                  OR (v.item IS NULL AND f.match_name = v.mname AND (v.repo IS NULL OR f.repo_id = v.repo))
+               ORDER BY (f.id = v.item) DESC NULLS LAST,
+                        abs(extract(epoch FROM (COALESCE(f.created_at, v.at) - v.at)))
+               LIMIT 1) f ON true
+           GROUP BY 1, 2, 3, f.id, f.repo_id"""
+    ).format(files=files, values=values)
 
 
 async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
@@ -135,8 +231,13 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     the repository item of the invoice, whose workflow_instance_id is the request. Runs on direct
     uploads have no request: they show the invoice number (identify) instead, without a link."""
     ledger_cols = await _columns(ctx.conn, "public", "ap_credit_ledger")
-    if not {"tenant_id", "skill_id", "credits", "status", "created_at"} <= ledger_cols:
+    has_ledger = {"tenant_id", "skill_id", "credits", "status", "created_at"} <= ledger_cols
+    if not has_ledger and not ctx.billing:
         return _empty(_CREDIT_COLS), ["This organization has no AI credit ledger yet."]
+    billing = await _billing_rows(ctx)
+    if not has_ledger:
+        return sql.SQL("SELECT * FROM ({billing}) b ORDER BY c6 DESC, c0, c2 LIMIT {limit}").format(
+            billing=billing, limit=sql.Literal(ctx.limit)), []
     tid = ctx.bind(str(ctx.tenant_id))
     has_runs = {"id", "item_key"} <= await _columns(ctx.conn, "public", "ap_runs") and "run_id" in ledger_cols
 
@@ -169,19 +270,30 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     runs_join = sql.SQL("LEFT JOIN public.ap_runs r ON r.id = l.run_id") if has_runs else sql.SQL(
         "LEFT JOIN (SELECT NULL::uuid AS id, NULL::text AS item_key WHERE false) r ON false")
     identify = sql.SQL("NULLIF(btrim(l.identify), '')") if "identify" in ledger_cols else sql.SQL("NULL::text")
+    # The ledger status is the outcome of the charge to V6 billing (/billing/credits/update),
+    # not of the skill: "failed" means the skill ran but the credit was not deducted.
+    # AP skill ids (backorder_detect) as readable names (BackOrder Detect).
+    skill = sql.SQL("(CASE lower(l.skill_id) {} ELSE initcap(replace(l.skill_id, '_', ' ')) END)").format(
+        sql.SQL(" ").join(sql.SQL("WHEN {} THEN {}").format(sql.Literal(k), sql.Literal(v)) for k, v in _SKILL_LABELS.items()))
+    billing_status = sql.SQL(
+        "(CASE lower(l.status) WHEN 'charged' THEN 'Charged' WHEN 'failed' THEN 'Not charged (billing call failed)' "
+        "WHEN 'mocked' THEN 'Not charged (test mode)' ELSE l.status END)")
     q = sql.SQL(
         """WITH items AS ({items}), insts AS ({insts})
-           SELECT COALESCE(i.ref, {identify}, r.item_key, 'Not linked') AS c0, i.wf_name AS c1, l.skill_id AS c2,
-                  l.status AS c3, COUNT(*) AS c4, COALESCE(SUM(l.credits), 0) AS c5, MAX(l.created_at) AS c6,
-                  i.wi_id AS c7, i.wf_id AS c8
+           SELECT COALESCE(i.ref, {identify}, r.item_key, 'Not linked') AS c0, i.wf_name AS c1, {skill} AS c2,
+                  {billing_status} AS c3, COUNT(*) AS c4, COALESCE(SUM(l.credits), 0) AS c5, MAX(l.created_at) AS c6,
+                  i.wi_id AS c7, i.wf_id AS c8, NULL::text AS c9, NULL::text AS c10
            FROM public.ap_credit_ledger l
            {runs_join}
            LEFT JOIN items it ON it.item_key = r.item_key
            LEFT JOIN insts i ON i.wi_id = it.wi_id
            WHERE lower(l.tenant_id) = lower({tid}) AND l.created_at >= {since} AND l.created_at < {until}
            GROUP BY 1, 2, 3, 4, i.wi_id, i.wf_id
+           UNION ALL
+           SELECT * FROM ({billing}) b
            ORDER BY c6 DESC, c0, c2 LIMIT {limit}"""
-    ).format(items=items, insts=insts, identify=identify, runs_join=runs_join, tid=tid,
+    ).format(items=items, insts=insts, identify=identify, skill=skill, billing_status=billing_status, billing=billing,
+             runs_join=runs_join, tid=tid,
              since=ctx.bind(ctx.since), until=ctx.bind(ctx.until), limit=sql.Literal(ctx.limit))
     return q, []
 
@@ -524,7 +636,7 @@ async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str
 
 TEMPLATES: dict[str, Template] = {t.key: t for t in (
     Template("ai_credit_consumption", "AI Credit Consumption",
-             "AI credits used per skill and outcome over the last 90 days.", "tenant", 90, _CREDIT_COLS, _ai_credit_consumption),
+             "AI credits used per request and skill (AP agent), plus AI summary, OCR and intelligent upload credits from billing, over the last 90 days.", "tenant", 90, _CREDIT_COLS, _ai_credit_consumption),
     Template("portal_submission_performance", "Portal Submission Performance",
              "Requests submitted per workflow and month: completed, pending, failed, completion rate and average completion time "
              "(last 12 months).", "all_workflows", 365, _PORTAL_COLS, _portal_submission_performance),
@@ -545,11 +657,15 @@ TEMPLATES: dict[str, Template] = {t.key: t for t in (
 
 
 async def compile_system_report(
-    conn: AsyncConnection, tenant_id: uuid.UUID, key: str, *, as_of: date, limit: int
+    conn: AsyncConnection, tenant_id: uuid.UUID, key: str, *, as_of: date, limit: int,
+    billing_loader: Callable[[datetime, datetime], Awaitable[list]] | None = None,
 ) -> CompiledQuery:
+    """billing_loader(since, until) returns V6 billing charges from the catalog DB (credit report only)."""
     template = TEMPLATES[key]
     until = datetime.combine(as_of + timedelta(days=1), time.min, tzinfo=timezone.utc)
     since = until - timedelta(days=template.window_days) if template.window_days else datetime(1970, 1, 1, tzinfo=timezone.utc)
-    ctx = _Ctx(conn=conn, tenant_id=tenant_id, since=since, until=until, as_of=as_of, limit=max(1, limit), params={})
+    billing = list(await billing_loader(since, until)) if billing_loader and key == "ai_credit_consumption" else []
+    ctx = _Ctx(conn=conn, tenant_id=tenant_id, since=since, until=until, as_of=as_of, limit=max(1, limit), params={},
+               billing=billing)
     query, warnings = await template.build(ctx)
     return CompiledQuery(query=query, params=ctx.params, columns=template.column_meta(), referenced_fields=set(), warnings=warnings)

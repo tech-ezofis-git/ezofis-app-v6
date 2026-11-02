@@ -67,6 +67,7 @@ builder.Services.AddMultiTenancy();
 builder.Services.AddCatalog(builder.Configuration);
 builder.Services.AddScoped<IPlaygroundApiKeyService, PlaygroundApiKeyService>();
 builder.Services.AddScoped<ITenantSignupService, TenantSignupService>();
+builder.Services.AddScoped<SaaSApp.Repository.Application.Contracts.IActivityCreditCharger, ActivityCreditCharger>();
 builder.Services.Configure<BrandingOptions>(builder.Configuration.GetSection(BrandingOptions.SectionName));
 builder.Services.AddSingleton<IBrandingCryptoService, BrandingCryptoService>();
 builder.Services.AddScoped<IBrandingService, BrandingService>();
