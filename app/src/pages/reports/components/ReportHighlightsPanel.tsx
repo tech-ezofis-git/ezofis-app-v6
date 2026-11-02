@@ -25,6 +25,14 @@ interface Props {
   onClose: () => void
 }
 
+// Row ids the report carries for its links; never shown, so nothing to highlight.
+const HIDDEN_ID_COLUMNS = new Set([
+  'instanceId',
+  'itemId',
+  'repositoryId',
+  'workflowId',
+])
+
 /** The status rules a saved column already carries (its highlight). */
 const rulesOf = (key: string, setting?: ReportFieldSetting): ColumnRules =>
   setting?.colType === 'status' && setting.statusBase === key
@@ -46,10 +54,12 @@ const ReportHighlightsPanel = ({ report, onClose }: Props) => {
     const spec = report.agentConfig?.reportSpec as unknown as
       | ReportSpec
       | undefined
-    return (spec?.columns ?? []).map((column) => ({
-      id: column.key,
-      name: column.label || column.key,
-    }))
+    return (spec?.columns ?? [])
+      .filter((column) => !HIDDEN_ID_COLUMNS.has(column.key))
+      .map((column) => ({
+        id: column.key,
+        name: column.label || column.key,
+      }))
   }, [report.agentConfig])
 
   const [rules, setRules] = useState<Record<string, ColumnRules>>(() =>
@@ -61,6 +71,8 @@ const ReportHighlightsPanel = ({ report, onClose }: Props) => {
     ),
   )
   const [selected, setSelected] = useState<Option | null>(columns[0] ?? null)
+  // Nothing to save until a rule changes: a stray click can't wipe the saved rules.
+  const [dirty, setDirty] = useState(false)
   const selectedKey = selected ? String(selected.id) : ''
   const highlightedNames = columns
     .filter((column) => rules[String(column.id)]?.statusRules.length)
@@ -110,21 +122,6 @@ const ReportHighlightsPanel = ({ report, onClose }: Props) => {
             {t`Color a column's cells by a condition, e.g. Days Pending greater than 30 in red.`}
           </p>
         </div>
-        <div className='flex gap-2'>
-          <Button
-            color='gray'
-            label={t`Cancel`}
-            size='sm'
-            variant='outline'
-            onClick={onClose}
-          />
-          <Button
-            label={t`Save highlights`}
-            loading={saveMutation.isPending}
-            size='sm'
-            onClick={() => void save()}
-          />
-        </div>
       </div>
 
       <div className='grid grid-cols-1 gap-4 md:grid-cols-[16rem_1fr]'>
@@ -146,7 +143,8 @@ const ReportHighlightsPanel = ({ report, onClose }: Props) => {
             key={selectedKey}
             statusDefault={rules[selectedKey]?.statusDefault}
             statusRules={rules[selectedKey]?.statusRules ?? []}
-            onChange={(patch) =>
+            onChange={(patch) => {
+              setDirty(true)
               setRules((previous) => ({
                 ...previous,
                 [selectedKey]: {
@@ -154,9 +152,27 @@ const ReportHighlightsPanel = ({ report, onClose }: Props) => {
                   ...patch,
                 },
               }))
-            }
+            }}
           />
         )}
+      </div>
+
+      {/* Below the rules, so the Column list (which can open upward) never covers them. */}
+      <div className='mt-4 flex justify-end gap-2'>
+        <Button
+          color='gray'
+          label={t`Cancel`}
+          size='sm'
+          variant='outline'
+          onClick={onClose}
+        />
+        <Button
+          disabled={!dirty}
+          label={t`Save highlights`}
+          loading={saveMutation.isPending}
+          size='sm'
+          onClick={() => void save()}
+        />
       </div>
     </motion.div>
   )
