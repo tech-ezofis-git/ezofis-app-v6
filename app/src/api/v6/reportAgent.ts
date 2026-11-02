@@ -12,13 +12,26 @@ import { getV6ApiErrorMessage } from './auth'
  * previewed (generated + run, nothing saved), the user edits it in the wizard
  * (edits are re-run without the LLM), then it is saved explicitly. Saved
  * reports run by id. In production nginx routes this path to the agents
- * container; locally set VITE_REPORT_AGENT_V2_URL to the agents service.
+ * container. Locally there is no nginx: a localhost V6 API means the agents
+ * service runs beside it on its docker-compose port (8010), unless
+ * VITE_REPORT_AGENT_V2_URL says otherwise.
  */
-const reportAgentBase = () =>
-  (
-    import.meta.env?.VITE_REPORT_AGENT_V2_URL ||
-    `${getV6ApiBaseUrl().replace(/\/+$/, '')}/report-agent-v2`
-  ).replace(/\/+$/, '')
+const LOCAL_AGENTS_PORT = '8010'
+
+const reportAgentBase = () => {
+  const explicit = import.meta.env?.VITE_REPORT_AGENT_V2_URL
+  if (explicit) return explicit.replace(/\/+$/, '')
+  const v6Base = getV6ApiBaseUrl().replace(/\/+$/, '')
+  try {
+    const url = new URL(v6Base)
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+      return `${url.protocol}//${url.hostname}:${LOCAL_AGENTS_PORT}/api/report-agent-v2`
+    }
+  } catch {
+    // Relative base ("/api"): served behind nginx, which routes the path.
+  }
+  return `${v6Base}/report-agent-v2`
+}
 
 const getTenantHeaders = () => {
   const store = authUserStore.getState()
