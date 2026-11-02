@@ -48,6 +48,7 @@ import {
   uploadInstanceAttachment,
 } from '@/pages/requests/utils/instanceAttachmentUpload'
 import {
+  applyDateFieldDefaults,
   applyFilenamePreFill,
   getFolderStructureFields,
   type RepositoryFieldSchema,
@@ -1430,10 +1431,13 @@ const GenericRequestOverview = ({
           { ...formModel, ...ocrPatch },
           file.name,
         )
-        const seeded = applyFilenamePreFill(
-          overlayIndexingMetadata(folderFields, baseMetadata, formMeta),
+        const seeded = applyDateFieldDefaults(
+          applyFilenamePreFill(
+            overlayIndexingMetadata(folderFields, baseMetadata, formMeta),
+            folderFields,
+            file.name,
+          ),
           folderFields,
-          file.name,
         )
 
         if (folderFields.length === 0) {
