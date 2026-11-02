@@ -44,6 +44,10 @@ internal static class WorkflowSlaStore
                 last_instance_created_at timestamptz NULL,
                 updated_at_utc timestamptz NOT NULL DEFAULT now()
             );
+            -- When the SLA settings last changed (hash of the SLA parts only): tickets that arrived
+            -- earlier get no timers.
+            ALTER TABLE workflow.sla_workflow_state ADD COLUMN IF NOT EXISTS sla_fingerprint varchar(64) NULL;
+            ALTER TABLE workflow.sla_workflow_state ADD COLUMN IF NOT EXISTS sla_since timestamptz NULL;
 
             CREATE TABLE IF NOT EXISTS workflow.sla_timers (
                 id bigint GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_sla_timers PRIMARY KEY,
