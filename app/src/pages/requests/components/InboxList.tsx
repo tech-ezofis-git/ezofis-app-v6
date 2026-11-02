@@ -17,6 +17,7 @@ import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Icon from '@/components/base/icon/Icon'
 import Pagination from '@/components/base/pagination/Pagination'
+import Skeleton from '@/components/base/Skeleton'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import DynamicFilter, {
@@ -119,7 +120,6 @@ const getParsedFormData = (row: any): any => {
   }
   return {}
 }
-
 
 const extractAmountStr = (val: any): string | null => {
   if (val == null) return null
@@ -1406,7 +1406,11 @@ const InboxList: React.FC<InboxListProps> = ({
   // control-values API, keyed by the field names in the filter schema.
   const findSchemaFieldName = (candidates: string[]) =>
     filterFields.find((f) =>
-      candidates.includes(String(f.name || '').toLowerCase().trim()),
+      candidates.includes(
+        String(f.name || '')
+          .toLowerCase()
+          .trim(),
+      ),
     )?.name
   const supplierControlName = findSchemaFieldName([
     'supplier name',
@@ -1625,7 +1629,9 @@ const InboxList: React.FC<InboxListProps> = ({
 
   // With the filter schema loaded, the list API applies the filters (see
   // onFilterClausesChange), so the returned page is not filtered again here.
-  const isServerFiltering = Boolean(onFilterClausesChange && isFilterFieldsLoaded)
+  const isServerFiltering = Boolean(
+    onFilterClausesChange && isFilterFieldsLoaded,
+  )
   const quickFilteredRows = useMemo(() => {
     if (
       isServerFiltering ||
@@ -1751,13 +1757,7 @@ const InboxList: React.FC<InboxListProps> = ({
         // API rows carry a numeric id and no processId, while a finished
         // placeholder is keyed by the job's instanceId (= workflowInstanceId),
         // so record every id a placeholder could match on.
-        ;[
-          i.processId,
-          i.id,
-          i.workflowInstanceId,
-          i.instanceId,
-          i.apAgentJobId,
-        ]
+        ;[i.processId, i.id, i.workflowInstanceId, i.instanceId, i.apAgentJobId]
           .filter(Boolean)
           .forEach((id) => existingIds.add(String(id)))
 
@@ -1938,10 +1938,9 @@ const InboxList: React.FC<InboxListProps> = ({
           '_groupKey': 'No Group',
           '_listTab': 'Inbox',
           'Currency': currency,
-          'documentNumber':
-            jobId
-              ? `JOB-${jobId}`
-              : invoiceNo || p.requestNo || p.name || 'Processing...',
+          'documentNumber': jobId
+            ? `JOB-${jobId}`
+            : invoiceNo || p.requestNo || p.name || 'Processing...',
           'id': rowId,
           'Invoice Number': invoiceNo,
           // Merge extracted values
@@ -2118,129 +2117,129 @@ const InboxList: React.FC<InboxListProps> = ({
     <div className='bg-primary flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden py-2'>
       {showFilterSection && (
         <div className='px-4'>
-        <DynamicFilter
-          activeQuickFilters={activeQuickFilters}
-          dataset={flatRows}
-          isLoading={isLoading || isRefetching || isRefreshing}
-          optionalFields={genericPickerFilterFields}
-          searchPlaceholder={t`Search invoice, supplier, PO...`}
-          searchQuery={searchState?.value || ''}
-          viewMode={viewMode}
-          activeFilters={{
-            ...Object.fromEntries(
-              Object.entries(activeFiltersMap).filter(
-                ([key]) => key !== 'amount',
+          <DynamicFilter
+            activeQuickFilters={activeQuickFilters}
+            dataset={flatRows}
+            isLoading={isLoading || isRefetching || isRefreshing}
+            optionalFields={genericPickerFilterFields}
+            searchPlaceholder={t`Search invoice, supplier, PO...`}
+            searchQuery={searchState?.value || ''}
+            viewMode={viewMode}
+            activeFilters={{
+              ...Object.fromEntries(
+                Object.entries(activeFiltersMap).filter(
+                  ([key]) => key !== 'amount',
+                ),
               ),
-            ),
-            'due_date': activeFiltersMap.due_date || [],
-            'status': activeFiltersMap.status || [],
-            'Supplier Name': activeFiltersMap.supplier || [],
-          }}
-          customSearchComponent={
-            <div className='flex items-center gap-2'>
-              <TableSearch table={table} />
-              <GroupByMenu table={table} />
-            </div>
-          }
-          fields={
-            isAccountsPayable
-              ? [
-                  {
-                    id: 'Supplier Name',
-                    label: t`Supplier`,
-                    options: supplierOptions.length
-                      ? supplierOptions
-                      : undefined,
-                    valueGetter: (row) => getRowColumnValue(row, 'vendor'),
-                  },
-                ]
-              : genericDefaultFilterFields
-          }
-          quickFilters={
-            !isAccountsPayable
-              ? []
-              : [
-                  {
-                    icon: 'tabler:calendar-due',
-                    id: 'due_date',
-                    label: t`Due Date`,
-                    options: dueDateFilterOptions,
-                    type: 'date',
-                  },
-                  {
-                    icon: 'tabler:circle-check',
-                    id: 'matched',
-                    label: t`Matched`,
-                  },
-                  {
-                    icon: 'tabler:alert-triangle',
-                    id: 'discrepancies',
-                    label: t`Discrepancies`,
-                    options: discrepancyOptions,
-                    type: 'category',
-                  },
-                  {
-                    icon: 'tabler:currency-dollar',
-                    id: 'highValue',
-                    label: t`High Value`,
-                    options: amountRangeOptions,
-                    type: 'number',
-                  },
-                ]
-          }
-          toolbarActions={[
-            {
-              icon: 'tabler:refresh',
-              id: 'refresh',
-              isIconButton: true,
-              spin: isRefetching || isLoading || isRefreshing,
-              tooltip: t`Refresh`,
-              onClick: () => {
-                void handleRefresh()
+              'due_date': activeFiltersMap.due_date || [],
+              'status': activeFiltersMap.status || [],
+              'Supplier Name': activeFiltersMap.supplier || [],
+            }}
+            customSearchComponent={
+              <div className='flex items-center gap-2'>
+                <TableSearch table={table} />
+                <GroupByMenu table={table} />
+              </div>
+            }
+            fields={
+              isAccountsPayable
+                ? [
+                    {
+                      id: 'Supplier Name',
+                      label: t`Supplier`,
+                      options: supplierOptions.length
+                        ? supplierOptions
+                        : undefined,
+                      valueGetter: (row) => getRowColumnValue(row, 'vendor'),
+                    },
+                  ]
+                : genericDefaultFilterFields
+            }
+            quickFilters={
+              !isAccountsPayable
+                ? []
+                : [
+                    {
+                      icon: 'tabler:calendar-due',
+                      id: 'due_date',
+                      label: t`Due Date`,
+                      options: dueDateFilterOptions,
+                      type: 'date',
+                    },
+                    {
+                      icon: 'tabler:circle-check',
+                      id: 'matched',
+                      label: t`Matched`,
+                    },
+                    {
+                      icon: 'tabler:alert-triangle',
+                      id: 'discrepancies',
+                      label: t`Discrepancies`,
+                      options: discrepancyOptions,
+                      type: 'category',
+                    },
+                    {
+                      icon: 'tabler:currency-dollar',
+                      id: 'highValue',
+                      label: t`High Value`,
+                      options: amountRangeOptions,
+                      type: 'number',
+                    },
+                  ]
+            }
+            toolbarActions={[
+              {
+                icon: 'tabler:refresh',
+                id: 'refresh',
+                isIconButton: true,
+                spin: isRefetching || isLoading || isRefreshing,
+                tooltip: t`Refresh`,
+                onClick: () => {
+                  void handleRefresh()
+                },
               },
-            },
-            {
-              icon: 'tabler:download',
-              id: 'export',
-              isIconButton: true,
-              tooltip: t`Export to Excel`,
-              onClick: () => {
-                void handleExport()
+              {
+                icon: 'tabler:download',
+                id: 'export',
+                isIconButton: true,
+                tooltip: t`Export to Excel`,
+                onClick: () => {
+                  void handleExport()
+                },
               },
-            },
-            {
-              icon: 'tabler:table-import',
-              id: 'upload-po',
-              isIconButton: true,
-              tooltip: t`Import PO Data`,
-              onClick: handlePoSheet,
-            },
-          ]}
-          onClearAll={() => {
-            requestStore.getState().clearQuickFilters()
-          }}
-          onFieldOpen={handleFieldOpen}
-          onFilterChange={(id, values) => {
-            let mappedId = id
-            if (id === 'Supplier Name') mappedId = 'supplier'
-            if (id === 'Invoice Value') mappedId = 'amount'
-            const finalValues = (Array.isArray(values) ? values : [values]).map(
-              (v) => {
+              {
+                icon: 'tabler:table-import',
+                id: 'upload-po',
+                isIconButton: true,
+                tooltip: t`Import PO Data`,
+                onClick: handlePoSheet,
+              },
+            ]}
+            onClearAll={() => {
+              requestStore.getState().clearQuickFilters()
+            }}
+            onFieldOpen={handleFieldOpen}
+            onFilterChange={(id, values) => {
+              let mappedId = id
+              if (id === 'Supplier Name') mappedId = 'supplier'
+              if (id === 'Invoice Value') mappedId = 'amount'
+              const finalValues = (
+                Array.isArray(values) ? values : [values]
+              ).map((v) => {
                 if (mappedId === 'due_date' && v === 'overdue')
                   return 'overdue_chip_alias'
                 return v
-              },
-            )
-            handleFilterChange(mappedId, finalValues)
-          }}
-          onQuickFilterToggle={(id) =>
-            requestStore.getState().toggleQuickFilter(id)
-          }
-          onSearchChange={(val) => {
-            if (setSearchState) setSearchState({ id: '', value: val })
-          }}
-          onViewModeChange={setViewMode}
-        />
+              })
+              handleFilterChange(mappedId, finalValues)
+            }}
+            onQuickFilterToggle={(id) =>
+              requestStore.getState().toggleQuickFilter(id)
+            }
+            onSearchChange={(val) => {
+              if (setSearchState) setSearchState({ id: '', value: val })
+            }}
+            onViewModeChange={setViewMode}
+          />
         </div>
       )}
       <div className='relative mt-1 flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden'>
@@ -2329,23 +2328,30 @@ const InboxList: React.FC<InboxListProps> = ({
       {/* Footer */}
       {!selectedItem && (
         <div className='z-10 shrink-0 border-t border-[var(--gray-3)] bg-surface px-4 pt-2'>
-          <Pagination
-            page={page}
-            pageSize={pageSize}
-            showPageNumbers={false}
-            totalItems={totalItems}
-            itemLabel={
-              viewMode === 'kanban'
-                ? t`Requests`
-                : activeTab === 'Exceptions'
-                  ? t`Exceptions`
-                  : activeTab === 'Processed'
-                    ? t`Processed`
-                    : t`Requests`
-            }
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-          />
+          {/* No total yet: a placeholder, not "0 of 0" or another list's total. */}
+          {isLoading ? (
+            <div aria-busy='true' className='flex h-9 items-center'>
+              <Skeleton className='h-4 w-40' />
+            </div>
+          ) : (
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              showPageNumbers={false}
+              totalItems={totalItems}
+              itemLabel={
+                viewMode === 'kanban'
+                  ? t`Requests`
+                  : activeTab === 'Exceptions'
+                    ? t`Exceptions`
+                    : activeTab === 'Processed'
+                      ? t`Processed`
+                      : t`Requests`
+              }
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       )}
     </div>
