@@ -3,6 +3,7 @@ import { useRef } from 'react'
 import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
+import Skeleton from '@/components/base/Skeleton'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import Tooltip from '@/components/base/Tooltip'
@@ -38,6 +39,11 @@ interface Props {
   metaData?: IRequestMeta
   stageCounts?: Record<string, number>
   tabs?: RequestTabDescriptor[]
+  /**
+   * The picked workflow is still loading, so `tabs` still belong to the
+   * previous one: show placeholders instead.
+   */
+  tabsLoading?: boolean
   totalStageCount?: number | null
   setActiveTab: (val: string) => void
   setWorkflow: React.Dispatch<React.SetStateAction<Option | null>>
@@ -60,6 +66,7 @@ const Header = ({
   metaData,
   stageCounts,
   tabs = [],
+  tabsLoading = false,
   totalStageCount,
   workflow,
   setActiveTab,
@@ -83,9 +90,16 @@ const Header = ({
     const key = `${workflow?.id ?? ''}:${tab.value}`
     const fresh = countFor(tab)
     const previous = shownCountsRef.current[key]
-    if (countsRefreshing && previous !== undefined) return previous
+    if (countsRefreshing) return previous
     shownCountsRef.current[key] = fresh
     return fresh
+  }
+  // No count yet for a workflow that was just opened: show the label alone
+  // rather than the previous workflow's number.
+  const labelFor = (tab: RequestTabDescriptor) => {
+    if (isLoading) return tab.label
+    const count = displayCountFor(tab)
+    return count === undefined ? tab.label : `${tab.label} (${count})`
   }
 
   const countFor = (tab: RequestTabDescriptor) => {
@@ -132,6 +146,12 @@ const Header = ({
       ) : null}
       {hideListTabs ? (
         <p className='text-15 font-semibold text-gray-13'>{t`Process Overview`}</p>
+      ) : tabsLoading ? (
+        <div aria-busy='true' className='flex items-center gap-6 py-3.5'>
+          {[0, 1, 2].map((index) => (
+            <Skeleton className='h-4 w-20' key={index} />
+          ))}
+        </div>
       ) : (
         // Plain text tabs with a primary underline on the active one; the
         // list scrolls sideways instead of wrapping on narrow screens.
@@ -144,15 +164,7 @@ const Header = ({
             onChange={(val) => setActiveTab(val as string)}
           >
             {tabs.map((tab) => (
-              <Tab
-                key={tab.value}
-                value={tab.value}
-                label={
-                  isLoading
-                    ? tab.label
-                    : `${tab.label} (${displayCountFor(tab)})`
-                }
-              />
+              <Tab key={tab.value} label={labelFor(tab)} value={tab.value} />
             ))}
           </Tabs>
         </div>

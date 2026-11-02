@@ -922,6 +922,8 @@ interface GridRowItemProps {
   isSelected: boolean
   row: any
   activeTab?: string
+  /** `workflow` is still loading: the card shows a title placeholder. */
+  isWorkflowLoading?: boolean
   /** False hides the hover checkbox (rows can't be selected). */
   selectable?: boolean
   workflow?: WorkflowOption | null
@@ -935,6 +937,7 @@ export const GridRowItem = memo(
     hasSelectionActive,
     index,
     isSelected,
+    isWorkflowLoading = false,
     row,
     selectable = true,
     toggleRowSelection,
@@ -981,6 +984,7 @@ export const GridRowItem = memo(
     if (!isAccountsPayableWorkflow(workflow)) {
       return (
         <GenericGridCard
+          isTitleLoading={isWorkflowLoading}
           row={row}
           workflow={workflow ?? null}
           onRowClick={onRowClick}
