@@ -149,8 +149,15 @@ export const extractOcrTextBoxes = async (
     const text = String(word.text || '').trim()
     const bbox = word.bbox
     if (!text || !bbox) continue
-    // Drop very low-confidence OCR noise.
-    if (typeof word.confidence === 'number' && word.confidence < 20) continue
+    // Drop very low-confidence OCR noise — but MRZ / ID runs always score low
+    // (the `<` fillers), and they hold the passport number and name.
+    const looksLikeMrzOrId = /</.test(text) || /^[A-Z0-9]{10,}$/i.test(text)
+    if (
+      typeof word.confidence === 'number' &&
+      word.confidence < 20 &&
+      !looksLikeMrzOrId
+    )
+      continue
     const widthPx = bbox.x1 - bbox.x0
     const heightPx = bbox.y1 - bbox.y0
     if (widthPx <= 0 || heightPx <= 0) continue

@@ -158,6 +158,8 @@ type DocumentPreviewViewerProps = {
   probeTerms?: string[]
   /** Known sensitive values (form fields) to redact in addition to auto-detect. */
   redactValues?: string[]
+  /** Extra sensitive labels (e.g. "Opening Balance"): mask the values next to / below them. */
+  redactLabels?: string[]
   restrictToFields?: boolean
   showScanOverlay?: boolean
   signatureFields?: any[]
@@ -182,6 +184,7 @@ type PdfViewerProps = {
   piiMaskVisibleChars?: number
   probeTerms?: string[]
   redactValues?: string[]
+  redactLabels?: string[]
   onProbeComplete?: (matchedValues: string[]) => void
 }
 
@@ -443,6 +446,7 @@ export default function DocumentPreviewViewer({
   piiMaskVisibleChars = 3,
   probeTerms = [],
   redactValues = [],
+  redactLabels = [],
   restrictToFields = false,
   showScanOverlay = false,
   signatureFields = [],
@@ -511,6 +515,7 @@ export default function DocumentPreviewViewer({
           piiKnownOnly={piiKnownOnly}
           piiMaskVisibleChars={piiMaskVisibleChars}
           probeTerms={probeTerms}
+          redactLabels={redactLabels}
           redactValues={redactValues}
           onProbeComplete={onProbeComplete}
         />
@@ -534,6 +539,7 @@ export default function DocumentPreviewViewer({
         piiBoostOrg={piiBoostOrg}
         piiKnownOnly={piiKnownOnly}
         piiMaskVisibleChars={piiMaskVisibleChars}
+        redactLabels={redactLabels}
         redactValues={redactValues}
       />
     )
@@ -1452,6 +1458,7 @@ function ImagePreview({
   piiBoostOrg = false,
   piiKnownOnly = false,
   piiMaskVisibleChars = 3,
+  redactLabels = [],
   redactValues = [],
 }: {
   enablePiiNer?: boolean
@@ -1461,6 +1468,7 @@ function ImagePreview({
   piiBoostOrg?: boolean
   piiKnownOnly?: boolean
   piiMaskVisibleChars?: number
+  redactLabels?: string[]
   redactValues?: string[]
 }) {
   const [scale, setScale] = useState(1)
@@ -1471,26 +1479,30 @@ function ImagePreview({
     fileUrl,
     knownOnly: piiKnownOnly,
     knownValues: redactValues,
+    labels: redactLabels,
     mode: 'image',
     visibleChars: piiMaskVisibleChars,
   })
 
   return (
-    <div className='relative h-full w-full overflow-auto bg-[var(--gray-1)]'>
-      <div className='flex min-h-full min-w-full items-center justify-center p-4'>
-        {/* Scale the whole stack so OCR % boxes stay aligned with the image. */}
-        <div
-          className='relative inline-block max-h-full max-w-full origin-center transition-transform duration-200'
-          style={{ transform: `scale(${scale})` }}
-        >
-          <img
-            alt={fileName || 'Document Preview'}
-            className='block max-h-full max-w-full object-contain'
-            src={fileUrl}
-          />
-          {enablePiiRedaction && areas.length > 0 ? (
-            <RedactionOverlay areas={areas} pageIndex={0} />
-          ) : null}
+    // Outer frame does not scroll, so the zoom bar stays at the bottom of the viewer.
+    <div className='relative h-full w-full bg-[var(--gray-1)]'>
+      <div className='h-full w-full overflow-auto'>
+        <div className='flex min-h-full min-w-full items-center justify-center p-4'>
+          {/* Scale the whole stack so OCR % boxes stay aligned with the image. */}
+          <div
+            className='relative inline-block max-h-full max-w-full origin-center transition-transform duration-200'
+            style={{ transform: `scale(${scale})` }}
+          >
+            <img
+              alt={fileName || 'Document Preview'}
+              className='block max-h-full max-w-full object-contain'
+              src={fileUrl}
+            />
+            {enablePiiRedaction && areas.length > 0 ? (
+              <RedactionOverlay areas={areas} pageIndex={0} />
+            ) : null}
+          </div>
         </div>
       </div>
       <ZoomToolbar scale={scale} onZoom={setScale} />
@@ -1520,6 +1532,7 @@ function PdfViewer({
   piiMaskVisibleChars = 3,
   probeTerms = [],
   redactValues = [],
+  redactLabels = [],
   onProbeComplete,
 }: PdfViewerProps) {
   const colorsRef = useRef(highlightColors)
@@ -1538,6 +1551,7 @@ function PdfViewer({
     fileUrl,
     knownOnly: piiKnownOnly,
     knownValues: redactValues,
+    labels: redactLabels,
     mode: 'pdf',
     visibleChars: piiMaskVisibleChars,
   })
@@ -2086,6 +2100,7 @@ function PdfViewer({
                     isOcrScanning={isPiiScanning}
                     knownOnly={piiKnownOnly}
                     knownValues={redactValues}
+                    labels={redactLabels}
                     pageIndex={props.pageIndex}
                     scale={props.scale}
                     textLayerRendered={props.textLayerRendered}
