@@ -2,13 +2,35 @@
 
 from __future__ import annotations
 
+import logging
+import re
 import time
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 
+from psycopg import Error as PgError
+from psycopg import sql
 from psycopg.rows import dict_row
 
 from app.report_agent_v2.db.pools import PoolRegistry
+
+logger = logging.getLogger(__name__)
+
+
+# V6 billing ledger: dbo."creditTransaction_MMyy" (one table per IST month, CreditService.cs).
+_CREDIT_TABLE = re.compile(r"^creditTransaction_(\d{2})(\d{2})$")
+# The AP agent also keeps its own ledger (public.ap_credit_ledger); skip its charges here.
+_AP_ACTIVITY_TYPES = ("ap_agent", "ap agent")
+
+
+@dataclass(frozen=True)
+class BillingCredit:
+    activity_type: str
+    sub_activity: str
+    credit: int
+    created_at: datetime
+    remarks: str
 
 
 @dataclass(frozen=True)
@@ -105,3 +127,38 @@ class CatalogStore:
             )
             row = await cur.fetchone()
         return TenantMembership(row["TenantId"], row["Role"], row["UserId"]) if row else None
+
+    async def billing_credits(self, tenant_id: uuid.UUID, since: datetime, until: datetime) -> list[BillingCredit]:
+        """Credits charged through V6 billing (AI summary, OCR, intelligent upload, ...) in [since, until),
+        excluding AP agent charges. Empty when the billing tables do not exist."""
+        months = {(since.year, since.month)}
+        cursor = datetime(since.year, since.month, 1, tzinfo=since.tzinfo)
+        while cursor < until:
+            months.add((cursor.year, cursor.month))
+            cursor = datetime(cursor.year + cursor.month // 12, cursor.month % 12 + 1, 1, tzinfo=since.tzinfo)
+        out: list[BillingCredit] = []
+        try:
+            async with self._pools.catalog() as conn:
+                cur = await conn.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'dbo' AND table_name LIKE 'creditTransaction%%'"
+                )
+                tables = []
+                for (name,) in await cur.fetchall():
+                    m = _CREDIT_TABLE.match(name)
+                    # MMyy, a month either side of the window (tables are cut by IST month)
+                    if m and any(abs((2000 + int(m.group(2))) * 12 + int(m.group(1)) - (y * 12 + mo)) <= 1 for y, mo in months):
+                        tables.append(name)
+                for name in sorted(tables):
+                    cur = await conn.execute(
+                        sql.SQL(
+                            'SELECT "activityType", "subActivityType", COALESCE("credit", 0), "createdAt", "remarks" FROM {} '
+                            'WHERE "tenantId" = %s AND "createdAt" >= %s AND "createdAt" < %s '
+                            """AND COALESCE("isDeleted", false) = false AND lower(COALESCE("activityType", '')) <> ALL(%s)"""
+                        ).format(sql.Identifier("dbo", name)),
+                        (tenant_id, since, until, list(_AP_ACTIVITY_TYPES)),
+                    )
+                    out.extend(BillingCredit(a or "", s or "", int(c or 0), at, r or "") for a, s, c, at, r in await cur.fetchall())
+        except PgError as exc:
+            logger.warning("Could not read V6 billing credits: %s", str(exc)[:300])
+            return []
+        return out

@@ -94,6 +94,17 @@ const FILE_NAME_NAMES = [
 const normalizeName = (value: string | undefined) =>
   (value ?? '').toLowerCase().replace(/[\s_\-.#]/g, '')
 
+// Columns a report's totals are split by (normalized names).
+const BREAKDOWN_COLUMN_NAMES = ['skill', 'activity', 'activitytype']
+
+const toNumber = (value: unknown) => {
+  const num = Number(String(value ?? '').replace(/[^0-9.-]/g, ''))
+  return Number.isFinite(num) ? num : 0
+}
+
+const formatTotal = (value: number) =>
+  value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+
 // View, download and print only; editing and workflow actions stay on the
 // Folders page.
 const READ_ONLY_FILE_PERMISSIONS = {
@@ -630,6 +641,48 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     columnTypes,
   ])
 
+  // Totals of the columns the run marks "Sum" (e.g. Credits), over the
+  // filtered rows so they follow the search and filters.
+  const columnTotals = useMemo(() => {
+    const sumKeys = new Set(
+      (runResult?.columns ?? [])
+        .filter((col) => col.calc === 'Sum')
+        .flatMap((col) => [col.key, col.label]),
+    )
+    return previewColumns
+      .filter((col) => sumKeys.has(col.id) || sumKeys.has(col.label))
+      .map((col) => ({
+        id: col.id,
+        label: col.label,
+        total: filteredRows.reduce(
+          (sum, row) => sum + toNumber(row[col.id]),
+          0,
+        ),
+      }))
+  }, [runResult, previewColumns, filteredRows])
+
+  // The last summed column (e.g. Credits) split by a Skill / Activity column,
+  // when the report has one.
+  const totalsBreakdown = useMemo(() => {
+    const measure = columnTotals[columnTotals.length - 1]
+    const by = previewColumns.find((col) =>
+      BREAKDOWN_COLUMN_NAMES.includes(normalizeName(col.label)),
+    )
+    if (!measure || !by) return null
+    const sums = new Map<string, number>()
+    filteredRows.forEach((row) => {
+      const name = String(row[by.id] || '-')
+      sums.set(name, (sums.get(name) ?? 0) + toNumber(row[measure.id]))
+    })
+    return {
+      by: by.label,
+      items: [...sums.entries()]
+        .map(([name, total]) => ({ name, total }))
+        .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)),
+      measure: measure.label,
+    }
+  }, [columnTotals, previewColumns, filteredRows])
+
   const paginatedRows = useMemo(() => {
     if (pageSize === 0) return filteredRows
     const start = (page - 1) * pageSize
@@ -779,6 +832,38 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
             setPage(1)
           }}
         />
+
+        {columnTotals.length > 0 && filteredRows.length > 0 && (
+          <div className='flex shrink-0 flex-col gap-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
+            <div className='flex flex-wrap items-center gap-2'>
+              {columnTotals.map(({ label, total }) => (
+                <span
+                  key={label}
+                  className='inline-flex items-center gap-1.5 rounded-md bg-primary-1 px-2.5 py-1 text-13 text-primary-11'
+                >
+                  {t`Total ${label}`}
+                  <span className='font-semibold'>{formatTotal(total)}</span>
+                </span>
+              ))}
+            </div>
+            {totalsBreakdown && totalsBreakdown.items.length > 1 && (
+              <div className='flex flex-wrap items-center gap-2 text-12 text-gray-11'>
+                <span>{t`${totalsBreakdown.measure} by ${totalsBreakdown.by}:`}</span>
+                {totalsBreakdown.items.map(({ name, total }) => (
+                  <span
+                    key={name}
+                    className='inline-flex items-center gap-1 rounded-md border border-gray-4 px-2 py-0.5'
+                  >
+                    {name}
+                    <span className='font-semibold text-gray-13'>
+                      {formatTotal(total)}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
           <DataTable

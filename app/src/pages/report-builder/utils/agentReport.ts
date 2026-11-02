@@ -379,7 +379,7 @@ export const agentRunToReportRunResult = (
   meta: { domain: string; name: string; reportId: string | null },
 ): ReportRunResult => {
   const columns = result.columns.map((column) => ({
-    calc: 'None',
+    calc: column.calc === 'Sum' ? 'Sum' : 'None',
     colType: 'value',
     isCalculated: Boolean(column.formula),
     key: column.key,

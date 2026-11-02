@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Awaitable, Callable
 
@@ -66,6 +66,8 @@ class _Ctx:
     as_of: date
     limit: int
     params: dict
+    # Credits charged through V6 billing (catalog DB): (activity, sub activity, credit, created_at, remarks)
+    billing: list = field(default_factory=list)
 
     def bind(self, value: object, cast: str | None = None) -> sql.Composable:
         name = f"p{len(self.params)}"
@@ -125,9 +127,30 @@ def _status_label(expr: sql.Composable) -> sql.Composable:
 # Templates
 # ---------------------------------------------------------------------------------------------
 
-_CREDIT_COLS = (Col("Request No"), Col("Workflow"), Col("Skill"), Col("Status"),
+_CREDIT_COLS = (Col("Request No"), Col("Workflow"), Col("Skill"), Col("Billing Status"),
                 Col("Runs", "number", "measure", True), Col("Credits", "number", "measure", True),
                 Col("Last Used", "date", "value")) + _REQUEST_LINKS
+
+
+def _billing_rows(ctx: _Ctx) -> sql.Composable:
+    """V6 billing charges (AI summary, OCR, intelligent upload, ...) read from the catalog DB, one row
+    per activity and remark (e.g. the file), in the same columns as the AP ledger rows. Only
+    successful charges are written to that ledger, so they are all "Charged"."""
+    if not ctx.billing:
+        return sql.SQL(
+            "SELECT NULL::text AS c0, NULL::text AS c1, NULL::text AS c2, NULL::text AS c3, 0::bigint AS c4, "
+            "0::bigint AS c5, NULL::timestamptz AS c6, NULL::text AS c7, NULL::text AS c8 WHERE false")
+    values = sql.SQL(", ").join(
+        sql.SQL("({}, {}, {}, {})").format(
+            ctx.bind(activity or sub or "AI credit", "text"), ctx.bind(remarks or None, "text"),
+            ctx.bind(int(credit), "bigint"), ctx.bind(at, "timestamptz"))
+        for activity, sub, credit, at, remarks in ctx.billing
+    )
+    return sql.SQL(
+        "SELECT COALESCE(v.remarks, '-') AS c0, NULL::text AS c1, v.activity AS c2, 'Charged'::text AS c3, "
+        "COUNT(*)::bigint AS c4, SUM(v.credit)::bigint AS c5, MAX(v.at) AS c6, NULL::text AS c7, NULL::text AS c8 "
+        "FROM (VALUES {values}) AS v(activity, remarks, credit, at) GROUP BY v.activity, v.remarks"
+    ).format(values=values)
 
 
 async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
@@ -135,8 +158,13 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     the repository item of the invoice, whose workflow_instance_id is the request. Runs on direct
     uploads have no request: they show the invoice number (identify) instead, without a link."""
     ledger_cols = await _columns(ctx.conn, "public", "ap_credit_ledger")
-    if not {"tenant_id", "skill_id", "credits", "status", "created_at"} <= ledger_cols:
+    has_ledger = {"tenant_id", "skill_id", "credits", "status", "created_at"} <= ledger_cols
+    if not has_ledger and not ctx.billing:
         return _empty(_CREDIT_COLS), ["This organization has no AI credit ledger yet."]
+    billing = _billing_rows(ctx)
+    if not has_ledger:
+        return sql.SQL("SELECT * FROM ({billing}) b ORDER BY c6 DESC, c0, c2 LIMIT {limit}").format(
+            billing=billing, limit=sql.Literal(ctx.limit)), []
     tid = ctx.bind(str(ctx.tenant_id))
     has_runs = {"id", "item_key"} <= await _columns(ctx.conn, "public", "ap_runs") and "run_id" in ledger_cols
 
@@ -169,10 +197,15 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     runs_join = sql.SQL("LEFT JOIN public.ap_runs r ON r.id = l.run_id") if has_runs else sql.SQL(
         "LEFT JOIN (SELECT NULL::uuid AS id, NULL::text AS item_key WHERE false) r ON false")
     identify = sql.SQL("NULLIF(btrim(l.identify), '')") if "identify" in ledger_cols else sql.SQL("NULL::text")
+    # The ledger status is the outcome of the charge to V6 billing (/billing/credits/update),
+    # not of the skill: "failed" means the skill ran but the credit was not deducted.
+    billing_status = sql.SQL(
+        "(CASE lower(l.status) WHEN 'charged' THEN 'Charged' WHEN 'failed' THEN 'Not charged (billing call failed)' "
+        "WHEN 'mocked' THEN 'Not charged (test mode)' ELSE l.status END)")
     q = sql.SQL(
         """WITH items AS ({items}), insts AS ({insts})
            SELECT COALESCE(i.ref, {identify}, r.item_key, 'Not linked') AS c0, i.wf_name AS c1, l.skill_id AS c2,
-                  l.status AS c3, COUNT(*) AS c4, COALESCE(SUM(l.credits), 0) AS c5, MAX(l.created_at) AS c6,
+                  {billing_status} AS c3, COUNT(*) AS c4, COALESCE(SUM(l.credits), 0) AS c5, MAX(l.created_at) AS c6,
                   i.wi_id AS c7, i.wf_id AS c8
            FROM public.ap_credit_ledger l
            {runs_join}
@@ -180,8 +213,11 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
            LEFT JOIN insts i ON i.wi_id = it.wi_id
            WHERE lower(l.tenant_id) = lower({tid}) AND l.created_at >= {since} AND l.created_at < {until}
            GROUP BY 1, 2, 3, 4, i.wi_id, i.wf_id
+           UNION ALL
+           SELECT * FROM ({billing}) b
            ORDER BY c6 DESC, c0, c2 LIMIT {limit}"""
-    ).format(items=items, insts=insts, identify=identify, runs_join=runs_join, tid=tid,
+    ).format(items=items, insts=insts, identify=identify, billing_status=billing_status, billing=billing,
+             runs_join=runs_join, tid=tid,
              since=ctx.bind(ctx.since), until=ctx.bind(ctx.until), limit=sql.Literal(ctx.limit))
     return q, []
 
@@ -524,7 +560,7 @@ async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str
 
 TEMPLATES: dict[str, Template] = {t.key: t for t in (
     Template("ai_credit_consumption", "AI Credit Consumption",
-             "AI credits used per skill and outcome over the last 90 days.", "tenant", 90, _CREDIT_COLS, _ai_credit_consumption),
+             "AI credits used per request and skill (AP agent), plus AI summary, OCR and intelligent upload credits from billing, over the last 90 days.", "tenant", 90, _CREDIT_COLS, _ai_credit_consumption),
     Template("portal_submission_performance", "Portal Submission Performance",
              "Requests submitted per workflow and month: completed, pending, failed, completion rate and average completion time "
              "(last 12 months).", "all_workflows", 365, _PORTAL_COLS, _portal_submission_performance),
@@ -545,11 +581,15 @@ TEMPLATES: dict[str, Template] = {t.key: t for t in (
 
 
 async def compile_system_report(
-    conn: AsyncConnection, tenant_id: uuid.UUID, key: str, *, as_of: date, limit: int
+    conn: AsyncConnection, tenant_id: uuid.UUID, key: str, *, as_of: date, limit: int,
+    billing_loader: Callable[[datetime, datetime], Awaitable[list]] | None = None,
 ) -> CompiledQuery:
+    """billing_loader(since, until) returns V6 billing charges from the catalog DB (credit report only)."""
     template = TEMPLATES[key]
     until = datetime.combine(as_of + timedelta(days=1), time.min, tzinfo=timezone.utc)
     since = until - timedelta(days=template.window_days) if template.window_days else datetime(1970, 1, 1, tzinfo=timezone.utc)
-    ctx = _Ctx(conn=conn, tenant_id=tenant_id, since=since, until=until, as_of=as_of, limit=max(1, limit), params={})
+    billing = list(await billing_loader(since, until)) if billing_loader and key == "ai_credit_consumption" else []
+    ctx = _Ctx(conn=conn, tenant_id=tenant_id, since=since, until=until, as_of=as_of, limit=max(1, limit), params={},
+               billing=billing)
     query, warnings = await template.build(ctx)
     return CompiledQuery(query=query, params=ctx.params, columns=template.column_meta(), referenced_fields=set(), warnings=warnings)

@@ -58,7 +58,7 @@ def create_app(settings: Settings | None = None, planner: ReportPlanner | None =
     app.state.jwt_validator = JwtValidator(settings)
     # Without an injected planner, startup() wires the orchestrator's shared LLM adapter.
     app.state.definition_agent = ReportDefinitionAgent(planner, settings) if planner else None
-    app.state.execution_agent = ReportExecutionAgent(settings)
+    app.state.execution_agent = ReportExecutionAgent(settings, app.state.catalog)
 
     # Starlette runs the LAST added middleware first, so add innermost -> outermost.
     app.add_middleware(TenantMiddleware)

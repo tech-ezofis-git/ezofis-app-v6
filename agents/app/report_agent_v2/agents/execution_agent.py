@@ -19,6 +19,7 @@ from pydantic import ValidationError
 
 from app.report_agent_v2.agents.definition_agent import SourceRef, load_catalog
 from app.report_agent_v2.config import Settings
+from app.report_agent_v2.db.catalog import CatalogStore
 from app.report_agent_v2.domain import store, system_reports
 from app.report_agent_v2.domain.compiler import SpecValidationError, compile_spec
 from app.report_agent_v2.domain.executor import run_compiled, shape_result
@@ -56,8 +57,9 @@ async def load_report_for_user(conn: AsyncConnection, ctx: TenantContext, report
 
 
 class ReportExecutionAgent:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, catalog: CatalogStore | None = None) -> None:
         self._settings = settings
+        self._catalog = catalog  # V6 billing credits for the AI Credit Consumption default report
 
     async def execute(self, conn: AsyncConnection, ctx: TenantContext, report_id: uuid.UUID, options: ExecutionOptions) -> dict:
         definition, _ = await load_report_for_user(conn, ctx, report_id)
@@ -139,6 +141,17 @@ class ReportExecutionAgent:
             "warnings": warnings,
         }
 
+    def _billing_loader(self, tenant_id: uuid.UUID):
+        if self._catalog is None:
+            return None
+        catalog = self._catalog
+
+        async def load(since: datetime, until: datetime) -> list[tuple]:
+            return [(b.activity_type, b.sub_activity, b.credit, b.created_at, b.remarks)
+                    for b in await catalog.billing_credits(tenant_id, since, until)]
+
+        return load
+
     async def _execute_system(
         self, conn: AsyncConnection, ctx: TenantContext, report_id: uuid.UUID, definition: dict, key: str, options: ExecutionOptions
     ) -> dict:
@@ -152,7 +165,8 @@ class ReportExecutionAgent:
         started = time.perf_counter()
         status, error, rows = "Failed", None, []
         try:
-            compiled = await system_reports.compile_system_report(conn, ctx.tenant_id, key, as_of=options.as_of, limit=limit)
+            compiled = await system_reports.compile_system_report(
+                conn, ctx.tenant_id, key, as_of=options.as_of, limit=limit, billing_loader=self._billing_loader(ctx.tenant_id))
             try:
                 rows = await run_compiled(conn, compiled, self._settings.statement_timeout_ms)
             except PgError as exc:

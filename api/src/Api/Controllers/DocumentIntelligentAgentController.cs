@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text.Json;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SaaSApp.MultiTenancy;
@@ -20,13 +22,19 @@ public sealed class DocumentIntelligentAgentController : ControllerBase
 {
     private readonly IDocumentIntelligentAgentClient _client;
     private readonly ITenantProvider _tenantProvider;
+    private readonly IMediator _mediator;
+    private readonly ILogger<DocumentIntelligentAgentController> _logger;
 
     public DocumentIntelligentAgentController(
         IDocumentIntelligentAgentClient client,
-        ITenantProvider tenantProvider)
+        ITenantProvider tenantProvider,
+        IMediator mediator,
+        ILogger<DocumentIntelligentAgentController> logger)
     {
         _client = client;
         _tenantProvider = tenantProvider;
+        _mediator = mediator;
+        _logger = logger;
     }
 
     /// <summary>
@@ -117,6 +125,12 @@ public sealed class DocumentIntelligentAgentController : ControllerBase
         return trimmed;
     }
 
+    private Guid? GetUserId()
+    {
+        var raw = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub") ?? User.FindFirstValue("oid");
+        return Guid.TryParse(raw, out var id) ? id : null;
+    }
+
     private Guid RequireTenantId() =>
         _tenantProvider.GetTenantId()
         ?? throw new InvalidOperationException("Tenant context is required (access token / X-Tenant-Id).");
@@ -128,6 +142,20 @@ public sealed class DocumentIntelligentAgentController : ControllerBase
         try
         {
             var result = await _client.ClassifyAsync(request, cancellationToken);
+            if (result.StatusCode is >= 200 and < 300)
+            {
+                await ActivityCredits.TryConsumeAsync(
+                    _mediator,
+                    _logger,
+                    request.TenantId ?? RequireTenantId(),
+                    GetUserId(),
+                    "Intelligent Upload",
+                    "DocumentClassification",
+                    $"Intelligent upload {request.FileName ?? request.FilePath ?? request.SessionId}",
+                    ActivityCredits.IntelligentUploadCredit,
+                    cancellationToken);
+            }
+
             return ToUnwrappedActionResult(result, DocumentIntelligentAgentClient.ResultPropertyName);
         }
         catch (ArgumentException ex)
