@@ -112,17 +112,17 @@ public sealed class WorkflowSlaTimerService
                 return;
         }
 
-        var (lastTransactionId, lastInstanceCreatedAt) = await PrepareStateAsync(connection, workflow, cancellationToken);
+        var (lastTransactionId, lastInstanceCreatedAt, slaSince) = await PrepareStateAsync(connection, workflow, cancellationToken);
 
         var blocks = (workflow.Json.Blocks ?? [])
             .Where(b => WorkflowSlaSchedule.IsActiveStandard(b.Settings?.SlaSettings))
             .ToDictionary(b => b.Id, b => b.Settings.SlaSettings!, StringComparer.Ordinal);
         if (blocks.Count > 0)
-            lastTransactionId = await MaterializeResponseAsync(connection, workflow.Id, suffix, blocks, lastTransactionId, cancellationToken);
+            lastTransactionId = await MaterializeResponseAsync(connection, workflow.Id, suffix, blocks, lastTransactionId, slaSince, cancellationToken);
 
         var resolution = workflow.Json.Settings?.SlaSettings;
         if (WorkflowSlaSchedule.IsActiveStandard(resolution))
-            lastInstanceCreatedAt = await MaterializeResolutionAsync(connection, workflow.Id, suffix, resolution!, lastInstanceCreatedAt, cancellationToken);
+            lastInstanceCreatedAt = await MaterializeResolutionAsync(connection, workflow.Id, suffix, resolution!, lastInstanceCreatedAt, slaSince, cancellationToken);
 
         const string save = """
             UPDATE workflow.sla_workflow_state
@@ -136,43 +136,68 @@ public sealed class WorkflowSlaTimerService
         await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    /// <summary>Loads the watermarks; on a new or edited SLA definition drops pending timers and rescans.</summary>
-    private static async Task<(int LastTransactionId, DateTime? LastInstanceCreatedAt)> PrepareStateAsync(
+    /// <summary>
+    /// Loads the watermarks and the time the SLA settings were set; on a new or edited workflow drops
+    /// pending timers and rescans. "SLA since" only moves when the SLA settings themselves change.
+    /// </summary>
+    private static async Task<(int LastTransactionId, DateTime? LastInstanceCreatedAt, DateTime? SlaSince)> PrepareStateAsync(
         NpgsqlConnection connection,
         SlaWorkflow workflow,
         CancellationToken cancellationToken)
     {
+        var fingerprint = WorkflowSlaSchedule.Fingerprint(workflow.Json);
+        string? storedFingerprint = null;
+        DateTime? storedSince = null;
         await using (var read = new NpgsqlCommand(
-            "SELECT definition_modified_at, last_transaction_id, last_instance_created_at FROM workflow.sla_workflow_state WHERE workflow_id = @WorkflowId;",
+            """
+            SELECT definition_modified_at, last_transaction_id, last_instance_created_at, sla_fingerprint, sla_since
+            FROM workflow.sla_workflow_state WHERE workflow_id = @WorkflowId;
+            """,
             connection))
         {
             read.Parameters.AddWithValue("@WorkflowId", workflow.Id);
             await using var reader = await read.ExecuteReaderAsync(cancellationToken);
             if (await reader.ReadAsync(cancellationToken))
             {
-                var definitionAt = reader.IsDBNull(0) ? (DateTime?)null : reader.GetDateTime(0);
-                if (SameInstant(definitionAt, workflow.ModifiedAtUtc))
+                var definitionAt = reader.IsDBNull(0) ? (DateTime?)null : reader.GetDateTime(0).ToUniversalTime();
+                storedFingerprint = reader.IsDBNull(3) ? null : reader.GetString(3);
+                storedSince = reader.IsDBNull(4) ? null : reader.GetDateTime(4).ToUniversalTime();
+                // Rows from before sla_since existed fall through once, so their pending timers for
+                // tickets that were already waiting are dropped too.
+                if (SameInstant(definitionAt, workflow.ModifiedAtUtc) && storedSince is { } current)
                 {
-                    return (reader.GetInt32(1), reader.IsDBNull(2) ? null : reader.GetDateTime(2).ToUniversalTime());
+                    return (reader.GetInt32(1),
+                        reader.IsDBNull(2) ? null : reader.GetDateTime(2).ToUniversalTime(),
+                        current);
                 }
             }
         }
 
-        // New or edited definition: rebuild pending timers from every waiting ticket. Rules that already
-        // fired keep their row, so they do not fire again.
+        // Same SLA settings (another part of the workflow was saved): keep when the SLA was set.
+        var since = storedFingerprint == fingerprint && storedSince is { } kept
+            ? kept
+            : workflow.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : DateTime.UtcNow;
+
+        // New or edited definition: rebuild pending timers from every waiting ticket that arrived after
+        // the SLA was set. Rules that already fired keep their row, so they do not fire again.
         const string reset = """
             DELETE FROM workflow.sla_timers WHERE workflow_id = @WorkflowId AND status = 0;
-            INSERT INTO workflow.sla_workflow_state (workflow_id, definition_modified_at, last_transaction_id, last_instance_created_at)
-            VALUES (@WorkflowId, @DefinitionAt, 0, NULL)
+            INSERT INTO workflow.sla_workflow_state
+                (workflow_id, definition_modified_at, last_transaction_id, last_instance_created_at, sla_fingerprint, sla_since)
+            VALUES (@WorkflowId, @DefinitionAt, 0, NULL, @Fingerprint, @Since)
             ON CONFLICT (workflow_id) DO UPDATE
             SET definition_modified_at = EXCLUDED.definition_modified_at,
-                last_transaction_id = 0, last_instance_created_at = NULL, updated_at_utc = now();
+                last_transaction_id = 0, last_instance_created_at = NULL,
+                sla_fingerprint = EXCLUDED.sla_fingerprint, sla_since = EXCLUDED.sla_since,
+                updated_at_utc = now();
             """;
         await using var cmd = new NpgsqlCommand(reset, connection);
         cmd.Parameters.AddWithValue("@WorkflowId", workflow.Id);
-        cmd.Parameters.AddWithValue("@DefinitionAt", workflow.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : DBNull.Value);
+        cmd.Parameters.AddWithValue("@DefinitionAt", workflow.ModifiedAtUtc is { } d ? DateTime.SpecifyKind(d, DateTimeKind.Utc) : DBNull.Value);
+        cmd.Parameters.AddWithValue("@Fingerprint", fingerprint);
+        cmd.Parameters.AddWithValue("@Since", since);
         await cmd.ExecuteNonQueryAsync(cancellationToken);
-        return (0, null);
+        return (0, null, since);
     }
 
     private static bool SameInstant(DateTime? stored, DateTime? current) =>
@@ -186,6 +211,7 @@ public sealed class WorkflowSlaTimerService
         string suffix,
         Dictionary<string, WorkflowSlaConfigurationDto> blocks,
         int lastTransactionId,
+        DateTime? slaSince,
         CancellationToken cancellationToken)
     {
         int maxId;
@@ -225,7 +251,10 @@ public sealed class WorkflowSlaTimerService
                 rows++;
                 lastSeen = reader.GetInt32(0);
                 var activityId = reader.GetString(2);
-                foreach (var (ruleId, due) in WorkflowSlaSchedule.Timers(blocks[activityId], reader.GetDateTime(3).ToUniversalTime()))
+                var arrived = reader.GetDateTime(3).ToUniversalTime();
+                if (!WorkflowSlaSchedule.AppliesTo(arrived, slaSince))
+                    continue; // reached the stage before the SLA was set
+                foreach (var (ruleId, due) in WorkflowSlaSchedule.Timers(blocks[activityId], arrived))
                 {
                     transactions.Add(lastSeen);
                     instances.Add(reader.GetGuid(1));
@@ -247,6 +276,7 @@ public sealed class WorkflowSlaTimerService
         string suffix,
         WorkflowSlaConfigurationDto sla,
         DateTime? lastInstanceCreatedAt,
+        DateTime? slaSince,
         CancellationToken cancellationToken)
     {
         var sql = $"""
@@ -278,6 +308,8 @@ public sealed class WorkflowSlaTimerService
                 var created = reader.GetDateTime(1).ToUniversalTime();
                 if (newest is null || created > newest)
                     newest = created;
+                if (!WorkflowSlaSchedule.AppliesTo(created, slaSince))
+                    continue; // created before the SLA was set
                 foreach (var (ruleId, due) in WorkflowSlaSchedule.Timers(sla, created))
                 {
                     instances.Add(reader.GetGuid(0));
@@ -369,6 +401,17 @@ public sealed class WorkflowSlaTimerService
         foreach (var timer in timers.OrderBy(t => t.DueAtUtc).ThenBy(t => t.Id))
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (WorkflowSlaSchedule.IsStale(timer.DueAtUtc, DateTime.UtcNow, _options.MaxLateMinutes))
+            {
+                // Came due while the SLA process was off (e.g. old tickets when SLA was switched on).
+                var skipped = $"skipped: due {timer.DueAtUtc:yyyy-MM-dd HH:mm} UTC, more than {_options.MaxLateMinutes} min ago";
+                await MarkAsync(connection, timer.Id, WorkflowSlaStore.TimerCancelled, skipped, cancellationToken);
+                _logger.LogInformation(
+                    "SLA timer {TimerId} ({Scope} rule {RuleId}, instance {InstanceId}): {Outcome}",
+                    timer.Id, timer.Scope, timer.RuleId, timer.InstanceId, skipped);
+                continue;
+            }
+
             try
             {
                 var (status, outcome) = await FireAsync(connection, timer, workflows, cancellationToken);
