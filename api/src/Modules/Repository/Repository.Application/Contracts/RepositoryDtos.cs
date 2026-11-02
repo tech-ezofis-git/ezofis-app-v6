@@ -439,13 +439,20 @@ public sealed record RepositoryItemTicketSummaryDto(
     string? CurrentStage,
     string? TicketStatus,
     string? AssigneeEmail,
-    IReadOnlyList<RepositoryItemTicketHistoryStepDto> History);
+    IReadOnlyList<RepositoryItemTicketHistoryStepDto> History,
+    string? WorkflowName = null,
+    string? CreatedBy = null,
+    DateTime? CreatedAtUtc = null);
 
-/// <summary>Response for GET .../items/{itemId}/ticket.</summary>
+/// <summary>
+/// Response for GET .../items/{itemId}/ticket. <c>Ticket</c> is the main (linked) workflow;
+/// <c>Tickets</c> lists every workflow this file is attached to, the main one first.
+/// </summary>
 public sealed record RepositoryItemTicketResultDto(
     Guid ItemId,
     bool HasTicket,
-    RepositoryItemTicketSummaryDto? Ticket = null);
+    RepositoryItemTicketSummaryDto? Ticket = null,
+    IReadOnlyList<RepositoryItemTicketSummaryDto>? Tickets = null);
 
 public sealed record RepositoryItemTimelineResultDto(
     IReadOnlyList<RepositoryItemTimelineEventDto> Events,
