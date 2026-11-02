@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text.Json;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SaaSApp.MultiTenancy;
@@ -22,19 +21,16 @@ public sealed class DocumentIntelligentAgentController : ControllerBase
 {
     private readonly IDocumentIntelligentAgentClient _client;
     private readonly ITenantProvider _tenantProvider;
-    private readonly IMediator _mediator;
-    private readonly ILogger<DocumentIntelligentAgentController> _logger;
+    private readonly IActivityCreditCharger _credits;
 
     public DocumentIntelligentAgentController(
         IDocumentIntelligentAgentClient client,
         ITenantProvider tenantProvider,
-        IMediator mediator,
-        ILogger<DocumentIntelligentAgentController> logger)
+        IActivityCreditCharger credits)
     {
         _client = client;
         _tenantProvider = tenantProvider;
-        _mediator = mediator;
-        _logger = logger;
+        _credits = credits;
     }
 
     /// <summary>
@@ -144,15 +140,13 @@ public sealed class DocumentIntelligentAgentController : ControllerBase
             var result = await _client.ClassifyAsync(request, cancellationToken);
             if (result.StatusCode is >= 200 and < 300)
             {
-                await ActivityCredits.TryConsumeAsync(
-                    _mediator,
-                    _logger,
+                await _credits.TryConsumeAsync(
                     request.TenantId ?? RequireTenantId(),
                     GetUserId(),
-                    "Intelligent Upload",
-                    "DocumentClassification",
+                    ActivityCreditTypes.IntelligentUploadActivity,
+                    ActivityCreditTypes.IntelligentUploadSubActivity,
                     $"Intelligent upload {request.FileName ?? request.FilePath ?? request.SessionId}",
-                    ActivityCredits.IntelligentUploadCredit,
+                    ActivityCreditTypes.IntelligentUploadCredit,
                     cancellationToken);
             }
 

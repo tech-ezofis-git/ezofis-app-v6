@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text.Json;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SaaSApp.MultiTenancy;
@@ -20,19 +19,11 @@ public sealed class UploadAndIndexController : ControllerBase
 
     private readonly ITenantProvider _tenantProvider;
     private readonly IRepositoryUploadIndexService _uploadIndex;
-    private readonly IMediator _mediator;
-    private readonly ILogger<UploadAndIndexController> _logger;
 
-    public UploadAndIndexController(
-        ITenantProvider tenantProvider,
-        IRepositoryUploadIndexService uploadIndex,
-        IMediator mediator,
-        ILogger<UploadAndIndexController> logger)
+    public UploadAndIndexController(ITenantProvider tenantProvider, IRepositoryUploadIndexService uploadIndex)
     {
         _tenantProvider = tenantProvider;
         _uploadIndex = uploadIndex;
-        _mediator = mediator;
-        _logger = logger;
     }
 
     /// <summary>v5: POST api/uploadAndIndex/upload — stage file to monitor + stage table.</summary>
@@ -118,17 +109,6 @@ public sealed class UploadAndIndexController : ControllerBase
                 ocrType,
                 validateType,
                 file.FileName,
-                cancellationToken);
-
-            await ActivityCredits.TryConsumeAsync(
-                _mediator,
-                _logger,
-                tenantId,
-                GetUserId(),
-                "OCR Agent",
-                "AI OCR",
-                $"OCR on upload: {file.FileName}",
-                ActivityCredits.OcrCredit,
                 cancellationToken);
 
             return Ok(result);

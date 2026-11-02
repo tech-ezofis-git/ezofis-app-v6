@@ -1,32 +1,37 @@
 using MediatR;
 using SaaSApp.Billing.Application.Contracts;
 using SaaSApp.Billing.Application.Credits.Commands.UpdateCredit;
+using SaaSApp.Repository.Application.Contracts;
 
-namespace SaaSApp.Api.Controllers;
+namespace SaaSApp.Api.Services;
 
 /// <summary>
-/// Consumes billing credits for an AI action that already succeeded (same ledger as
-/// <c>POST /api/billing/credits/update</c>). A failed charge is logged, never fails the action.
+/// Charges through the same ledger as <c>POST /api/billing/credits/update</c>. Failures are logged
+/// and reported as <c>false</c>, never thrown, so the action that earned the charge still succeeds.
 /// </summary>
-internal static class ActivityCredits
+public sealed class ActivityCreditCharger : IActivityCreditCharger
 {
-    public const int OcrCredit = 1;
-    public const int IntelligentUploadCredit = 1;
+    private readonly IMediator _mediator;
+    private readonly ILogger<ActivityCreditCharger> _logger;
 
-    public static async Task<bool> TryConsumeAsync(
-        IMediator mediator,
-        ILogger logger,
+    public ActivityCreditCharger(IMediator mediator, ILogger<ActivityCreditCharger> logger)
+    {
+        _mediator = mediator;
+        _logger = logger;
+    }
+
+    public async Task<bool> TryConsumeAsync(
         Guid tenantId,
         Guid? userId,
         string activityType,
         string subActivity,
         string remarks,
-        int credit,
-        CancellationToken cancellationToken)
+        int credit = 1,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var result = await mediator.Send(
+            var result = await _mediator.Send(
                 new UpdateCreditCommand(
                     tenantId,
                     userId,
@@ -34,7 +39,7 @@ internal static class ActivityCredits
                 cancellationToken);
             if (result.Status != CreditUpdateStatus.Success)
             {
-                logger.LogWarning(
+                _logger.LogWarning(
                     "{ActivityType} credit not consumed for tenant {TenantId}: {Status} {Message}",
                     activityType,
                     tenantId,
@@ -46,7 +51,7 @@ internal static class ActivityCredits
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning(ex, "{ActivityType} credit could not be consumed for tenant {TenantId}", activityType, tenantId);
+            _logger.LogWarning(ex, "{ActivityType} credit could not be consumed for tenant {TenantId}", activityType, tenantId);
             return false;
         }
     }
