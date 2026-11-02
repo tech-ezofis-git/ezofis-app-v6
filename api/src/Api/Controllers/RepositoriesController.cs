@@ -714,7 +714,7 @@ public sealed class RepositoriesController : ControllerBase
                             new CreditUpdateRequest(
                                 "Document Summary",
                                 "DocumentSummary",
-                                "repository.items",
+                                ActivityCreditTypes.RepositoryItem(repositoryId, itemId),
                                 0,
                                 $"AI summary for item {itemId}",
                                 RepositoryAiSummaryDefaults.Credit)),

@@ -160,6 +160,8 @@ export interface ReportSpec {
 export interface ReportSpecColumn {
   key: string
   label: string
+  /** "Sum" on run results for columns the report totals (e.g. Credits). */
+  calc?: string
   editable?: boolean
   formula?: string | null
   highlight?: ReportSpecHighlight | null
@@ -253,7 +255,7 @@ const sourceFromSpec = (spec: Record<string, unknown> | undefined) => {
 }
 
 interface V2RunPayload {
-  columns?: { key: string; label?: string }[]
+  columns?: { key: string; calc?: string; label?: string }[]
   rowCount?: number
   rows?: Record<string, unknown>[]
   truncated?: boolean
@@ -267,6 +269,7 @@ const toRunResult = (
   const rows = Array.isArray(payload?.rows) ? payload.rows : []
   return {
     columns: (payload?.columns ?? []).map((column) => ({
+      calc: column.calc,
       key: column.key,
       label: column.label || column.key,
     })),

@@ -21,6 +21,7 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
     private readonly IOcrExtractionService _ocrExtraction;
     private readonly IRepositoryArchiveFileUploadService _archiveUpload;
     private readonly ITenantDisplayResolver _tenantDisplay;
+    private readonly IActivityCreditCharger _credits;
 
     public RepositoryUploadIndexService(
         ITenantConnectionProvider connectionProvider,
@@ -29,7 +30,8 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
         IRepositoryFileStorage fileStorage,
         IOcrExtractionService ocrExtraction,
         IRepositoryArchiveFileUploadService archiveUpload,
-        ITenantDisplayResolver tenantDisplay)
+        ITenantDisplayResolver tenantDisplay,
+        IActivityCreditCharger credits)
     {
         _connectionProvider = connectionProvider;
         _provisioner = provisioner;
@@ -38,6 +40,7 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
         _ocrExtraction = ocrExtraction;
         _archiveUpload = archiveUpload;
         _tenantDisplay = tenantDisplay;
+        _credits = credits;
     }
 
     public async Task<UploadIndexUploadResult> UploadAsync(
@@ -137,6 +140,17 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
             validateType,
             filename,
             repositoryId,
+            cancellationToken);
+
+        // Every OCR call (upload, bulk upload, email ingest) goes through here: 1 credit once OCR succeeded.
+        await _credits.TryConsumeAsync(
+            tenantId,
+            null,
+            ActivityCreditTypes.OcrActivity,
+            ActivityCreditTypes.OcrSubActivity,
+            $"OCR: {filename ?? "document"}",
+            ActivityCreditTypes.OcrCredit,
+            ActivityCreditTypes.RepositoryItem(repositoryId),
             cancellationToken);
 
         return new UploadForOcrResult(ocr.RawJson, ocr.OcrFieldList, ocr.OcrText);
