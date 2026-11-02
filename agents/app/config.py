@@ -97,8 +97,9 @@ class Settings(BaseSettings):
     forecast_narration_cache_ttl_seconds: int = 60 * 5  # 5 minutes
 
     # --- OCR document extraction (blob / upload → extract_text → JSON) ---
+    # Env OCR_EXTRACT_URL overrides this default (an Azure App Setting wins over the code).
     ocr_extract_url: Optional[str] = (
-        "https://ez-container-app.calmsmoke-6661997a.southindia.azurecontainerapps.io/api/extract_text"
+        "https://ezofisvmnode1.canadacentral.cloudapp.azure.com/api/extract_text"
     )
     ocr_engine: str = "paddle"
     ocr_default_model: Optional[str] = None
