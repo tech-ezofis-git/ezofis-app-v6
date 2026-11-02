@@ -7,4 +7,10 @@ public interface IWorkflowEzfbFormDataLoader
         string formId,
         Guid formEntryId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Same JSON for a soft-deleted entry, for the form entries Trash list only.</summary>
+    Task<string?> LoadDeletedFormDataJsonAsync(
+        string formId,
+        Guid formEntryId,
+        CancellationToken cancellationToken = default);
 }

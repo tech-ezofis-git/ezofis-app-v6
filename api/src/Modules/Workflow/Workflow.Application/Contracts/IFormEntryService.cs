@@ -32,6 +32,12 @@ public interface IFormEntryService
         Guid entryId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Undo <see cref="DeleteEntryAsync"/>: puts a soft-deleted entry back in get/list.</summary>
+    Task<FormEntryRestoreResult> RestoreEntryAsync(
+        string formId,
+        Guid entryId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Get one or more entries by itemId (comma-separated supported like v5).</summary>
     Task<FormEntryGetResult> GetEntriesAsync(
         string formId,

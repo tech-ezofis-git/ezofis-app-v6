@@ -312,6 +312,31 @@ public sealed class FormController : ControllerBase
         }
     }
 
+    /// <summary>Restore a soft-deleted form entry (<c>is_deleted = false</c>).</summary>
+    [HttpPost("{id}/entry/{entryId:guid}/restore")]
+    [ProducesResponseType(typeof(FormEntryRestoreResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RestoreEntry(string id, Guid entryId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(id) || entryId == Guid.Empty)
+            return NotFound();
+
+        try
+        {
+            var result = await _formEntryService.RestoreEntryAsync(id, entryId, cancellationToken);
+            return result.Status switch
+            {
+                FormEntryRestoreStatus.Restored => Ok(result),
+                _ => NotFound(new { error = result.Message })
+            };
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     /// <summary>
     /// Form entry schema: all wFormControl rows for this formId (jsonId, name, type, parentId, etc.).
     /// </summary>

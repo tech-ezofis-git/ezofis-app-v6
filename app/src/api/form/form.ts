@@ -128,12 +128,37 @@ const listAllForms = async (
 const deleteFormEntry = async (fId: string, eId: string) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosV6.delete(`/form/${fId}/entry/${eId}`)
+    const { data, status } = await axiosV6.delete(`/form/${fId}/entry/${eId}`, {
+      headers: {
+        'X-Tenant-Id': getCurrentFormUser().tenantId,
+      },
+    })
     if (status !== 200) throw new Error('Invalid status code')
     response.data = data // Success Message
   } catch (e) {
     console.error(e)
     response.error = 'Error deleting entry'
+  }
+  return response
+}
+
+const restoreFormEntry = async (fId: string, eId: string) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6.post(
+      `/form/${fId}/entry/${eId}/restore`,
+      null,
+      {
+        headers: {
+          'X-Tenant-Id': getCurrentFormUser().tenantId,
+        },
+      },
+    )
+    if (status !== 200) throw new Error('Invalid status code')
+    response.data = data
+  } catch (e) {
+    console.error(e)
+    response.error = 'Error restoring entry'
   }
   return response
 }
@@ -366,6 +391,7 @@ const formApi = {
   createForm,
   deleteForm,
   deleteFormEntry,
+  restoreFormEntry,
   listAllForms,
   saveFormEntry,
   searchFormEntries,

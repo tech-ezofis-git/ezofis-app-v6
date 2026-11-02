@@ -37,6 +37,18 @@ public sealed record FormEntryDeleteResult(
     string? EntryId,
     string? Message);
 
+public enum FormEntryRestoreStatus
+{
+    Restored = 1,
+    NotFound = 0
+}
+
+/// <summary>POST /api/form/{id}/entry/{entryId}/restore — undo soft delete (<c>is_deleted = false</c>).</summary>
+public sealed record FormEntryRestoreResult(
+    FormEntryRestoreStatus Status,
+    string? EntryId,
+    string? Message);
+
 public sealed record FormEntryGetResult(
     FormEntryGetStatus Status,
     IReadOnlyList<Dictionary<string, object?>>? Entries);
