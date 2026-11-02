@@ -49,6 +49,9 @@ import useIsGuestShare from '@/hooks/useIsGuestShare'
 import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import RelatedDocumentsFinder from '@/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder'
+import Request from '@/pages/requests/components/request/Request'
+import useInlineRequestOverview from '@/pages/requests/hooks/useInlineRequestOverview'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 import cn from '@/utils/cn'
 
 const getMilestoneIcon = (milestone?: string) => {
@@ -491,6 +494,65 @@ export function DocumentDetailsView({
   )
   const [data, setData] = useState<WorkspaceDocumentDetail | null>(null)
   const [ticketData, setTicketData] = useState<any>(null)
+  // Every workflow this file is in (the ticket API's `tickets`); ticketData is the one shown.
+  const [ticketList, setTicketList] = useState<
+    {
+      assigneeEmail?: null | string
+      createdAtUtc?: null | string
+      createdBy?: null | string
+      referenceNumber?: null | string
+      ticketStatus?: null | string
+      workflowId?: null | string
+      workflowInstanceId: string
+      workflowName?: null | string
+    }[]
+  >([])
+  // A ticket's request opens in place over this document (no URL / tab change); Back
+  // or an action (Submit, Approve…) closes it and shows this document again.
+  // Not offered when this document is itself shown inside an open request, which
+  // the shared request store would otherwise replace.
+  const [insideOpenRequest] = useState(
+    () => requestStore.getState().isRequestOpen,
+  )
+  const reloadTicket = useCallback(async () => {
+    if (!repositoryId || !id) return
+    try {
+      const res = await axiosV6({
+        method: 'GET',
+        url: `/repositories/${repositoryId}/items/${id}/ticket`,
+      })
+      if (!res?.data?.hasTicket) return
+      const list = Array.isArray(res.data.tickets) ? res.data.tickets : []
+      setTicketList(list)
+      setTicketData(
+        (current: null | { workflowInstanceId?: string }) =>
+          list.find(
+            (item: { workflowInstanceId: string }) =>
+              item.workflowInstanceId === current?.workflowInstanceId,
+          ) || res.data.ticket,
+      )
+    } catch {
+      // Keep what is shown; the next open of the document reloads it.
+    }
+  }, [id, repositoryId])
+  const ticketRequest = useInlineRequestOverview({
+    onClosedByAction: () => void reloadTicket(),
+    onError: () =>
+      showToast({
+        message: t`Couldn't open this request. Try again.`,
+        variant: 'error',
+      }),
+  })
+  const openTicketRequest = (ticket: {
+    workflowId?: null | string
+    workflowInstanceId: string
+  }) => {
+    if (!ticket.workflowId) return
+    void ticketRequest.open({
+      instanceId: String(ticket.workflowInstanceId),
+      workflowId: String(ticket.workflowId),
+    })
+  }
   const hasTicketForm = Boolean(
     ticketData?.workflowId && ticketData?.workflowInstanceId,
   )
@@ -1121,6 +1183,7 @@ export function DocumentDetailsView({
       setError('')
       setData(null)
       setTicketData(null)
+      setTicketList([])
       setFileLoadFailed(false)
       setTimeline([])
       setComments([])
@@ -1245,6 +1308,11 @@ export function DocumentDetailsView({
             ticketRes.value?.data?.hasTicket
           ) {
             setTicketData(ticketRes.value.data.ticket)
+            setTicketList(
+              Array.isArray(ticketRes.value.data.tickets)
+                ? ticketRes.value.data.tickets
+                : [],
+            )
           }
         }
       } catch (exception: any) {
@@ -2171,6 +2239,16 @@ export function DocumentDetailsView({
 
   return (
     <div className='animate-in fade-in relative flex h-full min-h-0 flex-1 flex-col bg-surface-secondary text-[13px] text-gray-11 duration-300'>
+      {ticketRequest.isOpen ? (
+        <div className='absolute inset-0 z-50 flex min-h-0 flex-col overflow-hidden bg-surface'>
+          <Request
+            item={ticketRequest.item}
+            key={ticketRequest.item?.processId || ticketRequest.item?.id}
+            workflowId={ticketRequest.workflowId ?? undefined}
+            onBack={ticketRequest.close}
+          />
+        </div>
+      ) : null}
       {isEditingDoc && previewBlobRef.current ? (
         <div className='absolute inset-0 z-50 flex min-h-0 flex-col overflow-hidden bg-surface-secondary'>
           <CollaboraEditor
@@ -3729,6 +3807,144 @@ export function DocumentDetailsView({
                     Ticket Information
                   </h3>
                   <div className='space-y-3 p-4'>
+                    {ticketList.length > 1 ? (
+                      // The file is in more than one workflow: one card per workflow in
+                      // a scrolling row; the selected one is shown below.
+                      <div className='-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pt-1 pb-2 [scrollbar-width:thin]'>
+                        {ticketList.map((ticket) => {
+                          const selected =
+                            ticket.workflowInstanceId ===
+                            ticketData.workflowInstanceId
+                          const pending = String(ticket.ticketStatus || '')
+                            .toLowerCase()
+                            .includes('pending')
+                          return (
+                            <div
+                              className='relative flex w-[264px] shrink-0 snap-start'
+                              key={ticket.workflowInstanceId}
+                            >
+                            <button
+                              aria-pressed={selected}
+                              type='button'
+                              className={cn(
+                                'flex w-full flex-col rounded-lg border p-2.5 text-left shadow-xs transition-all outline-none hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary-6 active:scale-[0.98]',
+                                selected
+                                  ? 'border-primary-6 bg-primary-2'
+                                  : 'border-gray-3 bg-surface hover:border-gray-5',
+                              )}
+                              onClick={() => setTicketData(ticket)}
+                            >
+                              <div className='mb-2 flex items-start justify-between gap-2'>
+                                <div className='min-w-0'>
+                                  <p
+                                    className='truncate text-[12px] leading-4 font-semibold text-gray-13'
+                                    title={ticket.workflowName || undefined}
+                                  >
+                                    {ticket.workflowName || t`Workflow`}
+                                  </p>
+                                  <div className='mt-1 flex items-center gap-2'>
+                                    <span className='rounded bg-primary-3 px-1.5 py-px text-[10px] font-semibold tracking-wide text-primary-11'>
+                                      {ticket.referenceNumber || '—'}
+                                    </span>
+                                    {ticket.createdAtUtc ? (
+                                      <span className='flex items-center gap-1 text-[10.5px] text-gray-9'>
+                                        <Icon
+                                          className='size-3'
+                                          name='lucide:calendar'
+                                        />
+                                        {formatDateOnly(ticket.createdAtUtc)}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
+                                <Tooltip
+                                  content={ticket.ticketStatus || t`Completed`}
+                                  position='top'
+                                >
+                                  <span className='relative mt-1 flex size-2 shrink-0'>
+                                    {pending ? (
+                                      <span className='absolute inset-0 animate-ping rounded-full bg-orange-6' />
+                                    ) : null}
+                                    <span
+                                      className={cn(
+                                        'relative size-2 rounded-full',
+                                        pending ? 'bg-orange-9' : 'bg-green-9',
+                                      )}
+                                    />
+                                  </span>
+                                </Tooltip>
+                              </div>
+                              {/* Pushed to the bottom: cards in the row share the tallest
+                                  height, so the last line always sits beside the open icon. */}
+                              <div className='mt-auto space-y-1 border-t border-gray-3 pt-2 pr-6 text-[11px] text-gray-11'>
+                                {ticket.assigneeEmail ? (
+                                  <div
+                                    className='flex min-w-0 items-center gap-1.5'
+                                    title={`${t`Assignee`}: ${ticket.assigneeEmail}`}
+                                  >
+                                    <Icon
+                                      className='size-3 shrink-0 text-gray-9'
+                                      name='lucide:user-round-check'
+                                    />
+                                    <span className='truncate'>
+                                      {ticket.assigneeEmail}
+                                    </span>
+                                  </div>
+                                ) : null}
+                                {ticket.createdBy ? (
+                                  <div
+                                    className='flex min-w-0 items-center gap-1.5'
+                                    title={`${t`Created by`}: ${ticket.createdBy}`}
+                                  >
+                                    <Icon
+                                      className='size-3 shrink-0 text-gray-9'
+                                      name='lucide:user-pen'
+                                    />
+                                    <span className='truncate'>
+                                      {ticket.createdBy}
+                                    </span>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </button>
+                            {/* Lines up with the card's last line (bottom padding +
+                                half the icon), whatever lines the card has. The
+                                wrapper is flex so it is exactly the card's height. */}
+                            {ticket.workflowId && !insideOpenRequest ? (
+                              <div className='absolute right-1.5 bottom-1.5'>
+                                <Tooltip content={t`Open request`} position='top'>
+                                  <button
+                                    aria-label={t`Open request`}
+                                    className='inline-flex size-6 items-center justify-center rounded-md text-gray-10 transition-all hover:bg-gray-3 hover:text-primary-11 active:scale-95 disabled:cursor-wait'
+                                    type='button'
+                                    disabled={Boolean(
+                                      ticketRequest.loadingInstanceId,
+                                    )}
+                                    onClick={() => openTicketRequest(ticket)}
+                                  >
+                                    <Icon
+                                      className={cn(
+                                        'size-3.5',
+                                        ticketRequest.loadingInstanceId ===
+                                          String(ticket.workflowInstanceId) &&
+                                          'animate-spin',
+                                      )}
+                                      name={
+                                        ticketRequest.loadingInstanceId ===
+                                        String(ticket.workflowInstanceId)
+                                          ? 'lucide:loader-2'
+                                          : 'lucide:external-link'
+                                      }
+                                    />
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            ) : null}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : null}
                     {ticketData.referenceNumber && (
                       <div className='flex items-center justify-between gap-4'>
                         <span className='text-[13px] text-gray-10'>

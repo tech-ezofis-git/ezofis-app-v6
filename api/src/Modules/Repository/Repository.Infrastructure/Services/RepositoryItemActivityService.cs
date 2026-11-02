@@ -225,17 +225,96 @@ public sealed class RepositoryItemActivityService : IRepositoryItemActivityServi
         if (!timeline.HasTicket || timeline.LinkedWorkflowInstanceId is not Guid instanceId)
             return new RepositoryItemTicketResultDto(itemId, HasTicket: false);
 
-        return new RepositoryItemTicketResultDto(
-            itemId,
-            HasTicket: true,
-            new RepositoryItemTicketSummaryDto(
-                instanceId,
-                timeline.LinkedWorkflowId,
-                timeline.LinkedWorkflowReferenceNumber,
-                timeline.CurrentStage,
-                timeline.TicketStatus,
-                timeline.AssigneeEmail,
-                timeline.TicketHistory ?? Array.Empty<RepositoryItemTicketHistoryStepDto>()));
+        var main = new RepositoryItemTicketSummaryDto(
+            instanceId,
+            timeline.LinkedWorkflowId,
+            timeline.LinkedWorkflowReferenceNumber,
+            timeline.CurrentStage,
+            timeline.TicketStatus,
+            timeline.AssigneeEmail,
+            timeline.TicketHistory ?? Array.Empty<RepositoryItemTicketHistoryStepDto>());
+
+        // The same file can be sent to more than one workflow; list them all, main one first.
+        var tickets = new List<RepositoryItemTicketSummaryDto> { main };
+        await using var connection = new NpgsqlConnection(RequireConnectionString());
+        await connection.OpenAsync(cancellationToken);
+        foreach (var otherId in await FindAllLinkedInstanceIdsByItemAsync(connection, itemId, cancellationToken))
+        {
+            if (otherId == instanceId)
+                continue;
+            var other = await LoadWorkflowHistoryEventsAsync(connection, otherId, cancellationToken);
+            if (other.WorkflowId is null)
+                continue; // instance no longer exists
+            tickets.Add(new RepositoryItemTicketSummaryDto(
+                otherId,
+                other.WorkflowId,
+                other.ReferenceNumber,
+                other.CurrentStage,
+                other.TicketStatus ?? other.CurrentStage,
+                other.AssigneeEmail,
+                other.TicketHistory));
+        }
+
+        // Workflow name and who started it, for the ticket cards.
+        for (var i = 0; i < tickets.Count; i++)
+            tickets[i] = await WithInstanceInfoAsync(connection, tickets[i], cancellationToken);
+
+        return new RepositoryItemTicketResultDto(itemId, HasTicket: true, tickets[0], tickets);
+    }
+
+    private static async Task<RepositoryItemTicketSummaryDto> WithInstanceInfoAsync(
+        NpgsqlConnection connection,
+        RepositoryItemTicketSummaryDto ticket,
+        CancellationToken cancellationToken)
+    {
+        string? workflowName = null;
+        Guid? startedBy = null;
+        DateTime? createdAt = null;
+
+        if (ticket.WorkflowId is Guid workflowId)
+        {
+            var instancesTable = $"workflow_instances_{workflowId.ToString("N")[..8]}";
+            if (await WorkflowTableExistsAsync(connection, instancesTable, cancellationToken))
+            {
+                var sql = $"""
+                    SELECT workflow_name, started_by, created_at_utc
+                    FROM workflow.{instancesTable}
+                    WHERE id = @InstanceId
+                    LIMIT 1;
+                    """;
+                try
+                {
+                    await using var cmd = new NpgsqlCommand(sql, connection);
+                    cmd.Parameters.AddWithValue("@InstanceId", ticket.WorkflowInstanceId);
+                    await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                    if (await reader.ReadAsync(cancellationToken))
+                    {
+                        workflowName = reader.IsDBNull(0) ? null : reader.GetString(0);
+                        startedBy = reader.IsDBNull(1) ? null : reader.GetGuid(1);
+                        createdAt = reader.IsDBNull(2) ? null : reader.GetDateTime(2);
+                    }
+                }
+                catch (PostgresException)
+                {
+                    // Table shape may differ across tenants; fall back to the history below.
+                }
+            }
+        }
+
+        string? createdBy = null;
+        if (startedBy is Guid userId && userId != Guid.Empty)
+        {
+            var profile = await RepositoryUserNameResolver.ResolveProfileAsync(connection, userId, cancellationToken);
+            createdBy = RepositoryUserNameResolver.PreferEmail(profile?.Email, profile?.DisplayName, userId);
+        }
+
+        var first = ticket.History.Count > 0 ? ticket.History[0] : null;
+        return ticket with
+        {
+            WorkflowName = string.IsNullOrWhiteSpace(workflowName) ? null : workflowName.Trim(),
+            CreatedBy = createdBy ?? first?.ActorName,
+            CreatedAtUtc = createdAt ?? first?.OccurredAtUtc,
+        };
     }
 
     public async Task<RepositoryItemTimelineEventDto?> AddTimelineEventAsync(
@@ -935,6 +1014,70 @@ public sealed class RepositoryItemActivityService : IRepositoryItemActivityServi
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Every workflow instance this item is attached to (raise-ticket links and workflow
+    /// attachments in all workflows), newest first, without duplicates.
+    /// </summary>
+    private static async Task<IReadOnlyList<Guid>> FindAllLinkedInstanceIdsByItemAsync(
+        NpgsqlConnection connection,
+        Guid itemId,
+        CancellationToken cancellationToken)
+    {
+        const string tablesSql = """
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'workflow'
+              AND (table_name LIKE 'process_addon_%' OR table_name LIKE 'workflow_attachments_%');
+            """;
+
+        var tables = new List<string>();
+        await using (var cmd = new NpgsqlCommand(tablesSql, connection))
+        await using (var reader = await cmd.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+                tables.Add(reader.GetString(0));
+        }
+
+        var found = new Dictionary<Guid, DateTime>();
+        foreach (var table in tables)
+        {
+            var sql = table.StartsWith("process_addon_", StringComparison.OrdinalIgnoreCase)
+                ? $"""
+                    SELECT process_id, MAX(created_at)
+                    FROM workflow.{table}
+                    WHERE item_id = @ItemId AND is_deleted = false
+                    GROUP BY process_id;
+                    """
+                : $"""
+                    SELECT workflow_instance_id, MAX(created_at_utc)
+                    FROM workflow.{table}
+                    WHERE item_id = @ItemId AND is_deleted = false
+                    GROUP BY workflow_instance_id;
+                    """;
+
+            try
+            {
+                await using var findCmd = new NpgsqlCommand(sql, connection);
+                findCmd.Parameters.AddWithValue("@ItemId", itemId);
+                await using var reader = await findCmd.ExecuteReaderAsync(cancellationToken);
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    if (reader.IsDBNull(0) || reader.GetValue(0) is not Guid id || id == Guid.Empty)
+                        continue;
+                    var at = reader.IsDBNull(1) ? DateTime.MinValue : reader.GetDateTime(1);
+                    if (!found.TryGetValue(id, out var seen) || at > seen)
+                        found[id] = at;
+                }
+            }
+            catch (PostgresException)
+            {
+                // Table shape may differ across tenants; skip it.
+            }
+        }
+
+        return found.OrderByDescending(pair => pair.Value).Select(pair => pair.Key).ToList();
     }
 
     private async Task TryBackfillItemWorkflowInstanceIdAsync(
