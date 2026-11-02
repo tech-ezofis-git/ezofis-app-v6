@@ -147,7 +147,7 @@ public sealed class DocumentIntelligentAgentController : ControllerBase
                     ActivityCreditTypes.IntelligentUploadSubActivity,
                     $"Intelligent upload {request.FileName ?? request.FilePath ?? request.SessionId}",
                     ActivityCreditTypes.IntelligentUploadCredit,
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
             }
 
             return ToUnwrappedActionResult(result, DocumentIntelligentAgentClient.ResultPropertyName);

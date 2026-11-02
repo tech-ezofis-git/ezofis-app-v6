@@ -268,12 +268,12 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
         WORKFLOW_ID_NAMES,
         linkColumns.workflow,
       )
-      if (isFolderReport) {
-        mapped[FILE_ITEM_ID_KEY] = read(row, ITEM_ID_NAMES, linkColumns.item)
-        mapped[FILE_REPOSITORY_ID_KEY] =
-          read(row, REPOSITORY_ID_NAMES, linkColumns.repository) ||
-          reportRepositoryId
-      }
+      // Folder reports link every file; other reports (e.g. AI credits) link
+      // the rows that carry a file's item and repository ids.
+      mapped[FILE_ITEM_ID_KEY] = read(row, ITEM_ID_NAMES, linkColumns.item)
+      mapped[FILE_REPOSITORY_ID_KEY] =
+        read(row, REPOSITORY_ID_NAMES, linkColumns.repository) ||
+        (isFolderReport ? reportRepositoryId : '')
       return mapped
     })
   }, [
@@ -371,8 +371,9 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
           accessorFn: (row: Row) => row[key],
           renderCell: (row: Row) => {
             if (
-              isFolderReport &&
-              isFileNameColumn(col) &&
+              (isFolderReport
+                ? isFileNameColumn(col)
+                : isRequestNumberColumn(col) && !row[INSTANCE_ID_KEY]) &&
               row[FILE_ITEM_ID_KEY] &&
               row[FILE_REPOSITORY_ID_KEY]
             ) {

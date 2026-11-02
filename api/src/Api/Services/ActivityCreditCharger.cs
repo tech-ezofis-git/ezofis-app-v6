@@ -27,6 +27,7 @@ public sealed class ActivityCreditCharger : IActivityCreditCharger
         string subActivity,
         string remarks,
         int credit = 1,
+        string? identify = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -35,7 +36,7 @@ public sealed class ActivityCreditCharger : IActivityCreditCharger
                 new UpdateCreditCommand(
                     tenantId,
                     userId,
-                    new CreditUpdateRequest(activityType, subActivity, "repository.items", 0, remarks, credit)),
+                    new CreditUpdateRequest(activityType, subActivity, identify ?? "repository.items", 0, remarks, credit)),
                 cancellationToken);
             if (result.Status != CreditUpdateStatus.Success)
             {

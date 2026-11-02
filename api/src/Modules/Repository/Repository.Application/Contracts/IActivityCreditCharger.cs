@@ -13,11 +13,21 @@ public interface IActivityCreditCharger
         string subActivity,
         string remarks,
         int credit = 1,
+        string? identify = null,
         CancellationToken cancellationToken = default);
 }
 
 public static class ActivityCreditTypes
 {
+    /// <summary>
+    /// Ledger <c>identifyTable</c> for a repository file: <c>repository.items/{repositoryId}[/{itemId}]</c>,
+    /// so usage reports can name and open the file.
+    /// </summary>
+    public static string RepositoryItem(Guid? repositoryId, Guid? itemId = null) =>
+        repositoryId is null ? "repository.items"
+        : itemId is null ? $"repository.items/{repositoryId:D}"
+        : $"repository.items/{repositoryId:D}/{itemId:D}";
+
     public const string OcrActivity = "OCR Agent";
     public const string OcrSubActivity = "AI OCR";
     public const string IntelligentUploadActivity = "Intelligent Upload";

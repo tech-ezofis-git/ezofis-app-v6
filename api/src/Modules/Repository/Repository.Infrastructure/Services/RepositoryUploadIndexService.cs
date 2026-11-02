@@ -150,6 +150,7 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
             ActivityCreditTypes.OcrSubActivity,
             $"OCR: {filename ?? "document"}",
             ActivityCreditTypes.OcrCredit,
+            ActivityCreditTypes.RepositoryItem(repositoryId),
             cancellationToken);
 
         return new UploadForOcrResult(ocr.RawJson, ocr.OcrFieldList, ocr.OcrText);

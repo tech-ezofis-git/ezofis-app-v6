@@ -147,7 +147,7 @@ class ReportExecutionAgent:
         catalog = self._catalog
 
         async def load(since: datetime, until: datetime) -> list[tuple]:
-            return [(b.activity_type, b.sub_activity, b.credit, b.created_at, b.remarks)
+            return [(b.activity_type, b.sub_activity, b.credit, b.created_at, b.remarks, b.identify)
                     for b in await catalog.billing_credits(tenant_id, since, until)]
 
         return load

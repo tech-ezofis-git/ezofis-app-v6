@@ -31,6 +31,7 @@ class BillingCredit:
     credit: int
     created_at: datetime
     remarks: str
+    identify: str = ""  # identifyTable, e.g. repository.items/{repositoryId}/{itemId}
 
 
 @dataclass(frozen=True)
@@ -151,13 +152,13 @@ class CatalogStore:
                 for name in sorted(tables):
                     cur = await conn.execute(
                         sql.SQL(
-                            'SELECT "activityType", "subActivityType", COALESCE("credit", 0), "createdAt", "remarks" FROM {} '
+                            'SELECT "activityType", "subActivityType", COALESCE("credit", 0), "createdAt", "remarks", "identifyTable" FROM {} '
                             'WHERE "tenantId" = %s AND "createdAt" >= %s AND "createdAt" < %s '
                             """AND COALESCE("isDeleted", false) = false AND lower(COALESCE("activityType", '')) <> ALL(%s)"""
                         ).format(sql.Identifier("dbo", name)),
                         (tenant_id, since, until, list(_AP_ACTIVITY_TYPES)),
                     )
-                    out.extend(BillingCredit(a or "", s or "", int(c or 0), at, r or "") for a, s, c, at, r in await cur.fetchall())
+                    out.extend(BillingCredit(a or "", s or "", int(c or 0), at, r or "", i or "") for a, s, c, at, r, i in await cur.fetchall())
         except PgError as exc:
             logger.warning("Could not read V6 billing credits: %s", str(exc)[:300])
             return []
