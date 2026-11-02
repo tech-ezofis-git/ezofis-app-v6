@@ -104,6 +104,7 @@ import {
   type FolderPiiSettings,
   resolveFolderPiiSettings,
 } from '../utils/folderPiiSettings'
+import { getPiiRedactionLabels } from '@/api/v6/folder/pii'
 import { resolveShareContext } from '../utils/shareContextStorage'
 import {
   loadSignRequestFields,
@@ -747,6 +748,19 @@ export function DocumentDetailsView({
   >([])
   /** Repository id whose fields finished loading (success or failure). */
   const [repositoryFieldsLoadedFor, setRepositoryFieldsLoadedFor] = useState('')
+  /** Extra sensitive labels (e.g. "Opening Balance"); values next to / under them are masked. */
+  const [piiRedactLabels, setPiiRedactLabels] = useState<string[]>([])
+  useEffect(() => {
+    let cancelled = false
+    setPiiRedactLabels([])
+    if (!repositoryId) return
+    void getPiiRedactionLabels(repositoryId).then((labels) => {
+      if (!cancelled) setPiiRedactLabels(labels)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [repositoryId])
   useEffect(() => {
     let cancelled = false
     const loadFolderPii = async () => {
@@ -952,7 +966,11 @@ export function DocumentDetailsView({
   const folderPiiEnabled = folderPiiSettings.enabled
   // Folder security `piiRedaction` grants the original file. Everyone else sees the redacted preview.
   const canViewOriginalFile = permissions?.piiRedaction === true
-  const enablePiiRedaction = folderPiiEnabled && !canViewOriginalFile
+  // Side-panel metadata values: masked for everyone without the grant, whatever the file type.
+  const maskPiiMetadata = folderPiiEnabled && !canViewOriginalFile
+  // Files are redacted by the API (PDF, scans, images, Word, Excel, CSV, text); the viewer
+  // never masks them itself. Types the API cannot redact are refused to restricted users.
+  const enablePiiRedaction = false
   const piiLevel = folderPiiSettings.level
   // low = selected values only; medium = + regex; high = + NER
   const usePiiNer = enablePiiRedaction && piiLevel === 'high'
@@ -1903,11 +1921,11 @@ export function DocumentDetailsView({
 
   const isSelectedPiiLabel = useCallback(
     (label: string) => {
-      if (!enablePiiRedaction || piiFieldNameSet.size === 0) return false
+      if (!maskPiiMetadata || piiFieldNameSet.size === 0) return false
       const labelKey = normalizeFieldKey(label)
       return [...piiFieldNameSet].some((key) => fieldKeysMatch(key, labelKey))
     },
-    [enablePiiRedaction, piiFieldNameSet],
+    [maskPiiMetadata, piiFieldNameSet],
   )
 
   const piiBoostOrg =
@@ -1983,32 +2001,8 @@ export function DocumentDetailsView({
     setIsDownloading(true)
     setDownloadError('')
     try {
-      // Redacted preview → burn covers into a local file (no original API blob).
-      if (
-        enablePiiRedaction &&
-        previewUrl &&
-        (isPdfPreview || isImagePreview)
-      ) {
-        const redacted = await buildRedactedFileBlob({
-          boostOrg: piiBoostOrg,
-          enableNer: usePiiNer,
-          fileName: data?.fileName || 'document',
-          fileUrl: previewUrl,
-          knownOnly: piiKnownOnly,
-          knownValues: piiRedactValues,
-          mode: isPdfPreview ? 'pdf' : 'image',
-        })
-        const downloadUrl = URL.createObjectURL(redacted.blob)
-        const link = document.createElement('a')
-        link.href = downloadUrl
-        link.download = redacted.fileName
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-        URL.revokeObjectURL(downloadUrl)
-        return
-      }
-
+      // Always from the API: it returns the redacted file to users without the PII
+      // grant and the original otherwise, under the document's own file name.
       let blob: Blob | null = null
 
       if (inviteToken) {
@@ -2083,6 +2077,7 @@ export function DocumentDetailsView({
         fileUrl: previewUrl,
         knownOnly: piiKnownOnly,
         knownValues: piiRedactValues,
+        labels: piiRedactLabels,
         mode: isPdfPreview ? 'pdf' : 'image',
       })
       objectUrl = URL.createObjectURL(redacted.blob)
@@ -2486,7 +2481,12 @@ export function DocumentDetailsView({
             </div>
           ) : !compactActions ? (
             <>
-              {isEditableDocType && canEditDocument && !isGuestShare ? (
+              {/* Users who only get the redacted file cannot edit it: saving would overwrite
+                  the original with the masked copy. */}
+              {isEditableDocType &&
+              canEditDocument &&
+              !isGuestShare &&
+              !maskPiiMetadata ? (
                 <Tooltip content={t`Edit file`} position='bottom'>
                   <button
                     aria-label={t`Edit file`}
@@ -2950,6 +2950,7 @@ export function DocumentDetailsView({
                       piiBoostOrg={piiBoostOrg}
                       piiKnownOnly={piiKnownOnly}
                       probeTerms={fieldProbeTerms}
+                      redactLabels={piiRedactLabels}
                       redactValues={piiRedactValues}
                       signerEmail={currentUserEmail}
                       signerName={signerName}

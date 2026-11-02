@@ -21,6 +21,15 @@ const groupDetailsCache = new Map<
 >()
 const GROUP_CACHE_TTL_MS = 60_000
 
+/**
+ * Tenant admins can do everything except see the unredacted (original) PII preview; that
+ * still needs a folder policy granting PII Redaction, like for any other user.
+ */
+const ADMIN_PERMISSIONS: FolderPermissionFlags = {
+  ...FOLDER_PERMISSIONS_ALLOW_ALL,
+  piiRedaction: false,
+}
+
 const extractSecurityFolderId = (activeFolder?: string | null) => {
   if (!activeFolder) return null
   const decoded = decodeRepositoryNodeId(activeFolder)
@@ -103,21 +112,26 @@ export default function useFolderSecurityPermissions(
   // Start restrictive so denied actions (download, upload, …) do not flash on
   // while policies are still loading.
   const [permissions, setPermissions] = useState<FolderPermissionFlags>(
-    isTenantAdmin ? FOLDER_PERMISSIONS_ALLOW_ALL : FOLDER_PERMISSIONS_VIEW_ONLY,
+    isTenantAdmin ? ADMIN_PERMISSIONS : FOLDER_PERMISSIONS_VIEW_ONLY,
   )
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const repoId = String(repositoryId || '').trim()
-    if (!repoId || isTenantAdmin) {
-      setPermissions(FOLDER_PERMISSIONS_ALLOW_ALL)
+    if (!repoId) {
+      setPermissions(
+        isTenantAdmin ? ADMIN_PERMISSIONS : FOLDER_PERMISSIONS_ALLOW_ALL,
+      )
       setIsLoading(false)
       return
     }
 
     let cancelled = false
     setIsLoading(true)
-    setPermissions(FOLDER_PERMISSIONS_VIEW_ONLY)
+    // Admins keep full access while policies load; only the PII grant is read from them.
+    setPermissions(
+      isTenantAdmin ? ADMIN_PERMISSIONS : FOLDER_PERMISSIONS_VIEW_ONLY,
+    )
 
     void (async () => {
       const [res, groupsRes] = await Promise.all([
@@ -128,7 +142,9 @@ export default function useFolderSecurityPermissions(
 
       if (res.error || !res.data) {
         // Fail closed: do not expose download/upload when security cannot be read.
-        setPermissions(FOLDER_PERMISSIONS_VIEW_ONLY)
+        setPermissions(
+          isTenantAdmin ? ADMIN_PERMISSIONS : FOLDER_PERMISSIONS_VIEW_ONLY,
+        )
         setIsLoading(false)
         return
       }
@@ -175,7 +191,11 @@ export default function useFolderSecurityPermissions(
         userId,
       })
 
-      setPermissions(resolved)
+      setPermissions(
+        isTenantAdmin
+          ? { ...ADMIN_PERMISSIONS, piiRedaction: resolved.piiRedaction }
+          : resolved,
+      )
       setIsLoading(false)
     })()
 

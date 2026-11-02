@@ -166,6 +166,18 @@ public interface IRepositorySecurityService
         Guid userId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// True only when a folder security policy grants <paramref name="permission"/> to this user
+    /// (directly or via a group). No Admin bypass, no "no policies = allow": used for the
+    /// unredacted PII view, which must always be granted explicitly.
+    /// </summary>
+    Task<bool> HasExplicitPermissionAsync(
+        Guid repositoryId,
+        Guid tenantId,
+        Guid userId,
+        string permission,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Guid>> FilterAccessibleRepositoryIdsAsync(
         IReadOnlyList<Guid> repositoryIds,
         Guid tenantId,

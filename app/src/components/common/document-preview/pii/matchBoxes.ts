@@ -213,8 +213,9 @@ const isOversizedNonMrzArea = (area: RedactionArea) => {
     value.includes(',') ||
     value.trim().split(/\s+/).length >= 3
   if (isLongFieldValue) return area.height > 6
-  // Bank statement rows / bad text-layer widths — keep covers compact.
-  return area.width > 28 || area.height > 3.2
+  // Bank statement rows / bad text-layer widths — keep covers compact. Photos / scans
+  // filling the page have tall glyphs, so only reject clearly over-tall boxes.
+  return area.width > 28 || area.height > 6
 }
 
 /**
@@ -222,7 +223,7 @@ const isOversizedNonMrzArea = (area: RedactionArea) => {
  * Clamp only huge row-wide boxes; otherwise keep/expand so trailing ink
  * is fully covered (short estimates left last letters visible).
  */
-const tightenBoxToContent = (box: TextBox, matchedText: string): TextBox => {
+const tightenEstimatedBox = (box: TextBox, matchedText: string): TextBox => {
   const text = String(matchedText || box.text || '').trim()
   if (!text) return box
   const compactLen = Math.max(1, text.replace(/\s+/g, '').length)
@@ -259,6 +260,26 @@ const tightenBoxToContent = (box: TextBox, matchedText: string): TextBox => {
       100 - box.left,
       Math.max(box.width, estWidth) * 1.08 + 0.4,
     ),
+  }
+}
+
+/**
+ * Exact text-layer boxes: cover just the matched characters (proportional slice when the value
+ * is part of a longer text item) and never grow past the glyphs.
+ */
+const fitPreciseBox = (box: TextBox, matchedText: string): TextBox => {
+  const hay = String(box.text || '')
+  const needle = String(matchedText || '').trim()
+  if (!hay || !needle || hay.length <= needle.length) {
+    return { ...box, text: needle || hay }
+  }
+  const idx = hay.toLowerCase().indexOf(needle.toLowerCase())
+  if (idx < 0) return { ...box, text: needle }
+  return {
+    ...box,
+    left: box.left + (box.width * idx) / hay.length,
+    text: needle,
+    width: (box.width * needle.length) / hay.length,
   }
 }
 
@@ -333,7 +354,11 @@ export const matchPiiToBoxes = (
   boxes: TextBox[],
   piiValues: string[],
   visibleChars = 3,
+  /** Boxes are exact PDF text positions (not OCR): fit covers to the glyphs. */
+  precise = false,
 ): RedactionArea[] => {
+  const tightenBoxToContent = (box: TextBox, matchedText: string): TextBox =>
+    precise ? fitPreciseBox(box, matchedText) : tightenEstimatedBox(box, matchedText)
   // Still cover MRZ / passport boxes when detectPii returned nothing (image PDFs).
   if (!boxes.length) return []
   if (!piiValues.length) {
@@ -510,8 +535,11 @@ export const matchPiiToBoxes = (
           sliced = sliceBoxToDigits(box, hayRaw, needleDigits)
         }
 
+        const exactValue = String(value).trim()
         const coverText = coversMostOfBox
-          ? hayRaw || value
+          ? precise && hayRaw.toLowerCase().includes(exactValue.toLowerCase())
+            ? exactValue
+            : hayRaw || value
           : String(sliced.text || value)
         const tightened = looksLikeMrz(String(sliced.text || hayRaw))
           ? sliced
@@ -691,7 +719,9 @@ export const matchPiiToBoxes = (
                 needleAlnum.length >= 6 &&
                 joinedAlnum === needleAlnum) ||
               (needle.includes('<') &&
-                (joinedTight.includes(needle) || needle.includes(joinedTight)))
+                (joinedTight.includes(needle) ||
+                  // Names inside the MRZ (SHARMA, PRIYA) — not short codes like "P" / "BGD".
+                  (joinedTight.length >= 4 && needle.includes(joinedTight))))
             ) {
               const merged = mergeBoxes(run)
               areas.push({
@@ -758,9 +788,10 @@ export const matchPiiToBoxes = (
   const kept: RedactionArea[] = []
   for (const area of sorted) {
     const fillers = (String(area.sourceValue || '').match(/</g) || []).length
+    // Exact boxes were already fitted; re-tightening grew estimated covers twice.
     const normalized =
-      fillers >= 3 || /^P</i.test(String(area.sourceValue || ''))
-        ? area
+      precise || fillers >= 3 || /^P</i.test(String(area.sourceValue || ''))
+        ? { ...area, precise }
         : {
             ...area,
             ...tightenBoxToContent(area, area.sourceValue),
