@@ -15,6 +15,7 @@ import { useReportBuilderPreviewMutation } from '../../hooks/useReportBuilderApi
 import useReportSourceFields from '../../hooks/useReportSourceFields'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import { createDefaultFieldSetting } from '../../types'
+import { hasStatusColors } from '../../utils/agentReport'
 import { isInputControlField } from '../../utils/fieldFilter'
 import { sampleTypeForQuestionType } from '../../utils/previewSampleData'
 import FieldsPreviewTable from './FieldsPreviewTable'
@@ -280,8 +281,7 @@ const FieldsStepFormSource = () => {
                     const setting = settingFor(field)
                     const isExpanded = expandedFieldId === field.id
                     const hasHighlight =
-                      setting.colType === 'status' &&
-                      Boolean(setting.statusRules?.length)
+                      setting.colType === 'status' && hasStatusColors(setting)
 
                     return (
                       <motion.li

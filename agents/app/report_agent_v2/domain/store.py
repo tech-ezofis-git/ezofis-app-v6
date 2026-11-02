@@ -351,7 +351,8 @@ async def update_highlights(
         for col in spec.get(lst) or []:
             if isinstance(col, dict) and col.get("key") in highlights:
                 rule = highlights[col["key"]]
-                col["highlight"] = rule if rule and rule.get("rules") else None
+                # A default color alone (no rules) still colors the whole column.
+                col["highlight"] = rule if rule and (rule.get("rules") or rule.get("default")) else None
     async with conn.transaction():
         await conn.execute(
             """UPDATE reporting."ReportAiDefinitions"

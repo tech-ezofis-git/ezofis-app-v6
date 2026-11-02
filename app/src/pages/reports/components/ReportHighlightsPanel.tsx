@@ -13,7 +13,10 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
 import StatusRulesEditor from '@/pages/report-builder/components/steps/StatusRulesEditor'
 import { useSaveReportHighlightsMutation } from '@/pages/report-builder/hooks/useReportBuilderApi'
-import { fieldSettingToHighlight } from '@/pages/report-builder/utils/agentReport'
+import {
+  fieldSettingToHighlight,
+  hasStatusColors,
+} from '@/pages/report-builder/utils/agentReport'
 
 interface ColumnRules {
   statusRules: ReportStatusRule[]
@@ -75,7 +78,10 @@ const ReportHighlightsPanel = ({ report, onClose }: Props) => {
   const [dirty, setDirty] = useState(false)
   const selectedKey = selected ? String(selected.id) : ''
   const highlightedNames = columns
-    .filter((column) => rules[String(column.id)]?.statusRules.length)
+    .filter((column) => {
+      const columnRules = rules[String(column.id)]
+      return columnRules && hasStatusColors(columnRules)
+    })
     .map((column) => column.name)
     .join(', ')
 
