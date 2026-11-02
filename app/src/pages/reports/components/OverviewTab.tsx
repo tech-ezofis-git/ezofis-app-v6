@@ -835,7 +835,9 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
         />
 
         {columnTotals.length > 0 && filteredRows.length > 0 && (
-          <div className='flex shrink-0 flex-col gap-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
+          // Label column + chips column, so both rows' chips start at the same edge.
+          <div className='grid shrink-0 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
+            <span className='text-12 text-gray-11'>{t`Totals:`}</span>
             <div className='flex flex-wrap items-center gap-2'>
               {columnTotals.map(({ label, total }) => (
                 <span
@@ -848,20 +850,24 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               ))}
             </div>
             {totalsBreakdown && totalsBreakdown.items.length > 1 && (
-              <div className='flex flex-wrap items-center gap-2 text-12 text-gray-11'>
-                <span>{t`${totalsBreakdown.measure} by ${totalsBreakdown.by}:`}</span>
-                {totalsBreakdown.items.map(({ name, total }) => (
-                  <span
-                    key={name}
-                    className='inline-flex items-center gap-1 rounded-full border border-gray-4 px-2.5 py-0.5'
-                  >
-                    {name}
-                    <span className='font-semibold text-gray-13'>
-                      {formatTotal(total)}
+              <>
+                <span className='text-12 text-gray-11'>
+                  {t`${totalsBreakdown.measure} by ${totalsBreakdown.by}:`}
+                </span>
+                <div className='flex flex-wrap items-center gap-2 text-12 text-gray-11'>
+                  {totalsBreakdown.items.map(({ name, total }) => (
+                    <span
+                      key={name}
+                      className='inline-flex items-center gap-1 rounded-full border border-gray-4 px-2.5 py-0.5'
+                    >
+                      {name}
+                      <span className='font-semibold text-gray-13'>
+                        {formatTotal(total)}
+                      </span>
                     </span>
-                  </span>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
