@@ -1,7 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import type { ReportSpec } from '@/api/v6/reportAgent'
 import type { Row } from '@/components/base/data-table/types'
 import type {
@@ -370,6 +370,23 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
           size: 180,
           accessorFn: (row: Row) => row[key],
           renderCell: (row: Row) => {
+            // A highlighted link cell (file name, Req No) keeps its link,
+            // inside the highlight color.
+            const status =
+              setting?.colType === 'status'
+                ? resolveFieldStatus(
+                    setting,
+                    row as unknown as Record<string, string>,
+                  )
+                : null
+            const highlighted = (content: ReactNode) =>
+              status ? (
+                <StatusPill color={status.color} label={status.label}>
+                  {content}
+                </StatusPill>
+              ) : (
+                content
+              )
             if (
               (isFolderReport
                 ? isFileNameColumn(col)
@@ -377,7 +394,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               row[FILE_ITEM_ID_KEY] &&
               row[FILE_REPOSITORY_ID_KEY]
             ) {
-              return (
+              return highlighted(
                 <button
                   className='cursor-pointer truncate font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70'
                   type='button'
@@ -401,7 +418,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
             ) {
               const isOpening =
                 requestOverview.loadingInstanceId === row[INSTANCE_ID_KEY]
-              return (
+              return highlighted(
                 <button
                   className='inline-flex cursor-pointer items-center gap-1.5 font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70 disabled:cursor-wait'
                   disabled={Boolean(requestOverview.loadingInstanceId)}
@@ -428,10 +445,6 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               )
             }
             if (setting?.colType === 'status') {
-              const status = resolveFieldStatus(
-                setting,
-                row as unknown as Record<string, string>,
-              )
               return status ? (
                 <StatusPill color={status.color} label={status.label} />
               ) : (
