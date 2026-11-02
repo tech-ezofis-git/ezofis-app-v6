@@ -1,5 +1,5 @@
 // @/pages/requests/hooks/useComments.ts
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { workflowsApiV6 } from '@/api/v6/workflows'
 
 export type CommentItem = {
@@ -26,9 +26,20 @@ export function useComments(
   const [data, setData] = useState<CommentItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<any>(null)
+  // The ids settle in steps while the request loads (processId first, then
+  // workflowInstanceId once agent data arrives), and agent refreshes refetch
+  // on top of that. Only the latest call may write, so a slower stale or
+  // failed response can't replace the list with [].
+  const requestSeqRef = useRef(0)
+  const requestKeyRef = useRef('')
 
   const refetch = useCallback(async () => {
     if (!workflowId || !instanceId) return
+    const seq = ++requestSeqRef.current
+    const key = `${workflowId}:${instanceId}`
+    const keyChanged = requestKeyRef.current !== key
+    requestKeyRef.current = key
+    if (keyChanged) setData([])
     setIsLoading(true)
     setError(null)
 
@@ -37,6 +48,7 @@ export function useComments(
         workflowId,
         instanceId,
       )
+      if (seq !== requestSeqRef.current) return
       if (res.error) {
         throw new Error(res.error)
       }
@@ -75,11 +87,12 @@ export function useComments(
 
       setData(mapped)
     } catch (e) {
+      if (seq !== requestSeqRef.current) return
+      // Keep the last good list for this request on a failed refresh.
       console.error('Error fetching V6 instance comments:', e)
       setError(e)
-      setData([])
     } finally {
-      setIsLoading(false)
+      if (seq === requestSeqRef.current) setIsLoading(false)
     }
   }, [workflowId, instanceId])
 

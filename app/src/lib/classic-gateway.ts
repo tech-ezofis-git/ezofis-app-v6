@@ -77,7 +77,7 @@ export const getV5ApiBaseUrl = () => {
     }
   }
 
-  return 'https://eztapi.ezofis.com/api'
+  return 'https://api.ezofis.com/api'
 }
 
 export const setClassicRuntimeCookie = () => {

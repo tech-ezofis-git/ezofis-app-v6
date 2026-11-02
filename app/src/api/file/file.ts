@@ -34,7 +34,7 @@ const viewBinaryV6 = async (
       cacheBust === undefined || cacheBust === null || cacheBust === ''
         ? ''
         : `&_=${encodeURIComponent(String(cacheBust))}`
-    const { data, status } = await axiosV6.get(
+    const { data, headers, status } = await axiosV6.get(
       `/repositories/${repositoryId}/items/${itemId}/file?disposition=${disposition}${bust}`,
       {
         headers: cacheBust
@@ -45,6 +45,9 @@ const viewBinaryV6 = async (
     )
     if (status !== 200) throw new Error('invalid status code')
     response.data = data
+    // The API already burned the PII covers into this file.
+    response.piiRedacted =
+      String(headers?.['x-pii-redacted'] || '').toLowerCase() === 'true'
   } catch (error: any) {
     console.error(error)
     response.error = error?.message || 'Error in fetching file binary'

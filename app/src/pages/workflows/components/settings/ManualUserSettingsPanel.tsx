@@ -16,10 +16,15 @@ import {
   getNodeToolType,
   NODE_TOOL_TYPE,
 } from '@/pages/workflows/utils/nodeToolTypes'
+import {
+  isEndNode,
+  isSlaEscalationTarget,
+} from '@/pages/workflows/utils/slaSettings'
 import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
+import SLAConfiguration from './common/SLAConfiguration'
 import ChecklistTab from './manual-user/ChecklistTab'
 import GeneralTab from './manual-user/GeneralTab'
 import SecurityTab from './manual-user/SecurityTab'
@@ -54,6 +59,7 @@ export default function ManualUserSettingsPanel({
   const { setNodes } = useReactFlow()
   const liveNodes = useNodes()
   const formId = useWorkflowStore((state) => state.form)
+  const showSlaErrors = useWorkflowStore((state) => state.showSlaErrors)
 
   const { data: userResponse } = useQuery({
     queryFn: getUsers,
@@ -162,6 +168,22 @@ export default function ManualUserSettingsPanel({
         .map((n) => ({
           id: n.id,
           name: String((n.data as any)?.label || 'Manual User'),
+        })),
+    [liveNodes, currentNode?.id],
+  )
+
+  // Other stages on the canvas a block SLA can escalate to; END closes the ticket.
+  const slaStageOptions: Option[] = useMemo(
+    () =>
+      liveNodes
+        .filter(
+          (n) => n.id !== currentNode?.id && isSlaEscalationTarget(n.data),
+        )
+        .map((n) => ({
+          id: n.id,
+          name: isEndNode(n.data)
+            ? `${String((n.data as any)?.label || 'End')} (closes the ticket)`
+            : String((n.data as any)?.label || 'Manual User'),
         })),
     [liveNodes, currentNode?.id],
   )
@@ -351,6 +373,25 @@ export default function ManualUserSettingsPanel({
           onToggle={() => toggleSection('checklist')}
         >
           <ChecklistTab nodeData={nodeData} updateNodeData={updateNodeData} />
+        </SettingsSection>
+
+        <SettingsSection
+          icon='lucide:timer'
+          isOpen={(openSections.sla ?? false) || showSlaErrors}
+          title='SLA'
+          variant='premium'
+          onToggle={() => toggleSection('sla')}
+        >
+          <SLAConfiguration
+            key={currentNode?.id}
+            scope='block'
+            showErrors={showSlaErrors}
+            value={nodeData.SlaSettings ?? null}
+            workflowStages={slaStageOptions}
+            onChange={(value) =>
+              updateNodeData('SlaSettings', value ?? undefined)
+            }
+          />
         </SettingsSection>
 
         {isSubWorkflowEnabled() && (

@@ -75,6 +75,7 @@ import AgentSummaryBoxes, {
   formatAgentDisplayLabel,
   type AgentBlock,
   getAgentResponseTabs,
+  isShownInRequestPage,
 } from './AgentSummaryBoxes'
 import AttachmentPreviewPanel from './AttachmentPreviewPanel'
 import AttachmentSplitView from './AttachmentSplitView'
@@ -119,10 +120,6 @@ const overlayIndexingMetadata = (
   }
   return next
 }
-
-/** Workflow block setting "Show agent on request page"; unset means shown. */
-const isShownInRequestPage = (block: AgentBlock) =>
-  block.settings?.showInRequestPage !== false
 
 interface Props {
   // Fetched once at the Request level (so the header's attachment count and

@@ -76,6 +76,8 @@ builder.Services.AddScoped<IUserCreationDraftService, UserCreationDraftService>(
 builder.Services.AddScoped<IReportBuilderDraftService, ReportBuilderDraftService>();
 builder.Services.AddScoped<IDashboardSchemaService, DashboardSchemaService>();
 builder.Services.AddScoped<IFtlCatalogService, FtlCatalogService>();
+builder.Services.AddHttpClient<IPiiRedactedFileService, PiiRedactedFileService>(client =>
+    client.Timeout = TimeSpan.FromMinutes(3));
 builder.Services.Configure<TenantPilotUserOptions>(
     builder.Configuration.GetSection(TenantPilotUserOptions.SectionName));
 builder.Services.AddScoped<ITenantPilotUserProvisioningService, TenantPilotUserProvisioningService>();
@@ -337,7 +339,9 @@ builder.Services.AddCors(options =>
     {
         policy.AllowAnyOrigin()
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            // The viewer skips its own masking when the file was redacted on the server.
+            .WithExposedHeaders("X-Pii-Redacted");
     });
 });
 

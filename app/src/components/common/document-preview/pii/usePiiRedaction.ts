@@ -9,6 +9,8 @@ type UsePiiRedactionArgs = {
   fileUrl?: string | null
   knownOnly?: boolean
   knownValues?: string[]
+  /** Extra sensitive labels: mask the values next to / below them. */
+  labels?: string[]
   mode?: 'pdf' | 'image' | 'word' | string
   visibleChars?: number
 }
@@ -24,6 +26,7 @@ export const usePiiRedaction = ({
   fileUrl,
   knownOnly = false,
   knownValues = [],
+  labels = [],
   mode,
   visibleChars = 3,
 }: UsePiiRedactionArgs) => {
@@ -32,6 +35,7 @@ export const usePiiRedaction = ({
   const runIdRef = useRef(0)
 
   const knownKey = knownValues.join('\u0001')
+  const labelKey = labels.join('\u0001')
 
   useEffect(() => {
     if (!enable || !fileUrl || (mode !== 'pdf' && mode !== 'image')) {
@@ -53,6 +57,7 @@ export const usePiiRedaction = ({
           fileUrl,
           knownOnly,
           knownValues,
+          labels,
           mode,
           signal: controller.signal,
           visibleChars,
@@ -79,6 +84,7 @@ export const usePiiRedaction = ({
     fileUrl,
     knownKey,
     knownOnly,
+    labelKey,
     mode,
     visibleChars,
   ])

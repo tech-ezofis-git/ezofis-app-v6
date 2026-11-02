@@ -11,12 +11,17 @@ type RedactionOverlayProps = {
 const padArea = (area: RedactionArea) => {
   const fillers = (String(area.sourceValue || '').match(/</g) || []).length
   const isMrz = fillers >= 3 || /^P</i.test(String(area.sourceValue || ''))
-  const padX = isMrz
-    ? 0.35
-    : Math.max(0.45, Math.min(1.4, area.width * 0.1 + 0.25))
-  const padY = isMrz
+  // Exact text-layer boxes: a hairline only, so covers stay on the text.
+  const padX = area.precise
     ? 0.15
-    : Math.max(0.12, Math.min(0.4, area.height * 0.18))
+    : isMrz
+      ? 0.35
+      : Math.max(0.45, Math.min(1.4, area.width * 0.1 + 0.25))
+  const padY = area.precise
+    ? 0.08
+    : isMrz
+      ? 0.15
+      : Math.max(0.12, Math.min(0.4, area.height * 0.18))
   const left = Math.max(0, area.left - padX)
   const top = Math.max(0, area.top - padY)
   const right = Math.min(100, area.left + area.width + padX)
