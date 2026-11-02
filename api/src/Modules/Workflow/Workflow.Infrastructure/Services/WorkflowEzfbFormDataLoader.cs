@@ -29,10 +29,23 @@ public sealed class WorkflowEzfbFormDataLoader : SaaSApp.Workflow.Application.Co
         _tenantContext = tenantContext;
     }
 
-    public async Task<string?> LoadFormDataJsonAsync(
+    public Task<string?> LoadFormDataJsonAsync(
         string formId,
         Guid formEntryId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        LoadAsync(formId, formEntryId, deleted: false, cancellationToken);
+
+    public Task<string?> LoadDeletedFormDataJsonAsync(
+        string formId,
+        Guid formEntryId,
+        CancellationToken cancellationToken = default) =>
+        LoadAsync(formId, formEntryId, deleted: true, cancellationToken);
+
+    private async Task<string?> LoadAsync(
+        string formId,
+        Guid formEntryId,
+        bool deleted,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(formId) || formEntryId == Guid.Empty)
             return null;
@@ -43,14 +56,15 @@ public sealed class WorkflowEzfbFormDataLoader : SaaSApp.Workflow.Application.Co
 
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
-        return await LoadFormDataJsonAsync(connection, formId, formEntryId, cancellationToken);
+        return await LoadFormDataJsonAsync(connection, formId, formEntryId, cancellationToken, deleted);
     }
 
     internal static async Task<string?> LoadFormDataJsonAsync(
         NpgsqlConnection connection,
         string rawFormId,
         Guid formEntryId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool deleted = false)
     {
         if (string.IsNullOrWhiteSpace(rawFormId) || formEntryId == Guid.Empty)
             return null;
@@ -117,10 +131,11 @@ public sealed class WorkflowEzfbFormDataLoader : SaaSApp.Workflow.Application.Co
         var selectList = string.Join(", ", selectColumns.Select(c =>
             SystemColumns.Contains(c) ? c : $"\"{EscapeColumn(c)}\""));
 
+        var deletedFilter = deleted ? "is_deleted = true" : "(is_deleted = false OR is_deleted IS NULL)";
         var dataSql = $@"
 SELECT {selectList}
 FROM dbo.""{tableName}""
-WHERE item_id = @ItemId AND (is_deleted = false OR is_deleted IS NULL);";
+WHERE item_id = @ItemId AND {deletedFilter};";
 
         await using var dataCmd = new NpgsqlCommand(dataSql, connection);
         dataCmd.Parameters.AddWithValue("@ItemId", formEntryId);

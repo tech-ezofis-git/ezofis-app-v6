@@ -316,6 +316,12 @@ public sealed class WorkflowEndSyncServiceTests
             Guid formEntryId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(json);
+
+        public Task<string?> LoadDeletedFormDataJsonAsync(
+            string formId,
+            Guid formEntryId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
     }
 
     private sealed class RecordingFormDataLoader : IWorkflowEzfbFormDataLoader
@@ -330,6 +336,12 @@ public sealed class WorkflowEndSyncServiceTests
             Calls++;
             return Task.FromResult<string?>(null);
         }
+
+        public Task<string?> LoadDeletedFormDataJsonAsync(
+            string formId,
+            Guid formEntryId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
     }
 
     private sealed class CapturingFormEntryService : IFormEntryService
@@ -364,6 +376,14 @@ public sealed class WorkflowEndSyncServiceTests
             throw new NotImplementedException();
 
         public Task<FormEntryDeleteResult> DeleteEntryAsync(
+            string formId, Guid entryId, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public Task<FormEntryRestoreResult> RestoreEntryAsync(
+            string formId, Guid entryId, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public Task<FormEntryPermanentDeleteResult> PermanentlyDeleteEntryAsync(
             string formId, Guid entryId, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 

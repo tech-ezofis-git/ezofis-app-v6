@@ -101,3 +101,11 @@ export const buildEntrySearchPayload = ({
   itemsPerPage,
   mode: 'browse',
 })
+
+/** Lists soft-deleted entries for the Trash tab. */
+export const buildEntryTrashPayload = (itemsPerPage: number) => ({
+  currentPage: 1,
+  includeFormJson: true,
+  itemsPerPage,
+  mode: 'recyclebin',
+})

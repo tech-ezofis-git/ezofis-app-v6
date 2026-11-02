@@ -1,6 +1,10 @@
 import { useLingui } from '@lingui/react/macro'
 import { Divider, Rating, Skeleton, Stack, Tooltip } from '@mantine/core'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
@@ -13,6 +17,7 @@ import { getUsers } from '@/api/v6/user'
 import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 // DataTable and pagination imports
@@ -92,6 +97,7 @@ import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidatio
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import { isAdminRole } from '@/utils/sessionPermissions'
 import { formatTableCellValue } from '@/utils/formatTableCellValue'
 import {
   matchesCategoryFilterValue,
@@ -101,6 +107,7 @@ import FormEntryTableField from './components/FormEntryTableField'
 import GenericFormImportModal from './components/GenericFormImportModal'
 import {
   buildEntrySearchPayload,
+  buildEntryTrashPayload,
   resolveEntryColumn,
 } from './utils/entrySearchFilter'
 
@@ -1365,24 +1372,102 @@ const FormLineItemsEditor = ({
   )
 }
 
+// Maps an API entry row to the shape the table and the entry form use
+const parseFetchedEntry = (e: any) => {
+  const metadataKeys = [
+    'itemId',
+    'item_id',
+    'entryId',
+    'id',
+    'uid',
+    'createdAt',
+    'modifiedAt',
+    'createdBy',
+    'modifiedBy',
+    'isDeleted',
+    'todayTask',
+    'isMarked',
+    'ValidFrom',
+    'ValidTo',
+  ]
+  // Extract flat dynamic field values from API item root into values object
+  let values: Record<string, any> = {}
+  if (e.values) {
+    if (typeof e.values === 'string') {
+      try {
+        values = JSON.parse(e.values)
+      } catch (err) {
+        console.error('Failed to parse entry values:', err)
+      }
+    } else {
+      values = e.values
+    }
+  } else {
+    Object.keys(e).forEach((key) => {
+      if (!metadataKeys.includes(key)) {
+        values[key] = e[key]
+      }
+    })
+  }
+
+  const rawEntryId = e.itemId ?? e.item_id ?? e.entryId ?? e.id
+
+  const store = authUserStore.getState()
+  const loggedInUserEmail =
+    store.session?.email ||
+    store.user?.email ||
+    store.session?.name ||
+    store.user?.name ||
+    ''
+
+  const rawCreatedBy =
+    e.createdBy ??
+    e.CreatedBy ??
+    e.created_by ??
+    e.createdUser ??
+    e.user ??
+    e.userId ??
+    e.createdById
+
+  const createdBy =
+    rawCreatedBy && rawCreatedBy !== 'unknown@ezofis.com'
+      ? rawCreatedBy
+      : loggedInUserEmail || 'unknown@ezofis.com'
+
+  return {
+    createdAt: e.createdAt || e.CreatedDate || new Date().toISOString(),
+    createdBy,
+    entryId: rawEntryId,
+    id: rawEntryId
+      ? `Entry #${rawEntryId}`
+      : e.id || e.uid || `Entry #${Math.random()}`,
+    isDeleted: !!e.isDeleted,
+    values,
+  }
+}
+
 const FormEntriesPage = () => {
   const { t } = useLingui()
   const { formId } = useParams({ strict: false }) as any
   const navigate = useNavigate()
   const deepLinkSearch: any = useSearch({ strict: false })
+  const queryClient = useQueryClient()
 
   const [entries, setEntries] = useState<any[]>([])
-  const [trashEntries, setTrashEntries] = useState<any[]>([])
   const [tabValue, setTabValue] = useState<string>('Browse')
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null)
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, any>>({})
   const [isSaving, setIsSaving] = useState(false)
-  const [deletingEntry, setDeletingEntry] = useState<{
-    id: string
-    type: 'trash' | 'permanent'
-  } | null>(null)
+  const [deletingEntry, setDeletingEntry] = useState<any | null>(null)
+  const [permanentlyDeletingEntry, setPermanentlyDeletingEntry] = useState<
+    any | null
+  >(null)
+  const [isDeletingEntry, setIsDeletingEntry] = useState(false)
+  const canPermanentlyDelete = isAdminRole(
+    authUserStore((state) => state.session?.role),
+  )
 
   // Pagination states
   const [page, setPage] = useState(1)
@@ -1677,85 +1762,41 @@ const FormEntriesPage = () => {
   // Synchronize fetched entries from backend with component state
   useEffect(() => {
     if (fetchedEntries && Array.isArray(fetchedEntries)) {
-      const parsedEntries = fetchedEntries.map((e: any) => {
-        const metadataKeys = [
-          'itemId',
-          'item_id',
-          'entryId',
-          'id',
-          'uid',
-          'createdAt',
-          'modifiedAt',
-          'createdBy',
-          'modifiedBy',
-          'isDeleted',
-          'todayTask',
-          'isMarked',
-          'ValidFrom',
-          'ValidTo',
-        ]
-        // Extract flat dynamic field values from API item root into values object
-        let values: Record<string, any> = {}
-        if (e.values) {
-          if (typeof e.values === 'string') {
-            try {
-              values = JSON.parse(e.values)
-            } catch (err) {
-              console.error('Failed to parse entry values:', err)
-            }
-          } else {
-            values = e.values
-          }
-        } else {
-          Object.keys(e).forEach((key) => {
-            if (!metadataKeys.includes(key)) {
-              values[key] = e[key]
-            }
-          })
-        }
-
-        const rawEntryId = e.itemId ?? e.item_id ?? e.entryId ?? e.id
-
-        const store = authUserStore.getState()
-        const loggedInUserEmail =
-          store.session?.email ||
-          store.user?.email ||
-          store.session?.name ||
-          store.user?.name ||
-          ''
-
-        const rawCreatedBy =
-          e.createdBy ??
-          e.CreatedBy ??
-          e.created_by ??
-          e.createdUser ??
-          e.user ??
-          e.userId ??
-          e.createdById
-
-        const createdBy =
-          rawCreatedBy && rawCreatedBy !== 'unknown@ezofis.com'
-            ? rawCreatedBy
-            : loggedInUserEmail || 'unknown@ezofis.com'
-
-        return {
-          createdAt: e.createdAt || e.CreatedDate || new Date().toISOString(),
-          createdBy,
-          entryId: rawEntryId,
-          id: rawEntryId
-            ? `Entry #${rawEntryId}`
-            : e.id || e.uid || `Entry #${Math.random()}`,
-          isDeleted: !!e.isDeleted,
-          values,
-        }
-      })
-
-      const active = parsedEntries.filter((e: any) => !e.isDeleted)
-      const trashed = parsedEntries.filter((e: any) => e.isDeleted)
-      setEntries(active)
-      setTrashEntries(trashed)
+      setEntries(
+        fetchedEntries.map(parseFetchedEntry).filter((e: any) => !e.isDeleted),
+      )
     }
   }, [fetchedEntries])
+
+  // Soft-deleted entries, loaded when the Trash tab is opened
+  const {
+    data: fetchedTrashEntries,
+    isError: isTrashError,
+    isFetching: isTrashFetching,
+    refetch: refetchTrashEntries,
+  } = useQuery({
+    enabled: !!formId && !isLoading && !isDraftForm && tabValue === 'Trash',
+    queryKey: ['forms', 'entries', formId, 'trash'],
+    queryFn: async () => {
+      const { data, error } = await formApi.searchFormEntries(
+        formId,
+        buildEntryTrashPayload(500),
+      )
+      if (error) throw new Error(error)
+      return Array.isArray(data?.entries) ? data.entries : []
+    },
+  })
+
+  const trashEntries = useMemo<any[]>(
+    () => (fetchedTrashEntries || []).map(parseFetchedEntry),
+    [fetchedTrashEntries],
+  )
+
+  useEffect(() => {
+    if (isTrashError) {
+      showToast({ message: t`Failed to load Trash`, variant: 'error' })
+    }
+  }, [isTrashError, t])
 
   const handleFieldChange = (fieldId: string, val: any) => {
     setEditValues((prev) => {
@@ -1933,28 +1974,70 @@ const FormEntriesPage = () => {
     }
   }
 
-  const handleMoveToTrash = (entryId: string) => {
-    const item = entries.find((e) => e.id === entryId)
-    if (item) {
-      setEntries((prev) => prev.filter((e) => e.id !== entryId))
-      setTrashEntries((prev) => [{ ...item, isDeleted: true }, ...prev])
-      showToast({ message: 'Entry moved to Trash', variant: 'success' })
-      if (selectedEntry?.id === entryId) closeSidebar()
+  const handleMoveToTrash = async () => {
+    if (!deletingEntry) return
+    setIsDeletingEntry(true)
+    const { error } = await formApi.deleteFormEntry(
+      formId,
+      String(deletingEntry.entryId),
+    )
+    setIsDeletingEntry(false)
+    if (error) {
+      setDeletingEntry(null)
+      showToast({ message: t`Failed to delete entry`, variant: 'error' })
+      return
     }
+    showToast({ message: t`Entry moved to Trash`, variant: 'success' })
+    if (selectedEntry?.id === deletingEntry.id) closeSidebar()
+    // The list reload takes a few seconds, so drop the row straight away
+    setEntries((prev) => prev.filter((e) => e.id !== deletingEntry.id))
+    setDeletingEntry(null)
+    queryClient.invalidateQueries({ queryKey: ['forms', 'entries', formId] })
   }
 
-  const handleRestore = (entryId: string) => {
-    const item = trashEntries.find((e) => e.id === entryId)
-    if (item) {
-      setTrashEntries((prev) => prev.filter((e) => e.id !== entryId))
-      setEntries((prev) => [...prev, { ...item, isDeleted: false }])
-      showToast({ message: 'Entry restored successfully', variant: 'success' })
-    }
+  const removeFromTrashList = (entry: any) => {
+    queryClient.setQueryData(
+      ['forms', 'entries', formId, 'trash'],
+      (rows: any[] | undefined) =>
+        rows?.filter((e) => parseFetchedEntry(e).entryId !== entry.entryId),
+    )
+    queryClient.invalidateQueries({ queryKey: ['forms', 'entries', formId] })
   }
 
-  const handlePermanentDelete = (entryId: string) => {
-    setTrashEntries((prev) => prev.filter((e) => e.id !== entryId))
-    showToast({ message: 'Entry deleted permanently', variant: 'success' })
+  const handleRestore = async (entry: any) => {
+    const { error } = await formApi.restoreFormEntry(
+      formId,
+      String(entry.entryId),
+    )
+    if (error) {
+      showToast({ message: t`Failed to restore entry`, variant: 'error' })
+      return
+    }
+    showToast({ message: t`Entry restored successfully`, variant: 'success' })
+    removeFromTrashList(entry)
+  }
+
+  const handlePermanentDelete = async () => {
+    if (!permanentlyDeletingEntry) return
+    setIsDeletingEntry(true)
+    const { error, inUse } = await formApi.permanentlyDeleteFormEntry(
+      formId,
+      String(permanentlyDeletingEntry.entryId),
+    )
+    setIsDeletingEntry(false)
+    const entry = permanentlyDeletingEntry
+    setPermanentlyDeletingEntry(null)
+    if (error) {
+      showToast({
+        message: inUse
+          ? t`This entry is linked to a workflow request, so it cannot be deleted permanently.`
+          : t`Failed to delete entry`,
+        variant: 'error',
+      })
+      return
+    }
+    showToast({ message: t`Entry deleted permanently`, variant: 'success' })
+    removeFromTrashList(entry)
   }
 
   // Filtering based on active tab and search state
@@ -2226,9 +2309,7 @@ const FormEntriesPage = () => {
                     icon='lucide:trash-2'
                     iconClass='text-red-11'
                     label={t`Move to Trash`}
-                    onClick={() =>
-                      setDeletingEntry({ id: row.id, type: 'trash' })
-                    }
+                    onClick={() => setDeletingEntry(row)}
                   />
                 </>
               ) : (
@@ -2237,16 +2318,16 @@ const FormEntriesPage = () => {
                     icon='lucide:rotate-ccw'
                     iconClass='text-green-11'
                     label={t`Restore`}
-                    onClick={() => handleRestore(row.id)}
+                    onClick={() => handleRestore(row)}
                   />
-                  <MenuItem
-                    icon='lucide:trash-2'
-                    iconClass='text-red-11'
-                    label={t`Delete Permanently`}
-                    onClick={() =>
-                      setDeletingEntry({ id: row.id, type: 'permanent' })
-                    }
-                  />
+                  {canPermanentlyDelete && (
+                    <MenuItem
+                      icon='lucide:trash-2'
+                      iconClass='text-red-11'
+                      label={t`Delete Permanently`}
+                      onClick={() => setPermanentlyDeletingEntry(row)}
+                    />
+                  )}
                 </>
               )}
             </Menu>
@@ -2256,7 +2337,15 @@ const FormEntriesPage = () => {
     )
 
     return colList
-  }, [fields, tabValue, activeLineItems, usersData, paginatedEntries, t])
+  }, [
+    canPermanentlyDelete,
+    fields,
+    tabValue,
+    activeLineItems,
+    usersData,
+    paginatedEntries,
+    t,
+  ])
 
   // Initialize selected columns (all columns visible by default)
   const [initialVisibilitySet, setInitialVisibilitySet] = useState(false)
@@ -3034,72 +3123,33 @@ const FormEntriesPage = () => {
         </div>
       </div>
 
-      {deletingEntry && (
-        <div className='animate-in fade-in slide-in-from-top-4 mx-6 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
-          <div className='flex items-center gap-3'>
-            <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-3 text-red-11'>
-              <Icon
-                className='h-5 w-5 animate-pulse text-red-11'
-                name='lucide:triangle-alert'
-              />
-            </div>
-            <div>
-              <h4 className='text-sm font-semibold text-red-12'>
-                {deletingEntry.type === 'trash'
-                  ? t`Move Entry to Trash`
-                  : t`Permanently Delete Entry`}
-              </h4>
-              <p className='mt-0.5 text-xs text-red-11'>
-                {deletingEntry.type === 'trash' ? (
-                  <>
-                    {t`Are you sure you want to move`}{' '}
-                    <span className='font-bold text-red-12'>
-                      {deletingEntry.id}
-                    </span>{' '}
-                    {t`to Trash?`}
-                  </>
-                ) : (
-                  <>
-                    {t`Are you sure you want to permanently delete`}{' '}
-                    <span className='font-bold text-red-12'>
-                      {deletingEntry.id}
-                    </span>
-                    ? {t`This action is permanent and cannot be undone.`}
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-          <div className='flex shrink-0 items-center gap-2'>
-            <Button
-              color='gray'
-              size='sm'
-              variant='subtle'
-              onClick={() => setDeletingEntry(null)}
-            >
-              {t`Cancel`}
-            </Button>
-            <Button
-              color='red'
-              icon='lucide:trash-2'
-              size='sm'
-              variant='solid'
-              onClick={() => {
-                if (deletingEntry.type === 'trash') {
-                  handleMoveToTrash(deletingEntry.id)
-                } else {
-                  handlePermanentDelete(deletingEntry.id)
-                }
-                setDeletingEntry(null)
-              }}
-            >
-              {deletingEntry.type === 'trash'
-                ? t`Move to Trash`
-                : t`Delete Permanently`}
-            </Button>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Move to Trash`}
+        description={t`Are you sure you want to move this entry to Trash? You can restore it from the Trash tab.`}
+        isConfirming={isDeletingEntry}
+        opened={Boolean(deletingEntry)}
+        title={t`Move Entry to Trash`}
+        variant='danger'
+        onCancel={() => {
+          if (!isDeletingEntry) setDeletingEntry(null)
+        }}
+        onConfirm={handleMoveToTrash}
+      />
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete Permanently`}
+        description={t`Are you sure you want to permanently delete this entry? This action is permanent and cannot be undone.`}
+        isConfirming={isDeletingEntry}
+        opened={Boolean(permanentlyDeletingEntry)}
+        title={t`Permanently Delete Entry`}
+        variant='danger'
+        onCancel={() => {
+          if (!isDeletingEntry) setPermanentlyDeletingEntry(null)
+        }}
+        onConfirm={handlePermanentDelete}
+      />
 
       {/* 2. MAIN LAYOUT (Table view) */}
       <div className='relative flex flex-1 overflow-hidden'>
@@ -3109,7 +3159,9 @@ const FormEntriesPage = () => {
             searchPlaceholder={t`Search entries...`}
             customSearchComponent={
               <TableSearch
-                loading={isEntriesFetching}
+                loading={
+                  tabValue === 'Trash' ? isTrashFetching : isEntriesFetching
+                }
                 table={table as any}
                 onSearch={handleEntrySearch}
               />
@@ -3127,7 +3179,8 @@ const FormEntriesPage = () => {
                 variant: 'outline',
                 onClick: () => {
                   refetch()
-                  refetchEntries()
+                  if (tabValue === 'Trash') refetchTrashEntries()
+                  else refetchEntries()
                 },
               },
               {

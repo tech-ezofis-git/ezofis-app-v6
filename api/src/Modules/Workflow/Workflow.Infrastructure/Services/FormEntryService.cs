@@ -142,8 +142,106 @@ public sealed class FormEntryService : IFormEntryService
         Guid entryId,
         CancellationToken cancellationToken = default)
     {
+        var failure = await SetEntryDeletedAsync(formId, entryId, isDeleted: true, cancellationToken);
+        return failure == null
+            ? new FormEntryDeleteResult(FormEntryDeleteStatus.Deleted, entryId.ToString("D"), "deleted form entry")
+            : new FormEntryDeleteResult(FormEntryDeleteStatus.NotFound, null, failure);
+    }
+
+    public async Task<FormEntryRestoreResult> RestoreEntryAsync(
+        string formId,
+        Guid entryId,
+        CancellationToken cancellationToken = default)
+    {
+        var failure = await SetEntryDeletedAsync(formId, entryId, isDeleted: false, cancellationToken);
+        return failure == null
+            ? new FormEntryRestoreResult(FormEntryRestoreStatus.Restored, entryId.ToString("D"), "restored form entry")
+            : new FormEntryRestoreResult(FormEntryRestoreStatus.NotFound, null, failure);
+    }
+
+    public async Task<FormEntryPermanentDeleteResult> PermanentlyDeleteEntryAsync(
+        string formId,
+        Guid entryId,
+        CancellationToken cancellationToken = default)
+    {
         if (string.IsNullOrWhiteSpace(formId) || entryId == Guid.Empty)
-            return new FormEntryDeleteResult(FormEntryDeleteStatus.NotFound, null, "form entry not found");
+            return new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.NotFound, null, "form entry not found");
+
+        var connectionString = _tenantContext.ConnectionString
+            ?? throw new InvalidOperationException("Tenant connection string not resolved.");
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        var tableSuffix = FormIdNaming.GetEzfbTableSuffix(FormIdNaming.NormalizeFormId(formId));
+        var tableName = $"ezfb_{tableSuffix}_items";
+        if (!await EzfbTableExistsAsync(connection, tableName, cancellationToken))
+            return new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.NotFound, null, "form entry table not found");
+
+        if (await IsEntryReferencedByWorkflowAsync(connection, entryId, cancellationToken))
+            return new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.InUse, null, "form entry is linked to a workflow request");
+
+        // Only an entry already in the Trash can go: is_deleted = true is part of the match.
+        await using var deleteCmd = new NpgsqlCommand(
+            $"DELETE FROM dbo.{tableName} WHERE item_id = @ItemId AND is_deleted = true;",
+            connection);
+        deleteCmd.Parameters.AddWithValue("@ItemId", entryId);
+
+        return await deleteCmd.ExecuteNonQueryAsync(cancellationToken) > 0
+            ? new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.Deleted, entryId.ToString("D"), "permanently deleted form entry")
+            : new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.NotFound, null, "form entry not found in trash");
+    }
+
+    /// <summary>
+    /// Looks in every workflow-schema table with a form entry column (process_form_*, WorkflowForms,
+    /// WorkflowTasks, mailbox tables), including soft-deleted links, since those tables are per
+    /// workflow and their column names and types differ.
+    /// </summary>
+    private static async Task<bool> IsEntryReferencedByWorkflowAsync(
+        NpgsqlConnection connection,
+        Guid entryId,
+        CancellationToken cancellationToken)
+    {
+        const string columnsSql = """
+            SELECT table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'workflow'
+              AND lower(column_name) IN ('form_entry_id', 'formentryid');
+            """;
+
+        var references = new List<(string Table, string Column)>();
+        await using (var columnsCmd = new NpgsqlCommand(columnsSql, connection))
+        await using (var reader = await columnsCmd.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+                references.Add((reader.GetString(0), reader.GetString(1)));
+        }
+
+        foreach (var (table, column) in references)
+        {
+            var sql = $"""
+                SELECT 1 FROM workflow."{EscapeColumn(table)}"
+                WHERE lower("{EscapeColumn(column)}"::text) = @EntryId
+                LIMIT 1;
+                """;
+            await using var cmd = new NpgsqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@EntryId", entryId.ToString("D"));
+            if (await cmd.ExecuteScalarAsync(cancellationToken) != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Flips <c>is_deleted</c> on one entry. Returns null on success, else why nothing changed.</summary>
+    private async Task<string?> SetEntryDeletedAsync(
+        string formId,
+        Guid entryId,
+        bool isDeleted,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(formId) || entryId == Guid.Empty)
+            return "form entry not found";
 
         var normalizedFormId = FormIdNaming.NormalizeFormId(formId);
         var connectionString = _tenantContext.ConnectionString
@@ -157,22 +255,21 @@ public sealed class FormEntryService : IFormEntryService
         var tableSuffix = FormIdNaming.GetEzfbTableSuffix(normalizedFormId);
         var tableName = $"ezfb_{tableSuffix}_items";
         if (!await EzfbTableExistsAsync(connection, tableName, cancellationToken))
-            return new FormEntryDeleteResult(FormEntryDeleteStatus.NotFound, null, "form entry table not found");
+            return "form entry table not found";
 
         var ezfbColumns = await LoadTableColumnsAsync(connection, tableName, cancellationToken);
         var now = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
-        var deleted = await SoftDeleteEntryAsync(
+        var changed = await UpdateEntryDeletedFlagAsync(
             connection,
             tableName,
             entryId,
+            isDeleted,
             now,
             userId.ToString("D"),
             ezfbColumns,
             cancellationToken);
 
-        return deleted
-            ? new FormEntryDeleteResult(FormEntryDeleteStatus.Deleted, entryId.ToString("D"), "deleted form entry")
-            : new FormEntryDeleteResult(FormEntryDeleteStatus.NotFound, null, "form entry not found");
+        return changed ? null : "form entry not found";
     }
 
     public async Task<FormEntryGetResult> GetEntriesAsync(
@@ -351,7 +448,9 @@ public sealed class FormEntryService : IFormEntryService
                 if (entryId == Guid.Empty)
                     continue;
 
-                var formDataJson = await _formDataLoader.LoadFormDataJsonAsync(normalizedFormId, entryId, cancellationToken);
+                var formDataJson = includeDeleted
+                    ? await _formDataLoader.LoadDeletedFormDataJsonAsync(normalizedFormId, entryId, cancellationToken)
+                    : await _formDataLoader.LoadFormDataJsonAsync(normalizedFormId, entryId, cancellationToken);
                 if (string.IsNullOrWhiteSpace(formDataJson))
                     continue;
 
@@ -1494,16 +1593,17 @@ public sealed class FormEntryService : IFormEntryService
         return await cmd.ExecuteNonQueryAsync(cancellationToken) > 0;
     }
 
-    private static async Task<bool> SoftDeleteEntryAsync(
+    private static async Task<bool> UpdateEntryDeletedFlagAsync(
         NpgsqlConnection connection,
         string tableName,
         Guid entryId,
+        bool isDeleted,
         string modifiedAt,
         string modifiedBy,
         IReadOnlySet<string> ezfbColumns,
         CancellationToken cancellationToken)
     {
-        var sets = new List<string> { "is_deleted = true" };
+        var sets = new List<string> { isDeleted ? "is_deleted = true" : "is_deleted = false" };
         var hasModifiedAt = ezfbColumns.Contains("modified_at");
         var hasModifiedBy = ezfbColumns.Contains("modified_by");
         if (hasModifiedAt)
@@ -1511,10 +1611,11 @@ public sealed class FormEntryService : IFormEntryService
         if (hasModifiedBy)
             sets.Add("modified_by = @ModifiedBy");
 
+        var currentState = isDeleted ? "(is_deleted = false OR is_deleted IS NULL)" : "is_deleted = true";
         var sql = $"""
             UPDATE dbo.{tableName}
             SET {string.Join(", ", sets)}
-            WHERE item_id = @ItemId AND (is_deleted = false OR is_deleted IS NULL)
+            WHERE item_id = @ItemId AND {currentState}
             """;
 
         await using var cmd = new NpgsqlCommand(sql, connection);

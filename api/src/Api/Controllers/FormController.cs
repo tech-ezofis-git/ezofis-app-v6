@@ -313,6 +313,62 @@ public sealed class FormController : ControllerBase
     }
 
     /// <summary>
+    /// Permanently delete a form entry that is already in the Trash. Admin only.
+    /// Returns 409 while a workflow record still points at the entry.
+    /// </summary>
+    [HttpDelete("{id}/entry/{entryId:guid}/permanent")]
+    [Authorize(Policy = AuthorizationPolicies.Admin)]
+    [ProducesResponseType(typeof(FormEntryPermanentDeleteResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> PermanentlyDeleteEntry(string id, Guid entryId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(id) || entryId == Guid.Empty)
+            return NotFound();
+
+        try
+        {
+            var result = await _formEntryService.PermanentlyDeleteEntryAsync(id, entryId, cancellationToken);
+            return result.Status switch
+            {
+                FormEntryPermanentDeleteStatus.Deleted => Ok(result),
+                FormEntryPermanentDeleteStatus.InUse => Conflict(new { error = result.Message }),
+                _ => NotFound(new { error = result.Message })
+            };
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Restore a soft-deleted form entry (<c>is_deleted = false</c>).</summary>
+    [HttpPost("{id}/entry/{entryId:guid}/restore")]
+    [ProducesResponseType(typeof(FormEntryRestoreResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RestoreEntry(string id, Guid entryId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(id) || entryId == Guid.Empty)
+            return NotFound();
+
+        try
+        {
+            var result = await _formEntryService.RestoreEntryAsync(id, entryId, cancellationToken);
+            return result.Status switch
+            {
+                FormEntryRestoreStatus.Restored => Ok(result),
+                _ => NotFound(new { error = result.Message })
+            };
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Form entry schema: all wFormControl rows for this formId (jsonId, name, type, parentId, etc.).
     /// </summary>
     [HttpGet("{id}/entry/controls")]
