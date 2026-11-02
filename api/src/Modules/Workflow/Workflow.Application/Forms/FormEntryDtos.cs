@@ -49,6 +49,20 @@ public sealed record FormEntryRestoreResult(
     string? EntryId,
     string? Message);
 
+public enum FormEntryPermanentDeleteStatus
+{
+    Deleted = 1,
+    NotFound = 0,
+    /// <summary>A workflow record still points at this entry.</summary>
+    InUse = 2
+}
+
+/// <summary>DELETE /api/form/{id}/entry/{entryId}/permanent — removes a soft-deleted entry.</summary>
+public sealed record FormEntryPermanentDeleteResult(
+    FormEntryPermanentDeleteStatus Status,
+    string? EntryId,
+    string? Message);
+
 public sealed record FormEntryGetResult(
     FormEntryGetStatus Status,
     IReadOnlyList<Dictionary<string, object?>>? Entries);

@@ -97,6 +97,7 @@ import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidatio
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import { isAdminRole } from '@/utils/sessionPermissions'
 import { formatTableCellValue } from '@/utils/formatTableCellValue'
 import {
   matchesCategoryFilterValue,
@@ -1460,7 +1461,13 @@ const FormEntriesPage = () => {
   const [editValues, setEditValues] = useState<Record<string, any>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [deletingEntry, setDeletingEntry] = useState<any | null>(null)
+  const [permanentlyDeletingEntry, setPermanentlyDeletingEntry] = useState<
+    any | null
+  >(null)
   const [isDeletingEntry, setIsDeletingEntry] = useState(false)
+  const canPermanentlyDelete = isAdminRole(
+    authUserStore((state) => state.session?.role),
+  )
 
   // Pagination states
   const [page, setPage] = useState(1)
@@ -1988,6 +1995,15 @@ const FormEntriesPage = () => {
     queryClient.invalidateQueries({ queryKey: ['forms', 'entries', formId] })
   }
 
+  const removeFromTrashList = (entry: any) => {
+    queryClient.setQueryData(
+      ['forms', 'entries', formId, 'trash'],
+      (rows: any[] | undefined) =>
+        rows?.filter((e) => parseFetchedEntry(e).entryId !== entry.entryId),
+    )
+    queryClient.invalidateQueries({ queryKey: ['forms', 'entries', formId] })
+  }
+
   const handleRestore = async (entry: any) => {
     const { error } = await formApi.restoreFormEntry(
       formId,
@@ -1998,12 +2014,30 @@ const FormEntriesPage = () => {
       return
     }
     showToast({ message: t`Entry restored successfully`, variant: 'success' })
-    queryClient.setQueryData(
-      ['forms', 'entries', formId, 'trash'],
-      (rows: any[] | undefined) =>
-        rows?.filter((e) => parseFetchedEntry(e).entryId !== entry.entryId),
+    removeFromTrashList(entry)
+  }
+
+  const handlePermanentDelete = async () => {
+    if (!permanentlyDeletingEntry) return
+    setIsDeletingEntry(true)
+    const { error, inUse } = await formApi.permanentlyDeleteFormEntry(
+      formId,
+      String(permanentlyDeletingEntry.entryId),
     )
-    queryClient.invalidateQueries({ queryKey: ['forms', 'entries', formId] })
+    setIsDeletingEntry(false)
+    const entry = permanentlyDeletingEntry
+    setPermanentlyDeletingEntry(null)
+    if (error) {
+      showToast({
+        message: inUse
+          ? t`This entry is linked to a workflow request, so it cannot be deleted permanently.`
+          : t`Failed to delete entry`,
+        variant: 'error',
+      })
+      return
+    }
+    showToast({ message: t`Entry deleted permanently`, variant: 'success' })
+    removeFromTrashList(entry)
   }
 
   // Filtering based on active tab and search state
@@ -2279,12 +2313,22 @@ const FormEntriesPage = () => {
                   />
                 </>
               ) : (
-                <MenuItem
-                  icon='lucide:rotate-ccw'
-                  iconClass='text-green-11'
-                  label={t`Restore`}
-                  onClick={() => handleRestore(row)}
-                />
+                <>
+                  <MenuItem
+                    icon='lucide:rotate-ccw'
+                    iconClass='text-green-11'
+                    label={t`Restore`}
+                    onClick={() => handleRestore(row)}
+                  />
+                  {canPermanentlyDelete && (
+                    <MenuItem
+                      icon='lucide:trash-2'
+                      iconClass='text-red-11'
+                      label={t`Delete Permanently`}
+                      onClick={() => setPermanentlyDeletingEntry(row)}
+                    />
+                  )}
+                </>
               )}
             </Menu>
           </div>
@@ -2293,7 +2337,15 @@ const FormEntriesPage = () => {
     )
 
     return colList
-  }, [fields, tabValue, activeLineItems, usersData, paginatedEntries, t])
+  }, [
+    canPermanentlyDelete,
+    fields,
+    tabValue,
+    activeLineItems,
+    usersData,
+    paginatedEntries,
+    t,
+  ])
 
   // Initialize selected columns (all columns visible by default)
   const [initialVisibilitySet, setInitialVisibilitySet] = useState(false)
@@ -3083,6 +3135,20 @@ const FormEntriesPage = () => {
           if (!isDeletingEntry) setDeletingEntry(null)
         }}
         onConfirm={handleMoveToTrash}
+      />
+
+      <ConfirmDialog
+        cancelLabel={t`Cancel`}
+        confirmLabel={t`Delete Permanently`}
+        description={t`Are you sure you want to permanently delete this entry? This action is permanent and cannot be undone.`}
+        isConfirming={isDeletingEntry}
+        opened={Boolean(permanentlyDeletingEntry)}
+        title={t`Permanently Delete Entry`}
+        variant='danger'
+        onCancel={() => {
+          if (!isDeletingEntry) setPermanentlyDeletingEntry(null)
+        }}
+        onConfirm={handlePermanentDelete}
       />
 
       {/* 2. MAIN LAYOUT (Table view) */}

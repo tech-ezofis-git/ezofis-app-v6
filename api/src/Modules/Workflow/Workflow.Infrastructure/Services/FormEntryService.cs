@@ -159,6 +159,80 @@ public sealed class FormEntryService : IFormEntryService
             : new FormEntryRestoreResult(FormEntryRestoreStatus.NotFound, null, failure);
     }
 
+    public async Task<FormEntryPermanentDeleteResult> PermanentlyDeleteEntryAsync(
+        string formId,
+        Guid entryId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(formId) || entryId == Guid.Empty)
+            return new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.NotFound, null, "form entry not found");
+
+        var connectionString = _tenantContext.ConnectionString
+            ?? throw new InvalidOperationException("Tenant connection string not resolved.");
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        var tableSuffix = FormIdNaming.GetEzfbTableSuffix(FormIdNaming.NormalizeFormId(formId));
+        var tableName = $"ezfb_{tableSuffix}_items";
+        if (!await EzfbTableExistsAsync(connection, tableName, cancellationToken))
+            return new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.NotFound, null, "form entry table not found");
+
+        if (await IsEntryReferencedByWorkflowAsync(connection, entryId, cancellationToken))
+            return new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.InUse, null, "form entry is linked to a workflow request");
+
+        // Only an entry already in the Trash can go: is_deleted = true is part of the match.
+        await using var deleteCmd = new NpgsqlCommand(
+            $"DELETE FROM dbo.{tableName} WHERE item_id = @ItemId AND is_deleted = true;",
+            connection);
+        deleteCmd.Parameters.AddWithValue("@ItemId", entryId);
+
+        return await deleteCmd.ExecuteNonQueryAsync(cancellationToken) > 0
+            ? new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.Deleted, entryId.ToString("D"), "permanently deleted form entry")
+            : new FormEntryPermanentDeleteResult(FormEntryPermanentDeleteStatus.NotFound, null, "form entry not found in trash");
+    }
+
+    /// <summary>
+    /// Looks in every workflow-schema table with a form entry column (process_form_*, WorkflowForms,
+    /// WorkflowTasks, mailbox tables), including soft-deleted links, since those tables are per
+    /// workflow and their column names and types differ.
+    /// </summary>
+    private static async Task<bool> IsEntryReferencedByWorkflowAsync(
+        NpgsqlConnection connection,
+        Guid entryId,
+        CancellationToken cancellationToken)
+    {
+        const string columnsSql = """
+            SELECT table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'workflow'
+              AND lower(column_name) IN ('form_entry_id', 'formentryid');
+            """;
+
+        var references = new List<(string Table, string Column)>();
+        await using (var columnsCmd = new NpgsqlCommand(columnsSql, connection))
+        await using (var reader = await columnsCmd.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+                references.Add((reader.GetString(0), reader.GetString(1)));
+        }
+
+        foreach (var (table, column) in references)
+        {
+            var sql = $"""
+                SELECT 1 FROM workflow."{EscapeColumn(table)}"
+                WHERE lower("{EscapeColumn(column)}"::text) = @EntryId
+                LIMIT 1;
+                """;
+            await using var cmd = new NpgsqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@EntryId", entryId.ToString("D"));
+            if (await cmd.ExecuteScalarAsync(cancellationToken) != null)
+                return true;
+        }
+
+        return false;
+    }
+
     /// <summary>Flips <c>is_deleted</c> on one entry. Returns null on success, else why nothing changed.</summary>
     private async Task<string?> SetEntryDeletedAsync(
         string formId,

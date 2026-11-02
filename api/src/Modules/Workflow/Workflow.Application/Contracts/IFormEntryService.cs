@@ -38,6 +38,16 @@ public interface IFormEntryService
         Guid entryId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Removes a soft-deleted entry from dbo.ezfb_{form}_items. Refused while any workflow record
+    /// still points at the entry, because ticket search and reports join on it. The history
+    /// trigger keeps its audit copy in dbo.ezfb_{form}_history.
+    /// </summary>
+    Task<FormEntryPermanentDeleteResult> PermanentlyDeleteEntryAsync(
+        string formId,
+        Guid entryId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Get one or more entries by itemId (comma-separated supported like v5).</summary>
     Task<FormEntryGetResult> GetEntriesAsync(
         string formId,

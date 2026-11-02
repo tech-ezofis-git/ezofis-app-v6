@@ -142,6 +142,27 @@ const deleteFormEntry = async (fId: string, eId: string) => {
   return response
 }
 
+const permanentlyDeleteFormEntry = async (fId: string, eId: string) => {
+  const response: any = { data: null, error: '', inUse: false }
+  try {
+    const { data, status } = await axiosV6.delete(
+      `/form/${fId}/entry/${eId}/permanent`,
+      {
+        headers: {
+          'X-Tenant-Id': getCurrentFormUser().tenantId,
+        },
+      },
+    )
+    if (status !== 200) throw new Error('Invalid status code')
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = 'Error deleting entry'
+    response.inUse = e.response?.status === 409
+  }
+  return response
+}
+
 const restoreFormEntry = async (fId: string, eId: string) => {
   const response: any = { data: null, error: '' }
   try {
@@ -391,6 +412,7 @@ const formApi = {
   createForm,
   deleteForm,
   deleteFormEntry,
+  permanentlyDeleteFormEntry,
   restoreFormEntry,
   listAllForms,
   saveFormEntry,
