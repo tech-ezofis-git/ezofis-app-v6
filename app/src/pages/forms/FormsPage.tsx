@@ -13,6 +13,7 @@ import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
+import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import showToast from '@/components/base/toast/showToast'
@@ -243,6 +244,38 @@ const FormsPage = () => {
         },
       },
       {
+        // Same rule as "View Entries" in the row menu, but visible, since
+        // users didn't find the entries page behind the three dots.
+        enableSorting: false,
+        id: 'records',
+        label: t`Records`,
+        size: 150,
+        renderCell: (row: any) => {
+          if (isFormDraft(row) || isWorkflowForm(row)) {
+            return <span className='text-gray-9'>-</span>
+          }
+          return (
+            <button
+              className='group/records inline-flex items-center gap-1 rounded-md text-13 font-medium whitespace-nowrap text-primary-11 underline-offset-2 transition-colors hover:text-primary-12 hover:underline active:scale-95'
+              type='button'
+              onClick={() =>
+                navigate({
+                  params: { formId: row.uid || row.id },
+                  to: '/forms/$formId/entries',
+                })
+              }
+            >
+              <Icon className='size-4' name='lucide:table' />
+              {t`Open records`}
+              <Icon
+                className='size-3.5 transition-transform duration-200 group-hover/records:translate-x-0.5'
+                name='lucide:arrow-right'
+              />
+            </button>
+          )
+        },
+      },
+      {
         id: 'createdBy',
         label: t`Created By`,
         size: 240,
@@ -300,7 +333,7 @@ const FormsPage = () => {
                 {!isDraft && !isWorkflowForm(row) && (
                   <MenuItem
                     icon='lucide:table'
-                    label={t`View Entries`}
+                    label={t`Open records`}
                     onClick={() =>
                       navigate({
                         params: { formId: row.uid || row.id },
