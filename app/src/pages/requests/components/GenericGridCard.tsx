@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
 import type { WorkflowOption } from '@/pages/requests/types'
 import Icon from '@/components/base/icon/Icon'
+import Skeleton from '@/components/base/Skeleton'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
@@ -59,6 +60,11 @@ const formatRunningTime = (date: any): string => {
 interface Props {
   row: any
   workflow: WorkflowOption | null
+  /**
+   * The workflow JSON (which field is the card title) is still loading:
+   * show a placeholder instead of falling back to the REQ number.
+   */
+  isTitleLoading?: boolean
   onRowClick: (item: any, tab: string) => void
 }
 
@@ -67,7 +73,12 @@ interface Props {
 // (buildDynamicColumns) so the grid and table always agree on which
 // fields are shown and how they're formatted — nothing here is
 // hardcoded to a specific workflow's field names.
-const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
+const GenericGridCard = ({
+  isTitleLoading = false,
+  row,
+  workflow,
+  onRowClick,
+}: Props) => {
   const { t } = useLingui()
   // Child requests (sub-workflow), expandable under the card.
   const subProcesses = useRowSubProcesses(workflow?.id, row)
@@ -333,12 +344,16 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
       <div className='min-w-0 flex-1 overflow-hidden'>
         {/* Left Side: Request Number + Current Stage Pill next to Request Number */}
         <div className='group/inv flex min-w-0 flex-nowrap items-center gap-2.5'>
-          <h3
-            className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
-            style={{ fontWeight: 500 }}
-          >
-            {requestNo}
-          </h3>
+          {isTitleLoading ? (
+            <Skeleton className='h-4 w-28 shrink-0' />
+          ) : (
+            <h3
+              className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
+              style={{ fontWeight: 500 }}
+            >
+              {requestNo}
+            </h3>
+          )}
           <GenericStagePill
             color={color}
             currentLabel={currentLabel}
