@@ -705,7 +705,7 @@ async def test_credit_report_includes_v6_billing_credits(world, make_client):
     ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
     run = (await client.get(f"/api/report-agent-v2/reports/{ids['ai_credit_consumption']}/execute", headers=admin)).json()
     ap = next(r for r in run["rows"] if r["Request No"] == "INV-9")
-    assert ap["Skill"] == "po_match" and ap["Billing Status"] == "Not charged (billing call failed)"
+    assert ap["Skill"] == "PO Match" and ap["Billing Status"] == "Not charged (billing call failed)"
     billing = {(r["Skill"], r["Request No"]): r for r in run["rows"] if r["Billing Status"] == "Charged"}
     ocr = billing[("OCR Agent", "scan.pdf")]
     assert ocr["Credits"] == 2 and ocr["Runs"] == 2 and ocr["Workflow"] == "Receipts"

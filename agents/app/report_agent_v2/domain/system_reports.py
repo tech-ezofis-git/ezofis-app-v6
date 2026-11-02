@@ -132,6 +132,9 @@ _CREDIT_COLS = (Col("Request No"), Col("Workflow"), Col("Skill"), Col("Billing S
                 Col("Last Used", "date", "value")) + _REQUEST_LINKS + _FILE_LINKS
 
 
+# Skill names initcap() would get wrong; the rest read as "Extract Invoice", "Vendor Validate", ...
+_SKILL_LABELS = {"po_match": "PO Match", "backorder_detect": "BackOrder Detect"}
+
 _GUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 # Remark prefixes the V6 API writes before the file name (ActivityCreditTypes / RepositoriesController).
 _REMARK_PREFIX = re.compile(r"^(OCR on upload:|OCR:|Intelligent upload|AI summary for item)\s*", re.I)
@@ -269,12 +272,15 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     identify = sql.SQL("NULLIF(btrim(l.identify), '')") if "identify" in ledger_cols else sql.SQL("NULL::text")
     # The ledger status is the outcome of the charge to V6 billing (/billing/credits/update),
     # not of the skill: "failed" means the skill ran but the credit was not deducted.
+    # AP skill ids (backorder_detect) as readable names (BackOrder Detect).
+    skill = sql.SQL("(CASE lower(l.skill_id) {} ELSE initcap(replace(l.skill_id, '_', ' ')) END)").format(
+        sql.SQL(" ").join(sql.SQL("WHEN {} THEN {}").format(sql.Literal(k), sql.Literal(v)) for k, v in _SKILL_LABELS.items()))
     billing_status = sql.SQL(
         "(CASE lower(l.status) WHEN 'charged' THEN 'Charged' WHEN 'failed' THEN 'Not charged (billing call failed)' "
         "WHEN 'mocked' THEN 'Not charged (test mode)' ELSE l.status END)")
     q = sql.SQL(
         """WITH items AS ({items}), insts AS ({insts})
-           SELECT COALESCE(i.ref, {identify}, r.item_key, 'Not linked') AS c0, i.wf_name AS c1, l.skill_id AS c2,
+           SELECT COALESCE(i.ref, {identify}, r.item_key, 'Not linked') AS c0, i.wf_name AS c1, {skill} AS c2,
                   {billing_status} AS c3, COUNT(*) AS c4, COALESCE(SUM(l.credits), 0) AS c5, MAX(l.created_at) AS c6,
                   i.wi_id AS c7, i.wf_id AS c8, NULL::text AS c9, NULL::text AS c10
            FROM public.ap_credit_ledger l
@@ -286,7 +292,7 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
            UNION ALL
            SELECT * FROM ({billing}) b
            ORDER BY c6 DESC, c0, c2 LIMIT {limit}"""
-    ).format(items=items, insts=insts, identify=identify, billing_status=billing_status, billing=billing,
+    ).format(items=items, insts=insts, identify=identify, skill=skill, billing_status=billing_status, billing=billing,
              runs_join=runs_join, tid=tid,
              since=ctx.bind(ctx.since), until=ctx.bind(ctx.until), limit=sql.Literal(ctx.limit))
     return q, []

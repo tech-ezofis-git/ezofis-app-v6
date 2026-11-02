@@ -840,7 +840,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               {columnTotals.map(({ label, total }) => (
                 <span
                   key={label}
-                  className='inline-flex items-center gap-1.5 rounded-md bg-primary-1 px-2.5 py-1 text-13 text-primary-11'
+                  className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
                 >
                   {t`Total ${label}`}
                   <span className='font-semibold'>{formatTotal(total)}</span>
@@ -853,7 +853,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                 {totalsBreakdown.items.map(({ name, total }) => (
                   <span
                     key={name}
-                    className='inline-flex items-center gap-1 rounded-md border border-gray-4 px-2 py-0.5'
+                    className='inline-flex items-center gap-1 rounded-full border border-gray-4 px-2.5 py-0.5'
                   >
                     {name}
                     <span className='font-semibold text-gray-13'>
