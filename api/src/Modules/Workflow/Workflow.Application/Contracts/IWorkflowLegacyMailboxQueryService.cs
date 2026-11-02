@@ -132,10 +132,13 @@ public sealed record LegacyMailboxInstanceCountResult(
     bool SentTableExists,
     bool CompletedTableExists);
 
+/// <param name="PageSize">0 = unpaged (first <c>UnpagedLimit</c> tickets, the pre-paging behaviour).</param>
 public sealed record LegacyMailboxByActivityRequest(
     Guid WorkflowId,
     IReadOnlyList<string> ActivityIds,
-    Guid CurrentUserId);
+    Guid CurrentUserId,
+    int PageNumber = 1,
+    int PageSize = 0);
 
 public sealed record LegacyMailboxActivityCountItem(string ActivityId, int Count);
 
@@ -152,6 +155,7 @@ public interface IWorkflowLegacyMailboxQueryService
     /// Current-stage rows for the given activity ids from inbox, sent, and completed.
     /// A ticket is returned once, on the stage it is on now. Inbox wins over sent when both match.
     /// Completed tickets are included on the workflow success (END) stage.
+    /// TotalCount is every matching ticket; Items is only the requested page.
     /// </summary>
     Task<LegacyMailboxListResult> ListByActivityIdsAsync(
         LegacyMailboxByActivityRequest request,
