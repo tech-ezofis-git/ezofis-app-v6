@@ -84,6 +84,10 @@ export interface AgentBlock {
   }
 }
 
+/** Workflow block setting "Show agent on request page"; unset means shown. */
+export const isShownInRequestPage = (block: AgentBlock) =>
+  block.settings?.showInRequestPage !== false
+
 type WorkflowLike = {
   workflowJson?: {
     blocks?: any[]

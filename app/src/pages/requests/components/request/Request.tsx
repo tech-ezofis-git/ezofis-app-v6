@@ -1338,7 +1338,11 @@ const Request = ({
     return isAgentStage && !hasDecision
   }, [processingProcesses, selectedItem, rawWorkflowData])
 
-  const { data: request, isLoading } = useRequestDetail(
+  const {
+    data: request,
+    dataUpdatedAt: requestUpdatedAt,
+    isLoading,
+  } = useRequestDetail(
     resolvedWorkflowId,
     selectedItem?.processId,
     selectedItem?.transactionId,
@@ -1692,8 +1696,11 @@ const Request = ({
     if (!onDocumentGenerateNode && !documentGenerated) return
 
     let cancelled = false
+    // Agents post their comments alongside the generated file.
     const refresh = () => {
-      if (!cancelled) void refetchGenericAttachments()
+      if (cancelled) return
+      void refetchGenericAttachments()
+      void refetchGenericComments()
     }
     refresh()
 
@@ -1719,6 +1726,7 @@ const Request = ({
     isGenericWorkflow,
     onDocumentGenerateNode,
     refetchGenericAttachments,
+    refetchGenericComments,
     resolvedWorkflowId,
   ])
 
@@ -1761,11 +1769,42 @@ const Request = ({
 
   // Regenerated quote PDFs replace the old ones: reload the attachments.
   useEffect(() => {
-    const refresh = () => void refetchGenericAttachments()
+    const refresh = () => {
+      void refetchGenericAttachments()
+      void refetchGenericComments()
+    }
     window.addEventListener(REQUEST_ATTACHMENTS_CHANGED_EVENT, refresh)
     return () =>
       window.removeEventListener(REQUEST_ATTACHMENTS_CHANGED_EVENT, refresh)
-  }, [refetchGenericAttachments])
+  }, [refetchGenericAttachments, refetchGenericComments])
+
+  // Agents post their comments with (or just after) their result, which
+  // reaches this page through the detail poll, the Hangfire job poll or a
+  // store update. Whenever any of that changes, reload the comments 3s later
+  // so they show without closing and reopening the request.
+  const agentDataSignature = [
+    requestUpdatedAt,
+    request?.stage,
+    request?.transactionId,
+    selectedItem?.stage || selectedItem?.currentStage,
+    selectedItem?.transactionId,
+    agentDataList.length,
+    currentAgentData ? Object.keys(currentAgentData).length : 0,
+    jobStatuses?.[`job-${apAgentJobId}`]?.isCompleted ? 1 : 0,
+  ].join('|')
+  useEffect(() => {
+    if (!isGenericWorkflow || !resolvedWorkflowId || !genericInstanceId) return
+    const timerId = window.setTimeout(() => {
+      void refetchGenericComments()
+    }, 3000)
+    return () => window.clearTimeout(timerId)
+  }, [
+    agentDataSignature,
+    genericInstanceId,
+    isGenericWorkflow,
+    refetchGenericComments,
+    resolvedWorkflowId,
+  ])
 
   // Agent nodes auto-route from their decision — do not surface their
   // QUALIFY / DISQUALIFY / MATCHED edges as clickable header buttons.

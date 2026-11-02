@@ -69,17 +69,17 @@ export default defineConfig({
       '/DocsEditor': {
         changeOrigin: true,
         secure: false,
-        target: 'https://trial.ezofis.com',
+        target: 'https://app.ezofis.com',
       },
       '/DocsMerge': {
         changeOrigin: true,
         secure: false,
-        target: 'https://trial.ezofis.com',
+        target: 'https://app.ezofis.com',
       },
       '/docsviewer': {
         changeOrigin: true,
         secure: false,
-        target: 'https://trial.ezofis.com',
+        target: 'https://app.ezofis.com',
       },
       '/fonts': {
         changeOrigin: true,
@@ -99,12 +99,12 @@ export default defineConfig({
       '/PDFViewer': {
         changeOrigin: true,
         secure: false,
-        target: 'https://trial.ezofis.com',
+        target: 'https://app.ezofis.com',
       },
       '/pdfviewer': {
         changeOrigin: true,
         secure: false,
-        target: 'https://trial.ezofis.com',
+        target: 'https://app.ezofis.com',
       },
       // Tailscale GPU OpenAI-compatible API (avoids browser CORS in dev)
       '/qwen-proxy': {
@@ -116,19 +116,19 @@ export default defineConfig({
       '/v5': {
         changeOrigin: true,
         secure: false,
-        target: 'https://trial.ezofis.com',
+        target: 'https://app.ezofis.com',
         rewrite: (path) => path.replace(/^\/v5/, '') || '/',
       },
       '/v5-api': {
         changeOrigin: true,
         secure: false,
-        target: 'https://eztapi.ezofis.com',
+        target: 'https://api.ezofis.com',
         rewrite: (path) => path.replace(/^\/v5-api/, ''),
       },
       '/v5viewer': {
         changeOrigin: true,
         secure: false,
-        target: 'https://trial.ezofis.com',
+        target: 'https://app.ezofis.com',
       },
     },
   },

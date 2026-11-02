@@ -36,6 +36,7 @@ import AgentDetailPlaceholder from '../request/components/generic-overview/Agent
 import AgentSummaryBoxes, {
   formatAgentDisplayLabel,
   getAgentResponseTabs,
+  isShownInRequestPage,
 } from '../request/components/generic-overview/AgentSummaryBoxes'
 import DocumentFormUpload from '../request/components/newrequest/DocumentFormUpload'
 import Header from '../request/components/newrequest/Header'
@@ -295,6 +296,12 @@ const WorkflowRequest = ({
   )
   const agentResponseTabKey = agentResponseTabs.map((b) => b.id).join('|')
   const hasAgents = agentBlocks.length > 0
+  // Status cards at the top only for agents with "Show agent on request
+  // page" — same rule as the request page after it is created.
+  const summaryAgentBlocks = useMemo(
+    () => agentBlocks.filter(isShownInRequestPage),
+    [agentBlocks],
+  )
   const hasAgentResponseTabs = agentResponseTabs.length > 0
 
   const initialAgentId =
@@ -1121,10 +1128,10 @@ const WorkflowRequest = ({
                   />
                 </div>
                 <div className='flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-1'>
-                  {agentBlocks.length > 0 && (
+                  {summaryAgentBlocks.length > 0 && (
                     <div className='px-4 pt-4 pb-3'>
                       <AgentSummaryBoxes
-                        agentBlocks={agentBlocks}
+                        agentBlocks={summaryAgentBlocks}
                         requestData={requestData || null}
                         workflow={workflow}
                       />
