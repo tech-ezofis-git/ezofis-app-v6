@@ -3,6 +3,8 @@
 // calculated fields (row formulas and table sums), conditional "required", OCR fill from file uploads.
 // Field settings come from GET /form/{formId}; master rows from GET /form/{masterFormId}/entry/all.
 import { authed } from './api.js';
+import { kindOf, isEmptyFor, ruleError } from './controls.jsx';
+import { fieldStates } from './formRules.js';
 
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CHOICE = new Set(['SINGLE_SELECT', 'SINGLE_CHOICE', 'MULTI_SELECT', 'MULTIPLE_CHOICE']);
@@ -23,7 +25,10 @@ function normField(x, parentTableId) {
   const optionsType = String(sp.optionsType || lk.optionsSource || sp.optionsSource || '').toUpperCase();
   const sep = sp.separateOptionsUsing === 'NEWLINE' ? /\r?\n/ : ',';
   return {
-    id: x.id, label: x.label || x.name || 'Field', type, table: parentTableId || null, raw: x,
+    id: x.id, label: x.label || x.name || 'Field', type, kind: kindOf(type), settings: st, table: parentTableId || null, raw: x, jsonId: x.jsonId || '', name: x.name || '',
+    // "Pre-select from master": tick the options listed in a master column for the value picked in another field
+    preselect: (type === 'MULTIPLE_CHOICE' || type === 'MULTI_SELECT') && sp.masterPreselectEnabled && sp.masterPreselectSourceFieldId && sp.masterPreselectColumn
+      ? { source: String(sp.masterPreselectSourceFieldId), column: String(sp.masterPreselectColumn) } : null,
     hidden: !!gen.hidden || gen.visibility === 'HIDDEN',
     readOnly: !!gen.readOnly || gen.visibility === 'READ_ONLY' || type === 'CALCULATED',
     placeholder: gen.placeholder || '',
@@ -33,7 +38,14 @@ function normField(x, parentTableId) {
     allowedFileTypes: Array.isArray(val.allowedFileTypes) ? val.allowedFileTypes : [], maxFileSize: Number(val.maxFileSize) || 0,
     // options: custom lists only for choice controls (text fields carry a leftover "Option 1,Option 2,Option 3")
     choice: CHOICE.has(type),
-    customOptions: CHOICE.has(type) && (optionsType === 'CUSTOM' || optionsType === '' ) ? String(sp.customOptions || '').split(sep).map((o) => o.trim()).filter(Boolean) : [],
+    customOptions: CHOICE.has(type) && (optionsType === 'CUSTOM' || optionsType === '' ) ? String(sp.customOptions || '').split(sep).map((o) => o.trim()).filter(Boolean)
+      // DYNAMIC: a fixed option list stored on the field (settings.specific.options)
+      : CHOICE.has(type) && optionsType === 'DYNAMIC' ? (Array.isArray(sp.options) ? sp.options : []).map((o) => (o && typeof o === 'object' ? { value: String(o.id ?? o.value ?? o.name), label: String(o.name ?? o.label ?? o.value) } : String(o))).filter((o) => (typeof o === 'object' ? o.value : o)) : [],
+    // REPOSITORY: distinct values of a repository field (items/facets), optionally scoped by a parent field's value
+    repo: CHOICE.has(type) && (optionsType === 'REPOSITORY' || String(sp.optionsSource || '').toUpperCase() === 'REPOSITORY') && sp.repositoryField
+      ? { repositoryId: String(sp.repositoryId || ''), field: String(sp.repositoryField), parent: String(sp.repositoryFieldParent || sp.masterFormParentColumn || '') } : null,
+    rowsType: String(sp.rowsType || sp.tableRowsType || 'ON_DEMAND').toUpperCase(), fixedRowCount: Number(sp.fixedRowCount || sp.tableFixedRowCount) || 5,
+    rowLabels: Array.isArray(sp.tableFixedRowLabels) ? sp.tableFixedRowLabels : [], showSummaryRow: !!sp.showSummaryRow, showColumnTotal: sp.showColumnTotal,
     master: (CHOICE.has(type) && (optionsType === 'MASTER' || optionsType === 'MASTER_TABLE') && sp.masterFormId)
       ? { formId: String(sp.masterFormId), column: String(sp.masterFormColumn || ''), conditions: (sp.masterFormConditionColumn || []).filter((c) => (c.formField || c.formColumn) && c.masterColumn).map((c) => ({ field: String(c.formField || c.formColumn), column: String(c.masterColumn) })), showAll: !!sp.showAllData }
       : null,
@@ -50,9 +62,16 @@ function normField(x, parentTableId) {
 export function buildSchema(formJson) {
   let fj = formJson || {};
   if (typeof fj === 'string') { try { fj = JSON.parse(fj); } catch (e) { fj = {}; } }
-  const fields = [...(fj.panels || []), ...(fj.secondaryPanels || [])].flatMap((p) => p.fields || []).map((f) => normField(f));
+  // sections: panels then secondary panels, as the web lists them; each field remembers its section
+  const raw = [...(fj.panels || []).map((p) => ({ p, secondary: false })), ...(fj.secondaryPanels || []).map((p) => ({ p, secondary: true }))];
+  const panels = raw.map(({ p, secondary }, i) => ({ id: String(p.id || `panel-${i}`), settings: p.settings || {}, title: (p.settings && p.settings.title) || '', description: (p.settings && p.settings.description) || '', secondary }));
+  const fields = raw.flatMap(({ p }, i) => (p.fields || []).map((f) => ({ ...normField(f), panel: panels[i].id })));
   const byId = {};
   fields.forEach((f) => { byId[f.id] = f; f.columns.forEach((c) => { byId[c.id] = c; }); });
+  // form-level declarative rules (settings.rules with conditions + actions; calculation rules are ignored here)
+  const rules = (Array.isArray(fj.settings && fj.settings.rules) ? fj.settings.rules : []).filter((r) => r && (r.actions || r.then || r.elseActions || r.else));
+  // pre-select sources: resolve the source field (id or jsonId) and its master form
+  fields.forEach((f) => { if (f.preselect) { const s = byId[f.preselect.source] || fields.find((x) => x.jsonId === f.preselect.source); f.preselect.src = s && s.master ? s : null; } });
   // master columns this form actually needs, per master form (everything else is dropped from master rows)
   const need = {};
   const want = (formId, col) => { if (formId && col) (need[formId] = need[formId] || new Set()).add(col); };
@@ -65,7 +84,26 @@ export function buildSchema(formJson) {
     const src = (f.master && f.master.formId) || (f.fill && f.fill.formId);
     if (p && src && p.master) want(src, p.master.column);
   });
-  return { fields, byId, need };
+  fields.forEach((f) => { if (f.preselect && f.preselect.src) { want(f.preselect.src.master.formId, f.preselect.src.master.column); if (GUID.test(f.preselect.column)) want(f.preselect.src.master.formId, f.preselect.column); } });
+  return { fields, byId, need, panels, rules };
+}
+// pre-select columns given as a master column label: map them to the column id from the master form's fields
+export function resolvePreselectColumns(schema, masterFields) {
+  schema.fields.forEach((f) => {
+    const p = f.preselect;
+    if (!p || !p.src || GUID.test(p.column)) return;
+    const list = masterFields[p.src.master.formId] || [];
+    const hit = list.find((x) => same(x.label, p.column) || same(x.id, p.column));
+    if (hit) { p.column = String(hit.id); (schema.need[p.src.master.formId] = schema.need[p.src.master.formId] || new Set()).add(p.column); }
+  });
+}
+// master cell → the option names it lists (arrays, objects or comma / newline separated text)
+function cellNames(v) {
+  if (v === undefined || v === null) return [];
+  if (Array.isArray(v)) return v.flatMap(cellNames);
+  if (typeof v === 'object') return cellNames(v.value ?? v.name ?? v.label);
+  const s = String(v).trim();
+  return s ? [s, ...s.split(/\r?\n|,/).map((x) => x.trim()).filter(Boolean)] : [];
 }
 
 // ---------- master rows ----------
@@ -111,6 +149,7 @@ export function defaultFor(f, user) {
   if (fv === 'LOGIN_NAME') return user.name;
   if (fv === 'CURRENT_YEAR') return String(new Date().getFullYear());
   if (fv === 'AUTO_GENERATE') { const d = new Date(); return `${f.autoGenerate.prefix || 'Form'}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
+  if (f.type === 'COUNTRY_CODE' && f.settings && f.settings.specific && f.settings.specific.defaultCountryCode) return String(f.settings.specific.defaultCountryCode);
   if (f.type === 'DATE' && (f.dateDefault === 'TODAY' || f.dateDefault === 'CURRENT_DATE' || f.defaultInSelect === 'CURRENT_DATE')) return today();
   if (f.choice) {
     if (f.defaultInSelect === 'USER_EMAIL') return user.email;
@@ -128,11 +167,38 @@ export function initialValues(schema, me, session) {
   const user = userInfo(me, session);
   const vals = {};
   schema.fields.forEach((f) => {
-    if (f.type === 'TABLE') { vals[f.id] = []; return; }
+    if (f.type === 'TABLE') { vals[f.id] = f.rowsType === 'FIXED' ? Array.from({ length: f.fixedRowCount }, (_, i) => fixedRow(f, i, me, session)) : []; return; }
     const d = defaultFor(f, user);
     if (d !== undefined && d !== '') vals[f.id] = d;
   });
   return vals;
+}
+// a FIXED table starts with its rows; a LABEL column carries the row label (tableFixedRowLabels)
+function fixedRow(table, i, me, session) {
+  const r = newRow(table, me, session);
+  const labelCol = table.columns.find((c) => c.type === 'LABEL');
+  const e = table.rowLabels[i];
+  if (labelCol) r[labelCol.id] = typeof e === 'string' ? e : e && typeof e === 'object' ? String(e[labelCol.id] ?? e.label ?? '') : '';
+  return r;
+}
+export function rowLabel(table, i, row) {
+  if (table.rowsType !== 'FIXED') return `${table.label} ${i + 1}`;
+  const labelCol = table.columns.find((c) => c.type === 'LABEL');
+  const e = table.rowLabels[i];
+  const v = typeof e === 'string' ? e : e && typeof e === 'object' ? (labelCol ? e[labelCol.id] : e.label) : labelCol && row ? row[labelCol.id] : '';
+  return v ? String(v) : `${table.label} ${i + 1}`;
+}
+// summary row as on the web: columns with showColumnTotal, or every summable column when the table shows a summary row
+const SUMMABLE = new Set(['NUMBER', 'CURRENCY_AMOUNT', 'CALCULATED', 'COUNTER']);
+export function columnTotals(table, rows) {
+  const explicit = table.columns.some((c) => c.showColumnTotal === true);
+  if (!table.showSummaryRow && !explicit) return null;
+  const out = [];
+  table.columns.forEach((c) => {
+    const on = c.showColumnTotal === true || (c.showColumnTotal !== false && table.showSummaryRow && !explicit && SUMMABLE.has(c.type));
+    if (on) out.push({ col: c, total: round2((rows || []).reduce((n, r) => n + num(r[c.id] && typeof r[c.id] === 'object' ? r[c.id].value : r[c.id]), 0)) });
+  });
+  return out.length ? out : null;
 }
 export function newRow(table, me, session) {
   const user = userInfo(me, session);
@@ -167,7 +233,30 @@ function conditionsFor(f, formId, schema, vals, row) {
 }
 const matchRows = (rows, conds) => rows.filter((r) => conds.every((c) => !(c.column in r) || same(r[c.column], c.value)));
 
-export function optionsFor(f, schema, vals, masters, row, users) {
+// repository source for f: which repository / field to ask and the parent scope; null while the parent is empty
+export function repoSource(f, schema, vals, row, repoId) {
+  if (!f.repo) return null;
+  const repositoryId = f.repo.repositoryId || repoId || '';
+  if (!repositoryId) return null;
+  let scope = {};
+  if (f.repo.parent) {
+    const t = f.repo.parent.trim().toLowerCase();
+    const p = schema.byId[f.repo.parent] || Object.values(schema.byId).find((x) => (x.raw && x.raw.settings && x.raw.settings.specific && x.raw.settings.specific.repositoryField) === f.repo.parent || x.label.trim().toLowerCase() === t);
+    const pv = p ? valOf(p.id, vals, row) : vals[f.repo.parent];
+    const one = Array.isArray(pv) ? pv[0] : pv;
+    if (empty(one)) return { key: null };
+    const name = p ? (p.raw && p.raw.settings && p.raw.settings.specific && p.raw.settings.specific.repositoryField) || p.label : f.repo.parent;
+    scope = { [name]: str(typeof one === 'object' ? one.value ?? one.label : one) };
+  }
+  return { key: `${repositoryId}|${f.repo.field}|${JSON.stringify(scope)}`, repositoryId, field: f.repo.field, scope };
+}
+export function repoSources(schema, vals, repoId) {
+  const out = [];
+  schema.fields.forEach((f) => { const s = repoSource(f, schema, vals, null, repoId); if (s && s.key) out.push(s); });
+  return out;
+}
+export function optionsFor(f, schema, vals, masters, row, users, facets = {}, repoId = '') {
+  if (f.repo) { const s = repoSource(f, schema, vals, row, repoId); if (!s) return []; if (!s.key) return []; return facets[s.key] || null; }
   if (f.master) {
     const rows = masters[f.master.formId];
     if (!rows) return null; // still loading
@@ -211,7 +300,7 @@ function evalTokens(tokens, get, tableSum) {
 }
 
 // ---------- recompute everything that depends on other values ----------
-export function recompute(schema, vals0, masters, users, manual = new Set()) {
+export function recompute(schema, vals0, masters, users, manual = new Set(), facets = {}, repoId = '') {
   const vals = { ...vals0 };
   const options = {}; // fieldId → options (top level)
   const rowOptions = {}; // tableId → [ { colId: options } ]
@@ -223,9 +312,9 @@ export function recompute(schema, vals0, masters, users, manual = new Set()) {
       if (f.type === 'TABLE') return;
       if (f.fill && !manual.has(f.id)) { const v = fillValue(f, schema, vals, masters, null); if (v !== undefined) set(vals, f.id, v); }
       if (f.choice) {
-        const opts = optionsFor(f, schema, vals, masters, null, users);
+        const opts = optionsFor(f, schema, vals, masters, null, users, facets, repoId);
         options[f.id] = opts;
-        if (opts && f.master) {
+        if (opts && (f.master || f.repo)) {
           const list = opts.map((o) => (typeof o === 'object' ? o.value : o));
           if (!empty(vals[f.id]) && !list.some((o) => same(o, vals[f.id])) && !f.readOnly) set(vals, f.id, '');
           if (empty(vals[f.id]) && list.length === 1) set(vals, f.id, list[0]); // single match → preselect (as the web form does)
@@ -240,7 +329,7 @@ export function recompute(schema, vals0, masters, users, manual = new Set()) {
         t.columns.forEach((c) => {
           if (c.fill && !manual.has(`${r._key}:${c.id}`)) { const v = fillValue(c, schema, vals, masters, r); if (v !== undefined) set(r, c.id, v); }
           if (c.choice) {
-            const opts = optionsFor(c, schema, vals, masters, r, users);
+            const opts = optionsFor(c, schema, vals, masters, r, users, facets, repoId);
             ro[c.id] = opts;
             if (opts && c.master) {
               if (!empty(r[c.id]) && !opts.some((o) => same(o, r[c.id]))) set(r, c.id, '');
@@ -258,34 +347,56 @@ export function recompute(schema, vals0, masters, users, manual = new Set()) {
     schema.fields.filter((f) => f.formula && f.type !== 'TABLE').forEach((f) => set(vals, f.id, String(evalTokens(f.formula, (id) => vals[id], tableSum))));
     if (!changed) break;
   }
-  // required (static + "when X is value, these controls are required")
+  // show / read-only / mandatory rules from the field settings (web rule engine), then required:
+  // static + rule-driven, plus "when X is value, these controls are required" for table columns
+  // linked multi-choice: when the source value changes, tick the options its master row lists (web MasterPreselectSync);
+  // the source value last handled is kept under "__pre:<id>" (not sent), so the user's own changes stay
+  schema.fields.forEach((f) => {
+    const p = f.preselect;
+    if (!p || !p.src) return;
+    const rows = masters[p.src.master.formId];
+    const src = vals[p.src.id]; const key = str(Array.isArray(src) ? src[0] : src && typeof src === 'object' ? src.value : src);
+    const mark = '__pre:' + f.id; const handled = vals[mark];
+    if (!key) { if (handled) vals[f.id] = []; vals[mark] = ''; return; }
+    if (!rows || handled === key) return;
+    if (handled === undefined && !empty(vals[f.id])) { vals[mark] = key; return; } // a saved selection stays
+    const wanted = new Set(rows.filter((r) => same(r[p.src.master.column], key)).flatMap((r) => cellNames(r[p.column])).map((x) => x.toLowerCase()));
+    const opts = (f.customOptions || []).map((o) => (typeof o === 'object' ? o.label : o));
+    vals[f.id] = opts.filter((o) => wanted.has(String(o).trim().toLowerCase()));
+    vals[mark] = key;
+  });
+  const states = fieldStates(schema.fields.map((f) => ({ id: f.id, type: f.type, settings: f.settings, jsonId: f.jsonId, name: f.name, panel: f.panel })), vals, { panels: schema.panels || [], rules: schema.rules || [] });
   const required = new Set();
   const addReq = (f) => { if (f.required) required.add(f.id); };
   Object.values(schema.byId).forEach(addReq);
+  Object.entries(states).forEach(([id, s]) => { if (s.required) required.add(id); });
   Object.values(schema.byId).forEach((f) => f.mandatorySettings.forEach((m) => { if (!empty(vals[f.id]) && same(vals[f.id], m.value)) (m.controls || []).forEach((id) => required.add(String(id))); }));
-  return { vals, options, rowOptions, required };
+  return { vals, options, rowOptions, required, states };
 }
 
 // ---------- validation ----------
-export function validate(schema, vals, required) {
+// hidden fields (static or by a rule) and read-only fields are never blocking, as on the web
+export const shownBy = (f, states) => (states && states[f.id] ? states[f.id].visible : !f.hidden);
+export const lockedBy = (f, states) => f.readOnly || !!(states && states[f.id] && states[f.id].disabled);
+export function validate(schema, vals, required, states) {
   const errs = {};
   schema.fields.forEach((f) => {
-    if (f.hidden || NO_INPUT.has(f.type)) return;
+    if (!shownBy(f, states) || NO_INPUT.has(f.type)) return;
     if (f.type === 'TABLE') {
       const rows = vals[f.id] || [];
       if (required.has(f.id) && !rows.length) errs[f.id] = `Add at least one ${f.label} row`;
       rows.forEach((r, i) => f.columns.forEach((c) => {
         if (c.hidden || c.readOnly || !required.has(c.id)) return;
         const v = r[c.id];
-        if (FILE_TYPES.has(c.type) ? !(v && (v.file || v.fileId)) : empty(v)) errs[`${f.id}:${i}:${c.id}`] = `${c.label} is required`;
+        if (FILE_TYPES.has(c.type) ? !(v && (v.file || v.fileId)) : isEmptyFor(c.kind, v)) errs[`${f.id}:${i}:${c.id}`] = `${c.label} is required`;
       }));
+      rows.forEach((r, i) => f.columns.forEach((c) => { const k = `${f.id}:${i}:${c.id}`; const fe = !c.hidden && !c.readOnly && !errs[k] && !c.choice && !FILE_TYPES.has(c.type) && ruleError(c.type, c.kind, r[c.id], c.settings, { ...vals, ...r }); if (fe) errs[k] = fe; }));
       return;
     }
-    if (f.readOnly || !required.has(f.id)) return;
+    if (lockedBy(f, states)) return;
     const v = vals[f.id];
-    if (FILE_TYPES.has(f.type) ? !(v && (v.file || v.fileId)) : empty(v)) errs[f.id] = `${f.label} is required`;
-    else if (f.type === 'NUMBER' && !empty(v) && !Number.isFinite(Number(String(v).replace(/,/g, '')))) errs[f.id] = 'Enter a number';
-    else if (f.type === 'EMAIL' && !empty(v) && !/^\S+@\S+\.\S+$/.test(v)) errs[f.id] = 'Enter a valid email';
+    if (required.has(f.id) && (FILE_TYPES.has(f.type) ? !(v && (v.file || v.fileId)) : isEmptyFor(f.kind, v))) errs[f.id] = f.kind === 'consent' ? `Turn on ${f.label} to continue` : `${f.label} is required`;
+    else if (!f.choice && !FILE_TYPES.has(f.type)) { const fe = ruleError(f.type, f.kind, v, f.settings, vals); if (fe) errs[f.id] = fe; }
   });
   return errs;
 }
@@ -338,10 +449,11 @@ export function ocrTargets(f, schema) {
 }
 
 // ---------- payload (§9.3) ----------
-export function toPayload(schema, vals) {
+export function toPayload(schema, vals, states) {
   const out = {};
   schema.fields.forEach((f) => {
     if (NO_INPUT.has(f.type)) return;
+    if (!f.hidden && !shownBy(f, states)) return; // hidden by a rule: not sent (the web clears these values)
     const v = vals[f.id];
     if (f.type === 'TABLE') {
       const rows = (v || []).map((r) => {
@@ -352,8 +464,9 @@ export function toPayload(schema, vals) {
       if (rows.length) out[f.id] = rows;
       return;
     }
-    if (empty(v)) return;
-    out[f.id] = v && typeof v === 'object' && v.fileId ? { fileId: v.fileId, fileName: v.fileName, itemId: v.fileId, repositoryId: v.repositoryId } : Array.isArray(v) ? v : String(v);
+    if (empty(v) || (!FILE_TYPES.has(f.type) && f.kind !== 'consent' && isEmptyFor(f.kind, v))) return;
+    // booleans (toggle, consent) and structured values (V5 currency / phone objects) keep their shape, as on the web
+    out[f.id] = v && typeof v === 'object' && v.fileId ? { fileId: v.fileId, fileName: v.fileName, itemId: v.fileId, repositoryId: v.repositoryId } : Array.isArray(v) || typeof v === 'boolean' || typeof v === 'number' || (v && typeof v === 'object' && !v.file) ? v : String(v);
   });
   return out;
 }

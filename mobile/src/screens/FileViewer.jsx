@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Icon, FileThumb, Sheet, Sparkle } from '../ui.jsx';
 import { useStore } from '../store.jsx';
 import { wfApi, isTechnicalKey, toGuid } from '../wf.js';
-import { docApi, parseSummary } from '../repo.js';
+import { docApi, parseSummary, hasSummary } from '../repo.js';
 import { apiErrorMessage } from '../api.js';
 import { DocxView, SheetView, PptxView, parseMsg } from './OfficeViewers.jsx';
 
@@ -204,9 +204,11 @@ function Marked({ text }) {
 }
 
 const summaryCache = new Map();
-function AiSummaryBody({ file }) {
+// `saved` is the item's SummaryJson (GET .../items/{itemId}); when present the summary shows at once, no credit used.
+function AiSummaryBody({ file, saved }) {
   const key = file.repositoryId && file.itemId ? `${file.repositoryId}:${file.itemId}` : '';
   const [state, setState] = useState(() => (key && summaryCache.has(key) ? summaryCache.get(key) : null));
+  useEffect(() => { if (saved && !hasSummary(state)) { const s = parseSummary(saved); if (hasSummary(s)) { summaryCache.set(key, s); setState(s); } } }, [saved]); // eslint-disable-line react-hooks/exhaustive-deps
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   // POST .../ai-summary: the first call generates and saves the summary (1 credit); later calls return it free.
@@ -224,20 +226,31 @@ function AiSummaryBody({ file }) {
           {a.reason ? <div className="r">{a.reason}</div> : null}
         </div>
       ) : null}
-      {state && (state.text || state.facts.length) ? (
+      {hasSummary(state) ? (
         <div className="sum-card">
-          <div className="row-between" style={{ alignItems: 'center' }}><span className="sum-h"><Sparkle size={16} />Document summary</span>{state.score != null ? <span className="pill solid t">{state.score}%</span> : null}</div>
-          {state.title || state.type ? <div className="sum-t">{state.title}{state.type ? <span className="pill solid neu" style={{ marginLeft: 8 }}>{state.type}</span> : null}</div> : null}
+          <div className="sum-top">
+            <span className="sum-ic"><Sparkle size={18} color="#fff" /></span>
+            <span className="grow"><span className="sum-k">AI summary</span>{state.title ? <span className="sum-t">{state.title}</span> : null}</span>
+            {state.score != null ? <span className="sum-score" title="AI confidence"><b>{state.score}%</b>confidence</span> : null}
+          </div>
+          {state.type || state.language ? <div className="sum-tags">{state.type ? <span className="pill solid t">{state.type}</span> : null}{state.language ? <span className="pill solid neu">{state.language}</span> : null}</div> : null}
           {state.text ? <p className="sum-p"><Marked text={state.text} /></p> : null}
-          {state.facts.length ? <><div className="sec-label" style={{ margin: 0 }}>Key facts</div><ul className="sum-facts">{state.facts.map((f, i) => <li key={i}><Marked text={f} /></li>)}</ul></> : null}
-          <p className="muted" style={{ margin: 0, fontSize: 11 }}>{state.credit ? 'Generated now · 1 AI credit used. ' : ''}AI summaries can be wrong. Check the document before you act.</p>
+          {state.facts.length ? (
+            <section className="sum-sec"><div className="sum-sh"><Icon name="checkCircle" size={16} />Key facts</div>
+              <ul className="sum-facts">{state.facts.map((f, i) => <li key={i}><Marked text={f} /></li>)}</ul></section>
+          ) : null}
+          {(state.sections || []).map((s) => (
+            <section key={s.label} className="sum-sec"><div className="sum-sh"><Icon name="list" size={16} />{s.label}</div>
+              {s.text ? <p className="sum-p"><Marked text={s.text} /></p> : <ul className="sum-facts">{s.items.map((f, i) => <li key={i}><Marked text={f} /></li>)}</ul>}</section>
+          ))}
+          <p className="sum-note">{state.credit ? 'Generated now · 1 AI credit used. ' : 'Saved summary · no credit used. '}AI summaries can be wrong. Check the document before you act.</p>
         </div>
       ) : null}
       {err ? <div className="notice bad" role="alert"><span className="grow">{err}</span></div> : null}
-      {key && !(state && (state.text || state.facts.length)) ? (
+      {key && !hasSummary(state) ? (
         <button type="button" className="btn primary" disabled={busy} onClick={run}>{busy ? <><span className="spinner" />Reading the document… this can take a minute</> : <><Sparkle size={16} color="#fff" />Summarise this document</>}</button>
       ) : null}
-      {key && !(state && (state.text || state.facts.length)) ? <p className="muted" style={{ margin: 0, fontSize: 12 }}>The first summary uses 1 AI credit and is saved on the document; opening it again is free.</p> : null}
+      {key && !hasSummary(state) ? <p className="muted" style={{ margin: 0, fontSize: 12 }}>The first summary uses 1 AI credit and is saved on the document; opening it again is free.</p> : null}
       {!key && !a ? <p className="muted" style={{ margin: 0, fontSize: 13 }}>AI summary is available for files stored in EZOFIS.</p> : null}
     </div>
   );
@@ -325,7 +338,7 @@ export default function FileViewer({ file, onClose, actions }) {
     <>
       <FileShell title={file.fileName} sub={[typeLabel, kb(file.fileSize || (blob && blob.size))].filter(Boolean).join(' · ')} onBack={onClose} backIcon={file.blob ? 'back' : 'close'}
         onDownload={save} canDownload={!!url} onShare={share} preview={preview} meta={meta}
-        ai={file.ai || (file.repositoryId && file.itemId && !file.shareToken) ? <AiSummaryBody file={file} /> : null} />
+        ai={file.ai || (file.repositoryId && file.itemId && !file.shareToken) ? <AiSummaryBody file={file} saved={item && item.fields ? item.fields.SummaryJson || item.fields.summaryJson : null} /> : null} />
       {child ? <FileViewer file={child} onClose={() => setChild(null)} /> : null}
     </>
   );

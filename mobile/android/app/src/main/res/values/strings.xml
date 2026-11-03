@@ -2,8 +2,9 @@
 <resources>
     <string name="app_name">EZOFIS</string>
     <string name="title_activity_main">EZOFIS</string>
-    <string name="package_name">com.ezofis.mobile</string>
-    <string name="custom_url_scheme">com.ezofis.mobile</string>
-    <!-- Web OAuth client id from the SAME Google Cloud project as the Android client (139628703331-...). Not the Android client id. -->
-    <string name="google_web_client_id"></string>
+    <string name="package_name">com.ezofis.ezofis_mobile</string>
+    <string name="custom_url_scheme">com.ezofis.ezofis_mobile</string>
+    <!-- Web OAuth client id (the cloud.ezofis.com web client) from the SAME Google Cloud project as the Android client
+         (project 154003149422; Android clients = com.ezofis.ezofis_mobile + each signing SHA-1). Not the Android client id. -->
+    <string name="google_web_client_id">154003149422-r47sovs0tdd345o5d8hj8hceq5og53eg.apps.googleusercontent.com</string>
 </resources>

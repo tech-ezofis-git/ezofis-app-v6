@@ -9,6 +9,8 @@ import {
   lineItems, fmtNum, MAX_FILE_MB, tooBig, tabsFor, wfApi, getWorkflows, getMeta, getForm, toCard, formView, actionsFor, pathFromHistory, agentInsight, repoFields,
   ago, fmtDate, initials, prettyName, MILESTONE_DOT, EDITABLE_TYPES, drafts, mapLimit, toneFor,
 } from '../wf.js';
+import { Control, kindOf, ruleError, isEmptyFor, displayValue, TipButton, HelpText, labelHidden } from '../controls.jsx';
+import { fieldStates } from '../formRules.js';
 
 const PAGE = 20;
 const BOXES = [['inbox', 'Inbox', 'Inbox'], ['sent', 'Sent', 'Sent'], ['completed', 'Completed', 'Done']];
@@ -155,9 +157,9 @@ function LiveList({ selectedKey, onOpen, onFirst }) {
 
   const metas = useMetas(state.rows.map((r) => r.workflowId));
   const cards = useMemo(() => state.rows.map((r) => toCard(r, metas[r.workflowId] && metas[r.workflowId].meta, metas[r.workflowId] && metas[r.workflowId].form)), [state.rows, metas]);
-  const stages = useMemo(() => [...new Set(cards.map((c) => c.stage).filter(Boolean))].slice(0, 6), [cards]);
+  // Quick filters: All · New today (arrived today) · Earlier (older, still waiting — not actioned yet)
   const visible = cards.filter((c) => (!search || c.search.includes(search.toLowerCase().trim()))
-    && (chip === 'All' || (chip === 'New today' ? c.isNew : chip === 'AI flagged' ? c.ai && c.ai.tone === 'bad' : c.stage === chip)));
+    && (chip === 'All' || (chip === 'New today' ? c.isNew : chip === 'Earlier' ? !c.isNew && !c.completed : true)));
   useEffect(() => { if (onFirst && visible[0]) onFirst(visible[0].key); }, [visible.length && visible[0].key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const wfName = wfId ? ((workflows || []).find((w) => w.id === wfId) || {}).name || 'Workflow' : 'All workflows';
@@ -175,7 +177,7 @@ function LiveList({ selectedKey, onOpen, onFirst }) {
 
   return (
     <div className="screen">
-      <TopBar title="Workflow" back={false} tone="surface" right={<span style={{ display: 'flex' }}><IconBtn name="plus" label="New request" onClick={() => nav('/app/new')} /><IconBtn name="refresh" label="Refresh" onClick={() => setReload((x) => x + 1)} /><IconBtn name="search" label="Search requests" onClick={() => setSearch(search === null ? '' : null)} /></span>} />
+      <TopBar title="Workflow" back tone="surface" right={<span style={{ display: 'flex' }}><IconBtn name="plus" label="New request" onClick={() => nav('/app/new')} /><IconBtn name="refresh" label="Refresh" onClick={() => setReload((x) => x + 1)} /><IconBtn name="search" label="Search requests" onClick={() => setSearch(search === null ? '' : null)} /></span>} />
       <div style={{ background: 'var(--surface)', padding: '0 var(--gutter) 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {search !== null ? <input className="input" autoFocus placeholder="Search number, title, stage or file" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search requests" /> : null}
         <button type="button" className="input strong" style={{ display: 'flex', alignItems: 'center', textAlign: 'left' }} onClick={() => setWfOpen(true)}><span style={{ flex: 1 }}>{wfName}</span><Icon name="chevD" size={16} stroke={2.4} /></button>
@@ -187,7 +189,7 @@ function LiveList({ selectedKey, onOpen, onFirst }) {
       </div>
       <div className="content" style={{ maxWidth: 'none' }}>
         {!state.loading && cards.length ? (
-          <div className="chips">{['All', 'New today', ...(cards.some((c) => c.ai) ? ['AI flagged'] : []), ...stages].map((c) => <button key={c} type="button" className={'chip' + (chip === c ? ' on' : '')} onClick={() => setChip(c)}>{c}</button>)}</div>
+          <div className="chips">{[['All', cards.length], ['New today', cards.filter((c) => c.isNew).length], ['Earlier', cards.filter((c) => !c.isNew && !c.completed).length]].map(([c, n]) => <button key={c} type="button" className={'chip' + (chip === c ? ' on' : '')} onClick={() => setChip(c)}>{c}<span className="chip-n">{n}</span></button>)}</div>
         ) : null}
         {state.error ? <ErrorNote text={state.error} onRetry={() => setReload((x) => x + 1)} /> : null}
         {state.partial ? <div className="notice warn"><Icon name="warn" size={18} /><span className="grow">Some workflows didn't load. Showing what's available.</span></div> : null}
@@ -544,15 +546,31 @@ export function LiveEdit() {
   const { showToast, liveTick } = useStore();
   const [t] = useTicket(id, liveTick);
   const [vals, setVals] = useState(null);
+  const [errs, setErrs] = useState({});
   const fields = useMemo(() => (t.row ? formView(t.form, { ...(t.row.formData || {}), ...(drafts.get(id) || {}) }).filter((f) => EDITABLE_TYPES.has(f.type)) : []), [t.row, t.form, id]);
-  useEffect(() => { if (fields.length && !vals) setVals(Object.fromEntries(fields.map((f) => [f.id, f.raw == null ? '' : String(f.raw)]))); }, [fields, vals]);
+  useEffect(() => { if (fields.length && !vals) setVals(Object.fromEntries(fields.map((f) => [f.id, f.raw == null ? '' : f.raw]))); }, [fields, vals]);
   if (t.loading && !t.row) return <div className="screen"><TopBar title="Edit form" back={'/app/inbox/' + encodeURIComponent(id)} /><div className="content"><Skeleton n={4} h={64} /></div></div>;
   if (t.error || !t.row) return <div className="screen"><TopBar title="Edit form" back="/app/inbox" /><div className="content"><ErrorNote text={t.error || "This request can't be edited."} /></div></div>;
-  const orig = Object.fromEntries(fields.map((f) => [f.id, f.raw == null ? '' : String(f.raw)]));
+  const key = (v) => (v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v));
   const base = t.row.formData || {};
+  // show / read-only / mandatory rules from the form settings, evaluated on the request's values plus these edits
+  const all = { ...base, ...(drafts.get(id) || {}), ...(vals || {}) };
+  const st = t.form ? fieldStates(t.form.fields.map((f) => ({ id: f.id, type: f.type, settings: f.settings })), all) : {};
+  const shown = fields.filter((f) => !st[f.id] || st[f.id].visible);
+  const locked = (f) => f.readOnly || !!(st[f.id] && st[f.id].disabled);
   const save = () => {
+    const e = {};
+    // only the fields the approver changed are checked; values already on the request aren't theirs to fix here
+    shown.forEach((f) => {
+      if (locked(f) || key(vals[f.id]) === key(f.raw)) return;
+      const k = kindOf(f.type);
+      const fe = st[f.id] && st[f.id].required && isEmptyFor(k, vals[f.id]) ? `${f.label} is required` : ruleError(f.type, k, vals[f.id], f.settings, all);
+      if (fe) e[f.id] = fe;
+    });
+    setErrs(e);
+    if (Object.keys(e).length) { showToast('Check the highlighted fields', { tone: 'bad' }); return; }
     const changed = {};
-    Object.entries(vals || {}).forEach(([k, v]) => { if (String(base[k] == null ? '' : base[k]) !== v) changed[k] = v; });
+    Object.entries(vals || {}).forEach(([k, v]) => { if (key(base[k]) !== key(v)) changed[k] = v; });
     if (Object.keys(changed).length) drafts.set(id, changed); else drafts.delete(id);
     showToast(Object.keys(changed).length ? 'Changes kept. Take an action to save them.' : 'No changes');
     nav('/app/inbox/' + encodeURIComponent(id), { replace: true });
@@ -561,18 +579,20 @@ export function LiveEdit() {
     <div className="screen">
       <TopBar title="Edit form" sub={`${t.row.referenceNumber} · ${t.row.stage}`} back={'/app/inbox/' + encodeURIComponent(id)} right={<span />} />
       <div className="content" style={{ gap: 16 }}>
-        {fields.map((f) => (
-          <div key={f.id} className="field">
-            <label htmlFor={'f-' + f.id}>{f.label}</label>
-            {f.type === 'LONG_TEXT' ? (
-              <textarea id={'f-' + f.id} className="input strong" rows={3} value={(vals && vals[f.id]) || ''} onChange={(e) => setVals({ ...vals, [f.id]: e.target.value })} />
-            ) : (
-              <input id={'f-' + f.id} className="input strong" type={f.type === 'NUMBER' ? 'number' : f.type === 'DATE' ? 'date' : f.type === 'EMAIL' ? 'email' : 'text'} inputMode={f.type === 'NUMBER' ? 'decimal' : undefined} value={(vals && vals[f.id]) || ''} onChange={(e) => setVals({ ...vals, [f.id]: e.target.value })} />
-            )}
-            {vals && vals[f.id] !== orig[f.id] ? <span className="hint">Changed from {orig[f.id] || 'empty'}</span> : null}
-          </div>
-        ))}
-        <div className="card t" style={{ fontSize: 13 }}>Text, number and date fields can be edited here. Changes are saved to {t.row.referenceNumber} when you approve, reject or take another action.</div>
+        {shown.map((f) => {
+          const k = kindOf(f.type);
+          const v = vals ? vals[f.id] : '';
+          const ro = locked(f);
+          return (
+            <div key={f.id} className="field" data-err={errs[f.id] ? '1' : undefined}>
+              {labelHidden(f.settings) ? null : <label htmlFor={'f-' + f.id}>{f.label}{st[f.id] && st[f.id].required ? <span className="req"> *</span> : null}{ro ? <Icon name="lock" size={12} color="#9C96AB" style={{ marginLeft: 4 }} /> : null}<TipButton settings={f.settings} label={f.label} /></label>}
+              <Control kind={k} id={'f-' + f.id} value={v} readOnly={ro} error={!!errs[f.id]} settings={f.settings} label={k === 'consent' ? undefined : f.label} onChange={(x) => { setErrs((e) => ({ ...e, [f.id]: '' })); setVals({ ...vals, [f.id]: x }); }} />
+              <HelpText settings={f.settings} />
+              {errs[f.id] ? <span className="err" role="alert">{errs[f.id]}</span> : vals && key(v) !== key(f.raw) ? <span className="hint">Changed from {displayValue(k, f.raw, f.settings) || 'empty'}</span> : null}
+            </div>
+          );
+        })}
+        <div className="card t" style={{ fontSize: 13 }}>Changes are saved to {t.row.referenceNumber} when you approve, reject or take another action.</div>
       </div>
       <div className="bottombar" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <button type="button" className="btn neutral" onClick={() => nav(-1)}>Cancel</button>

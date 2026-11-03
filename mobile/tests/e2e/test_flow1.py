@@ -14,7 +14,7 @@ async def handler(route):
     if req.post_data and 'json' in (req.headers.get('content-type') or ''): body=json.loads(req.post_data)
     elif 'multipart' in (req.headers.get('content-type') or ''): body={'__multipart': req.post_data_buffer.decode('latin1')}
     if path.startswith('/form/') or path.startswith('/uploadAndIndex'): assert req.headers.get('x-tenant-id')=='t1'
-    assert req.headers.get('authorization')=='Bearer jwt', ('auth', path); assert req.headers.get('x-tenant-id')=='t1', ('tenant', path)
+    assert req.headers.get('authorization')=='Bearer jwt', ('auth', path); assert path == '/me/tenants' or req.headers.get('x-tenant-id')=='t1', ('tenant', path)  # /me/tenants is per user, no tenant
     s,d=M.handle(req.method, path, qs, body)
     if isinstance(d, tuple) and d[0]=='bytes': return await route.fulfill(status=s, headers={**H, 'Content-Type': d[2]}, body=d[1])
     await route.fulfill(status=s,headers=H,body=json.dumps(d))

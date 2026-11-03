@@ -52,7 +52,7 @@ export function Folders() {
 
   return (
     <div className="screen">
-      <TopBar title="Folders" sub={`${FOLDER_DEFS.length} folders`} back={false} right={<IconBtn name="search" label="Search in folder" onClick={() => setQ(q === null ? '' : null)} />} />
+      <TopBar title="Folders" sub={`${FOLDER_DEFS.length} folders`} back right={<IconBtn name="search" label="Search in folder" onClick={() => setQ(q === null ? '' : null)} />} />
       <div style={{ background: 'var(--surface)', padding: '0 0 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="folder-strip" role="listbox" aria-label="Choose a folder">
           {FOLDER_DEFS.map((d) => {

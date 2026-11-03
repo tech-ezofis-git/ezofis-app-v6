@@ -133,7 +133,7 @@ export default function Home() { const { live } = useStore(); return live ? <Liv
 // Home on the Workflow API: all-workflows inbox (reliable open counts) + /counts (sent / completed totals).
 function LiveHome() {
   const nav = useNavigate();
-  const { unread, me, session, liveTick } = useStore();
+  const { unread, me, session, liveTick, hasFolders } = useStore();
   const [data, setData] = useState(null);
   const [counts, setCounts] = useState(null);
   const [err, setErr] = useState('');
@@ -185,7 +185,13 @@ function LiveHome() {
           <div className="home-grid">
             <div className="home-main" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {err ? <ErrorNote text={err} onRetry={() => setReload((x) => x + 1)} /> : null}
-              {data === null ? <Skeleton n={1} h={110} /> : total ? (
+              {data === null ? (
+                <div className="update-card loading" role="status" aria-label="Checking your inbox">
+                  <UpdHead arrow={false} />
+                  <span className="upd-load-t">Checking your inbox<span className="ai-dots light"><i /><i /><i /></span></span>
+                  <span className="upd-shimmer" style={{ width: '62%' }} /><span className="upd-shimmer" style={{ width: '40%' }} />
+                </div>
+              ) : total ? (
                 <button type="button" className="update-card" onClick={() => nav('/app/inbox')}>
                   <UpdHead />
                   <span style={{ fontSize: 17, fontWeight: 600 }}>{total} request{total > 1 ? 's' : ''} waiting for you</span>
@@ -196,8 +202,8 @@ function LiveHome() {
               ) : null}
               <ToSignCard list={toSign} onOpen={() => nav('/app/sign')} />
               <h2 className="sec-title">Quick actions</h2>
-              <div className="qa-grid">
-                <button type="button" className="qa" onClick={() => nav('/app/upload?source=scan')}><span className="c solid"><Icon name="camera" size={24} /></span>Scan</button>
+              <div className="qa-grid" style={hasFolders ? undefined : { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                {hasFolders ? <button type="button" className="qa" onClick={() => nav('/app/upload?source=scan')}><span className="c solid"><Icon name="camera" size={24} /></span>Scan</button> : null}
                 <button type="button" className="qa" onClick={() => nav('/app/new')}><span className="c"><Icon name="plus" size={24} /></span>New request</button>
                 <button type="button" className="qa" onClick={() => nav('/app/inbox?tab=completed')}><span className="c"><Icon name="checkCircle" size={24} /></span>Completed</button>
                 <button type="button" className={'qa ai' + (aiNew ? ' hot' : '')} onClick={() => openAi('')}><span className="c ai"><Sparkle size={22} color="#fff" />{aiNew ? <span className="qa-new">New</span> : null}</span>Ask AI</button>

@@ -1,14 +1,23 @@
 apply plugin: 'com.android.application'
 
+// Release signing: android/keystore.properties (git-ignored) points at the upload key kept outside the repo
+// (C:\Users\ARUN\EZOFIS-release-key). Without it, release builds are left unsigned.
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) { keystorePropsFile.withInputStream { keystoreProps.load(it) } }
+
 android {
     namespace "com.ezofis.mobile"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.ezofis.mobile"
+        // The Play listing "Ezofis - Mobile" (2023, last version code 17), so V6 ships as an update to it. The Java
+        // namespace stays com.ezofis.mobile.
+        applicationId "com.ezofis.ezofis_mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // keep in step with apk-shell/build_apk.py and Settings (Play needs a higher versionCode for every upload)
+        versionCode 38
+        versionName "6.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +25,27 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    buildTypes {
+    signingConfigs {
         release {
+            if (keystorePropsFile.exists()) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+    buildTypes {
+        // Microsoft sign-in (MSAL) redirect = msauth://com.ezofis.ezofis_mobile/<base64 SHA-1 of the signing key>, so each key has
+        // its own: manifest path here, redirect_uri in src/<buildType>/res/raw/msal_config.json. Both must be registered in Azure.
+        debug {
+            manifestPlaceholders = [msalSignatureHash: '/NNnZgQ9Ckk0W1wpT4DQIj/Kq1Ns=']
+        }
+        release {
+            // Play app signing key (Play re-signs every install with it), not the upload key: a release build installed
+            // straight from the Mac (upload key) can't use Microsoft sign-in
+            manifestPlaceholders = [msalSignatureHash: '/tgVXtex+pa7pqpdlUQSaxv2pUGM=']
+            if (keystorePropsFile.exists()) { signingConfig signingConfigs.release }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -27,6 +55,7 @@ android {
 repositories {
     flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+		dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'
     }
 }
 
@@ -44,6 +73,8 @@ dependencies {
     implementation "androidx.credentials:credentials:1.3.0"
     implementation "androidx.credentials:credentials-play-services-auth:1.3.0"
     implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
+    // Microsoft (Office 365 / Entra ID) sign-in — config in res/raw/msal_config.json
+    implementation "com.microsoft.identity.client:msal:8.6.0"
 }
 
 apply from: 'capacitor.build.gradle'

@@ -26,7 +26,7 @@ def ap_row(i, ref, h):
       'itemId': 'item-ap-1', 'repositoryItem': {'fileName': 'INV-2026-3005.pdf', 'fileType': 'application/pdf', 'fileSize': 47306, 'fields': {'OcrText': 'INVOICE ... lots of text', 'TenantId': 'b843b988', 'WorkflowInstanceId': 'inst', 'StorageProviderId': 'sp1', 'RepositoryId': 'repo-ap', 'Currency': 'CAD', 'DocumentType': 'INVOICE', 'InvoiceAmount': '949.2', 'InvoiceNo': 'INV-2026-3005', 'MatchedStatus': 'Duplicate', 'OcrJson': '{}', 'Id': 'x'}}}
 STATE = {'inbox': [exp_row(1, 'EXP-2026-92', 2, '41.16', 'Beertown Public House'), exp_row(2, 'EXP-2026-90', 30, '120.00', 'Air Canada'), ap_row(1, 'REQ-194', 1), dict(ap_row(2, 'REQ-193', 900), agentResponse=AGENT2)],
          'sent': [], 'completed': [dict(exp_row(9, 'EXP-2026-93', 5, '10.00', 'Tim Hortons'), stage='Approved', stageType='END', completedAtUtc=iso(4), activityId='yAZy')],
-         'comments': {}, 'calls': [], 'fail401': False, 'uploads': [], 'started': [], 'masterCalls': [], 'ocr': [], 'ocrUpload': []}
+         'comments': {}, 'calls': [], 'fail401': False, 'notifications': [], 'uploads': [], 'started': [], 'masterCalls': [], 'ocr': [], 'ocrUpload': []}
 WORKFLOWS = {'items': [{'id': EXP, 'name': 'Expense Reimbursement', 'status': 1}, {'id': AP, 'name': 'Accounts Payable', 'status': 1}, {'id': 'draft', 'name': 'Draft wf', 'status': 0}]}
 META = {
   EXP: {'id': EXP, 'name': 'Expense Reimbursement', 'formId': 'form-exp-real' if USE_REAL else 'form-exp', 'repositoryId': 'repo-exp', 'steps': [], 'workflowJson': {
@@ -144,11 +144,12 @@ def doc_route(method, path, qs, body):
     if path == '/uploadAndIndex/uploadForOcr' and mp_field(mp, 'repositoryId') in ('repo-ap', 'repo-hr'):
         STATE.setdefault('smartOcr', []).append(mp_field(mp, 'repositoryId'))
         return 200, {'ocrJson': '{"pages":1}', 'ocrText': 'INVOICE Vertex', 'ocrFieldList': [{'name': 'Supplier', 'value': 'Vertex Industrial Supply', 'type': 'SHORT_TEXT'}, {'name': 'Document Type', 'value': 'Invoice', 'type': 'SHORT_TEXT'},
-                     {'name': 'Invoice Number', 'value': 'INV-2026-6001', 'type': 'SHORT_TEXT'}, {'name': 'Invoice Date', 'value': '2026-10-25', 'type': 'DATE'}, {'name': 'OCR Text', 'value': 'raw', 'type': 'LONG_TEXT'}]}
+                     {'name': 'Invoice Number', 'value': 'INV-2026-6001', 'type': 'SHORT_TEXT'}, {'name': 'Invoice Date', 'value': '2026-10-25', 'type': 'DATE'}, {'name': 'Amount', 'value': '949.2', 'type': 'NUMBER'},
+                     {'name': 'Line Items', 'value': '[{"Description":"Cable tray","Qty":"4","Amount":"100"},{"Description":"Bolts","Qty":"100","Amount":"50"}]', 'type': 'TABLE'}, {'name': 'OCR Text', 'value': 'raw', 'type': 'LONG_TEXT'}]}
     if path == '/uploadAndIndex/uploadWithOcr' and mp_field(mp, 'repositoryId') in ('repo-ap', 'repo-hr'):
         fid = f'st-{len(STAGE) + 1}'; name = re.search(r'filename="([^"]+)"', mp).group(1)
         STAGE[fid] = {'id': fid, 'fileId': fid, 'name': name, 'status': 'OCR', 'stageStatus': 'OCR', 'repositoryId': mp_field(mp, 'repositoryId'), 'repositoryName': 'Accounts Payable', 'size': 1000, 'fileType': 'pdf', 'createdAt': iso(0),
-                      'fields': [], 'itemId': None, 'isIndexed': False}
+                      'fields': [{'name': k, 'value': v} for k, v in json.loads(mp_field(mp, 'metadata') or '{}').items()], 'itemId': None, 'isIndexed': False}
         STATE.setdefault('smartStage', []).append({'repositoryId': mp_field(mp, 'repositoryId'), 'metadata': json.loads(mp_field(mp, 'metadata') or '{}'), 'ocrText': mp_field(mp, 'ocrText'), 'ocrJson': mp_field(mp, 'ocrJson')})
         return 200, {'fileId': fid, 'repositoryId': mp_field(mp, 'repositoryId'), 'fileName': name, 'filePath': 'monitor/' + name}
     if path == '/repositories/shared-with-me': return 200, [{'shareId': 'sh-in-1', 'shareToken': 'tok-1', 'sourceRepositoryId': 'repo-ap', 'sourceItemId': 'it-2', 'fileName': 'INV-2026-4002.pdf', 'sourceOrganizationName': 'Vertex Holdings',
@@ -188,21 +189,62 @@ def doc_route(method, path, qs, body):
             return 200, {'signRequestId': sid, 'status': 'Completed' if act == '/sign' else 'InProgress'}
     return None
 
+# Repository field definitions (GET /repositories/{id}) — RepositoryFieldDto with optionsJson as the web settings write it.
+G1, G2, GPW = 'aaaaaaaa-0000-4000-8000-000000000001', 'aaaaaaaa-0000-4000-8000-000000000002', 'aaaaaaaa-0000-4000-8000-0000000000ff'
+def fld(i, name, col, dt, level=0, mand=False, folder=False, opts=None, ro=False):
+    return {'id': f'f-{i}', 'name': name, 'sqlColumnName': col, 'dataType': dt, 'level': level, 'isMandatory': mand, 'includeInFolderStructure': folder, 'optionsJson': json.dumps(opts) if opts is not None else None, 'orderId': i, 'isReadOnly': ro}
+REPO_FIELDS = {
+  'repo-ap': [fld(1, 'Supplier', 'Supplier', 'SHORT_TEXT', 1, True, True, {'type': 'master', 'masterFormId': 'mf-vendor', 'masterFieldId': G1}),
+              fld(2, 'Document Type', 'DocumentType', 'SHORT_TEXT', 2, True, True, {'type': 'predefined', 'values': ['Invoice', 'Purchase Order', 'Credit Note']}),
+              fld(3, 'Vendor Code', 'VendorCode', 'SHORT_TEXT', 0, False, False, {'type': 'master', 'masterFormId': 'mf-vendor', 'masterFieldId': G2}),
+              fld(4, 'Invoice Number', 'InvoiceNumber', 'SHORT_TEXT', 0, True), fld(5, 'Invoice Date', 'InvoiceDate', 'DATE'), fld(6, 'Amount', 'Amount', 'NUMBER'),
+              fld(7, 'Line Items', 'LineItems', 'TABLE', 0, False, False, {'type': 'predefined', 'values': ['Description', 'Qty', 'Amount']}),
+              fld(8, 'Status', 'Status', 'SHORT_TEXT', 0, False, False, {'type': 'unique', 'values': []}), fld(9, 'Received By', 'ReceivedBy', 'SHORT_TEXT', 0, False, False, None, True),
+              fld(10, 'OCR Text', 'OcrText', 'LONG_TEXT')],
+  'repo-exp': [fld(1, 'Employee', 'Employee', 'SHORT_TEXT', 0, True), fld(2, 'Category', 'Category', 'SINGLE_SELECT', 0, False, False, ['Travel', 'Meals', 'Office'])],
+  'repo-hr': [fld(1, 'Employee', 'Employee', 'SHORT_TEXT', 0, True)],
+}
+VENDORS = [{G1: 'Vertex Industrial Supply', G2: 'V-3101', GPW: 'secret-pass'}, {G1: 'Nexus Industrial', G2: 'N-2002', GPW: 'x'}, {G1: 'Nexus Industrial', G2: 'N-2003', GPW: 'y'}, {G1: 'Acme Supplies', G2: 'A-0100', GPW: 'z'}]
+SECURITY = {'repo-ap': {'repositoryId': 'repo-ap', 'policies': []},
+            'repo-exp': {'repositoryId': 'repo-exp', 'policies': [{'userIds': ['u1'], 'groupIds': [], 'permissions': {'view': True, 'upload': True, 'download': True, 'delete': False, 'editMetadata': False, 'sendForSignature': False}}]},
+            'repo-hr': {'repositoryId': 'repo-hr', 'policies': [{'userIds': [], 'groupIds': ['g-hr'], 'permissions': {'view': True, 'upload': True, 'delete': True, 'editMetadata': True, 'sendForSignature': True}}]}}
+SAVED_SUMMARY = json.dumps({'document_title': 'Supplier Invoice INV-2026-4002', 'document_type': 'Invoice', 'document_summary': 'Invoice from <b><u>Vertex Industrial Supply</u></b> for CAD 120.50.',
+                            'key_facts_extracted': ['Payment is due in 30 days.'], 'parties': {'buyer': 'Example Corp', 'seller': 'Vertex Industrial Supply'},
+                            'amounts': [{'label': 'Subtotal', 'value': 'CAD 106.64'}, {'label': 'Tax', 'value': 'CAD 13.86'}], 'ocr_text': 'should never show'})
 def repos_route(method, path, qs, body):
     d = doc_route(method, path, qs, body)
     if d is not None: return d
     if path == '/repositories' and method == 'GET': return 200, REPOS
+    rm = re.match(r'^/repositories/([\w-]+)(/security/folder|/items/facets/(\w+))?$', path)
+    if rm and rm.group(1) in STRUCT and method == 'GET':
+        repo = rm.group(1)
+        if rm.group(2) == '/security/folder': return 200, SECURITY[repo]
+        if rm.group(3):
+            col = rm.group(3); STATE.setdefault('facets', []).append((col, qs.get('scopeFilters')))
+            if col == 'Status': return 200, [{'value': 'Indexed', 'count': 5}, {'value': 'Approved', 'count': 1}]
+            key = COL.get(col, col[0].lower() + col[1:]); scope = json.loads(qs.get('scopeFilters') or '{}')
+            vals = {}
+            for x in live_items(repo):
+                if match(x, scope) and x.get(key): vals[x[key]] = vals.get(x[key], 0) + 1
+            return 200, [{'value': k, 'count': n} for k, n in sorted(vals.items())]
+        STATE.setdefault('repoDetail', []).append(repo)
+        return 200, {**next(r for r in REPOS if r['id'] == repo), 'fields': REPO_FIELDS[repo]}
+    if path == '/form/mf-vendor/entry/all': STATE.setdefault('masterCalls', []).append('mf-vendor'); return 200, {'status': 'ok', 'entries': VENDORS, 'meta': {'totalItems': len(VENDORS)}}
+    if path.startswith('/Users/groups/'): return 403, {'error': 'Admin only'}
     m = re.match(r'^/repositories/([\w-]+)/(.*)$', path)
     if m and m.group(1) in STRUCT:
         repo, rest = m.group(1), m.group(2)
         if rest == 'browse/structure': return 200, STRUCT[repo]
         if rest == 'browse/children':
             pf = json.loads(qs.get('parentFilters') or '{}'); order = next((p['fieldOrder'] for p in STRUCT[repo]['browsePaths'] if p['id'] == qs.get('pathId')), STRUCT[repo]['browsePaths'][0]['fieldOrder'])
-            lvl = len(pf); field = order[lvl]; rows = [x for x in live_items(repo) if match(x, pf)]
+            lvl = len(pf)
+            # like RepositoryBrowseService: once every level is picked → isLeafLevel with no groups; otherwise groups and isLeafLevel False
+            if lvl >= len(order): return 200, {'level': len(order), 'groupField': '', 'groupFieldName': '', 'pathId': qs.get('pathId') or 'by-Supplier', 'pathLabel': '', 'parentFilters': pf, 'isLeafLevel': True, 'groups': paged([], 1, 50)}
+            field = order[lvl]; rows = [x for x in live_items(repo) if match(x, pf)]
             names = sorted({x[COL[field]] for x in rows if x[COL[field]]}); s = (qs.get('search') or '').lower()
             groups = [{'name': n, 'itemCount': sum(1 for x in rows if x[COL[field]] == n), 'dateModified': iso(10)} for n in names if s in n.lower()]
             ff = next(f for f in STRUCT[repo]['folderFields'] if f['sqlColumnName'] == field)
-            return 200, {'level': lvl + 1, 'groupField': field, 'groupFieldName': ff['name'], 'pathId': qs.get('pathId') or 'by-Supplier', 'pathLabel': '', 'parentFilters': pf, 'isLeafLevel': lvl + 1 == len(order),
+            return 200, {'level': lvl + 1, 'groupField': field, 'groupFieldName': ff['name'], 'pathId': qs.get('pathId') or 'by-Supplier', 'pathLabel': '', 'parentFilters': pf, 'isLeafLevel': False,
                          'groups': paged(groups, int(qs.get('page', 1)), int(qs.get('pageSize', 50)))}
         if rest == 'items/query' and method == 'POST':
             STATE.setdefault('itemQueries', []).append(body); s = (body.get('search') or '').lower()
@@ -221,7 +263,10 @@ def repos_route(method, path, qs, body):
                     if k in COL: x[COL[k]] = v
                 return 200, {'itemId': x['id'], 'updatedFieldCount': len(body), 'item': None}
             if method == 'DELETE': x['deleted'] = True; STATE.setdefault('deletes', []).append(x['id']); return 200, {'itemId': x['id'], 'isDeleted': True}
-            return 200, {'id': x['id'], 'fileName': x['fileName'], 'fileType': 'application/pdf' if x['fileName'].lower().endswith('.pdf') else 'image/jpeg', 'fileSize': 48000, 'fields': {'Supplier': x['supplier'], 'DocumentType': x['documentType'], 'InvoiceNumber': x['invoiceNumber'], 'OcrPercent': 92, 'OcrText': 'lots of text', 'RepositoryId': repo, **{k: v for k, v in x['fields'].items() if k[0].isupper()}}}
+            return 200, {'id': x['id'], 'fileName': x['fileName'], 'fileType': 'application/pdf' if x['fileName'].lower().endswith('.pdf') else 'image/jpeg', 'fileSize': 48000, 'fields': {'Supplier': x['supplier'], 'DocumentType': x['documentType'], 'InvoiceNumber': x['invoiceNumber'], 'InvoiceDate': '2026-10-01T00:00:00', 'Amount': x['amount'],
+                       'VendorCode': 'V-3101' if x['supplier'] == 'Vertex Industrial Supply' else None, 'ReceivedBy': 'mailroom@example.com', 'Status': 'Indexed',
+                       'LineItems': '{"data":[{"Description":"Bolts","Qty":"2","Amount":"10"}]}', 'SummaryJson': SAVED_SUMMARY if x['id'] == 'it-2' else None,
+                       'OcrPercent': 92, 'OcrText': 'lots of text', 'RepositoryId': repo, **{k: v for k, v in x['fields'].items() if k[0].isupper()}}}
     if path == '/uploadAndIndex/bulkUpload' and method == 'POST':
         mp = body['__multipart']; repo = re.search(r'name="repositoryId"\r\n\r\n(.*?)\r\n', mp).group(1); names = re.findall(r'name="files"; filename="([^"]+)"', mp)
         jid = 'bulk-' + str(len(STATE.setdefault('jobs', {})) + 1); files = []
@@ -270,12 +315,24 @@ def repos_route(method, path, qs, body):
     return None
 
 def handle(method, path, qs, body):
+    if path == '/branding': STATE['calls'].append((method, path, qs, body)); return 404, {'error': 'Not found'}  # V6 has no tenant-branding GET yet
     r = repos_route(method, path, qs, body)
     if r is not None:
         STATE['calls'].append((method, path, qs, body)); return r
     STATE['calls'].append((method, path, qs, body))
     if STATE['fail401']: return 401, {'message': 'Unauthorized'}
     if path == '/repositories/assistant/chatbot' and method == 'POST': return chatbot(body)
+    # MOBILE_APP_NOTIFICATIONS_API: the bell list (newest first), mark read, delete
+    if path == '/notifications' and method == 'GET':
+        cat = qs.get('category')
+        return 200, [n for n in STATE['notifications'] if not n.get('_deleted') and (not cat or n['category'] == cat)]
+    nm = re.match(r'^/notifications/(\w+)(/read)?$', path)
+    if nm:
+        n = next((x for x in STATE['notifications'] if x['id'] == nm.group(1) and not x.get('_deleted')), None)
+        if not n: return 404, {'error': 'Notification not found'}
+        if nm.group(2) and method == 'PATCH': n['isRead'] = True; return 200, {'id': n['id'], 'isRead': True}
+        if method == 'DELETE': n['_deleted'] = True; return 204, None
+    if path == '/me/tenants': return 200, {'tenants': [{'tenantId': 't1', 'name': 'EZOFIS Admin', 'role': 'Lawyers'}]}  # token check before signing out on a 401
     if path == '/usersession': return 200, {'id': 'u1', 'email': 'student.lawyer@example.com', 'displayName': 'Student Lawyer', 'role': 'User', 'Job Title': None, 'department': 'Legal', 'MFAuthentication': 'No', 'configuration': 1}
     p = path[len('/Workflows'):] if path.startswith('/Workflows') else None
     if path.startswith('/repositories/') and path.endswith('/file'): return 200, ('bytes', PDF, 'application/pdf')
@@ -341,3 +398,13 @@ def handle(method, path, qs, body):
             return 200, {'attachments': [{'id': 'a1', 'fileName': 'BeerTown Food receipt with Tip.pdf', 'contentType': 'application/pdf', 'fileSize': 90108, 'uploadedBy': 'admin@example.com', 'createdAtUtc': iso(2), 'repositoryId': 'repo-exp', 'itemId': 'item-1'}]}
     if p and p.count('/') == 1 and p[1:] in META: return 200, META[p[1:]]
     return 404, {'message': 'mock: no route ' + path}
+
+
+def notif(i, ref, mins, read=False, wf=None, inst='inst-exp-1', stage='Approver'):
+    wf = wf or EXP
+    code = f'minutesAgo({mins})' if mins < 1440 else f'daysAgo({mins // 1440})'
+    t = f'Ticket {ref} received for Expense Reimbursement ({stage})'
+    return {'id': str(i), 'actor': {'name': 'Student Lawyer', 'email': 'student.lawyer@example.com'}, 'category': 'workflow', 'createdAtUtc': code,
+            'data': {'processId': inst, 'transactionId': f'tx-{i}', 'workflowId': wf, 'workflowName': 'Expense Reimbursement'}, 'isRead': read,
+            'message': t, 'severity': 'info', 'target': {'route': 'requests', 'search': {'processId': inst, 'transactionId': f'tx-{i}', 'workflowId': wf}}, 'title': t}
+STATE['notifications'] = [notif(1287, 'EXP-2026-92', 5), notif(1286, 'EXP-2026-90', 300, read=True, inst='inst-exp-2'), notif(1280, 'EXP-2026-88', 2 * 1440, read=True, inst='inst-exp-2')]

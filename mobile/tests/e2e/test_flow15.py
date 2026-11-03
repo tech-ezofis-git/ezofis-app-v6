@@ -36,11 +36,12 @@ async def main():
         t=await text(pg); print('CLASSIFY:', M.STATE['classify'][-1], 'AI suggests' in t.upper() or 'AI SUGGESTS' in t.upper(), 'Accounts Payable' in t, '92%' in t, 'Expense Claims' in t)
         await pg.screenshot(path=OUT+'smart-choose.png', full_page=True)
         await pg.click('.smart .btn.primary:has-text("Continue")'); await pg.wait_for_timeout(900)
-        t=await text(pg); print('OCR fields:', M.STATE['smartOcr'][-1], '4 of 4 details found' in t, await pg.input_value('#sm-Supplier'), await pg.input_value('[id="sm-Invoice Date"]'), 'OCR Text' not in t)
+        t=await text(pg); print('OCR fields:', M.STATE['smartOcr'][-1], '6 of 9 details found' in t, await pg.input_value('#sm-Supplier'), await pg.input_value('[id="sm-Invoice Date"]'), 'OCR Text' not in t)
         await pg.fill('[id="sm-Invoice Number"]', 'INV-2026-6001-B'); await pg.screenshot(path=OUT+'smart-review.png', full_page=True)
         await pg.click('.smart .btn.primary:has-text("Save to folder")'); await pg.wait_for_timeout(1200)
         st=M.STATE['smartStage'][-1]; ex=M.STATE['exports'][-1]
-        print('STAGE+ARCHIVE:', st['repositoryId'], st['metadata'].get('Invoice Number'), st['ocrText'], ex['status'], {f['name']: f['value'] for f in ex['fields']}.get('Invoice Number'))
+        sv=[f['value'] for f in M.STATE['stageSaves'][-1]['fields'] if f['name']=='Invoice Number']
+        print('STAGE+ARCHIVE:', st['repositoryId'], st['metadata'].get('Invoice Number'), st['ocrText'], sv, ex['status'], {f['name']: f['value'] for f in ex['fields']}.get('Invoice Number'))
         t=await text(pg); print('DONE:', 'Saved to Accounts Payable' in t, 'Next file' in t)
         await pg.click('.smart .btn.primary:has-text("Next file")'); await pg.wait_for_timeout(900)
         t=await text(pg); print('AI failed -> manual:', "couldn't place this file" in t, await pg.is_disabled('.smart .btn.primary:has-text("Continue")'))
@@ -78,8 +79,8 @@ async def main():
         print('SIGN REQUEST:', sr['signingMode'], [(s['email'], s['order']) for s in sr['signers']], sr['message'], sr['expiresInDays'], 'SIGNATURES' in t.upper(), 'Emailed' in t, 'Waiting' in t)
         await pg.click('.sr-card .text-btn:has-text("Cancel request")'); await pg.wait_for_timeout(600); print('CANCEL:', M.STATE.get('cancels'), 'Cancelled' in await pg.inner_text('.fv'))
         await pg.goto(URL+'#/app/folders/r/repo-exp'); await pg.wait_for_timeout(900); await pg.click('.file-row:has-text("Taxi receipt")'); await pg.wait_for_timeout(1200)
-        await pg.click('.fv-actions button:has-text("Request signature")'); await pg.wait_for_timeout(300)
-        print('NON-PDF blocked:', 'Only PDF documents' in await pg.inner_text('body'), await pg.locator('#sr-msg').count() == 0)
+        acts=await pg.inner_text('.fv-actions')
+        print('NO PERMISSION hides:', 'Request signature' not in acts, 'Edit details' not in acts, 'Delete' not in acts, 'Share' in acts)
         # 5 signing
         await pg.goto(URL+'#/app/sign'); await pg.wait_for_timeout(900); t=await text(pg)
         print('TO SIGN list:', await pg.locator('.file-row').count(), 'Waiting for an earlier signer' in t)

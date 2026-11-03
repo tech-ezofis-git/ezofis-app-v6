@@ -29,13 +29,13 @@ function InboxList({ selectedId, onOpen }) {
     let l = tab === 'inbox' ? requests : actioned;
     if (wf !== 'All workflows') l = l.filter((r) => r.workflow === wf);
     if (search) l = l.filter((r) => (r.id + ' ' + r.title + ' ' + r.workflow).toLowerCase().includes(search.toLowerCase()));
-    if (tab === 'inbox' && quick !== 'All') l = l.filter((r) => (quick === 'Overdue' ? r.status === 'Overdue' : quick === 'Due today' ? /today/i.test(r.due) : quick === 'Matched' ? r.status === 'Matched' : !!r.amount));
+    if (tab === 'inbox' && quick !== 'All') l = l.filter((r, i) => (quick === 'New today' ? i < 2 : i >= 2)); // sample data: the first two arrived today
     return l;
   }, [tab, requests, actioned, wf, search, quick]);
 
   return (
     <div className="screen">
-      <TopBar title="Workflow" back={false} tone="surface" right={<IconBtn name="search" label="Search requests" onClick={() => setSearch(search === null ? '' : null)} />} />
+      <TopBar title="Workflow" back tone="surface" right={<IconBtn name="search" label="Search requests" onClick={() => setSearch(search === null ? '' : null)} />} />
       <div style={{ background: 'var(--surface)', padding: '0 var(--gutter) 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {search !== null ? <input className="input" autoFocus placeholder="Search ID, title or workflow" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search requests" /> : null}
         <button type="button" className="input strong" style={{ display: 'flex', alignItems: 'center', textAlign: 'left' }} onClick={() => setWfOpen(true)}><span style={{ flex: 1 }}>{wf}</span><Icon name="chevD" size={16} stroke={2.4} /></button>
@@ -46,7 +46,7 @@ function InboxList({ selectedId, onOpen }) {
       </div>
       <div className="content" style={{ maxWidth: 'none' }}>
         {tab === 'inbox' ? (
-          <div className="chips">{['All', 'Overdue', 'Due today', 'Matched', 'High value'].map((c) => <button key={c} type="button" className={'chip' + (quick === c ? ' on' : '')} onClick={() => setQuick(c)}>{c}</button>)}</div>
+          <div className="chips">{['All', 'New today', 'Earlier'].map((c) => <button key={c} type="button" className={'chip' + (quick === c ? ' on' : '')} onClick={() => setQuick(c)}>{c}</button>)}</div>
         ) : null}
         {list.length ? list.map((r) => (
           <ReqCard key={r.id} r={r} selected={selectedId === r.id} onClick={() => (tab === 'inbox' ? onOpen(r.id) : nav('/app/notifications'))} />
