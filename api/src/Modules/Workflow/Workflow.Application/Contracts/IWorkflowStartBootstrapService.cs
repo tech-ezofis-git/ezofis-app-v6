@@ -1,3 +1,4 @@
+using SaaSApp.Workflow.Application.Workflows.Commands.StartWorkflow;
 using SaaSApp.Workflow.Domain.Entities;
 
 namespace SaaSApp.Workflow.Application.Contracts;
@@ -57,7 +58,8 @@ public sealed record WorkflowStartBootstrapRequest(
     string? AttachmentContentType,
     IReadOnlyDictionary<string, string>? FormDataFields = null,
     string? FormLineItemsJson = null,
-    IReadOnlyList<StartWorkflowStagedFileRef>? StagedFiles = null);
+    IReadOnlyList<StartWorkflowStagedFileRef>? StagedFiles = null,
+    IReadOnlyList<StartWorkflowAttachmentPayload>? ExtraAttachments = null);
 
 public sealed record WorkflowStartBootstrapResult(
     int? FirstTransactionId,

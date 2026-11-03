@@ -32,6 +32,15 @@ public sealed class EmailIngestController : ControllerBase
     /// </summary>
     private IEmailIngestService EmailIngest => _services.GetRequiredService<IEmailIngestService>();
 
+    /// <summary>Tenant of the signed-in user (JWT <c>tid</c> or <c>X-Tenant-Id</c>). Not used by anonymous calls.</summary>
+    private Guid? CurrentTenantId => _services.GetRequiredService<ITenantContext>().TenantId;
+
+    private Guid? CurrentUserId => _services.GetRequiredService<ICurrentUserProvider>().GetUserId();
+
+    private IWorkflowEmailWebhookService EmailWebhook => _services.GetRequiredService<IWorkflowEmailWebhookService>();
+
+    private IWorkflowEmailSettingsService EmailSettings => _services.GetRequiredService<IWorkflowEmailSettingsService>();
+
     /// <summary>Google Pub/Sub push. When mail arrives, poll the linked mailbox and start the workflow.</summary>
     [AllowAnonymous]
     [HttpPost("gmail/push")]
@@ -113,11 +122,20 @@ public sealed class EmailIngestController : ControllerBase
     /// enquiry watch and sends the browser to <c>redirectUrl</c> with <c>connectionId</c> and <c>watchId</c>.
     /// Branding defaults come from host WatchFox settings; optional body fields override them for this link.
     /// </summary>
+    /// <remarks>
+    /// <c>provider</c> is <c>outlook</c> (default) or <c>gmail</c>. <c>types</c> are the WatchFox
+    /// types to catch (default <c>["enquiry"]</c>). The watch posts to
+    /// <c>/api/email-ingest/webhook/{tenantId}/{workflowId}</c>.
+    /// </remarks>
     [HttpPost("watchfox/connect")]
-    public async Task<IActionResult> ConnectOffice365(
+    public async Task<IActionResult> ConnectMailbox(
         [FromBody] WatchFoxConnectRequest request,
         CancellationToken cancellationToken)
     {
+        var tenantId = CurrentTenantId ?? request.TenantId;
+        if (request.TenantId != Guid.Empty && request.TenantId != tenantId)
+            return BadRequest(new { error = "tenantId does not match the signed-in tenant." });
+
         try
         {
             var branding = new WatchFoxConnectBranding(
@@ -126,12 +144,16 @@ public sealed class EmailIngestController : ControllerBase
                 request.AccentColor,
                 request.SupportEmail,
                 request.HidePoweredBy);
-            var link = await _watchFox.CreateMicrosoftConnectLinkAsync(
-                request.TenantId,
-                request.WorkflowId,
-                request.RedirectUrl,
-                cancellationToken,
-                branding);
+            var link = await _watchFox.CreateConnectLinkAsync(
+                new WatchFoxConnectRequestArgs(
+                    tenantId,
+                    request.WorkflowId,
+                    request.Provider,
+                    request.Types,
+                    request.RedirectUrl,
+                    CurrentUserId,
+                    branding),
+                cancellationToken);
             return Ok(link);
         }
         catch (InvalidOperationException ex)
@@ -140,18 +162,182 @@ public sealed class EmailIngestController : ControllerBase
         }
     }
 
-    /// <summary>WatchFox browser return. Creates the enquiry watch, then opens the UI page.</summary>
+    /// <summary>WatchFox browser return (Outlook or Gmail). Creates the watch, then opens the UI page.</summary>
     [AllowAnonymous]
     [HttpGet("watchfox/connected")]
-    public async Task<IActionResult> Office365Connected(
+    public async Task<IActionResult> MailboxConnected(
         [FromQuery] string? status,
         [FromQuery(Name = "connection_id")] string? connectionId,
+        [FromQuery] string? email,
         [FromQuery] string? state,
         [FromQuery(Name = "r")] string? returnUrl,
         CancellationToken cancellationToken)
     {
-        var back = await _watchFox.CompleteMicrosoftConnectAsync(status, connectionId, state, returnUrl, cancellationToken);
+        var back = await _watchFox.CompleteConnectAsync(status, connectionId, email, state, returnUrl, cancellationToken);
         return Redirect(back);
+    }
+
+    /// <summary>
+    /// Per-workflow email webhook. Every workflow has its own URL in this format, and the email
+    /// starts <paramref name="workflowId"/> with its .eml. Two ways in:
+    /// WatchFox (signed with <c>X-WatchFox-Signature</c>), or a client's own tool with the workflow's
+    /// key in <c>X-Webhook-Key</c>, sending the .eml as multipart <c>file</c>, a <c>message/rfc822</c>
+    /// body, or JSON <c>{ "eml_base64": "…" }</c>.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("webhook/{tenantId:guid}/{workflowId:guid}")]
+    [RequestSizeLimit(40_000_000)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 40_000_000)]
+    public async Task<IActionResult> WorkflowWebhook(
+        Guid tenantId,
+        Guid workflowId,
+        CancellationToken cancellationToken)
+    {
+        var signature = Request.Headers["X-WatchFox-Signature"].FirstOrDefault();
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(signature))
+            {
+                using var reader = new StreamReader(Request.Body);
+                var body = await reader.ReadToEndAsync(cancellationToken);
+                await _watchFox.AcceptForWorkflowAsync(body, signature, tenantId, workflowId, cancellationToken);
+                return Ok(new { accepted = true });
+            }
+
+            var key = Request.Headers["X-Webhook-Key"].FirstOrDefault();
+            string? json = null;
+            byte[]? file = null;
+            string? fileName = null;
+            if (Request.HasFormContentType)
+            {
+                // An empty form still goes to the service, so the key is checked before the body.
+                var form = await Request.ReadFormAsync(cancellationToken);
+                var upload = form.Files.GetFile("file") ?? form.Files.GetFile("eml") ?? form.Files.FirstOrDefault();
+                if (upload is { Length: > 0 })
+                {
+                    await using var ms = new MemoryStream();
+                    await upload.CopyToAsync(ms, cancellationToken);
+                    file = ms.ToArray();
+                    fileName = upload.FileName;
+                }
+            }
+            else if (Request.ContentType?.Contains("rfc822", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                await using var ms = new MemoryStream();
+                await Request.Body.CopyToAsync(ms, cancellationToken);
+                file = ms.ToArray();
+            }
+            else
+            {
+                using var reader = new StreamReader(Request.Body);
+                json = await reader.ReadToEndAsync(cancellationToken);
+            }
+
+            await EmailWebhook.AcceptAsync(tenantId, workflowId, key, json, file, fileName, cancellationToken);
+            return Ok(new { accepted = true });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>The workflow's webhook URL and whether a key is set (the key itself is never shown again).</summary>
+    [HttpGet("webhook/workflows/{workflowId:guid}")]
+    public Task<IActionResult> WorkflowWebhookInfo(Guid workflowId, CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => EmailWebhook.GetAsync(tenantId, workflowId, cancellationToken));
+
+    /// <summary>Creates or replaces the workflow's webhook key. The response has the key once.</summary>
+    [HttpPost("webhook/workflows/{workflowId:guid}/key")]
+    public Task<IActionResult> CreateWorkflowWebhookKey(Guid workflowId, CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => EmailWebhook.CreateKeyAsync(tenantId, workflowId, CurrentUserId, cancellationToken));
+
+    /// <summary>
+    /// How an email reaching this workflow turns into tickets (per email or per attachment).
+    /// Defaults when nothing is saved: MJB per attachment, other workflows per email.
+    /// </summary>
+    [HttpGet("workflows/{workflowId:guid}/email-settings")]
+    public Task<IActionResult> WorkflowEmailSettings(Guid workflowId, CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => EmailSettings.GetAsync(tenantId, workflowId, cancellationToken));
+
+    /// <summary>Saves the workflow's email ticket settings. Fields left out keep their current value.</summary>
+    [HttpPut("workflows/{workflowId:guid}/email-settings")]
+    public Task<IActionResult> SaveWorkflowEmailSettings(
+        Guid workflowId,
+        [FromBody] WorkflowEmailSettingsInput request,
+        CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => EmailSettings.SaveAsync(tenantId, workflowId, request, CurrentUserId, cancellationToken));
+
+    /// <summary>Turns the workflow's webhook key off.</summary>
+    [HttpDelete("webhook/workflows/{workflowId:guid}/key")]
+    public Task<IActionResult> DisableWorkflowWebhookKey(Guid workflowId, CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => EmailWebhook.DisableAsync(tenantId, workflowId, CurrentUserId, cancellationToken));
+
+    /// <summary>Types for the "what to catch" picker: WatchFox presets plus the account's custom types.</summary>
+    [HttpGet("watchfox/types")]
+    public async Task<IActionResult> WatchFoxTypes(CancellationToken cancellationToken) =>
+        Ok(await _watchFox.GetTypesAsync(cancellationToken));
+
+    /// <summary>This workflow's webhook URL and the mailboxes watching it.</summary>
+    [HttpGet("watchfox/workflows/{workflowId:guid}/watches")]
+    public Task<IActionResult> WorkflowWatches(Guid workflowId, CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => _watchFox.ListWorkflowWatchesAsync(tenantId, workflowId, cancellationToken));
+
+    /// <summary>Change the types a saved watch catches.</summary>
+    [HttpPatch("watchfox/watches/{id:guid}")]
+    public Task<IActionResult> UpdateWatch(
+        Guid id,
+        [FromBody] WatchFoxUpdateWatchRequest request,
+        CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => _watchFox.UpdateWatchTypesAsync(tenantId, id, request.Types, CurrentUserId, cancellationToken));
+
+    [HttpPost("watchfox/watches/{id:guid}/pause")]
+    public Task<IActionResult> PauseWatch(Guid id, CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => _watchFox.PauseWatchAsync(tenantId, id, CurrentUserId, cancellationToken));
+
+    [HttpPost("watchfox/watches/{id:guid}/resume")]
+    public Task<IActionResult> ResumeWatch(
+        Guid id,
+        [FromBody] WatchFoxResumeWatchRequest? request,
+        CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => _watchFox.ResumeWatchAsync(tenantId, id, request?.CatchUp ?? false, CurrentUserId, cancellationToken));
+
+    /// <summary>Sign-in link for a mailbox that needs attention.</summary>
+    [HttpPost("watchfox/watches/{id:guid}/reconnect")]
+    public Task<IActionResult> ReconnectWatch(
+        Guid id,
+        [FromBody] WatchFoxReconnectRequest? request,
+        CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => _watchFox.CreateReconnectLinkAsync(tenantId, id, request?.RedirectUrl, cancellationToken));
+
+    [HttpDelete("watchfox/watches/{id:guid}")]
+    public Task<IActionResult> DeleteWatch(Guid id, CancellationToken cancellationToken) =>
+        RunForTenant(async tenantId =>
+        {
+            await _watchFox.DeleteWatchAsync(tenantId, id, CurrentUserId, cancellationToken);
+            return new { deleted = true };
+        });
+
+    private async Task<IActionResult> RunForTenant<T>(Func<Guid, Task<T>> action)
+    {
+        if (CurrentTenantId is not { } tenantId || tenantId == Guid.Empty)
+            return BadRequest(new { error = "Tenant is required." });
+        try
+        {
+            return Ok(await action(tenantId));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -260,6 +446,14 @@ public sealed record WatchFoxConnectRequest(
     string? LogoUrl = null,
     string? AccentColor = null,
     string? SupportEmail = null,
-    bool? HidePoweredBy = null);
+    bool? HidePoweredBy = null,
+    string? Provider = null,
+    IReadOnlyList<string>? Types = null);
+
+public sealed record WatchFoxUpdateWatchRequest(IReadOnlyList<string>? Types);
+
+public sealed record WatchFoxResumeWatchRequest(bool CatchUp = false);
+
+public sealed record WatchFoxReconnectRequest(string? RedirectUrl = null);
 
 public sealed record WatchFoxStartWatchRequest(string ConnectionId, Guid TenantId, Guid WorkflowId);
