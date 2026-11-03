@@ -537,6 +537,11 @@ public sealed class TenantSignupService : ITenantSignupService
             "Create-WorkflowEmailWebhook-Table.sql",
             required: false,
             cancellationToken);
+        await ApplySqlScriptAsync(
+            tenantConnectionString,
+            "Create-WorkflowEmailSettings-Table.sql",
+            required: false,
+            cancellationToken);
     }
 
     private static async Task ApplySqlScriptAsync(

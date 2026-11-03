@@ -74,67 +74,48 @@ public sealed class RunWatchFoxEnquiryJob
             jobContext.Set(args.TenantId, actorUserId);
             try
             {
+                var isEml = IsEml(args.FileName, args.ContentType);
                 var fileName = string.IsNullOrWhiteSpace(args.FileName) ? "message.eml" : args.FileName;
-                if (!fileName.EndsWith(".eml", StringComparison.OrdinalIgnoreCase))
+                if (isEml && !fileName.EndsWith(".eml", StringComparison.OrdinalIgnoreCase))
                     fileName += ".eml";
+                var contentType = string.IsNullOrWhiteSpace(args.ContentType)
+                    ? (isEml ? "message/rfc822" : "application/octet-stream")
+                    : args.ContentType;
 
                 var envType = _configuration["WorkflowStart:EnvType"] ?? "trial";
                 var mailContext = JsonSerializer.Serialize(new Dictionary<string, object?>
                 {
-                    ["source"] = "watchfox",
+                    ["source"] = string.IsNullOrWhiteSpace(args.Source) ? "watchfox" : args.Source,
                     ["from"] = args.FromEmail,
                     ["subject"] = args.Subject,
                     ["messageId"] = args.MessageId
                 });
 
+                // Attachment tickets can carry the original email next to their own file.
+                var referenceEml = args.ReferenceEml is { Length: > 0 }
+                    ? args.ReferenceEml
+                    : string.IsNullOrWhiteSpace(args.ReferenceEmlUrl) ? null : await DownloadAsync(args.ReferenceEmlUrl);
+                IReadOnlyList<StartWorkflowAttachmentPayload>? extras = referenceEml is { Length: > 0 }
+                    ? [new StartWorkflowAttachmentPayload(referenceEml, "message.eml", "message/rfc822")]
+                    : null;
+
+                // The start handler also copies the files inside a .eml into their own attachments.
                 var started = await services.GetRequiredService<IMediator>().Send(
                     new StartWorkflowCommand(
                         args.WorkflowId,
                         Context: mailContext,
                         EnvType: envType,
-                        Attachment: new StartWorkflowAttachmentPayload(
-                            bytes,
-                            fileName,
-                            string.IsNullOrWhiteSpace(args.ContentType) ? "message/rfc822" : args.ContentType),
-                        TriggerApAgentPythonJob: false));
+                        Attachment: new StartWorkflowAttachmentPayload(bytes, fileName, contentType),
+                        TriggerApAgentPythonJob: false,
+                        ExtraAttachments: extras));
 
                 _logger.LogInformation(
-                    "WatchFox enquiry {EventKey} started workflow {WorkflowId} instance {InstanceId} with {FileName}.",
+                    "Email {EventKey} started workflow {WorkflowId} instance {InstanceId} with {FileName}{WithEmail}.",
                     args.EventKey,
                     args.WorkflowId,
                     started.InstanceId,
-                    fileName);
-
-                // Additive enrichment only: pull any allowed-type files embedded in the .eml
-                // (PDF/Office/CSV/image attachments, explicit or inline) into their own
-                // attachments. The .eml itself stays archived exactly as above -- a failure here
-                // must not fail ticket creation.
-                try
-                {
-                    var extraction = await services.GetRequiredService<IEmlAttachmentExtractionService>().ExtractAsync(
-                        args.TenantId,
-                        args.WorkflowId,
-                        started.InstanceId,
-                        actorUserId,
-                        sourceRepositoryId: null,
-                        sourceItemId: null);
-
-                    _logger.LogInformation(
-                        "WatchFox enquiry {EventKey} instance {InstanceId}: extracted {ExtractedCount} embedded attachment(s) from {FileName}, skipped {SkippedCount}.",
-                        args.EventKey,
-                        started.InstanceId,
-                        extraction.Extracted.Count,
-                        fileName,
-                        extraction.Skipped.Count);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(
-                        ex,
-                        "WatchFox enquiry {EventKey} instance {InstanceId}: .eml attachment extraction failed; ticket still started.",
-                        args.EventKey,
-                        started.InstanceId);
-                }
+                    fileName,
+                    extras == null ? string.Empty : " and the original .eml");
             }
             finally
             {
@@ -148,6 +129,11 @@ public sealed class RunWatchFoxEnquiryJob
             throw;
         }
     }
+
+    private static bool IsEml(string? fileName, string? contentType) =>
+        string.IsNullOrWhiteSpace(fileName) && string.IsNullOrWhiteSpace(contentType)
+        || (fileName?.EndsWith(".eml", StringComparison.OrdinalIgnoreCase) ?? false)
+        || (contentType?.Contains("rfc822", StringComparison.OrdinalIgnoreCase) ?? false);
 
     private async Task<Guid> ResolveActorUserIdAsync(string connectionString, Guid tenantId)
     {

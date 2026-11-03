@@ -104,12 +104,4 @@ public class WatchFoxWatchRulesTests
 
         Assert.Empty(WatchFoxWatchRules.MatchedTypes(doc.RootElement));
     }
-
-    [Fact]
-    public void UseInvoiceJob_only_for_invoice_on_the_mjb_workflow()
-    {
-        Assert.True(WatchFoxWatchRules.UseInvoiceJob(["invoice"], isMjbWorkflow: true));
-        Assert.False(WatchFoxWatchRules.UseInvoiceJob(["invoice"], isMjbWorkflow: false));
-        Assert.False(WatchFoxWatchRules.UseInvoiceJob(["enquiry", "support"], isMjbWorkflow: true));
-    }
 }

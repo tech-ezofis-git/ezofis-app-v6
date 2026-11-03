@@ -176,11 +176,13 @@ public sealed record WatchFoxInvoiceJobArgs(
     Guid WorkflowId,
     string FileName,
     string? ContentType,
-    string DownloadUrl,
+    string? DownloadUrl,
     string? FromEmail,
     string? Subject,
     long? ReceivedUnix,
-    string? MessageId);
+    string? MessageId,
+    /// <summary>The file itself, when it came inside a webhook-only .eml rather than as a WatchFox link.</summary>
+    byte[]? Content = null);
 
 /// <summary>One Enquiries .eml from a WatchFox <c>email.matched</c> event.</summary>
 public sealed record WatchFoxEnquiryJobArgs(
@@ -194,4 +196,9 @@ public sealed record WatchFoxEnquiryJobArgs(
     string? FromEmail,
     string? Subject,
     string? MessageId,
-    Guid? ActorUserId = null);
+    Guid? ActorUserId = null,
+    /// <summary><c>watchfox</c> or <c>webhook</c>, written to the ticket's mail context.</summary>
+    string? Source = null,
+    /// <summary>The original .eml to add next to the main file (attachment tickets with "attach email" on).</summary>
+    byte[]? ReferenceEml = null,
+    string? ReferenceEmlUrl = null);

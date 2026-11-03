@@ -51,7 +51,10 @@ public sealed class RunWatchFoxInvoiceJob
 
         try
         {
-            var bytes = await DownloadAsync(args.DownloadUrl);
+            var bytes = args.Content is { Length: > 0 }
+                ? args.Content
+                : await DownloadAsync(args.DownloadUrl
+                    ?? throw new InvalidOperationException("WatchFox invoice job has no file or download URL."));
             if (bytes.Length == 0)
                 throw new InvalidOperationException("WatchFox attachment download was empty.");
 
