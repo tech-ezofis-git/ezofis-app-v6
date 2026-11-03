@@ -12,6 +12,18 @@
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "cd app && set VITE_SUB_WORKFLOW_API=live&& npm run dev"],
       "port": 3000
+    },
+    {
+      "name": "connector-api",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd .claude\\worktrees\\workflow-connector\\api\\src\\Api && dotnet run -- --urls http://localhost:5005"],
+      "port": 5005
+    },
+    {
+      "name": "connector-web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd .claude\\worktrees\\workflow-connector\\app && set VITE_SUB_WORKFLOW_API=live&& set VITE_V6_BASE_URL=http://localhost:5005/api&& set VITE_BASE_URL=http://localhost:5005/api&& npx vite --port 3005 --strictPort"],
+      "port": 3005
     }
   ]
 }
