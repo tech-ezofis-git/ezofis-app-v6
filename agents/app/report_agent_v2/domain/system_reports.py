@@ -434,34 +434,65 @@ _SLA_COLS = (Col("Workflow"), Col("Requests with SLA", "number", "measure", True
              Col("Response Met", "number", "measure", True), Col("Response Breached", "number", "measure", True),
              Col("Resolution Met", "number", "measure", True), Col("Resolution Breached", "number", "measure", True),
              Col("In Progress", "number", "measure", True), Col("Escalated", "number", "measure", True),
-             Col("Compliance %", "number", "measure"))
+             Col("Compliance %", "number", "measure"),
+             Col("Notifications Sent", "number", "measure", True), Col("Notifications Failed", "number", "measure", True))
+
+# Outcomes the V6 SLA timer writes (WorkflowSlaTimerService). A cancelled timer met its SLA only when the
+# ticket was handled in time; "rule removed" / "no longer published" count as neither met nor breached.
+_SLA_MET_RESPONSE = "ticket was already acted on%"
+_SLA_MET_RESOLUTION = "ticket is already resolved%"
+_SLA_TIMER_PENDING, _SLA_TIMER_FIRED, _SLA_TIMER_CANCELLED = 0, 1, 2
+_SLA_OUTBOX_SENT, _SLA_OUTBOX_FAILED = 1, 2
 
 
 async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
-    need = {"response_deadline", "resolution_deadline", "response_achieved_at", "resolution_achieved_at", "is_escalated", "created_at_utc"}
-    tables = await _workflow_tables(ctx, "workflow_instance_slas_", need)
-    if not tables:
-        return _empty(_SLA_COLS), ["No workflow has SLA tracking."]
-    now = ctx.bind(ctx.until)
-    parts = [
-        sql.SQL("SELECT {wf}::text AS wf, s.* FROM {t} s WHERE s.created_at_utc >= {since} AND s.created_at_utc < {until}").format(
-            wf=ctx.bind(name), t=_t("workflow", table), since=ctx.bind(ctx.since), until=ctx.bind(ctx.until))
-        for name, table, _ in tables
-    ]
+    """Designer SLA results per workflow, from the V6 SLA timers (workflow.sla_timers: one row per request,
+    stage and rule). Counted per request: a request breached when any of its timers fired, met when its
+    timers were cancelled because it was handled in time. Advanced (SLA Master) SLAs create no timers."""
+    timer_cols = await _columns(ctx.conn, "workflow", "sla_timers")
+    if not {"workflow_id", "workflow_instance_id", "scope", "status", "outcome", "created_at_utc"} <= timer_cols:
+        return _empty(_SLA_COLS), ["No workflow SLA has run yet (no SLA timers)."]
+    has_outbox = {"timer_id", "status"} <= await _columns(ctx.conn, "workflow", "sla_notification_outbox")
+    has_names = {"Id", "Name"} <= await _columns(ctx.conn, "workflow", "Workflows")
+    wf_name = (sql.SQL('COALESCE((SELECT w."Name" FROM workflow."Workflows" w WHERE w."Id" = r.workflow_id), (r.workflow_id)::text)')
+               if has_names else sql.SQL("(r.workflow_id)::text"))
+    outbox = (sql.SQL(
+        "(SELECT COUNT(*) FILTER (WHERE o.status = {sent}) AS sent, COUNT(*) FILTER (WHERE o.status = {failed}) AS failed "
+        "FROM workflow.sla_notification_outbox o WHERE o.timer_id = t.id)").format(
+        sent=sql.Literal(_SLA_OUTBOX_SENT), failed=sql.Literal(_SLA_OUTBOX_FAILED))
+        if has_outbox else sql.SQL("(SELECT 0::bigint AS sent, 0::bigint AS failed)"))
+    args = {
+        "since": ctx.bind(ctx.since), "until": ctx.bind(ctx.until),
+        "pending": sql.Literal(_SLA_TIMER_PENDING), "fired": sql.Literal(_SLA_TIMER_FIRED),
+        "cancelled": sql.Literal(_SLA_TIMER_CANCELLED),
+        "met_resp": ctx.bind(_SLA_MET_RESPONSE), "met_res": ctx.bind(_SLA_MET_RESOLUTION),
+    }
     q = sql.SQL(
-        """SELECT wf AS c0, COUNT(*) AS c1,
-                  COUNT(*) FILTER (WHERE response_achieved_at IS NOT NULL AND response_achieved_at <= response_deadline) AS c2,
-                  COUNT(*) FILTER (WHERE response_achieved_at > response_deadline
-                                      OR (response_achieved_at IS NULL AND response_deadline < {now})) AS c3,
-                  COUNT(*) FILTER (WHERE resolution_achieved_at IS NOT NULL AND resolution_achieved_at <= resolution_deadline) AS c4,
-                  COUNT(*) FILTER (WHERE resolution_achieved_at > resolution_deadline
-                                      OR (resolution_achieved_at IS NULL AND resolution_deadline < {now})) AS c5,
-                  COUNT(*) FILTER (WHERE resolution_achieved_at IS NULL AND (resolution_deadline IS NULL OR resolution_deadline >= {now})) AS c6,
-                  COUNT(*) FILTER (WHERE is_escalated) AS c7,
-                  round(100.0 * COUNT(*) FILTER (WHERE resolution_achieved_at IS NOT NULL AND resolution_achieved_at <= resolution_deadline)
-                        / NULLIF(COUNT(*) FILTER (WHERE resolution_achieved_at IS NOT NULL OR resolution_deadline < {now}), 0), 1) AS c8
-           FROM ({u}) s GROUP BY 1 ORDER BY c8 ASC NULLS LAST, c0 LIMIT {limit}"""
-    ).format(now=now, u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
+        """WITH t AS (
+               SELECT t.*, n.sent, n.failed FROM workflow.sla_timers t, LATERAL {outbox} n
+               WHERE t.created_at_utc >= {since} AND t.created_at_utc < {until}),
+           r AS (  -- one row per request
+               SELECT workflow_id, workflow_instance_id,
+                      bool_or(scope = 'response' AND status = {fired}) AS resp_breached,
+                      bool_or(scope = 'response' AND status = {cancelled} AND outcome LIKE {met_resp}) AS resp_handled,
+                      bool_or(scope = 'resolution' AND status = {fired}) AS res_breached,
+                      bool_or(scope = 'resolution' AND status = {cancelled} AND outcome LIKE {met_res}) AS res_handled,
+                      bool_or(status = {pending}) AS pending,
+                      bool_or(status = {fired} AND (outcome LIKE '%%reassigned to %%' OR outcome LIKE '%%moved to stage %%')) AS escalated,
+                      SUM(sent) AS sent, SUM(failed) AS failed
+               FROM t GROUP BY 1, 2)
+           SELECT {wf_name} AS c0, COUNT(*) AS c1,
+                  COUNT(*) FILTER (WHERE resp_handled AND NOT resp_breached) AS c2,
+                  COUNT(*) FILTER (WHERE resp_breached) AS c3,
+                  COUNT(*) FILTER (WHERE res_handled AND NOT res_breached) AS c4,
+                  COUNT(*) FILTER (WHERE res_breached) AS c5,
+                  COUNT(*) FILTER (WHERE pending AND NOT (resp_breached OR res_breached)) AS c6,
+                  COUNT(*) FILTER (WHERE escalated) AS c7,
+                  round(100.0 * COUNT(*) FILTER (WHERE (resp_handled OR res_handled) AND NOT (resp_breached OR res_breached))
+                        / NULLIF(COUNT(*) FILTER (WHERE resp_handled OR res_handled OR resp_breached OR res_breached), 0), 1) AS c8,
+                  COALESCE(SUM(sent), 0) AS c9, COALESCE(SUM(failed), 0) AS c10
+           FROM r GROUP BY r.workflow_id ORDER BY c8 ASC NULLS LAST, c0 LIMIT {limit}"""
+    ).format(outbox=outbox, wf_name=wf_name, limit=sql.Literal(ctx.limit), **args)
     return q, []
 
 
@@ -686,7 +717,8 @@ TEMPLATES: dict[str, Template] = {t.key: t for t in (
              "Logins (web/mobile, IPs) and security, critical, warning and permission-change events per user over the last 30 days.",
              "tenant", 30, _LOGIN_COLS, _user_login_security),
     Template("workflow_sla_compliance", "Workflow SLA Compliance",
-             "Response and resolution SLA met vs breached, in progress, escalations and compliance % per workflow (last 90 days).",
+             "Response and resolution SLA met vs breached, in progress, escalations, compliance % and SLA notifications sent "
+             "per workflow (last 90 days).",
              "all_workflows", 90, _SLA_COLS, _workflow_sla_compliance),
     Template("pending_workflow_requests", "Pending Workflow Requests",
              "All open (pending, running, paused) requests across workflows with current stage and days pending.",
