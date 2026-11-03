@@ -188,9 +188,22 @@ Made with ``scripts/release-pr.ps1``: a branch from ``main``, with #$Pr's merge 
 1. tech-ezofis-git: **Approve** on the final commit, then **Merge**.
 2. Afterwards, sync ``main`` into ``testing``: ``gh pr create --repo $Repo --base testing --head main --title "Sync main into testing"``
 "@
-    $create = Invoke-Native 'gh' @('pr', 'create', '--repo', $Repo, '--base', 'main', '--head', $branch,
-        '--reviewer', 'tech-ezofis-git', '--title', "Release: $($info.title) (#$Pr)", '--body', $body)
-    if ($create.ExitCode -ne 0) { Stop-Release ("The branch is pushed, but opening the PR failed:`n" + ($create.Output -join "`n")) }
+    # Windows PowerShell 5.1 doesn't escape double quotes inside arguments to native programs, so
+    # gh would split the text. Pass the body as a file, and keep double quotes out of the title.
+    $bodyFile = [System.IO.Path]::GetTempFileName()
+    [System.IO.File]::WriteAllText($bodyFile, $body, (New-Object System.Text.UTF8Encoding($false)))
+    $title = "Release: $($info.title) (#$Pr)" -replace '"', "'"
+    try {
+        $create = Invoke-Native 'gh' @('pr', 'create', '--repo', $Repo, '--base', 'main', '--head', $branch,
+            '--reviewer', 'tech-ezofis-git', '--title', $title, '--body-file', $bodyFile)
+    }
+    finally {
+        Remove-Item -LiteralPath $bodyFile -ErrorAction SilentlyContinue
+    }
+    if ($create.ExitCode -ne 0) {
+        Stop-Release ("The branch $branch is pushed, but opening the PR failed:`n" + ($create.Output -join "`n") +
+            "`nOpen it on GitHub instead: https://github.com/$Repo/compare/main...$branch")
+    }
     $url = ($create.Output | Where-Object { $_ -match '^https://' } | Select-Object -Last 1)
     $keepBranch = $true
 
