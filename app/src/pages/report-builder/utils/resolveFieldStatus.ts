@@ -27,5 +27,8 @@ export const resolveFieldStatus = (
   )
   if (rule) return { color: rule.color, label: rule.label || rawValue }
 
+  // An empty value gets no pill (the cell shows "-"), not an empty colored one.
+  if (!String(rawValue ?? '').trim()) return null
+
   return { color: setting.statusDefault || 'gray', label: rawValue }
 }

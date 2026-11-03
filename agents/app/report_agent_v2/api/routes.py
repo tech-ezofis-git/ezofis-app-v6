@@ -6,6 +6,7 @@ authentication and tenant middleware have validated the token and the tenant mem
 
 from __future__ import annotations
 
+import logging
 import time
 import uuid
 from datetime import date
@@ -37,6 +38,8 @@ from app.report_agent_v2.domain.spec import ReportSpec
 from app.report_agent_v2.errors import BadRequestError, ConflictError, ForbiddenError, UnprocessableError
 from app.report_agent_v2.security.authorization import ReportAccess, evaluate_report_access, tenant_admin, tenant_user
 from app.report_agent_v2.security.principal import TenantContext
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["report-agent-v2"])
 PREVIEW_ROWS = 50
@@ -375,6 +378,16 @@ async def list_reports(
     kind: executable (default: agent + default reports, the ones this API can run), agent, default, or all
     (also lists reports saved by the old AI builder; those have "executable": false here).
     """
+    # A tenant gets its default reports the first time an Admin opens the list (new tenants included),
+    # so nobody has to call /defaults/install. Never blocks the list.
+    if ctx.is_admin and kind != "agent":
+        try:
+            created = await store.install_missing_default_reports(
+                conn, tenant_id=ctx.tenant_id, user_id=ctx.user_id, templates=system_reports.TEMPLATES.values())
+            if created:
+                logger.info("Installed %d default report(s) for tenant %s", created, ctx.tenant_id)
+        except Exception:  # noqa: BLE001 -- the list still works without them
+            logger.exception("Could not install default reports for tenant %s", ctx.tenant_id)
     groups = await store.user_group_ids(conn, ctx.user_id)
     visible = []
     for row in await store.list_definitions(conn, ctx.tenant_id, (search or "").strip() or None):

@@ -11,6 +11,7 @@ using SaaSApp.Repository.Application.Contracts;
 using SaaSApp.ActivityLog.Application.Contracts;
 using SaaSApp.ActivityLog.Infrastructure.Options;
 using SaaSApp.Users.Infrastructure.Persistence;
+using SaaSApp.Reporting.Infrastructure.Persistence;
 
 namespace SaaSApp.Api.Services;
 
@@ -132,6 +133,9 @@ public sealed class TenantSignupService : ITenantSignupService
             if (_activityLogOptions.Enabled || _eventLogOptions.Enabled)
                 await _activityLogSchema.ApplyBaseSchemaAsync(tenantConnectionString, cancellationToken);
             await _repositoryStorageSeed.EnsureDefaultProvidersAsync(tenantConnectionString, tenantId, null, cancellationToken);
+            // Reporting tables (manual, AI and Report Agent v2), so the new tenant's admin gets the
+            // default reports the first time they open Reports.
+            await ReportingSchema.EnsureAsync(tenantConnectionString, cancellationToken);
 
             // Old licenseType intent:
             // 1 = DMS, 2 = Workflow, 3 = DMS + Workflow.

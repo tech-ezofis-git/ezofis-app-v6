@@ -37,6 +37,9 @@ class Col:
     dtype: str = "text"  # text | number | date
     role: str = "dimension"  # dimension | measure | value | link (hidden row id)
     total: bool = False
+    # Built-in highlight: (value, color) pills, plus the color of every other value.
+    colors: tuple[tuple[str, str], ...] = ()
+    color_default: str | None = None
 
 
 @dataclass(frozen=True)
@@ -127,8 +130,10 @@ def _status_label(expr: sql.Composable) -> sql.Composable:
 # Templates
 # ---------------------------------------------------------------------------------------------
 
-_CREDIT_COLS = (Col("Request No"), Col("Workflow"), Col("Skill"), Col("Billing Status"),
-                Col("Runs", "number", "measure", True), Col("Credits", "number", "measure", True),
+# Source: the request's workflow, or the folder of a repository file (OCR, intelligent upload, AI summary).
+# Agent: the AP skill or AI activity that used the credits.
+_CREDIT_COLS = (Col("Request No"), Col("Source"), Col("Agent"), Col("Billing Status"),
+                Col("Credits", "number", "measure", True),
                 Col("Last Used", "date", "value")) + _REQUEST_LINKS + _FILE_LINKS
 
 
@@ -173,8 +178,8 @@ async def _billing_rows(ctx: _Ctx) -> sql.Composable:
     if not ctx.billing:
         return sql.SQL(
             "SELECT NULL::text AS c0, NULL::text AS c1, NULL::text AS c2, NULL::text AS c3, 0::bigint AS c4, "
-            "0::bigint AS c5, NULL::timestamptz AS c6, NULL::text AS c7, NULL::text AS c8, NULL::text AS c9, "
-            "NULL::text AS c10 WHERE false")
+            "NULL::timestamptz AS c5, NULL::text AS c6, NULL::text AS c7, NULL::text AS c8, "
+            "NULL::text AS c9 WHERE false")
     entries = [_billing_entry(r) for r in ctx.billing]
     item_ids = sorted({e[2] for e in entries if e[2]})
     names = sorted({_match_name(e[1]) for e in entries if e[1]})
@@ -212,8 +217,8 @@ async def _billing_rows(ctx: _Ctx) -> sql.Composable:
     return sql.SQL(
         """WITH files AS ({files}), v(activity, fname, mname, item, repo, credit, at) AS (VALUES {values})
            SELECT COALESCE(f.file_name, v.fname, '-') AS c0, f.repo_name AS c1, v.activity AS c2, 'Charged'::text AS c3,
-                  COUNT(*)::bigint AS c4, SUM(v.credit)::bigint AS c5, MAX(v.at) AS c6, NULL::text AS c7, NULL::text AS c8,
-                  f.id AS c9, f.repo_id AS c10
+                  SUM(v.credit)::bigint AS c4, MAX(v.at) AS c5, NULL::text AS c6, NULL::text AS c7,
+                  f.id AS c8, f.repo_id AS c9
            FROM v
            LEFT JOIN LATERAL (
                SELECT * FROM files f
@@ -236,7 +241,7 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
         return _empty(_CREDIT_COLS), ["This organization has no AI credit ledger yet."]
     billing = await _billing_rows(ctx)
     if not has_ledger:
-        return sql.SQL("SELECT * FROM ({billing}) b ORDER BY c6 DESC, c0, c2 LIMIT {limit}").format(
+        return sql.SQL("SELECT * FROM ({billing}) b ORDER BY c5 DESC, c0, c2 LIMIT {limit}").format(
             billing=billing, limit=sql.Literal(ctx.limit)), []
     tid = ctx.bind(str(ctx.tenant_id))
     has_runs = {"id", "item_key"} <= await _columns(ctx.conn, "public", "ap_runs") and "run_id" in ledger_cols
@@ -281,8 +286,8 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     q = sql.SQL(
         """WITH items AS ({items}), insts AS ({insts})
            SELECT COALESCE(i.ref, {identify}, r.item_key, 'Not linked') AS c0, i.wf_name AS c1, {skill} AS c2,
-                  {billing_status} AS c3, COUNT(*) AS c4, COALESCE(SUM(l.credits), 0) AS c5, MAX(l.created_at) AS c6,
-                  i.wi_id AS c7, i.wf_id AS c8, NULL::text AS c9, NULL::text AS c10
+                  {billing_status} AS c3, COALESCE(SUM(l.credits), 0) AS c4, MAX(l.created_at) AS c5,
+                  i.wi_id AS c6, i.wf_id AS c7, NULL::text AS c8, NULL::text AS c9
            FROM public.ap_credit_ledger l
            {runs_join}
            LEFT JOIN items it ON it.item_key = r.item_key
@@ -291,7 +296,7 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
            GROUP BY 1, 2, 3, 4, i.wi_id, i.wf_id
            UNION ALL
            SELECT * FROM ({billing}) b
-           ORDER BY c6 DESC, c0, c2 LIMIT {limit}"""
+           ORDER BY c5 DESC, c0, c2 LIMIT {limit}"""
     ).format(items=items, insts=insts, identify=identify, skill=skill, billing_status=billing_status, billing=billing,
              runs_join=runs_join, tid=tid,
              since=ctx.bind(ctx.since), until=ctx.bind(ctx.until), limit=sql.Literal(ctx.limit))
@@ -327,7 +332,11 @@ async def _portal_submission_performance(ctx: _Ctx) -> tuple[sql.Composable, lis
     return q, ["Every workflow request is counted as a submission (requests do not record a portal source)."]
 
 
-_PENDING_COLS = (Col("Workflow"), Col("Request No"), Col("Status"), Col("Stage"), Col("Created By"), Col("Action By"),
+# Raised By: who submitted the request. Pending With: who has to act on it now (its open transactions'
+# users / groups, as in their Inbox).
+_PENDING_COLS = (Col("Workflow"), Col("Request No"),
+                 Col("Status", colors=(("Running", "blue"), ("Pending", "orange"), ("Paused", "gray"))),
+                 Col("Stage", color_default="purple"), Col("Raised By"), Col("Pending With"),
                  Col("Created At", "date", "value"), Col("Modified At", "date", "value"),
                  Col("Days Pending", "number", "value")) + _REQUEST_LINKS
 
@@ -346,11 +355,14 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
     if not tables:
         return _empty(_PENDING_COLS), ["No workflow requests found."]
     has_users = {"Id", "Email"} <= await _columns(ctx.conn, "users", "Users")
+    has_groups = {"Id", "Name"} <= await _columns(ctx.conn, "users", "Groups")
     parts = []
     for name, table, cols in tables:
         suffix = table.rsplit("_", 1)[1]
         inbox = f"inbox_{suffix}"
         inbox_cols = await _columns(ctx.conn, "workflow", inbox)
+        tx_table = f"transaction_{suffix}"
+        tx_cols = await _columns(ctx.conn, "workflow", tx_table)
         pf_cols = await _columns(ctx.conn, "workflow", f"process_form_{suffix}")
 
         # Latest inbox row of the request: its stage, and who acted last (email preferred).
@@ -371,6 +383,28 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
         else:
             stage = action_by = sql.SQL("NULL::text")
 
+        # Pending With: the users / groups of the request's open transactions (action_status 0, not at
+        # an END stage) -- the same rows that put it in their Inbox. Without a transaction table, fall
+        # back to the latest inbox row's user.
+        if {"workflow_instance_id", "action_status"} <= tx_cols and ("activity_user_id" in tx_cols or "activity_group_id" in tx_cols):
+            assignee = []
+            if has_users and "activity_user_id" in tx_cols:
+                assignee.append(_user_email(sql.SQL("tx.activity_user_id")))
+            if has_groups and "activity_group_id" in tx_cols:
+                assignee.append(sql.SQL(
+                    "(SELECT g.\"Name\" FROM users.\"Groups\" g "
+                    "WHERE (g.\"Id\")::text = NULLIF(btrim((tx.activity_group_id)::text), '') LIMIT 1)"))
+            not_deleted = sql.SQL(" AND COALESCE(tx.is_deleted, false) = false") if "is_deleted" in tx_cols else sql.SQL("")
+            not_end = (sql.SQL(" AND upper(btrim(COALESCE(tx.stage_type::text, ''))) <> 'END'") if "stage_type" in tx_cols
+                       else sql.SQL(""))
+            pending_with = (sql.SQL(
+                "(SELECT string_agg(DISTINCT w, ', ') FROM (SELECT COALESCE({who}) AS w FROM {tx} tx "
+                "WHERE (tx.workflow_instance_id)::text = (wi.id)::text AND tx.action_status = 0{nd}{ne}) a WHERE w IS NOT NULL)"
+            ).format(who=sql.SQL(", ").join(assignee), tx=_t("workflow", tx_table), nd=not_deleted, ne=not_end)
+                if assignee else sql.SQL("NULL::text"))
+        else:
+            pending_with = action_by
+
         # Request creator: the user who started it, else the one who created its form entry.
         creators = []
         if has_users and "started_by" in cols:
@@ -384,14 +418,12 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
         ref = sql.SQL("wi.reference_number::text") if "reference_number" in cols else sql.SQL("(wi.id)::text")
         tenant = sql.SQL(" AND wi.tenant_id = {}").format(ctx.bind(ctx.tenant_id)) if "tenant_id" in cols else sql.SQL("")
         parts.append(sql.SQL(
-            # Action By: nobody has acted yet on a request without an inbox entry, so its creator
-            # (who submitted it) made the last action.
             "SELECT {wf}::text AS c0, {ref} AS c1, {status} AS c2, {stage} AS c3, {created_by} AS c4, "
-            "COALESCE({action_by}, {created_by}) AS c5, wi.created_at_utc AS c6, {modified} AS c7, "
+            "{pending_with} AS c5, wi.created_at_utc AS c6, {modified} AS c7, "
             "({asof} - (wi.created_at_utc AT TIME ZONE 'UTC')::date) AS c8, (wi.id)::text AS c9, {wf_id} AS c10 "
             "FROM {t} wi WHERE wi.status IN (0, 1, 2){tenant}").format(
             wf=ctx.bind(name), ref=ref, status=_status_label(sql.SQL("wi.status")), stage=stage, created_by=created_by,
-            action_by=action_by, modified=modified, asof=ctx.bind(ctx.as_of, "date"), t=_t("workflow", table), tenant=tenant,
+            pending_with=pending_with, modified=modified, asof=ctx.bind(ctx.as_of, "date"), t=_t("workflow", table), tenant=tenant,
             wf_id=sql.SQL("(wi.workflow_id)::text") if "workflow_id" in cols else sql.SQL("NULL::text")))
     q = sql.SQL("SELECT * FROM ({u}) s ORDER BY c8 DESC NULLS LAST, c0 LIMIT {limit}").format(
         u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
@@ -472,8 +504,8 @@ async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     return q, []
 
 
-_DOC_COLS = (Col("Document"), Col("Folder"), Col("Repository"), Col("When", "date", "value"), Col("Activity"),
-             Col("Details"), Col("By")) + _FILE_LINKS
+_DOC_COLS = (Col("Document"), Col("Repository"), Col("Updated On", "date", "value"), Col("Activity"),
+             Col("Details"), Col("Action By")) + _FILE_LINKS
 
 # Built-in columns of a repository items table; every other column is an index (metadata) field.
 _ITEM_BUILTIN = {
@@ -530,7 +562,11 @@ def _doc_change_part(
         sql.SQL("CASE WHEN {} THEN 'Text extracted (OCR)' END").format(changed("ocr_text", "ocr_json")),
         sql.SQL("CASE WHEN {} THEN 'AI summary generated' END").format(changed("summary_json")),
         sql.SQL("CASE WHEN {} THEN 'Status changed' END").format(changed("status", "ai_status", "is_verified", "ocr_score")),
-        sql.SQL("CASE WHEN {} THEN 'Index updated' END").format(changed(*index_fields)) if index_fields else None,
+        # First time the index fields get values (after upload / archive): "Indexed"; later edits: "Index updated".
+        sql.SQL("CASE WHEN {} THEN CASE WHEN {} THEN 'Indexed' ELSE 'Index updated' END END").format(
+            changed(*index_fields),
+            sql.SQL(" AND ").join(sql.SQL("NULLIF(btrim({}), '') IS NULL").format(old(f)) for f in index_fields))
+        if index_fields else None,
     ]
     details = [
         sql.SQL("CASE WHEN {ch} AND {n} IS NOT NULL THEN 'Request ' || COALESCE((SELECT r.ref FROM insts r WHERE r.wi_id = {n}), {n}) END").format(
@@ -590,13 +626,19 @@ async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str
         hist_cols = await _columns(ctx.conn, "repository", f"{items_table}_history")
         if not {"id", "file_name"} <= item_cols:
             continue
-        # Uploads: the item's own creation (the history trigger only records changes).
+        # New documents: the item's own creation (the history trigger only records changes). A file
+        # moved in from the upload & index screen was archived (its stage row points to the item);
+        # anything else was uploaded straight into the folder.
+        stage_table = f"{items_table}_stage"
+        archived = (sql.SQL("EXISTS (SELECT 1 FROM {} s WHERE s.promoted_item_id = c.id)").format(_t("repository", stage_table))
+                    if "promoted_item_id" in await _columns(ctx.conn, "repository", stage_table) else sql.SQL("false"))
         if "created_at_utc" in item_cols:
             parts.append(sql.SQL(
                 "SELECT c.created_at_utc AS at, {repo}::text AS repo, {folder} AS folder, c.file_name::text AS doc, "
-                "'Uploaded'::text AS activity, {ftype} AS details, {by} AS by_id, (c.id)::text AS item_id, {rid}::text AS repo_id "
+                "CASE WHEN {archived} THEN 'Archived' ELSE 'Uploaded' END AS activity, {ftype} AS details, {by} AS by_id, "
+                "(c.id)::text AS item_id, {rid}::text AS repo_id "
                 "FROM {items} c WHERE c.created_at_utc >= {since} AND c.created_at_utc < {until}").format(
-                repo=ctx.bind(repo_name),
+                repo=ctx.bind(repo_name), archived=archived,
                 folder=(sql.SQL('(SELECT f."Name" FROM repository."Folders" f WHERE f."Id" = c.folder_id)')
                         if has_folders and "folder_id" in item_cols else sql.SQL("NULL::text")),
                 ftype=sql.SQL("c.file_type::text") if "file_type" in item_cols else sql.SQL("NULL::text"),
@@ -628,8 +670,8 @@ async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str
             if has_users else sql.SQL("(s.by_id)::text"))
     q = sql.SQL(
         "WITH insts AS ({insts}) "
-        "SELECT s.doc AS c0, s.folder AS c1, s.repo AS c2, s.at AS c3, s.activity AS c4, s.details AS c5, {user} AS c6, "
-        "s.item_id AS c7, s.repo_id AS c8 FROM ({u}) s ORDER BY s.at DESC LIMIT {limit}"
+        "SELECT s.doc AS c0, s.repo AS c1, s.at AS c2, s.activity AS c3, s.details AS c4, {user} AS c5, "
+        "s.item_id AS c6, s.repo_id AS c7 FROM ({u}) s ORDER BY s.at DESC LIMIT {limit}"
     ).format(insts=insts, user=user, u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
     return q, []
 

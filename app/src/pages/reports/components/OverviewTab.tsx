@@ -95,7 +95,7 @@ const normalizeName = (value: string | undefined) =>
   (value ?? '').toLowerCase().replace(/[\s_\-.#]/g, '')
 
 // Columns a report's totals are split by (normalized names).
-const BREAKDOWN_COLUMN_NAMES = ['skill', 'activity', 'activitytype']
+const BREAKDOWN_COLUMN_NAMES = ['agent', 'skill', 'activity', 'activitytype']
 
 const toNumber = (value: unknown) => {
   const num = Number(String(value ?? '').replace(/[^0-9.-]/g, ''))
@@ -130,6 +130,10 @@ const isRequestNumberColumn = (col: OverviewColumn) =>
   normalizeName(col.id) === 'id' ||
   /^(req|request)(no|num|number)$/.test(normalizeName(col.label))
 
+/** A default report's Source column: a request's workflow or a repository file's folder. */
+const isSourceColumn = (col: OverviewColumn) =>
+  normalizeName(col.label) === 'source'
+
 // DataTable rows need their own `id`/`name`, which would overwrite report
 // columns keyed `id` (Req No) or `name`; those cells read an alias instead.
 const RESERVED_ROW_KEYS = new Set(['id', 'name'])
@@ -158,6 +162,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
 
   const isAgentReport = Boolean(report.agentConfig)
   const isFolderReport = report.sourceType === 'Folder'
+  const isDefaultReport = report.domain === DEFAULT_REPORT_DOMAIN
   const legacyQuery = useReportBuilderDataQuery(
     isAgentReport ? null : report.id,
   )
@@ -407,7 +412,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                   }
                 >
                   {(row[key] as string) || '-'}
-                </button>
+                </button>,
               )
             }
             if (
@@ -432,7 +437,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                       name='lucide:loader-2'
                     />
                   )}
-                </button>
+                </button>,
               )
             }
             const json = parseJsonValue(row[key])
@@ -452,6 +457,22 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               )
             }
             const value = row[key] as string
+            // Source names a workflow (request rows) or a folder (repository
+            // files: OCR, intelligent upload, AI summary); the icon tells which.
+            if (isDefaultReport && isSourceColumn(col)) {
+              const isFile = Boolean(row[FILE_REPOSITORY_ID_KEY])
+              if (isFile || row[WORKFLOW_ID_KEY]) {
+                return (
+                  <span className='inline-flex min-w-0 items-center gap-1.5'>
+                    <Icon
+                      className='size-3.5 shrink-0 text-gray-9'
+                      name={isFile ? 'lucide:folder' : 'lucide:workflow'}
+                    />
+                    <span className='truncate'>{value || '-'}</span>
+                  </span>
+                )
+              }
+            }
             if (isDate && value) return formatReportDate(value)
             return value ?? '-'
           },
@@ -464,6 +485,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
       openRequest,
       requestOverview.loadingInstanceId,
       isFolderReport,
+      isDefaultReport,
     ],
   )
 
@@ -697,6 +719,10 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     }
   }, [columnTotals, previewColumns, filteredRows])
 
+  // A default report with one total (AI Credit Consumption: Credits) shows it
+  // in the toolbar instead of a Totals row.
+  const totalsInToolbar = isDefaultReport && columnTotals.length === 1
+
   const paginatedRows = useMemo(() => {
     if (pageSize === 0) return filteredRows
     const start = (page - 1) * pageSize
@@ -833,6 +859,24 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                 fileName={report.name || 'report'}
                 table={renderTable as any}
               />
+              {totalsInToolbar &&
+                filteredRows.length > 0 &&
+                columnTotals.map(({ label, total }) => (
+                  <div
+                    className='inline-flex h-9 items-center gap-2 rounded-lg border border-primary-4 bg-gradient-to-r from-primary-1 to-primary-2 pr-3 pl-1.5 shadow-xs'
+                    key={label}
+                  >
+                    <span className='flex size-6 items-center justify-center rounded-md bg-primary-9 text-white'>
+                      <Icon className='size-3.5' name='lucide:coins' />
+                    </span>
+                    <span className='text-12 font-medium text-primary-11'>
+                      {t`Total ${label}`}
+                    </span>
+                    <span className='text-15 font-bold text-primary-12'>
+                      {formatTotal(total)}
+                    </span>
+                  </div>
+                ))}
               {toolbarActions}
             </div>
           }
@@ -847,43 +891,52 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
           }}
         />
 
-        {columnTotals.length > 0 && filteredRows.length > 0 && (
-          // Label column + chips column, so both rows' chips start at the same edge.
-          <div className='grid shrink-0 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
-            <span className='text-12 text-gray-11'>{t`Totals:`}</span>
-            <div className='flex flex-wrap items-center gap-2'>
-              {columnTotals.map(({ label, total }) => (
-                <span
-                  key={label}
-                  className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
-                >
-                  {t`Total ${label}`}
-                  <span className='font-semibold'>{formatTotal(total)}</span>
-                </span>
-              ))}
-            </div>
-            {totalsBreakdown && totalsBreakdown.items.length > 1 && (
-              <>
-                <span className='text-12 text-gray-11'>
-                  {t`${totalsBreakdown.measure} by ${totalsBreakdown.by}:`}
-                </span>
-                <div className='flex flex-wrap items-center gap-2 text-12 text-gray-11'>
-                  {totalsBreakdown.items.map(({ name, total }) => (
-                    <span
-                      key={name}
-                      className='inline-flex items-center gap-1 rounded-full border border-gray-4 px-2.5 py-0.5'
-                    >
-                      {name}
-                      <span className='font-semibold text-gray-13'>
-                        {formatTotal(total)}
+        {columnTotals.length > 0 &&
+          filteredRows.length > 0 &&
+          (!totalsInToolbar ||
+            (totalsBreakdown && totalsBreakdown.items.length > 1)) && (
+            // Label column + chips column, so both rows' chips start at the same edge.
+            <div className='grid shrink-0 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
+              {!totalsInToolbar && (
+                <>
+                  <span className='text-12 text-gray-11'>{t`Totals:`}</span>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    {columnTotals.map(({ label, total }) => (
+                      <span
+                        className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
+                        key={label}
+                      >
+                        {t`Total ${label}`}
+                        <span className='font-semibold'>
+                          {formatTotal(total)}
+                        </span>
                       </span>
-                    </span>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                    ))}
+                  </div>
+                </>
+              )}
+              {totalsBreakdown && totalsBreakdown.items.length > 1 && (
+                <>
+                  <span className='text-12 text-gray-11'>
+                    {t`${totalsBreakdown.measure} by ${totalsBreakdown.by}:`}
+                  </span>
+                  <div className='flex flex-wrap items-center gap-2 text-12 text-gray-11'>
+                    {totalsBreakdown.items.map(({ name, total }) => (
+                      <span
+                        className='inline-flex items-center gap-1 rounded-full border border-gray-4 px-2.5 py-0.5'
+                        key={name}
+                      >
+                        {name}
+                        <span className='font-semibold text-gray-13'>
+                          {formatTotal(total)}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
         <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
           <DataTable
