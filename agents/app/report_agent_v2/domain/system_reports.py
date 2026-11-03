@@ -475,7 +475,7 @@ async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
 
 
 _DOC_COLS = (Col("Document"), Col("Repository"), Col("Updated On", "date", "value"), Col("Activity"),
-             Col("Details"), Col("By")) + _FILE_LINKS
+             Col("Details"), Col("Action By")) + _FILE_LINKS
 
 # Built-in columns of a repository items table; every other column is an index (metadata) field.
 _ITEM_BUILTIN = {

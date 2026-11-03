@@ -655,7 +655,7 @@ async def test_document_activity_names_what_was_done(world):
         compiled = await compile_system_report(aconn, world.tenant_a, "document_recent_activity", as_of=_date(2026, 10, 29), limit=50)
         _, out, _ = _shape(compiled.columns, await _run(aconn, compiled, 30000))
     by_when = {(r["Document"], str(r["Updated On"])[:10]): r for r in out}
-    assert "Folder" not in out[0]
+    assert "Folder" not in out[0] and "Action By" in out[0]
     assert by_when[("inv.pdf", "2026-10-20")]["Activity"] == "Archived"
     assert by_when[("new.pdf", "2026-10-24")]["Activity"] == "Uploaded"
     assert by_when[("new.pdf", "2026-10-25")]["Activity"] == "Indexed"
