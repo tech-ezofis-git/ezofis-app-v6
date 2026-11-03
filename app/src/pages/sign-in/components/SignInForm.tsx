@@ -177,8 +177,6 @@ const SignInForm = ({
   } = useMemo(() => {
     const o = origin
 
-    const env = o === 'https://trial.ezofis.com'
-
     const tenant =
       o === 'https://edmsuat.sobhaapps.com' ||
       o === 'https://edms.sobhaapps.com' ||
@@ -204,7 +202,6 @@ const SignInForm = ({
 
     return {
       checkAdLogin: adLogin,
-      checkEnv: env,
       checkForgot: forgot,
       checkTenant: tenant,
       checkTenantLogin: tenantLogin,

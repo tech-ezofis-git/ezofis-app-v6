@@ -80,7 +80,7 @@ function buildPreviewUrl(args: {
   ]
   let origin = originRaw
   if (originRaw && replaceOriginTargets.includes(originRaw)) {
-    origin = originRaw.replace(originRaw, 'https://trial.ezofis.com')
+    origin = originRaw.replace(originRaw, 'https://app.ezofis.com')
   }
 
   console.log(origin, 'this is sample Url')
@@ -103,9 +103,7 @@ function buildPreviewUrl(args: {
   if (isArmgroupOrigin) {
     domainURL = 'https://ag-appsvc04.azurewebsites.net/web/viewer.html'
   } else if (
-    ((origin === 'https://trial.ezofis.com' && ext !== 'pdf') ||
-      origin === 'https://eztrialapp.azurewebsites.net' ||
-      (origin === 'https://app.ezofis.com' && ext !== 'pdf') ||
+    ((origin === 'https://app.ezofis.com' && ext !== 'pdf') ||
       origin === 'http://192.168.110.126' ||
       origin === 'https://gdms.gfiuae.cloud' ||
       origin === 'https://dfms.m2p.app') &&
@@ -115,8 +113,6 @@ function buildPreviewUrl(args: {
   } else if (!htmlSupport(ext) && origin === 'http://52.172.32.88') {
     domainURL = 'http://52.172.32.88/DocsViewer/index.html'
   } else if (
-    origin === 'https://trial.ezofis.com' ||
-    origin === 'https://eztrialapp.azurewebsites.net' ||
     origin === 'https://app.ezofis.com' ||
     origin === 'http://192.168.110.126' ||
     origin === 'https://gdms.gfiuae.cloud' ||
