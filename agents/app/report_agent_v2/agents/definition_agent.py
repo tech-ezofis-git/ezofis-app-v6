@@ -22,10 +22,10 @@ from app.control import agent_request_log
 from app.report_agent_v2.agents.planner import ReportPlanner
 from app.report_agent_v2.config import Settings
 from app.report_agent_v2.domain import source_catalog
-from app.report_agent_v2.domain.compiler import CompiledQuery, SpecValidationError, compile_spec
+from app.report_agent_v2.domain.compiler import AI_TOTAL_REFS, CompiledQuery, SpecValidationError, compile_spec
 from app.report_agent_v2.domain.executor import run_compiled
 from app.report_agent_v2.domain.source_catalog import SourceCatalog
-from app.report_agent_v2.domain.spec import Measure, OutputColumn, ReportSpec
+from app.report_agent_v2.domain.spec import OrderBy, OutputColumn, ReportSpec
 from app.report_agent_v2.errors import BadRequestError, UnprocessableError
 from app.report_agent_v2.logging_setup import log_fields
 from app.report_agent_v2.security.principal import TenantContext
@@ -77,45 +77,47 @@ TICKET_COLUMNS: tuple[tuple[tuple[str, ...], str], ...] = (
 AI_DEFAULT_COLUMNS: tuple[tuple[tuple[str, ...], str], ...] = tuple(
     ((fid,), label) for fid, label, _dtype, _system in source_catalog.AI_USAGE_FIELDS
 )
-# Grouped / summary reports have no single ticket per row: the numeric AI fields are added as
-# totals per group instead (measure id, field, label). Agent / model / status have no total.
-AI_DEFAULT_TOTALS: tuple[tuple[str, str, str], ...] = (
-    ("ai_runs_total", "sys.ai_runs", "AI Runs"),
-    ("ai_duration_total", "sys.ai_duration", "AI Duration (s)"),
-    ("ai_tokens_total", "sys.ai_tokens", "AI Tokens"),
-    ("ai_cost_total", "sys.ai_cost", "AI Cost (USD)"),
-    ("ai_credits_total", "sys.ai_credits", "AI Credits"),
-)
 
 
-def _with_ai_totals(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
-    shown = {c.ref for c in spec.columns}
-    existing = {m.id for m in spec.measures}
-    # A total the report already has (same field summed) is not repeated.
-    summed = {m.of for m in spec.measures if m.fn == "sum"}
-    measures, columns = list(spec.measures), list(spec.columns)
-    for mid, ref, label in AI_DEFAULT_TOTALS:
-        if ref not in catalog.fields or ref in summed or mid in shown:
+def _as_list_report(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
+    """Turn a grouped / summary spec into one row per request (or file).
+
+    The grouped-by fields become ordinary columns (first, in their order) and the rows are sorted
+    by them, so the same supplier / status sit together; measures (counts, per-group sums) and
+    the filters / sorts on them are dropped. This keeps Request No clickable and Stage a single
+    value on every report.
+    """
+    measure_ids = {m.id for m in spec.measures}
+    derived_labels = {d.id: d.label for d in spec.derived}
+    kept = [c for c in spec.columns if c.ref not in measure_ids]
+    shown = {c.ref for c in kept}
+    lead = []
+    for ref in spec.group_by:
+        if ref in shown:
             continue
-        if mid not in existing:
-            measures.append(Measure(id=mid, label=label, fn="sum", of=ref))
-        columns.append(OutputColumn(ref=mid, label=label))
-    if len(columns) == len(spec.columns):
-        return spec
-    return spec.model_copy(update={"measures": measures, "columns": columns})
+        label = derived_labels.get(ref) or (catalog.fields[ref].label if ref in catalog.fields else ref)
+        lead.append(OutputColumn(ref=ref, label=label))
+        shown.add(ref)
+    order_by = [o for o in spec.order_by if o.ref not in measure_ids]
+    sorted_refs = {o.ref for o in order_by}
+    order_by = [OrderBy(ref=ref) for ref in spec.group_by if ref not in sorted_refs] + order_by
+    return spec.model_copy(update={
+        "group_by": [], "measures": [], "columns": lead + kept, "order_by": order_by,
+        "filters": [f for f in spec.filters if f.ref not in measure_ids],
+    })
 
 
 def with_ticket_columns(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
-    """Add the default columns to a report.
+    """Add the default columns to a report, whatever the prompt asked for.
 
-    List reports (one row per request or file): Request No / Stage / Created By / Action By /
-    Created At / Modified At for workflows, then all AI usage fields when the tenant has the AI
-    usage log. Grouped / summary reports (groupBy or measures): only the AI totals, since a row is
-    many tickets. Columns the report already shows are not repeated; Request No goes first, the
-    rest after the report's own columns.
+    Every report is one row per request (workflow) or file (folder): a grouped / summary spec is
+    turned into a list first (_as_list_report). Workflow reports get Request No first, then the
+    report's own columns, then Stage / Created By / Action By / Created At / Modified At; every
+    report then gets all AI usage fields when the tenant has the AI usage log, with the AI numbers
+    totalled in the Totals row. Columns the report already shows are not repeated.
     """
     if spec.group_by or spec.measures:
-        return _with_ai_totals(spec, catalog)
+        spec = _as_list_report(spec, catalog)
     defaults = (TICKET_COLUMNS if catalog.source_type == "Workflow" else ()) + AI_DEFAULT_COLUMNS
     shown = {c.ref for c in spec.columns}
     lead, tail = [], []
@@ -124,9 +126,11 @@ def with_ticket_columns(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
         if ref is None or any(r in shown for r in refs):
             continue
         (lead if ref == "sys.request_no" else tail).append(OutputColumn(ref=ref, label=label))
-    if not lead and not tail:
+    columns = lead + list(spec.columns) + tail
+    totals = spec.totals or any(c.ref in AI_TOTAL_REFS for c in columns)
+    if columns == list(spec.columns) and totals == spec.totals:
         return spec
-    return spec.model_copy(update={"columns": lead + list(spec.columns) + tail})
+    return spec.model_copy(update={"columns": columns, "totals": totals})
 
 
 _VALUE_FREE_OPS = {"isEmpty", "isNotEmpty"}
