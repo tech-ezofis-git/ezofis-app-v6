@@ -765,3 +765,31 @@ async def test_pending_with_lists_open_transaction_assignees(world, make_client)
         with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
             conn.execute("DROP TABLE IF EXISTS workflow.transaction_b05ed64d")
 
+
+async def test_admin_list_installs_missing_default_reports(world, make_client):
+    """A new tenant needs no /defaults/install: the first Admin list creates the defaults it never had."""
+    from app.report_agent_v2.domain.system_reports import TEMPLATES
+
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        conn.execute("""DELETE FROM reporting."ReportAiDefinitions" WHERE "SessionId" LIKE 'default:%%'""")
+    client = await make_client()
+
+    # A plain user's list installs nothing (and would not show these private reports anyway).
+    user_list = (await client.get("/api/report-agent-v2/reports?kind=default", headers=_h(world, world.owner))).json()
+    assert user_list["total"] == 0
+
+    admin = _h(world, world.admin, role="Admin")
+    first = (await client.get("/api/report-agent-v2/reports?kind=default", headers=admin)).json()
+    assert first["total"] == len(TEMPLATES)
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        owners = {r[0] for r in conn.execute(
+            """SELECT "OwnerUserId" FROM reporting."ReportAiDefinitions" WHERE "SessionId" LIKE 'default:%%'""").fetchall()}
+        assert owners == {world.admin}
+        # A default deleted on purpose stays deleted.
+        conn.execute("""UPDATE reporting."ReportAiDefinitions" SET "IsDeleted" = true WHERE "SessionId" = 'default:ai_credit_consumption'""")
+    again = (await client.get("/api/report-agent-v2/reports?kind=default", headers=admin)).json()
+    assert again["total"] == len(TEMPLATES) - 1
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        conn.execute("""UPDATE reporting."ReportAiDefinitions" SET "IsDeleted" = false WHERE "SessionId" = 'default:ai_credit_consumption'""")
+
