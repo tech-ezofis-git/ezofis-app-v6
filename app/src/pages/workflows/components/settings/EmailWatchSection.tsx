@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useId, useState } from 'react'
 import type { BadgeColor } from '@/components/base/Badge'
 import {
   connectWatchFoxMailbox,
@@ -22,11 +23,14 @@ import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InputSegmentedControl from '@/components/base/inputs/InputSegmentedControl'
 import showToast from '@/components/base/toast/showToast'
 import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
 import cn from '@/utils/cn'
-import SettingsSection from './common/SettingsSection'
+import { Caption, CopyField, SettingRow } from './EmailWatchParts'
 import WebhookOnlyPanel from './WebhookOnlyPanel'
+
+type Mode = 'mailbox' | 'webhook'
 
 interface Props {
   /** The mail node's own provider, used as the default choice. */
@@ -43,34 +47,39 @@ const STATUS_COLOR: Record<WatchFoxStatus, BadgeColor> = {
 }
 
 /**
- * Email watch for one workflow. WatchFox: connect an Outlook or Gmail mailbox, choose which
- * email types start it, and edit, pause or remove saved watches. Webhook only: give a client's
- * own tool the workflow's URL and key.
+ * Email watch for one workflow, as one card. Mailbox: connect an Outlook or Gmail mailbox,
+ * choose which email types start it, and edit, pause or remove saved watches. Webhook only:
+ * give a client's own tool the workflow's URL and key.
  */
 export default function EmailWatchSection({
   defaultProvider,
   workflowId,
 }: Props) {
   const { t } = useLingui()
+  const bodyId = useId()
   const queryClient = useQueryClient()
   const defaultOpen = useDefaultSectionOpen()
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const [provider, setProvider] = useState<WatchFoxProvider>(defaultProvider)
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['enquiry'])
   const [awaitingSignIn, setAwaitingSignIn] = useState(false)
-  const [mode, setMode] = useState<'watchfox' | 'webhook'>('watchfox')
+  const [mode, setMode] = useState<Mode>('mailbox')
 
   const watchesKey = ['watchfox', 'workflow-watches', workflowId]
 
   const { data: types = [] } = useQuery({
-    enabled: isOpen && mode === 'watchfox',
+    enabled: isOpen && mode === 'mailbox',
     queryFn: getWatchFoxTypes,
     queryKey: ['watchfox', 'types'],
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: watchData, isLoading } = useQuery({
-    enabled: isOpen && mode === 'watchfox' && Boolean(workflowId),
+  const {
+    data: watchData,
+    isFetching,
+    isLoading,
+  } = useQuery({
+    enabled: isOpen && mode === 'mailbox' && Boolean(workflowId),
     queryKey: watchesKey,
     // While the sign-in tab is open, look for the new mailbox every few seconds.
     refetchInterval: awaitingSignIn ? 5000 : false,
@@ -113,16 +122,6 @@ export default function EmailWatchSection({
       ),
   })
 
-  const copyUrl = async () => {
-    if (!watchData?.webhookUrl) return
-    try {
-      await navigator.clipboard.writeText(watchData.webhookUrl)
-      showToast({ message: t`Webhook URL copied`, variant: 'success' })
-    } catch (error) {
-      onError(error)
-    }
-  }
-
   const toggleType = (id: string) =>
     setSelectedTypes((current) =>
       current.includes(id)
@@ -130,149 +129,208 @@ export default function EmailWatchSection({
         : [...current, id],
     )
 
+  const modeOptions = [
+    { icon: 'lucide:mail', id: 'mailbox', name: t`Mailbox` },
+    { icon: 'lucide:webhook', id: 'webhook', name: t`Webhook only` },
+  ]
+
+  const typeCount = selectedTypes.length
+  const summary =
+    typeCount === 1
+      ? t`1 email type watched`
+      : t`${typeCount} email types watched`
+
   return (
-    <SettingsSection
-      icon='lucide:mail-search'
-      isOpen={isOpen}
-      title={t`Email watch`}
-      variant='premium'
-      onToggle={() => setIsOpen(!isOpen)}
-    >
-      {!workflowId ? (
-        <p className='rounded-xl bg-surface p-4 text-12 text-gray-10 shadow-sm'>
-          {t`Save the workflow first. Each workflow gets its own email watch URL.`}
-        </p>
-      ) : (
-        <div className='space-y-4 pt-1'>
-          <div className='space-y-1.5'>
-            <div className='text-12 font-medium text-gray-11'>{t`How emails reach this workflow`}</div>
-            <div className='grid grid-cols-2 gap-2'>
-              <ProviderButton
-                active={mode === 'watchfox'}
-                icon='lucide:mail-search'
-                label={t`WatchFox mailbox`}
-                onClick={() => setMode('watchfox')}
-              />
-              <ProviderButton
-                active={mode === 'webhook'}
-                icon='lucide:webhook'
-                label={t`Webhook only`}
-                onClick={() => setMode('webhook')}
-              />
-            </div>
-          </div>
+    <section className='@container overflow-hidden rounded-[22px] border border-gray-3 bg-surface shadow-[0_18px_40px_-24px_var(--color-gray-a6)]'>
+      <button
+        aria-controls={bodyId}
+        aria-expanded={isOpen}
+        className='flex w-full items-center gap-3 px-5 py-4 text-left transition-colors duration-200 hover:bg-gray-1'
+        type='button'
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-3 text-primary-9'>
+          <Icon className='size-4.5' name='lucide:mail' />
+        </span>
+        <span className='min-w-0 flex-1'>
+          <span className='block text-[15px] font-semibold tracking-tight text-gray-12'>
+            {t`Email watch`}
+          </span>
+          <span className='block truncate text-12 text-gray-10'>
+            {t`Route inbound email into this workflow.`}
+          </span>
+        </span>
+        <Icon
+          name='lucide:chevron-down'
+          className={cn(
+            'size-4 shrink-0 text-gray-9 transition-transform duration-300',
+            isOpen && 'rotate-180',
+          )}
+        />
+      </button>
 
-          {mode === 'webhook' ? (
-            <WebhookOnlyPanel workflowId={workflowId} onError={onError} />
-          ) : (
-            <>
-              <div className='space-y-3 rounded-xl bg-surface p-4 shadow-sm'>
-                <div className='space-y-1.5'>
-                  <div className='text-12 font-medium text-gray-11'>{t`Mail provider`}</div>
-                  <div className='grid grid-cols-2 gap-2'>
-                    <ProviderButton
-                      active={provider === 'outlook'}
-                      icon='vscode-icons:file-type-outlook'
-                      label={t`Outlook`}
-                      onClick={() => setProvider('outlook')}
-                    />
-                    <ProviderButton
-                      active={provider === 'gmail'}
-                      icon='logos:google-gmail'
-                      label={t`Gmail`}
-                      onClick={() => setProvider('gmail')}
-                    />
-                  </div>
-                </div>
-
-                <div className='space-y-1.5'>
-                  <div className='text-12 font-medium text-gray-11'>{t`What to catch`}</div>
-                  <TypeChips
-                    selected={selectedTypes}
-                    types={types}
-                    onToggle={toggleType}
-                  />
-                </div>
-
-                <div className='space-y-1.5'>
-                  <div className='text-12 font-medium text-gray-11'>{t`Webhook URL for this workflow`}</div>
-                  <div className='flex items-center gap-2'>
-                    <code className='min-w-0 flex-1 truncate rounded-md border border-gray-3 bg-gray-1 px-2 py-1.5 text-11 text-gray-11'>
-                      {watchData?.webhookUrl ?? '…'}
-                    </code>
-                    <IconButton
-                      ariaLabel={t`Copy webhook URL`}
-                      icon='lucide:copy'
-                      size='md'
-                      title={t`Copy`}
-                      variant='outline'
-                      onClick={copyUrl}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            animate={{ height: 'auto', opacity: 1 }}
+            className='overflow-hidden'
+            exit={{ height: 0, opacity: 0 }}
+            id={bodyId}
+            initial={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          >
+            <div className='border-t border-gray-3/60'>
+              {!workflowId ? (
+                <p className='px-5 py-6 text-12 text-gray-10'>
+                  {t`Save the workflow first. Each workflow gets its own email watch URL.`}
+                </p>
+              ) : (
+                <>
+                  <div className='space-y-2 px-5 pt-5'>
+                    <Caption>{t`How emails reach this workflow`}</Caption>
+                    <InputSegmentedControl
+                      options={modeOptions}
+                      value={
+                        modeOptions.find((option) => option.id === mode) ??
+                        modeOptions[0]
+                      }
+                      onChange={(option) => setMode(option.id as Mode)}
                     />
                   </div>
-                </div>
 
-                <Button
-                  className='w-full'
-                  color='primary'
-                  disabled={selectedTypes.length === 0}
-                  icon='lucide:external-link'
-                  loading={connect.isPending}
-                  size='md'
-                  label={
-                    provider === 'gmail' ? t`Connect Gmail` : t`Connect Outlook`
-                  }
-                  onClick={() => connect.mutate()}
-                />
-                {selectedTypes.length === 0 && (
-                  <p className='text-11 text-red-11'>{t`Choose at least one type.`}</p>
-                )}
-              </div>
-
-              <div className='space-y-2'>
-                <div className='flex items-center justify-between'>
-                  <span className='text-12 font-medium text-gray-11'>
-                    {t`Mailboxes watching this workflow`}
-                  </span>
-                  <IconButton
-                    ariaLabel={t`Refresh`}
-                    icon='lucide:refresh-cw'
-                    size='sm'
-                    title={t`Refresh`}
-                    variant='ghost'
-                    onClick={() => {
-                      setAwaitingSignIn(false)
-                      void refresh()
-                    }}
-                  />
-                </div>
-                {isLoading ? (
-                  <p className='text-12 text-gray-9'>{t`Loading…`}</p>
-                ) : watches.length === 0 ? (
-                  <p className='rounded-lg border border-dashed border-gray-4 p-3 text-12 text-gray-9'>
-                    {t`No mailbox yet. Connect one above.`}
-                  </p>
-                ) : (
-                  watches.map((watch) => (
-                    <WatchRow
-                      key={watch.id}
-                      openSignIn={openSignIn}
-                      types={types}
-                      watch={watch}
-                      onChanged={refresh}
+                  {mode === 'webhook' ? (
+                    <WebhookOnlyPanel
+                      workflowId={workflowId}
                       onError={onError}
                     />
-                  ))
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </SettingsSection>
+                  ) : (
+                    <>
+                      <div className='divide-y divide-gray-3/60'>
+                        <SettingRow
+                          hint={t`Where the emails arrive.`}
+                          label={t`Mail provider`}
+                        >
+                          <div className='grid grid-cols-2 gap-2'>
+                            <ProviderPill
+                              active={provider === 'outlook'}
+                              icon='vscode-icons:file-type-outlook'
+                              label={t`Outlook`}
+                              onClick={() => setProvider('outlook')}
+                            />
+                            <ProviderPill
+                              active={provider === 'gmail'}
+                              icon='logos:google-gmail'
+                              label={t`Gmail`}
+                              onClick={() => setProvider('gmail')}
+                            />
+                          </div>
+                        </SettingRow>
+
+                        <SettingRow
+                          hint={t`Email types that start this workflow.`}
+                          label={t`What to catch`}
+                        >
+                          <TypeChips
+                            selected={selectedTypes}
+                            types={types}
+                            onToggle={toggleType}
+                          />
+                        </SettingRow>
+
+                        <SettingRow
+                          hint={t`Where matched emails are sent.`}
+                          label={t`Webhook URL`}
+                        >
+                          <CopyField
+                            ariaLabel={t`Webhook URL for this workflow`}
+                            value={watchData?.webhookUrl ?? ''}
+                            onCopyError={onError}
+                          />
+                        </SettingRow>
+                      </div>
+
+                      <div className='flex flex-col gap-3 border-t border-gray-3/60 px-5 py-4 @min-[640px]:flex-row @min-[640px]:items-center'>
+                        <span
+                          className={cn(
+                            'text-12 @min-[640px]:mr-auto',
+                            typeCount === 0 ? 'text-red-11' : 'text-gray-10',
+                          )}
+                        >
+                          {typeCount === 0
+                            ? t`Choose at least one type.`
+                            : summary}
+                        </span>
+                        <Button
+                          className='w-full rounded-xl text-[12.5px] font-medium shadow-[0_6px_16px_-8px_var(--color-primary-9)] @min-[640px]:w-auto'
+                          color='primary'
+                          disabled={typeCount === 0}
+                          loading={connect.isPending}
+                          size='md'
+                          suffixIcon='lucide:arrow-up-right'
+                          label={
+                            provider === 'gmail'
+                              ? t`Connect Gmail`
+                              : t`Connect Outlook`
+                          }
+                          onClick={() => connect.mutate()}
+                        />
+                      </div>
+
+                      <div className='space-y-3 border-t border-gray-3/60 bg-gray-2/60 px-5 py-4'>
+                        <div className='flex items-center justify-between'>
+                          <span className='text-[12.5px] font-medium text-gray-12'>
+                            {t`Mailboxes watching this workflow`}
+                          </span>
+                          <IconButton
+                            ariaLabel={t`Refresh`}
+                            icon='lucide:refresh-cw'
+                            iconClass={cn(isFetching && 'animate-spin')}
+                            size='sm'
+                            title={t`Refresh`}
+                            variant='ghost'
+                            onClick={() => {
+                              setAwaitingSignIn(false)
+                              void refresh()
+                            }}
+                          />
+                        </div>
+                        {isLoading ? (
+                          <p className='text-12 text-gray-9'>{t`Loading…`}</p>
+                        ) : watches.length === 0 ? (
+                          <div className='flex items-center gap-3 rounded-xl bg-surface px-3 py-3'>
+                            <span className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-gray-2 text-gray-9'>
+                              <Icon className='size-4' name='lucide:inbox' />
+                            </span>
+                            <span className='text-12 text-gray-10'>
+                              {t`No mailbox yet. Connect one above.`}
+                            </span>
+                          </div>
+                        ) : (
+                          watches.map((watch) => (
+                            <WatchRow
+                              key={watch.id}
+                              openSignIn={openSignIn}
+                              types={types}
+                              watch={watch}
+                              onChanged={refresh}
+                              onError={onError}
+                            />
+                          ))
+                        )}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
   )
 }
 
-function ProviderButton({
+function ProviderPill({
   active,
   icon,
   label,
@@ -288,15 +346,21 @@ function ProviderButton({
       aria-pressed={active}
       type='button'
       className={cn(
-        'flex h-10 items-center justify-center gap-2 rounded-md border text-13 transition-all duration-200 active:scale-[0.98]',
+        'flex h-11 items-center gap-2 rounded-2xl border px-3.5 text-[12.5px] transition-colors duration-200 active:scale-[0.98]',
         active
-          ? 'border-primary-9 bg-primary-1 text-primary-9'
-          : 'border-gray-3 text-gray-12 hover:border-primary-5',
+          ? 'border-primary-9/45 bg-primary-3 font-medium text-gray-12'
+          : 'border-gray-3 bg-surface text-gray-10 hover:border-gray-4 hover:text-gray-12',
       )}
       onClick={onClick}
     >
-      <Icon className='size-4' name={icon} />
-      {label}
+      <Icon className='size-4 shrink-0' name={icon} />
+      <span className='flex-1 text-left'>{label}</span>
+      {active && (
+        <Icon
+          className='size-3.5 shrink-0 text-primary-9'
+          name='lucide:check'
+        />
+      )}
     </button>
   )
 }
@@ -311,7 +375,7 @@ function TypeChips({
   onToggle: (id: string) => void
 }) {
   return (
-    <div className='flex flex-wrap gap-1.5'>
+    <div className='flex flex-wrap gap-2'>
       {types.map((type) => {
         const active = selected.includes(type.id)
         return (
@@ -320,10 +384,10 @@ function TypeChips({
             key={type.id}
             type='button'
             className={cn(
-              'flex items-center gap-1 rounded-md border px-2.5 py-1 text-12 transition-all duration-200 active:scale-[0.98]',
+              'flex items-center gap-1 rounded-full border px-3 py-1 text-[12.5px] transition-colors duration-200 active:scale-[0.98]',
               active
-                ? 'border-primary-9 bg-primary-1 text-primary-9'
-                : 'border-gray-3 text-gray-11 hover:border-primary-5',
+                ? 'border-primary-9/45 bg-primary-3 text-primary-10'
+                : 'border-gray-3 bg-surface text-gray-10 hover:border-gray-4 hover:text-gray-12',
             )}
             onClick={() => onToggle(type.id)}
           >
@@ -376,13 +440,10 @@ function WatchRow({
   const outlook = isWatchFoxOutlook(watch.provider)
 
   return (
-    <div className='animate-in fade-in space-y-2 rounded-lg border border-gray-3 bg-surface p-3 duration-200'>
+    <div className='space-y-2 rounded-xl bg-surface p-3'>
       <div className='flex items-start gap-2'>
         <Icon
-          className={cn(
-            'mt-0.5 size-4 shrink-0',
-            outlook ? 'text-blue-10' : 'text-green-10',
-          )}
+          className='mt-0.5 size-4 shrink-0'
           name={
             outlook ? 'vscode-icons:file-type-outlook' : 'logos:google-gmail'
           }
@@ -392,7 +453,7 @@ function WatchRow({
             {watch.mailboxEmail ||
               (outlook ? t`Outlook mailbox` : t`Gmail mailbox`)}
           </div>
-          <div className='truncate text-11 text-gray-9'>
+          <div className='truncate text-12 text-gray-10'>
             {watch.types.map(typeLabel).join(', ')}
           </div>
         </div>
@@ -403,7 +464,7 @@ function WatchRow({
       </div>
 
       {watch.lastError && watch.status !== 'active' && (
-        <p className='text-11 text-orange-11'>{watch.lastError}</p>
+        <p className='text-12 text-orange-11'>{watch.lastError}</p>
       )}
 
       {editing ? (
