@@ -586,7 +586,7 @@ async def test_document_activity_and_credit_column_order(world, make_client):
     from app.report_agent_v2.domain.system_reports import TEMPLATES
 
     assert [c.label for c in TEMPLATES["document_recent_activity"].columns if c.role != "link"][:4] == [
-        "Document", "Folder", "Repository", "When"]
+        "Document", "Repository", "Updated On", "Activity"]
     assert [c.label for c in TEMPLATES["ai_credit_consumption"].columns if c.role != "link"][:3] == [
         "Request No", "Workflow", "Skill"]
 
@@ -619,7 +619,7 @@ async def test_document_activity_names_what_was_done(world):
     from app.report_agent_v2.domain.system_reports import compile_system_report
 
     tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
-    repo, item, gone = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    repo, item, gone, fresh = uuid.uuid4(), uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
         conn.execute("CREATE SCHEMA IF NOT EXISTS repository")
         conn.execute('CREATE TABLE IF NOT EXISTS repository."Repositories" ("Id" uuid, "TenantId" uuid, "Name" text, "ItemsTableName" text, "IsDeleted" boolean)')
@@ -629,6 +629,9 @@ async def test_document_activity_names_what_was_done(world):
         conn.execute("""CREATE TABLE IF NOT EXISTS repository.items_d0c0ffee_history (id uuid, folder_id uuid, file_name text, file_type text,
                         created_at_utc timestamptz, created_by uuid, modified_by uuid, is_deleted boolean, "Supplier" text, "Lines" text,
                         history_id bigint, history_operation text, history_recorded_at timestamptz)""")
+        # inv.pdf came in from the upload & index screen: its stage row points to the item.
+        conn.execute("CREATE TABLE IF NOT EXISTS repository.items_d0c0ffee_stage (id uuid, promoted_item_id uuid)")
+        conn.execute("INSERT INTO repository.items_d0c0ffee_stage VALUES (%s,%s)", (uuid.uuid4(), item))
         conn.execute('INSERT INTO repository."Repositories" VALUES (%s,%s,%s,%s,false)', (repo, world.tenant_a, "Invoices", "items_d0c0ffee"))
         conn.execute('INSERT INTO repository."RepositoryFields" VALUES (%s,%s,%s)', (repo, "Supplier Name", "Supplier"))
         conn.execute("INSERT INTO repository.items_d0c0ffee VALUES (%s,NULL,'inv.pdf','application/pdf','2026-10-20',%s,%s,false,'Acme','[1, 2]')",
@@ -642,11 +645,19 @@ async def test_document_activity_names_what_was_done(world):
                          (item, world.owner, world.owner, sup, lines, hid, op, at))
         conn.execute("INSERT INTO repository.items_d0c0ffee_history VALUES (%s,NULL,'old.pdf','application/pdf','2026-10-01',%s,%s,false,NULL,NULL,3,'D','2026-10-23')",
                      (gone, world.owner, world.owner))
+        # new.pdf: uploaded straight into the folder, then its empty index fields filled for the first time.
+        conn.execute("INSERT INTO repository.items_d0c0ffee VALUES (%s,NULL,'new.pdf','application/pdf','2026-10-24',%s,%s,false,'Beta','[3]')",
+                     (fresh, world.owner, world.owner))
+        conn.execute("INSERT INTO repository.items_d0c0ffee_history VALUES (%s,NULL,'new.pdf','application/pdf','2026-10-24',%s,%s,false,NULL,NULL,4,'U','2026-10-25')",
+                     (fresh, world.owner, world.owner))
     async with await psycopg.AsyncConnection.connect(npgsql_to_conninfo(await _tenant_cs(world)).replace("password=x", f"password={dict(p.split('=', 1) for p in TEST_PG.split()).get('password', 'x')}"), autocommit=True) as aconn:
         compiled = await compile_system_report(aconn, world.tenant_a, "document_recent_activity", as_of=_date(2026, 10, 29), limit=50)
         _, out, _ = _shape(compiled.columns, await _run(aconn, compiled, 30000))
-    by_when = {(r["Document"], str(r["When"])[:10]): r for r in out}
-    assert by_when[("inv.pdf", "2026-10-20")]["Activity"] == "Uploaded"
+    by_when = {(r["Document"], str(r["Updated On"])[:10]): r for r in out}
+    assert "Folder" not in out[0]
+    assert by_when[("inv.pdf", "2026-10-20")]["Activity"] == "Archived"
+    assert by_when[("new.pdf", "2026-10-24")]["Activity"] == "Uploaded"
+    assert by_when[("new.pdf", "2026-10-25")]["Activity"] == "Indexed"
     edit = by_when[("inv.pdf", "2026-10-21")]
     assert edit["Activity"] == "Index updated" and edit["Details"] == "Supplier Name: - -> Acme"
     assert by_when[("inv.pdf", "2026-10-22")]["Activity"] == "Saved (no changes)"

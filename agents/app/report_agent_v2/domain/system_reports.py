@@ -472,7 +472,7 @@ async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     return q, []
 
 
-_DOC_COLS = (Col("Document"), Col("Folder"), Col("Repository"), Col("When", "date", "value"), Col("Activity"),
+_DOC_COLS = (Col("Document"), Col("Repository"), Col("Updated On", "date", "value"), Col("Activity"),
              Col("Details"), Col("By")) + _FILE_LINKS
 
 # Built-in columns of a repository items table; every other column is an index (metadata) field.
@@ -530,7 +530,11 @@ def _doc_change_part(
         sql.SQL("CASE WHEN {} THEN 'Text extracted (OCR)' END").format(changed("ocr_text", "ocr_json")),
         sql.SQL("CASE WHEN {} THEN 'AI summary generated' END").format(changed("summary_json")),
         sql.SQL("CASE WHEN {} THEN 'Status changed' END").format(changed("status", "ai_status", "is_verified", "ocr_score")),
-        sql.SQL("CASE WHEN {} THEN 'Index updated' END").format(changed(*index_fields)) if index_fields else None,
+        # First time the index fields get values (after upload / archive): "Indexed"; later edits: "Index updated".
+        sql.SQL("CASE WHEN {} THEN CASE WHEN {} THEN 'Indexed' ELSE 'Index updated' END END").format(
+            changed(*index_fields),
+            sql.SQL(" AND ").join(sql.SQL("NULLIF(btrim({}), '') IS NULL").format(old(f)) for f in index_fields))
+        if index_fields else None,
     ]
     details = [
         sql.SQL("CASE WHEN {ch} AND {n} IS NOT NULL THEN 'Request ' || COALESCE((SELECT r.ref FROM insts r WHERE r.wi_id = {n}), {n}) END").format(
@@ -590,13 +594,19 @@ async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str
         hist_cols = await _columns(ctx.conn, "repository", f"{items_table}_history")
         if not {"id", "file_name"} <= item_cols:
             continue
-        # Uploads: the item's own creation (the history trigger only records changes).
+        # New documents: the item's own creation (the history trigger only records changes). A file
+        # moved in from the upload & index screen was archived (its stage row points to the item);
+        # anything else was uploaded straight into the folder.
+        stage_table = f"{items_table}_stage"
+        archived = (sql.SQL("EXISTS (SELECT 1 FROM {} s WHERE s.promoted_item_id = c.id)").format(_t("repository", stage_table))
+                    if "promoted_item_id" in await _columns(ctx.conn, "repository", stage_table) else sql.SQL("false"))
         if "created_at_utc" in item_cols:
             parts.append(sql.SQL(
                 "SELECT c.created_at_utc AS at, {repo}::text AS repo, {folder} AS folder, c.file_name::text AS doc, "
-                "'Uploaded'::text AS activity, {ftype} AS details, {by} AS by_id, (c.id)::text AS item_id, {rid}::text AS repo_id "
+                "CASE WHEN {archived} THEN 'Archived' ELSE 'Uploaded' END AS activity, {ftype} AS details, {by} AS by_id, "
+                "(c.id)::text AS item_id, {rid}::text AS repo_id "
                 "FROM {items} c WHERE c.created_at_utc >= {since} AND c.created_at_utc < {until}").format(
-                repo=ctx.bind(repo_name),
+                repo=ctx.bind(repo_name), archived=archived,
                 folder=(sql.SQL('(SELECT f."Name" FROM repository."Folders" f WHERE f."Id" = c.folder_id)')
                         if has_folders and "folder_id" in item_cols else sql.SQL("NULL::text")),
                 ftype=sql.SQL("c.file_type::text") if "file_type" in item_cols else sql.SQL("NULL::text"),
@@ -628,8 +638,8 @@ async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str
             if has_users else sql.SQL("(s.by_id)::text"))
     q = sql.SQL(
         "WITH insts AS ({insts}) "
-        "SELECT s.doc AS c0, s.folder AS c1, s.repo AS c2, s.at AS c3, s.activity AS c4, s.details AS c5, {user} AS c6, "
-        "s.item_id AS c7, s.repo_id AS c8 FROM ({u}) s ORDER BY s.at DESC LIMIT {limit}"
+        "SELECT s.doc AS c0, s.repo AS c1, s.at AS c2, s.activity AS c3, s.details AS c4, {user} AS c5, "
+        "s.item_id AS c6, s.repo_id AS c7 FROM ({u}) s ORDER BY s.at DESC LIMIT {limit}"
     ).format(insts=insts, user=user, u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
     return q, []
 
