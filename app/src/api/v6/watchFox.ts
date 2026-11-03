@@ -198,3 +198,45 @@ export const disableWorkflowEmailWebhookKey = (workflowId: string) =>
     { method: 'DELETE', url: `${WEBHOOK_URL}/${workflowId}/key` },
     'Could not turn off the webhook key.',
   )
+
+/**
+ * How an email reaching the workflow turns into tickets. Applies to the mailbox and
+ * webhook-only paths. Defaults when nothing is saved: MJB per attachment, others per email.
+ */
+export interface WorkflowEmailSettings {
+  attachEmail: boolean
+  attachmentTypes: string[]
+  isDefault: boolean
+  modifiedAtUtc: null | string
+  noAttachmentAction: 'email' | 'skip'
+  ticketMode: 'attachment' | 'email'
+}
+
+export type WorkflowEmailSettingsInput = Partial<
+  Pick<
+    WorkflowEmailSettings,
+    'attachEmail' | 'attachmentTypes' | 'noAttachmentAction' | 'ticketMode'
+  >
+>
+
+export const getWorkflowEmailSettings = (workflowId: string) =>
+  request<WorkflowEmailSettings>(
+    {
+      method: 'GET',
+      url: `/email-ingest/workflows/${workflowId}/email-settings`,
+    },
+    'Could not load the email ticket settings.',
+  )
+
+export const saveWorkflowEmailSettings = (
+  workflowId: string,
+  input: WorkflowEmailSettingsInput,
+) =>
+  request<WorkflowEmailSettings>(
+    {
+      data: input,
+      method: 'PUT',
+      url: `/email-ingest/workflows/${workflowId}/email-settings`,
+    },
+    'Could not save the email ticket settings.',
+  )

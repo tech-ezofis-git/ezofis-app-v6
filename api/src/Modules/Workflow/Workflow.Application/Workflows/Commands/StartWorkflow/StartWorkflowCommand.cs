@@ -18,7 +18,9 @@ public record StartWorkflowCommand(
     IReadOnlyList<string>? Skills = null,
     IReadOnlyDictionary<string, string>? FormDataFields = null,
     string? FormLineItemsJson = null,
-    IReadOnlyList<StartWorkflowStagedFileRef>? StagedFiles = null) : IRequest<StartWorkflowCommandResult>;
+    IReadOnlyList<StartWorkflowStagedFileRef>? StagedFiles = null,
+    /// <summary>More files stored next to <see cref="Attachment"/>, such as the original .eml of an attachment ticket.</summary>
+    IReadOnlyList<StartWorkflowAttachmentPayload>? ExtraAttachments = null) : IRequest<StartWorkflowCommandResult>;
 
 /// <summary>Optional file uploaded during start (also supported via multipart on the API).</summary>
 public record StartWorkflowAttachmentPayload(

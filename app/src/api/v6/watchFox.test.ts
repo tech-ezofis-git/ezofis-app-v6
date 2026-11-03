@@ -5,10 +5,12 @@ import {
   createWorkflowEmailWebhookKey,
   deleteWatch,
   disableWorkflowEmailWebhookKey,
+  getWorkflowEmailSettings,
   getWorkflowEmailWebhook,
   getWorkflowWatches,
   isWatchFoxOutlook,
   resumeWatch,
+  saveWorkflowEmailSettings,
   updateWatchTypes,
 } from './watchFox'
 
@@ -126,6 +128,25 @@ describe('watchFox api', () => {
     expect(lastCall()).toMatchObject({
       method: 'DELETE',
       url: `/email-ingest/webhook/workflows/${WF_ID}/key`,
+    })
+  })
+
+  it('reads and saves the workflow email ticket settings', async () => {
+    await getWorkflowEmailSettings(WF_ID)
+    expect(lastCall()).toMatchObject({
+      headers: { 'X-Tenant-Id': 't-1' },
+      method: 'GET',
+      url: `/email-ingest/workflows/${WF_ID}/email-settings`,
+    })
+
+    await saveWorkflowEmailSettings(WF_ID, {
+      attachmentTypes: ['.pdf', '.xlsx'],
+      ticketMode: 'attachment',
+    })
+    expect(lastCall()).toMatchObject({
+      data: { attachmentTypes: ['.pdf', '.xlsx'], ticketMode: 'attachment' },
+      method: 'PUT',
+      url: `/email-ingest/workflows/${WF_ID}/email-settings`,
     })
   })
 

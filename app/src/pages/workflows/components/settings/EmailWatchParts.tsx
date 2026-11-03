@@ -12,6 +12,42 @@ export function Caption({ children }: { children: ReactNode }) {
   )
 }
 
+/** One of a few equal choices, such as Outlook / Gmail or Each email / Each attachment. */
+export function ChoicePill({
+  active,
+  icon,
+  label,
+  onClick,
+}: {
+  active: boolean
+  icon: string
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      aria-pressed={active}
+      type='button'
+      className={cn(
+        'flex h-11 items-center gap-2 rounded-2xl border px-3.5 text-[12.5px] transition-colors duration-200 active:scale-[0.98]',
+        active
+          ? 'border-primary-9/45 bg-primary-3 font-medium text-gray-12'
+          : 'border-gray-3 bg-surface text-gray-10 hover:border-gray-4 hover:text-gray-12',
+      )}
+      onClick={onClick}
+    >
+      <Icon className='size-4 shrink-0' name={icon} />
+      <span className='flex-1 text-left'>{label}</span>
+      {active && (
+        <Icon
+          className='size-3.5 shrink-0 text-primary-9'
+          name='lucide:check'
+        />
+      )}
+    </button>
+  )
+}
+
 /** Compact "Copy" button that shows a check and "Copied" for about 1.6 seconds. */
 export function CopyButton({
   label,

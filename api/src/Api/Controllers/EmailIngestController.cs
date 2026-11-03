@@ -39,6 +39,8 @@ public sealed class EmailIngestController : ControllerBase
 
     private IWorkflowEmailWebhookService EmailWebhook => _services.GetRequiredService<IWorkflowEmailWebhookService>();
 
+    private IWorkflowEmailSettingsService EmailSettings => _services.GetRequiredService<IWorkflowEmailSettingsService>();
+
     /// <summary>Google Pub/Sub push. When mail arrives, poll the linked mailbox and start the workflow.</summary>
     [AllowAnonymous]
     [HttpPost("gmail/push")]
@@ -253,6 +255,22 @@ public sealed class EmailIngestController : ControllerBase
     [HttpPost("webhook/workflows/{workflowId:guid}/key")]
     public Task<IActionResult> CreateWorkflowWebhookKey(Guid workflowId, CancellationToken cancellationToken) =>
         RunForTenant(tenantId => EmailWebhook.CreateKeyAsync(tenantId, workflowId, CurrentUserId, cancellationToken));
+
+    /// <summary>
+    /// How an email reaching this workflow turns into tickets (per email or per attachment).
+    /// Defaults when nothing is saved: MJB per attachment, other workflows per email.
+    /// </summary>
+    [HttpGet("workflows/{workflowId:guid}/email-settings")]
+    public Task<IActionResult> WorkflowEmailSettings(Guid workflowId, CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => EmailSettings.GetAsync(tenantId, workflowId, cancellationToken));
+
+    /// <summary>Saves the workflow's email ticket settings. Fields left out keep their current value.</summary>
+    [HttpPut("workflows/{workflowId:guid}/email-settings")]
+    public Task<IActionResult> SaveWorkflowEmailSettings(
+        Guid workflowId,
+        [FromBody] WorkflowEmailSettingsInput request,
+        CancellationToken cancellationToken) =>
+        RunForTenant(tenantId => EmailSettings.SaveAsync(tenantId, workflowId, request, CurrentUserId, cancellationToken));
 
     /// <summary>Turns the workflow's webhook key off.</summary>
     [HttpDelete("webhook/workflows/{workflowId:guid}/key")]
