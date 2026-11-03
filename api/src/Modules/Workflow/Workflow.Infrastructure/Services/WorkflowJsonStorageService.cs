@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using SaaSApp.Workflow.Application.Contracts;
@@ -12,12 +13,18 @@ public sealed class WorkflowJsonStorageService : IWorkflowJsonStorageService
     private readonly ITenantContext _tenantContext;
     private readonly IConfiguration _configuration;
     private readonly ILogger<WorkflowJsonStorageService> _logger;
+    private readonly IMemoryCache _cache;
 
-    public WorkflowJsonStorageService(ITenantContext tenantContext, IConfiguration configuration, ILogger<WorkflowJsonStorageService> logger)
+    public WorkflowJsonStorageService(
+        ITenantContext tenantContext,
+        IConfiguration configuration,
+        ILogger<WorkflowJsonStorageService> logger,
+        IMemoryCache cache)
     {
         _tenantContext = tenantContext;
         _configuration = configuration;
         _logger = logger;
+        _cache = cache;
     }
 
     public async Task SaveWorkflowJsonAsync(Guid workflowId, string json, CancellationToken cancellationToken = default)
@@ -34,19 +41,36 @@ public sealed class WorkflowJsonStorageService : IWorkflowJsonStorageService
                     "Removed stale local workflow JSON for workflow {WorkflowId} after blob save",
                     workflowId);
             }
+        }
+        else
+        {
+            // Fallback for local/dev when blob config is not provided.
+            var folderPath = Path.GetDirectoryName(filePath)!;
+            Directory.CreateDirectory(folderPath);
+            await File.WriteAllTextAsync(filePath, json, cancellationToken);
 
-            return;
+            _logger.LogInformation("Workflow JSON saved for workflow {WorkflowId} at {FilePath}", workflowId, filePath);
         }
 
-        // Fallback for local/dev when blob config is not provided.
-        var folderPath = Path.GetDirectoryName(filePath)!;
-        Directory.CreateDirectory(folderPath);
-        await File.WriteAllTextAsync(filePath, json, cancellationToken);
-
-        _logger.LogInformation("Workflow JSON saved for workflow {WorkflowId} at {FilePath}", workflowId, filePath);
+        _cache.Set(CacheKey(workflowId), new BlobReads.CachedJson(json), BlobReads.JsonCacheDuration);
     }
 
     public async Task<string?> GetWorkflowJsonAsync(Guid workflowId, CancellationToken cancellationToken = default)
+    {
+        var key = CacheKey(workflowId);
+        if (_cache.TryGetValue(key, out BlobReads.CachedJson? cached) && cached != null)
+            return cached.Json;
+
+        // "Not stored" is cached too: most screens ask again for the same workflow.
+        var json = await LoadWorkflowJsonAsync(workflowId, cancellationToken);
+        _cache.Set(key, new BlobReads.CachedJson(json), BlobReads.JsonCacheDuration);
+        return json;
+    }
+
+    private string CacheKey(Guid workflowId) =>
+        $"workflow-json:{_tenantContext.TenantId:N}:{workflowId:N}";
+
+    private async Task<string?> LoadWorkflowJsonAsync(Guid workflowId, CancellationToken cancellationToken)
     {
         var filePath = GetLocalFilePath(workflowId);
         var fileExists = File.Exists(filePath);
@@ -87,6 +111,7 @@ public sealed class WorkflowJsonStorageService : IWorkflowJsonStorageService
 
     public async Task DeleteWorkflowJsonAsync(Guid workflowId, CancellationToken cancellationToken = default)
     {
+        _cache.Remove(CacheKey(workflowId));
         await TryDeleteFromBlobAsync(workflowId, cancellationToken);
 
         var filePath = GetLocalFilePath(workflowId);

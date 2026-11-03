@@ -13,6 +13,15 @@ internal static class BlobReads
 {
     private static readonly ConcurrentDictionary<string, BlobServiceClient> Clients = new();
 
+    /// <summary>
+    /// How long a loaded form / workflow JSON stays in memory. Saves and deletes in this API update
+    /// the cache at once; the expiry only bounds writes made outside it (scripts, migrations).
+    /// </summary>
+    public static readonly TimeSpan JsonCacheDuration = TimeSpan.FromMinutes(5);
+
+    /// <summary>A cached load: <see cref="Json"/> is null when nothing is stored (also cached).</summary>
+    public sealed record CachedJson(string? Json);
+
     /// <summary>One client per connection string, reused across requests.</summary>
     public static BlobServiceClient ServiceClient(string connectionString) =>
         Clients.GetOrAdd(connectionString, cs => new BlobServiceClient(cs));

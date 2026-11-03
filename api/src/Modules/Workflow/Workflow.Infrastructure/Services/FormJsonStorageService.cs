@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SaaSApp.Workflow.Application.Contracts;
@@ -10,38 +11,55 @@ public sealed class FormJsonStorageService : IFormJsonStorageService
     private readonly ITenantContext _tenantContext;
     private readonly IConfiguration _configuration;
     private readonly ILogger<FormJsonStorageService> _logger;
+    private readonly IMemoryCache _cache;
 
-    public FormJsonStorageService(ITenantContext tenantContext, IConfiguration configuration, ILogger<FormJsonStorageService> logger)
+    public FormJsonStorageService(
+        ITenantContext tenantContext,
+        IConfiguration configuration,
+        ILogger<FormJsonStorageService> logger,
+        IMemoryCache cache)
     {
         _tenantContext = tenantContext;
         _configuration = configuration;
         _logger = logger;
+        _cache = cache;
     }
 
     public async Task SaveFormJsonAsync(string formId, string json, CancellationToken cancellationToken = default)
     {
-        if (await TrySaveToBlobAsync(formId, json, cancellationToken))
-            return;
+        if (!await TrySaveToBlobAsync(formId, json, cancellationToken))
+        {
+            var folder = Path.Combine(AppContext.BaseDirectory, "Form Json");
+            Directory.CreateDirectory(folder);
+            var filePath = Path.Combine(folder, $"{SanitizeFileName(formId)}.json");
+            await File.WriteAllTextAsync(filePath, json, cancellationToken);
+            _logger.LogInformation("Form JSON saved for form {FormId} at {FilePath}", formId, filePath);
+        }
 
-        var folder = Path.Combine(AppContext.BaseDirectory, "Form Json");
-        Directory.CreateDirectory(folder);
-        var filePath = Path.Combine(folder, $"{SanitizeFileName(formId)}.json");
-        await File.WriteAllTextAsync(filePath, json, cancellationToken);
-        _logger.LogInformation("Form JSON saved for form {FormId} at {FilePath}", formId, filePath);
+        _cache.Set(CacheKey(formId), new BlobReads.CachedJson(json), BlobReads.JsonCacheDuration);
     }
 
     public async Task<string?> GetFormJsonAsync(string formId, CancellationToken cancellationToken = default)
     {
-        var fromBlob = await TryGetFromBlobAsync(formId, cancellationToken);
-        if (fromBlob != null)
-            return fromBlob;
+        var key = CacheKey(formId);
+        if (_cache.TryGetValue(key, out BlobReads.CachedJson? cached) && cached != null)
+            return cached.Json;
 
-        var filePath = Path.Combine(AppContext.BaseDirectory, "Form Json", $"{SanitizeFileName(formId)}.json");
-        if (!File.Exists(filePath))
-            return null;
+        var json = await TryGetFromBlobAsync(formId, cancellationToken);
+        if (json == null)
+        {
+            var filePath = Path.Combine(AppContext.BaseDirectory, "Form Json", $"{SanitizeFileName(formId)}.json");
+            if (File.Exists(filePath))
+                json = await File.ReadAllTextAsync(filePath, cancellationToken);
+        }
 
-        return await File.ReadAllTextAsync(filePath, cancellationToken);
+        // "Not stored" is cached too: most screens ask again for the same form.
+        _cache.Set(key, new BlobReads.CachedJson(json), BlobReads.JsonCacheDuration);
+        return json;
     }
+
+    private string CacheKey(string formId) =>
+        $"form-json:{_tenantContext.TenantId:N}:{SanitizeFileName(formId)}";
 
     private static string SanitizeFileName(string formId) =>
         string.Concat(formId.Where(c => char.IsLetterOrDigit(c) || c is '-' or '_'));
