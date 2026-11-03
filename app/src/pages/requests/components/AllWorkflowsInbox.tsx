@@ -198,6 +198,12 @@ export default function AllWorkflowsInbox({
       detailQueries[index]?.data?.selectedWorkflow ?? null,
     ]),
   )
+  // Until the detail loads, cards can't tell which field is the title (e.g.
+  // the invoice number for Accounts Payable), so they show a placeholder
+  // instead of flashing the REQ number.
+  const detailLoadingIds = new Set(
+    openGroupIds.filter((_, index) => detailQueries[index]?.isLoading),
+  )
 
   const needle = deferredQuery.trim().toLowerCase()
   const filteredGroups = useMemo(
@@ -608,6 +614,9 @@ export default function AllWorkflowsInbox({
                                     selectable={false}
                                     toggleRowSelection={noop}
                                     workflow={detail}
+                                    isWorkflowLoading={detailLoadingIds.has(
+                                      group.workflowId,
+                                    )}
                                     key={String(
                                       raw.transactionId ||
                                         raw.workflowInstanceId ||

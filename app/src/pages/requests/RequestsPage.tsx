@@ -378,10 +378,7 @@ const RequestsPage = () => {
   useEffect(() => {
     requestStore.getState().setListWorkflowName(listWorkflowName)
   }, [listWorkflowName])
-  useEffect(
-    () => () => requestStore.getState().setListWorkflowName(null),
-    [],
-  )
+  useEffect(() => () => requestStore.getState().setListWorkflowName(null), [])
   // "New" from All Workflows: open the new-request screen once that
   // workflow has loaded.
   const [pendingNewWorkflowId, setPendingNewWorkflowId] = useState<
@@ -1997,6 +1994,12 @@ const RequestsPage = () => {
 
   const isWorkflowReady =
     workflowLoadStatus === 'ready' && !!selectedWorkflow?.id
+  // Just switched workflow: the tabs (from rawWorkflowData) still belong to
+  // the previous one until it has loaded.
+  const isSwitchingWorkflow =
+    !!workflow?.id &&
+    workflowLoadStatus !== 'empty' &&
+    String(selectedWorkflow?.id ?? '') !== String(workflow.id)
   const showWorkflowEmpty = workflowLoadStatus === 'empty'
   const inboxIsLoading =
     workflowLoadStatus === 'loading' ||
@@ -2101,6 +2104,7 @@ const RequestsPage = () => {
               metaData={metaData}
               stageCounts={stageTabCounts}
               tabs={requestTabs}
+              tabsLoading={isSwitchingWorkflow}
               totalStageCount={totalStageCount}
               workflow={workflow}
               connectedWatchEmail={
@@ -2156,7 +2160,9 @@ const RequestsPage = () => {
               <InboxList
                 activeTab={activeTab}
                 canCreateNewRequest={canCreateNewRequest}
-                data={inboxResult?.data || []}
+                // Mid-switch the list still holds the previous workflow's
+                // rows; drop them so its filter bar and total don't show.
+                data={isSwitchingWorkflow ? [] : inboxResult?.data || []}
                 filterFields={filterFields}
                 isFilterFieldsLoaded={isFilterFieldsLoaded}
                 isLoading={inboxIsLoading}
@@ -2164,9 +2170,11 @@ const RequestsPage = () => {
                 page={page}
                 pageSize={pageSize}
                 selectedItem={selectedItem}
-                totalItems={inboxResult?.totalItems || 0}
                 viewMode={viewMode}
                 workflow={selectedWorkflow}
+                totalItems={
+                  isSwitchingWorkflow ? 0 : inboxResult?.totalItems || 0
+                }
                 setPage={setPage}
                 setPageSize={setPageSize}
                 setViewMode={setViewMode}
