@@ -430,69 +430,80 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
     return q, []
 
 
-_SLA_COLS = (Col("Workflow"), Col("Requests with SLA", "number", "measure", True),
-             Col("Response Met", "number", "measure", True), Col("Response Breached", "number", "measure", True),
-             Col("Resolution Met", "number", "measure", True), Col("Resolution Breached", "number", "measure", True),
-             Col("In Progress", "number", "measure", True), Col("Escalated", "number", "measure", True),
-             Col("Compliance %", "number", "measure"),
-             Col("Notifications Sent", "number", "measure", True), Col("Notifications Failed", "number", "measure", True))
+# One row per SLA event: a request's response SLA at a stage, or its resolution SLA, for one rule.
+_SLA_COLS = (Col("Workflow"), Col("Request No"), Col("Raised By"), Col("SLA"), Col("Stage"),
+             Col("Due At", "date", "value"),
+             Col("Result", colors=(("Breached", "red"), ("Met", "green"), ("In Progress", "blue"),
+                                   ("Failed", "orange"), ("Cancelled", "gray"))),
+             Col("Escalated To"), Col("Notified"),
+             Col("Notifications Sent", "number", "measure", True), Col("Notifications Failed", "number", "measure", True)
+             ) + _REQUEST_LINKS
 
 # Outcomes the V6 SLA timer writes (WorkflowSlaTimerService). A cancelled timer met its SLA only when the
-# ticket was handled in time; "rule removed" / "no longer published" count as neither met nor breached.
-_SLA_MET_RESPONSE = "ticket was already acted on%"
-_SLA_MET_RESOLUTION = "ticket is already resolved%"
-_SLA_TIMER_PENDING, _SLA_TIMER_FIRED, _SLA_TIMER_CANCELLED = 0, 1, 2
-_SLA_OUTBOX_SENT, _SLA_OUTBOX_FAILED = 1, 2
+# request was handled in time; other reasons (rule removed, workflow unpublished, moved by an earlier rule)
+# are "Cancelled". A fired timer's outcome names its escalation: "reassigned to <user id>" / "moved to stage <id>".
+_SLA_MET = ("ticket was already acted on%", "ticket is already resolved%")
+_SLA_REASSIGNED = r"reassigned to ([0-9A-Fa-f-]{36})"
+_SLA_MOVED = r"moved to stage ([^;]+)"
 
 
 async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
-    """Designer SLA results per workflow, from the V6 SLA timers (workflow.sla_timers: one row per request,
-    stage and rule). Counted per request: a request breached when any of its timers fired, met when its
-    timers were cancelled because it was handled in time. Advanced (SLA Master) SLAs create no timers."""
+    """Every SLA event of the period from the V6 SLA timers (workflow.sla_timers), with the request, who raised
+    it, the stage, the result, who it was escalated to and who was notified (workflow.sla_notification_outbox).
+    Advanced (SLA Master) SLAs create no timers, so they do not appear."""
     timer_cols = await _columns(ctx.conn, "workflow", "sla_timers")
-    if not {"workflow_id", "workflow_instance_id", "scope", "status", "outcome", "created_at_utc"} <= timer_cols:
+    if not {"workflow_id", "workflow_instance_id", "scope", "status", "outcome", "created_at_utc", "due_at_utc",
+            "transaction_id"} <= timer_cols:
         return _empty(_SLA_COLS), ["No workflow SLA has run yet (no SLA timers)."]
-    has_outbox = {"timer_id", "status"} <= await _columns(ctx.conn, "workflow", "sla_notification_outbox")
-    has_names = {"Id", "Name"} <= await _columns(ctx.conn, "workflow", "Workflows")
-    wf_name = (sql.SQL('COALESCE((SELECT w."Name" FROM workflow."Workflows" w WHERE w."Id" = r.workflow_id), (r.workflow_id)::text)')
-               if has_names else sql.SQL("(r.workflow_id)::text"))
-    outbox = (sql.SQL(
-        "(SELECT COUNT(*) FILTER (WHERE o.status = {sent}) AS sent, COUNT(*) FILTER (WHERE o.status = {failed}) AS failed "
-        "FROM workflow.sla_notification_outbox o WHERE o.timer_id = t.id)").format(
-        sent=sql.Literal(_SLA_OUTBOX_SENT), failed=sql.Literal(_SLA_OUTBOX_FAILED))
-        if has_outbox else sql.SQL("(SELECT 0::bigint AS sent, 0::bigint AS failed)"))
-    args = {
-        "since": ctx.bind(ctx.since), "until": ctx.bind(ctx.until),
-        "pending": sql.Literal(_SLA_TIMER_PENDING), "fired": sql.Literal(_SLA_TIMER_FIRED),
-        "cancelled": sql.Literal(_SLA_TIMER_CANCELLED),
-        "met_resp": ctx.bind(_SLA_MET_RESPONSE), "met_res": ctx.bind(_SLA_MET_RESOLUTION),
-    }
+    has_users = {"Id", "Email"} <= await _columns(ctx.conn, "users", "Users")
+    has_outbox = {"timer_id", "status", "address"} <= await _columns(ctx.conn, "workflow", "sla_notification_outbox")
+
+    parts = []
+    for name, table, cols in await _workflow_tables(ctx, "workflow_instances_", {"id"}):
+        suffix = table.rsplit("_", 1)[1]
+        tx_cols = await _columns(ctx.conn, "workflow", f"transaction_{suffix}")
+        tx = _t("workflow", f"transaction_{suffix}")
+        stage = (sql.SQL("(SELECT x.stage_name::text FROM {tx} x WHERE x.id = t.transaction_id LIMIT 1)").format(tx=tx)
+                 if {"id", "stage_name"} <= tx_cols else sql.SQL("NULL::text"))
+        moved = (sql.SQL("(SELECT x.stage_name::text FROM {tx} x WHERE x.activity_id::text = substring(t.outcome from {re}) "
+                         "AND x.stage_name IS NOT NULL LIMIT 1)").format(tx=tx, re=ctx.bind(_SLA_MOVED))
+                 if {"activity_id", "stage_name"} <= tx_cols else sql.SQL("NULL::text"))
+        parts.append(sql.SQL(
+            "SELECT {wf}::text AS wf, t.*, {ref} AS ref, {raised} AS raised, {stage} AS stage, {moved} AS moved_stage "
+            "FROM workflow.sla_timers t LEFT JOIN {inst} i ON i.id = t.workflow_instance_id "
+            "WHERE left(replace((t.workflow_id)::text, '-', ''), 8) = {suffix} "
+            "AND t.created_at_utc >= {since} AND t.created_at_utc < {until}").format(
+            wf=ctx.bind(name), inst=_t("workflow", table), stage=stage, moved=moved,
+            ref=sql.SQL("i.reference_number::text") if "reference_number" in cols else sql.SQL("(t.workflow_instance_id)::text"),
+            raised=_user_email(sql.SQL("i.started_by")) if has_users and "started_by" in cols else sql.SQL("NULL::text"),
+            suffix=ctx.bind(suffix),
+            since=ctx.bind(ctx.since), until=ctx.bind(ctx.until)))
+    if not parts:
+        return _empty(_SLA_COLS), ["No workflow SLA has run yet (no SLA timers)."]
+
+    notified = (sql.SQL(
+        "(SELECT string_agg(DISTINCT COALESCE(NULLIF(o.address, ''), '-'), ', ') FROM workflow.sla_notification_outbox o "
+        "WHERE o.timer_id = s.id)") if has_outbox else sql.SQL("NULL::text"))
+    sent, failed = ((sql.SQL("(SELECT COUNT(*) FROM workflow.sla_notification_outbox o WHERE o.timer_id = s.id AND o.status = {})").format(
+        sql.Literal(v)) for v in (1, 2)) if has_outbox else (sql.SQL("0::bigint"), sql.SQL("0::bigint")))
+    escalated_user = (_user_email(sql.SQL("substring(s.outcome from {})").format(ctx.bind(_SLA_REASSIGNED)))
+                      if has_users else sql.SQL("substring(s.outcome from {})").format(ctx.bind(_SLA_REASSIGNED)))
     q = sql.SQL(
-        """WITH t AS (
-               SELECT t.*, n.sent, n.failed FROM workflow.sla_timers t, LATERAL {outbox} n
-               WHERE t.created_at_utc >= {since} AND t.created_at_utc < {until}),
-           r AS (  -- one row per request
-               SELECT workflow_id, workflow_instance_id,
-                      bool_or(scope = 'response' AND status = {fired}) AS resp_breached,
-                      bool_or(scope = 'response' AND status = {cancelled} AND outcome LIKE {met_resp}) AS resp_handled,
-                      bool_or(scope = 'resolution' AND status = {fired}) AS res_breached,
-                      bool_or(scope = 'resolution' AND status = {cancelled} AND outcome LIKE {met_res}) AS res_handled,
-                      bool_or(status = {pending}) AS pending,
-                      bool_or(status = {fired} AND (outcome LIKE '%%reassigned to %%' OR outcome LIKE '%%moved to stage %%')) AS escalated,
-                      SUM(sent) AS sent, SUM(failed) AS failed
-               FROM t GROUP BY 1, 2)
-           SELECT {wf_name} AS c0, COUNT(*) AS c1,
-                  COUNT(*) FILTER (WHERE resp_handled AND NOT resp_breached) AS c2,
-                  COUNT(*) FILTER (WHERE resp_breached) AS c3,
-                  COUNT(*) FILTER (WHERE res_handled AND NOT res_breached) AS c4,
-                  COUNT(*) FILTER (WHERE res_breached) AS c5,
-                  COUNT(*) FILTER (WHERE pending AND NOT (resp_breached OR res_breached)) AS c6,
-                  COUNT(*) FILTER (WHERE escalated) AS c7,
-                  round(100.0 * COUNT(*) FILTER (WHERE (resp_handled OR res_handled) AND NOT (resp_breached OR res_breached))
-                        / NULLIF(COUNT(*) FILTER (WHERE resp_handled OR res_handled OR resp_breached OR res_breached), 0), 1) AS c8,
-                  COALESCE(SUM(sent), 0) AS c9, COALESCE(SUM(failed), 0) AS c10
-           FROM r GROUP BY r.workflow_id ORDER BY c8 ASC NULLS LAST, c0 LIMIT {limit}"""
-    ).format(outbox=outbox, wf_name=wf_name, limit=sql.Literal(ctx.limit), **args)
+        """SELECT s.wf AS c0, s.ref AS c1, s.raised AS c2,
+                  CASE s.scope WHEN 'response' THEN 'Response' WHEN 'resolution' THEN 'Resolution' ELSE s.scope END AS c3,
+                  CASE WHEN s.scope = 'response' THEN s.stage END AS c4, s.due_at_utc AS c5,
+                  CASE s.status WHEN 1 THEN 'Breached' WHEN 0 THEN 'In Progress' WHEN 3 THEN 'Failed'
+                       ELSE CASE WHEN s.outcome LIKE {met1} OR s.outcome LIKE {met2} THEN 'Met' ELSE 'Cancelled' END END AS c6,
+                  CASE WHEN s.status = 1 THEN COALESCE(
+                       {escalated_user},
+                       'Stage: ' || COALESCE(s.moved_stage, substring(s.outcome from {moved_re}))) END AS c7,
+                  {notified} AS c8, {sent} AS c9, {failed} AS c10,
+                  (s.workflow_instance_id)::text AS c11, (s.workflow_id)::text AS c12
+           FROM ({u}) s
+           ORDER BY s.due_at_utc DESC, s.wf, s.ref LIMIT {limit}"""
+    ).format(met1=ctx.bind(_SLA_MET[0]), met2=ctx.bind(_SLA_MET[1]), escalated_user=escalated_user,
+             moved_re=ctx.bind(_SLA_MOVED), notified=notified, sent=sent, failed=failed,
+             u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
     return q, []
 
 

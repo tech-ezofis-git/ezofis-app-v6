@@ -794,44 +794,58 @@ async def test_admin_list_installs_missing_default_reports(world, make_client):
         conn.execute("""UPDATE reporting."ReportAiDefinitions" SET "IsDeleted" = false WHERE "SessionId" = 'default:ai_credit_consumption'""")
 
 
-async def test_sla_compliance_counts_requests_from_sla_timers(world):
-    """Per request, from workflow.sla_timers: fired = breached, cancelled because handled in time = met,
-    pending = in progress; other cancel reasons count as neither. Notifications come from the outbox."""
+async def test_sla_report_lists_each_sla_event(world):
+    """One row per SLA timer: request, raised by, stage, result, escalated to (user email or stage name) and
+    who was notified (workflow.sla_notification_outbox)."""
     from datetime import date as _date
 
     from app.report_agent_v2.domain.executor import run_compiled as _run, shape_result as _shape
     from app.report_agent_v2.domain.system_reports import compile_system_report
 
     tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
-    a, b, c, d = (uuid.uuid4() for _ in range(4))
     with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        inst, ref = conn.execute("SELECT id, reference_number FROM workflow.workflow_instances_b05ed64d "
+                                 "ORDER BY reference_number LIMIT 1").fetchone()
+        conn.execute("ALTER TABLE workflow.workflow_instances_b05ed64d ADD COLUMN IF NOT EXISTS started_by uuid")
+        conn.execute("UPDATE workflow.workflow_instances_b05ed64d SET started_by = %s WHERE id = %s", (world.owner, inst))
+        conn.execute("CREATE TABLE workflow.transaction_b05ed64d (id int, stage_name text, activity_id text)")
+        conn.execute("INSERT INTO workflow.transaction_b05ed64d VALUES (10, 'Finance Approval', 'act-1'), "
+                     "(11, 'Manager Review', 'act-2')")
         conn.execute("""CREATE TABLE workflow.sla_timers (id bigint PRIMARY KEY, workflow_id uuid, workflow_instance_id uuid,
-                        scope varchar(16), rule_id text, status smallint, outcome text, created_at_utc timestamptz)""")
-        conn.execute("CREATE TABLE workflow.sla_notification_outbox (id bigint PRIMARY KEY, timer_id bigint, status smallint)")
-        rows = [  # (id, request, scope, status, outcome)
-            (1, a, "response", 2, "ticket was already acted on"),       # A: handled in time
-            (2, a, "resolution", 2, "ticket is already resolved"),      # A: resolved in time
-            (3, b, "response", 1, "queued 2 email(s); reassigned to Kenneth"),  # B: breached + escalated
-            (4, c, "response", 0, None),                                # C: still running
-            (5, d, "response", 2, "SLA rule was removed"),              # D: neither
+                        scope varchar(16), transaction_id int, rule_id text, status smallint, outcome text,
+                        due_at_utc timestamptz, created_at_utc timestamptz)""")
+        conn.execute("CREATE TABLE workflow.sla_notification_outbox (id bigint PRIMARY KEY, timer_id bigint, status smallint, address text)")
+        rows = [  # (id, scope, transaction, status, outcome, due)
+            (1, "response", 10, 1, f"queued 1 email(s); reassigned to {world.shared}", "2026-10-21"),
+            (2, "response", 10, 1, "queued 1 email(s); moved to stage act-2", "2026-10-22"),
+            (3, "response", 10, 2, "ticket was already acted on", "2026-10-23"),
+            (4, "resolution", 0, 0, None, "2026-10-24"),
+            (5, "response", 10, 2, "SLA rule was removed", "2026-10-25"),
         ]
-        for tid, inst, scope, st, outcome in rows:
-            conn.execute("INSERT INTO workflow.sla_timers VALUES (%s,%s,%s,%s,'r1',%s,%s,'2026-10-20')",
-                         (tid, world.workflow_id, inst, scope, st, outcome))
-        conn.execute("INSERT INTO workflow.sla_notification_outbox VALUES (1,3,1), (2,3,1), (3,3,2)")
+        for tid, scope, txid, st, outcome, due in rows:
+            conn.execute("INSERT INTO workflow.sla_timers VALUES (%s,%s,%s,%s,%s,'r1',%s,%s,%s,'2026-10-20')",
+                         (tid, world.workflow_id, inst, scope, txid, st, outcome, due))
+        conn.execute("INSERT INTO workflow.sla_notification_outbox VALUES "
+                     "(1,1,1,'owner@a.example.com'), (2,1,2,'shared@a.example.com'), (3,2,1,'owner@a.example.com')")
     try:
         async with await psycopg.AsyncConnection.connect(npgsql_to_conninfo(await _tenant_cs(world)).replace("password=x", f"password={dict(p.split('=', 1) for p in TEST_PG.split()).get('password', 'x')}"), autocommit=True) as aconn:
             compiled = await compile_system_report(aconn, world.tenant_a, "workflow_sla_compliance", as_of=_date(2026, 10, 29), limit=50)
             _, out, _ = _shape(compiled.columns, await _run(aconn, compiled, 30000))
-        row = next(r for r in out if r["Workflow"] == "Accounts Payable")
-        assert row["Requests with SLA"] == 4
-        assert (row["Response Met"], row["Response Breached"]) == (1, 1)
-        assert (row["Resolution Met"], row["Resolution Breached"]) == (1, 0)
-        assert row["In Progress"] == 1 and row["Escalated"] == 1
-        assert float(row["Compliance %"]) == 50.0  # A met, B breached; C and D undecided
-        assert (row["Notifications Sent"], row["Notifications Failed"]) == (2, 1)
+        by_due = {str(r["Due At"])[:10]: r for r in out}
+        assert len(out) == 5 and all(r["Request No"] == ref and r["Workflow"] == "Accounts Payable" for r in out)
+        reassigned = by_due["2026-10-21"]
+        assert reassigned["Result"] == "Breached" and reassigned["Escalated To"] == "shared@a.example.com"
+        assert reassigned["Raised By"] == "owner@a.example.com" and reassigned["Stage"] == "Finance Approval"
+        assert reassigned["Notified"] == "owner@a.example.com, shared@a.example.com"
+        assert (reassigned["Notifications Sent"], reassigned["Notifications Failed"]) == (1, 1)
+        assert by_due["2026-10-22"]["Escalated To"] == "Stage: Manager Review"
+        assert by_due["2026-10-23"]["Result"] == "Met" and not by_due["2026-10-23"]["Escalated To"]
+        resolution = by_due["2026-10-24"]
+        assert resolution["Result"] == "In Progress" and resolution["SLA"] == "Resolution" and not resolution["Stage"]
+        assert by_due["2026-10-25"]["Result"] == "Cancelled"
+        assert reassigned["instanceId"] == str(inst) and reassigned["workflowId"] == str(world.workflow_id)
     finally:
         with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
-            conn.execute("DROP TABLE IF EXISTS workflow.sla_timers")
-            conn.execute("DROP TABLE IF EXISTS workflow.sla_notification_outbox")
-
+            for t in ("sla_timers", "sla_notification_outbox", "transaction_b05ed64d"):
+                conn.execute(f"DROP TABLE IF EXISTS workflow.{t}")
+            conn.execute("ALTER TABLE workflow.workflow_instances_b05ed64d DROP COLUMN IF EXISTS started_by")
