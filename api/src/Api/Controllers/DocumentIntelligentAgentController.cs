@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,13 +21,16 @@ public sealed class DocumentIntelligentAgentController : ControllerBase
 {
     private readonly IDocumentIntelligentAgentClient _client;
     private readonly ITenantProvider _tenantProvider;
+    private readonly IActivityCreditCharger _credits;
 
     public DocumentIntelligentAgentController(
         IDocumentIntelligentAgentClient client,
-        ITenantProvider tenantProvider)
+        ITenantProvider tenantProvider,
+        IActivityCreditCharger credits)
     {
         _client = client;
         _tenantProvider = tenantProvider;
+        _credits = credits;
     }
 
     /// <summary>
@@ -117,6 +121,12 @@ public sealed class DocumentIntelligentAgentController : ControllerBase
         return trimmed;
     }
 
+    private Guid? GetUserId()
+    {
+        var raw = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub") ?? User.FindFirstValue("oid");
+        return Guid.TryParse(raw, out var id) ? id : null;
+    }
+
     private Guid RequireTenantId() =>
         _tenantProvider.GetTenantId()
         ?? throw new InvalidOperationException("Tenant context is required (access token / X-Tenant-Id).");
@@ -128,6 +138,18 @@ public sealed class DocumentIntelligentAgentController : ControllerBase
         try
         {
             var result = await _client.ClassifyAsync(request, cancellationToken);
+            if (result.StatusCode is >= 200 and < 300)
+            {
+                await _credits.TryConsumeAsync(
+                    request.TenantId ?? RequireTenantId(),
+                    GetUserId(),
+                    ActivityCreditTypes.IntelligentUploadActivity,
+                    ActivityCreditTypes.IntelligentUploadSubActivity,
+                    $"Intelligent upload {request.FileName ?? request.FilePath ?? request.SessionId}",
+                    ActivityCreditTypes.IntelligentUploadCredit,
+                    cancellationToken: cancellationToken);
+            }
+
             return ToUnwrappedActionResult(result, DocumentIntelligentAgentClient.ResultPropertyName);
         }
         catch (ArgumentException ex)

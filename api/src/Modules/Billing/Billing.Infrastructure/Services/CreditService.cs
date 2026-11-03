@@ -40,16 +40,19 @@ public sealed class CreditService : ICreditService
             "documentsummary",
             StringComparison.OrdinalIgnoreCase);
 
-        var query = db.CreditMasters.AsQueryable()
+        var monthRows = await db.CreditMasters
             .Where(c => c.TenantId == tenantId
                         && c.AllocationMonth == allocationMonth
                         && c.AllocationYear == allocationYear
-                        && !c.IsDeleted);
+                        && !c.IsDeleted)
+            .ToListAsync(cancellationToken);
 
-        if (isDocumentSummary)
-            query = query.Where(c => c.CreditType == "DocumentSummary");
-
-        var creditMaster = await query.SingleOrDefaultAsync(cancellationToken);
+        // A DocumentSummary allocation, when the tenant has one, pays for AI summaries only; everything
+        // else (and AI summaries without their own allocation) uses the tenant's main allocation.
+        var mainRows = monthRows.Where(c => !IsDocumentSummaryType(c.CreditType));
+        var creditMaster = isDocumentSummary
+            ? monthRows.FirstOrDefault(c => IsDocumentSummaryType(c.CreditType)) ?? PickMain(mainRows)
+            : PickMain(mainRows);
         if (creditMaster is null)
         {
             return new CreditUpdateResult(
@@ -84,6 +87,15 @@ public sealed class CreditService : ICreditService
 
         return new CreditUpdateResult(CreditUpdateStatus.Success, "credits updated");
     }
+
+    private static bool IsDocumentSummaryType(string? creditType) =>
+        string.Equals(creditType?.Replace(" ", "", StringComparison.Ordinal), "DocumentSummary", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The main allocation: "Standard" first, then the one with the most balance left.</summary>
+    private static CreditMaster? PickMain(IEnumerable<CreditMaster> rows) =>
+        rows.OrderByDescending(c => string.Equals(c.CreditType, "Standard", StringComparison.OrdinalIgnoreCase))
+            .ThenByDescending(c => c.BalanceCredit)
+            .FirstOrDefault();
 
     public async Task<CreditMasterDto?> GetCreditMasterAsync(
         Guid tenantId,

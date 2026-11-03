@@ -1,7 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import type { ReportSpec } from '@/api/v6/reportAgent'
 import type { Row } from '@/components/base/data-table/types'
 import type {
@@ -27,7 +27,11 @@ import {
   useReportAgentDataQuery,
   useReportBuilderDataQuery,
 } from '@/pages/report-builder/hooks/useReportBuilderApi'
-import { isHiddenReportColumn } from '@/pages/report-builder/utils/hiddenColumns'
+import { DEFAULT_REPORT_DOMAIN } from '@/pages/report-builder/utils/agentReport'
+import {
+  isHiddenReportColumn,
+  isIdColumn,
+} from '@/pages/report-builder/utils/hiddenColumns'
 import { resolveFieldStatus } from '@/pages/report-builder/utils/resolveFieldStatus'
 import Request from '@/pages/requests/components/request/Request'
 import useInlineRequestOverview from '@/pages/requests/hooks/useInlineRequestOverview'
@@ -90,6 +94,17 @@ const FILE_NAME_NAMES = [
 const normalizeName = (value: string | undefined) =>
   (value ?? '').toLowerCase().replace(/[\s_\-.#]/g, '')
 
+// Columns a report's totals are split by (normalized names).
+const BREAKDOWN_COLUMN_NAMES = ['agent', 'skill', 'activity', 'activitytype']
+
+const toNumber = (value: unknown) => {
+  const num = Number(String(value ?? '').replace(/[^0-9.-]/g, ''))
+  return Number.isFinite(num) ? num : 0
+}
+
+const formatTotal = (value: number) =>
+  value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+
 // View, download and print only; editing and workflow actions stay on the
 // Folders page.
 const READ_ONLY_FILE_PERMISSIONS = {
@@ -114,6 +129,10 @@ const isFileNameColumn = (col: OverviewColumn) =>
 const isRequestNumberColumn = (col: OverviewColumn) =>
   normalizeName(col.id) === 'id' ||
   /^(req|request)(no|num|number)$/.test(normalizeName(col.label))
+
+/** A default report's Source column: a request's workflow or a repository file's folder. */
+const isSourceColumn = (col: OverviewColumn) =>
+  normalizeName(col.label) === 'source'
 
 // DataTable rows need their own `id`/`name`, which would overwrite report
 // columns keyed `id` (Req No) or `name`; those cells read an alias instead.
@@ -143,6 +162,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
 
   const isAgentReport = Boolean(report.agentConfig)
   const isFolderReport = report.sourceType === 'Folder'
+  const isDefaultReport = report.domain === DEFAULT_REPORT_DOMAIN
   const legacyQuery = useReportBuilderDataQuery(
     isAgentReport ? null : report.id,
   )
@@ -168,8 +188,14 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     const columns = runResult?.columns ?? []
     return (
       columns
-        // Internal identifier columns are fetched but never displayed.
-        .filter((col) => !isHiddenReportColumn(col.key, col.label))
+        // Internal identifier columns are fetched but never displayed. Default
+        // reports span every workflow/folder, so their Workflow / Repository
+        // column is real data there, not the report's own source name.
+        .filter((col) =>
+          report.domain === DEFAULT_REPORT_DOMAIN
+            ? !isIdColumn(col.key, col.label)
+            : !isHiddenReportColumn(col.key, col.label),
+        )
         .map((col) => {
           const fieldId = isAgentReport
             ? col.key
@@ -179,7 +205,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
           return { id: fieldId, label: col.label }
         })
     )
-  }, [runResult, isAgentReport, report.fields, fieldSettings])
+  }, [runResult, isAgentReport, report.fields, report.domain, fieldSettings])
 
   // Hidden workflow/instance id columns of the run, used to open a row's
   // request from its Req No cell.
@@ -247,12 +273,12 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
         WORKFLOW_ID_NAMES,
         linkColumns.workflow,
       )
-      if (isFolderReport) {
-        mapped[FILE_ITEM_ID_KEY] = read(row, ITEM_ID_NAMES, linkColumns.item)
-        mapped[FILE_REPOSITORY_ID_KEY] =
-          read(row, REPOSITORY_ID_NAMES, linkColumns.repository) ||
-          reportRepositoryId
-      }
+      // Folder reports link every file; other reports (e.g. AI credits) link
+      // the rows that carry a file's item and repository ids.
+      mapped[FILE_ITEM_ID_KEY] = read(row, ITEM_ID_NAMES, linkColumns.item)
+      mapped[FILE_REPOSITORY_ID_KEY] =
+        read(row, REPOSITORY_ID_NAMES, linkColumns.repository) ||
+        (isFolderReport ? reportRepositoryId : '')
       return mapped
     })
   }, [
@@ -349,13 +375,31 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
           size: 180,
           accessorFn: (row: Row) => row[key],
           renderCell: (row: Row) => {
+            // A highlighted link cell (file name, Req No) keeps its link,
+            // inside the highlight color.
+            const status =
+              setting?.colType === 'status'
+                ? resolveFieldStatus(
+                    setting,
+                    row as unknown as Record<string, string>,
+                  )
+                : null
+            const highlighted = (content: ReactNode) =>
+              status ? (
+                <StatusPill color={status.color} label={status.label}>
+                  {content}
+                </StatusPill>
+              ) : (
+                content
+              )
             if (
-              isFolderReport &&
-              isFileNameColumn(col) &&
+              (isFolderReport
+                ? isFileNameColumn(col)
+                : isRequestNumberColumn(col) && !row[INSTANCE_ID_KEY]) &&
               row[FILE_ITEM_ID_KEY] &&
               row[FILE_REPOSITORY_ID_KEY]
             ) {
-              return (
+              return highlighted(
                 <button
                   className='cursor-pointer truncate font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70'
                   type='button'
@@ -368,7 +412,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                   }
                 >
                   {(row[key] as string) || '-'}
-                </button>
+                </button>,
               )
             }
             if (
@@ -379,7 +423,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
             ) {
               const isOpening =
                 requestOverview.loadingInstanceId === row[INSTANCE_ID_KEY]
-              return (
+              return highlighted(
                 <button
                   className='inline-flex cursor-pointer items-center gap-1.5 font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70 disabled:cursor-wait'
                   disabled={Boolean(requestOverview.loadingInstanceId)}
@@ -393,7 +437,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                       name='lucide:loader-2'
                     />
                   )}
-                </button>
+                </button>,
               )
             }
             const json = parseJsonValue(row[key])
@@ -406,10 +450,6 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               )
             }
             if (setting?.colType === 'status') {
-              const status = resolveFieldStatus(
-                setting,
-                row as unknown as Record<string, string>,
-              )
               return status ? (
                 <StatusPill color={status.color} label={status.label} />
               ) : (
@@ -417,6 +457,22 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               )
             }
             const value = row[key] as string
+            // Source names a workflow (request rows) or a folder (repository
+            // files: OCR, intelligent upload, AI summary); the icon tells which.
+            if (isDefaultReport && isSourceColumn(col)) {
+              const isFile = Boolean(row[FILE_REPOSITORY_ID_KEY])
+              if (isFile || row[WORKFLOW_ID_KEY]) {
+                return (
+                  <span className='inline-flex min-w-0 items-center gap-1.5'>
+                    <Icon
+                      className='size-3.5 shrink-0 text-gray-9'
+                      name={isFile ? 'lucide:folder' : 'lucide:workflow'}
+                    />
+                    <span className='truncate'>{value || '-'}</span>
+                  </span>
+                )
+              }
+            }
             if (isDate && value) return formatReportDate(value)
             return value ?? '-'
           },
@@ -429,6 +485,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
       openRequest,
       requestOverview.loadingInstanceId,
       isFolderReport,
+      isDefaultReport,
     ],
   )
 
@@ -620,6 +677,52 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     columnTypes,
   ])
 
+  // Totals of the columns the run marks "Sum" (e.g. Credits), over the
+  // filtered rows so they follow the search and filters.
+  const columnTotals = useMemo(() => {
+    const sumKeys = new Set(
+      (runResult?.columns ?? [])
+        .filter((col) => col.calc === 'Sum')
+        .flatMap((col) => [col.key, col.label]),
+    )
+    return previewColumns
+      .filter((col) => sumKeys.has(col.id) || sumKeys.has(col.label))
+      .map((col) => ({
+        id: col.id,
+        label: col.label,
+        total: filteredRows.reduce(
+          (sum, row) => sum + toNumber(row[col.id]),
+          0,
+        ),
+      }))
+  }, [runResult, previewColumns, filteredRows])
+
+  // The last summed column (e.g. Credits) split by a Skill / Activity column,
+  // when the report has one.
+  const totalsBreakdown = useMemo(() => {
+    const measure = columnTotals[columnTotals.length - 1]
+    const by = previewColumns.find((col) =>
+      BREAKDOWN_COLUMN_NAMES.includes(normalizeName(col.label)),
+    )
+    if (!measure || !by) return null
+    const sums = new Map<string, number>()
+    filteredRows.forEach((row) => {
+      const name = String(row[by.id] || '-')
+      sums.set(name, (sums.get(name) ?? 0) + toNumber(row[measure.id]))
+    })
+    return {
+      by: by.label,
+      items: [...sums.entries()]
+        .map(([name, total]) => ({ name, total }))
+        .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)),
+      measure: measure.label,
+    }
+  }, [columnTotals, previewColumns, filteredRows])
+
+  // A default report with one total (AI Credit Consumption: Credits) shows it
+  // in the toolbar instead of a Totals row.
+  const totalsInToolbar = isDefaultReport && columnTotals.length === 1
+
   const paginatedRows = useMemo(() => {
     if (pageSize === 0) return filteredRows
     const start = (page - 1) * pageSize
@@ -756,6 +859,24 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                 fileName={report.name || 'report'}
                 table={renderTable as any}
               />
+              {totalsInToolbar &&
+                filteredRows.length > 0 &&
+                columnTotals.map(({ label, total }) => (
+                  <div
+                    className='inline-flex h-9 items-center gap-2 rounded-lg border border-primary-4 bg-gradient-to-r from-primary-1 to-primary-2 pr-3 pl-1.5 shadow-xs'
+                    key={label}
+                  >
+                    <span className='flex size-6 items-center justify-center rounded-md bg-primary-9 text-white'>
+                      <Icon className='size-3.5' name='lucide:coins' />
+                    </span>
+                    <span className='text-12 font-medium text-primary-11'>
+                      {t`Total ${label}`}
+                    </span>
+                    <span className='text-15 font-bold text-primary-12'>
+                      {formatTotal(total)}
+                    </span>
+                  </div>
+                ))}
               {toolbarActions}
             </div>
           }
@@ -769,6 +890,53 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
             setPage(1)
           }}
         />
+
+        {columnTotals.length > 0 &&
+          filteredRows.length > 0 &&
+          (!totalsInToolbar ||
+            (totalsBreakdown && totalsBreakdown.items.length > 1)) && (
+            // Label column + chips column, so both rows' chips start at the same edge.
+            <div className='grid shrink-0 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
+              {!totalsInToolbar && (
+                <>
+                  <span className='text-12 text-gray-11'>{t`Totals:`}</span>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    {columnTotals.map(({ label, total }) => (
+                      <span
+                        className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
+                        key={label}
+                      >
+                        {t`Total ${label}`}
+                        <span className='font-semibold'>
+                          {formatTotal(total)}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+              {totalsBreakdown && totalsBreakdown.items.length > 1 && (
+                <>
+                  <span className='text-12 text-gray-11'>
+                    {t`${totalsBreakdown.measure} by ${totalsBreakdown.by}:`}
+                  </span>
+                  <div className='flex flex-wrap items-center gap-2 text-12 text-gray-11'>
+                    {totalsBreakdown.items.map(({ name, total }) => (
+                      <span
+                        className='inline-flex items-center gap-1 rounded-full border border-gray-4 px-2.5 py-0.5'
+                        key={name}
+                      >
+                        {name}
+                        <span className='font-semibold text-gray-13'>
+                          {formatTotal(total)}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
         <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
           <DataTable

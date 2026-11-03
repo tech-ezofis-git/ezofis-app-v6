@@ -8,7 +8,7 @@ const toText = (value: unknown) =>
 
 /**
  * Converts an agent `reportSpec` column into the report's field setting. A
- * column with `highlight` rules becomes a status column keyed on itself, so
+ * column with `highlight` rules (or a default color) becomes a status column keyed on itself, so
  * OverviewTab renders its values as colored pills.
  */
 export const reportSpecColumnToFieldSetting = (
@@ -16,7 +16,8 @@ export const reportSpecColumnToFieldSetting = (
 ): ReportFieldSetting => {
   const setting = createDefaultFieldSetting(column.label || column.key)
   const rules = column.highlight?.rules ?? []
-  if (rules.length === 0) return setting
+  // A default color alone still colors every value of the column.
+  if (rules.length === 0 && !column.highlight?.default) return setting
 
   return {
     ...setting,
