@@ -62,6 +62,9 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import usePiiAiFieldsStore, {
+  flushPiiAiFields,
+} from '@/pages/settings/stores/usePiiAiFieldsStore'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { AnimateFadeIn } from '@/components/common/animations'
@@ -1441,6 +1444,7 @@ export default function DmsFolderConfiguration({
   }, [deletingRepositoryId, loadRepositories, repositories])
 
   const resetWizardUi = () => {
+    usePiiAiFieldsStore.getState().reset(null)
     setShowWizard(false)
     setShowAiBuilder(false)
     setEditingRepositoryId(null)
@@ -1703,7 +1707,16 @@ export default function DmsFolderConfiguration({
       }
     }
 
-    if (step === 5 && piiSettings.enabled && piiSettings.fieldIds.length === 0) {
+    // AI-suggested / typed values (not folder fields) also count as a selection.
+    const hasPiiExtraValues = usePiiAiFieldsStore
+      .getState()
+      .fields.some((field) => field.enabled)
+    if (
+      step === 5 &&
+      piiSettings.enabled &&
+      piiSettings.fieldIds.length === 0 &&
+      !hasPiiExtraValues
+    ) {
       showToast({
         message: t`Select at least one field to redact, or turn PII redaction off.`,
         variant: 'info',
@@ -1735,7 +1748,11 @@ export default function DmsFolderConfiguration({
 
     const isEditing = Boolean(editingRepositoryId)
 
-    if (piiSettings.enabled && piiSettings.fieldIds.length === 0) {
+    if (
+      piiSettings.enabled &&
+      piiSettings.fieldIds.length === 0 &&
+      !usePiiAiFieldsStore.getState().fields.some((field) => field.enabled)
+    ) {
       showToast({
         message: t`Select at least one field to redact, or turn PII redaction off.`,
         variant: 'info',
@@ -2124,6 +2141,23 @@ export default function DmsFolderConfiguration({
         ).trim() || null
       if (savedId) {
         writeCachedFolderPiiSettings(savedId, piiSettings)
+      }
+      // AI-found PII values that are not folder fields are saved separately.
+      // Create returns { repositoryId }, not { id }.
+      const piiRepositoryId =
+        savedId ||
+        String(
+          (responseData as { repositoryId?: string } | null)?.repositoryId ||
+            '',
+        ).trim()
+      if (piiRepositoryId) {
+        const piiError = await flushPiiAiFields(piiRepositoryId)
+        if (piiError) {
+          showToast({
+            message: t`Folder saved, but the extra sensitive values were not saved: ${piiError}`,
+            variant: 'warning',
+          })
+        }
       }
 
       showToast({
@@ -5340,6 +5374,9 @@ function WizardContent({
     return (
       <PiiRedactionWizardStep
         fields={fields}
+        folderDescription={description}
+        folderName={folderName}
+        repositoryId={editingRepositoryId}
         settings={piiSettings}
         onChange={setPiiSettings}
       />

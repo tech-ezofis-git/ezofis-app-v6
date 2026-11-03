@@ -13,6 +13,11 @@ export type RedactionArea = TextBox & {
   maskedLabel: string
   sourceValue: string
   backgroundColor?: string
+  /**
+   * Box comes from exact PDF text positions (not OCR estimates): drawn with only a hairline of
+   * padding so the cover does not spill onto blank paper.
+   */
+  precise?: boolean
 }
 
 export type PiiDetectOptions = {
