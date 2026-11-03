@@ -2,6 +2,11 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState,
 import { REQUESTS, ACTIONED, FILES, UPLOAD_POOL, NOTIFS } from './data.js';
 import { loadSession } from './api.js';
 import { wfApi, clearWfCache } from './wf.js';
+import { repoApi } from './repo.js';
+import { bgSession, bgAllowNotifications } from './background.js';
+import { pushRegister } from './push.js';
+import { notifApi, toItem } from './notifications.js';
+import { phonePref } from './notify.js';
 
 const Ctx = createContext(null);
 export const useStore = () => useContext(Ctx);
@@ -34,7 +39,7 @@ export function StoreProvider({ children }) {
   const [actioned, setActioned] = useState(ACTIONED);
   const [files, setFiles] = useState(FILES);
   const [staged, setStaged] = useState([]);
-  // Signed in: no notification API yet, so the list starts empty and fills with this device's actions.
+  // Signed in: the bell list is the server's (GET /api/notifications, refreshNotifs); sample mode shows demo items.
   const [notifs, setNotifs] = useState(() => (loadSession() ? [] : NOTIFS));
   const [inboxCount, setInboxCount] = useState(null);
   const [toast, setToast] = useState(null);
@@ -45,11 +50,23 @@ export function StoreProvider({ children }) {
   });
   // Live mode = signed in with a real EZOFIS session; otherwise the app shows sample data ("Explore").
   const [session, setSession] = useState(() => loadSession());
+  // the background inbox check follows the session: it gets the token on sign-in and forgets it on sign-out
+  // and, once per app start, Android asks for the notification permission if EZOFIS doesn't have it yet
+  // server push (Firebase) registers this phone with EZOFIS when it's built in; the background check is the fallback
+  useEffect(() => { bgSession(session, phonePref()); if (session && phonePref()) { bgAllowNotifications(); pushRegister(session); } }, [session && session.accessToken, session && session.tenantId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [me, setMe] = useState(null);
   const [liveTick, setLiveTick] = useState(0);
   const live = !!session;
   const syncSession = useCallback(() => setSession((prev) => { const n = loadSession(); if (!n || !prev || n.tenantId !== prev.tenantId || n.accessToken !== prev.accessToken) { clearWfCache(); setMe(null); setInboxCount(null); if (!!n !== !!prev) setNotifs(n ? [] : NOTIFS); } return n; }), []);
   const bumpLive = useCallback(() => setLiveTick((t) => t + 1), []);
+  // Folders the user can see (null = not known yet). With none, the Folders menu and Upload are hidden.
+  const [folderCount, setFolderCount] = useState(null);
+  useEffect(() => {
+    if (!session) { setFolderCount(null); return undefined; }
+    let off = false;
+    repoApi.list().then((l) => { if (!off) setFolderCount(l.length); }).catch(() => { /* unknown: keep the menu */ });
+    return () => { off = true; };
+  }, [session && session.tenantId, session && session.accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!session) return undefined;
     let off = false;
@@ -71,7 +88,14 @@ export function StoreProvider({ children }) {
     toastTimer.current = setTimeout(() => setToast(null), opts.duration || 3600);
   }, []);
 
-  const addNotif = useCallback((n) => setNotifs((list) => [{ id: 'n' + (++seq), unread: true, time: 'Just now', ...n }, ...list]), []);
+  // sample mode only: signed in, the server keeps the notifications and the list is refreshed from it
+  const addNotif = useCallback((n) => { if (loadSession()) return; setNotifs((list) => [{ id: 'n' + (++seq), unread: true, time: 'Just now', ...n }, ...list]); }, []);
+  // reads the server list; returns the raw rows (LiveWatcher uses them to spot new ones), null when it couldn't
+  const refreshNotifs = useCallback(async () => {
+    if (!loadSession()) return null;
+    try { const rows = await notifApi.list(); setNotifs(rows.map(toItem)); return rows; } catch (e) { return null; }
+  }, []);
+  useEffect(() => { if (session) refreshNotifs(); }, [session && session.accessToken, session && session.tenantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const actOn = useCallback((id, label, comment) => {
     const req = requests.find((r) => r.id === id);
@@ -123,15 +147,24 @@ export function StoreProvider({ children }) {
     return n;
   }, [staged, addNotif, showToast]);
 
-  const markAllRead = useCallback(() => setNotifs((l) => l.map((n) => ({ ...n, unread: false }))), []);
-  const markRead = useCallback((id) => setNotifs((l) => l.map((n) => (n.id === id ? { ...n, unread: false } : n))), []);
+  // mark read / delete update the list at once and tell the server (PATCH …/read, DELETE …)
+  const markRead = useCallback((id) => {
+    setNotifs((l) => l.map((n) => {
+      if (n.id !== id) return n;
+      if (n.server && n.unread) notifApi.read(id).catch(() => {});
+      return { ...n, unread: false };
+    }));
+  }, []);
+  const markAllRead = useCallback(() => setNotifs((l) => l.map((n) => { if (n.server && n.unread) notifApi.read(n.id).catch(() => {}); return { ...n, unread: false }; })), []);
+  const removeNotif = useCallback((id) => setNotifs((l) => l.filter((n) => { if (n.id === id && n.server) notifApi.remove(id).catch(() => {}); return n.id !== id; })), []);
 
   const value = useMemo(() => ({
-    live, session, me, liveTick, syncSession, bumpLive, setLastResult, addNotif, inboxCount, setInboxCount,
+    live, session, me, liveTick, syncSession, bumpLive, setLastResult, addNotif, refreshNotifs, removeNotif, inboxCount, setInboxCount, folderCount, setFolderCount,
+    hasFolders: !live || folderCount !== 0,
     requests, actioned, files, staged, notifs, toast, lastResult, platform, platformPref,
     setPlatform, showToast, setToast, actOn, addUpload, updateRequest, updateStaged, skipStaged, exportStaged, markAllRead, markRead,
     unread: notifs.filter((n) => n.unread).length,
-  }), [live, session, me, liveTick, syncSession, bumpLive, addNotif, inboxCount, requests, actioned, files, staged, notifs, toast, lastResult, platform, platformPref, setPlatform, showToast, actOn, addUpload, updateRequest, updateStaged, skipStaged, exportStaged, markAllRead, markRead]);
+  }), [live, session, me, liveTick, syncSession, bumpLive, addNotif, inboxCount, folderCount, requests, actioned, files, staged, notifs, toast, lastResult, platform, platformPref, setPlatform, showToast, actOn, addUpload, updateRequest, updateStaged, skipStaged, exportStaged, markAllRead, markRead, refreshNotifs, removeNotif]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

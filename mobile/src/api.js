@@ -53,14 +53,28 @@ export async function request(path, { method = 'GET', body, tenantId, token, tim
 
 // Authenticated call with the stored session (Bearer + X-Tenant-Id on every call, per the Workflow API doc).
 // 401 means the token expired or was revoked: the session is cleared and the app returns to sign-in.
+// Some endpoints answer 401 for "not allowed" too, so before signing out the token is checked once against
+// /me/tenants (cached for 5 seconds, so a burst of calls checks once); a token that still works keeps the session and the call fails as "no access".
 export const SESSION_EXPIRED = 'ezofis:session-expired';
+let lastCheck = { token: '', at: 0, ok: false };
+async function tokenStillValid(s) {
+  if (lastCheck.token === s.accessToken && Date.now() - lastCheck.at < 5000) return lastCheck.ok;
+  let ok = false;
+  try { await request('/me/tenants', { token: s.accessToken }); ok = true; } catch (e) { ok = !(e instanceof ApiError && e.status === 401); }
+  lastCheck = { token: s.accessToken, at: Date.now(), ok };
+  return ok;
+}
+async function on401(s, e) {
+  if (s && s.expiresAt > Date.now() && await tokenStillValid(s)) { e.status = 403; e.message = "You don't have access to this in EZOFIS."; return e; }
+  clearSession(); window.dispatchEvent(new Event(SESSION_EXPIRED)); e.message = 'Your session has ended. Sign in again.'; return e;
+}
 export async function authed(path, opts = {}) {
   const s = loadSession();
   if (!s) { window.dispatchEvent(new Event(SESSION_EXPIRED)); throw new ApiError(401, 'Your session has ended. Sign in again.'); }
   try {
     return await request(path, { ...opts, token: s.accessToken, tenantId: s.tenantId });
   } catch (e) {
-    if (e instanceof ApiError && e.status === 401) { clearSession(); window.dispatchEvent(new Event(SESSION_EXPIRED)); e.message = 'Your session has ended. Sign in again.'; }
+    if (e instanceof ApiError && e.status === 401) await on401(s, e);
     throw e;
   }
 }
@@ -77,7 +91,7 @@ export async function authedBlob(path, { timeout = 60000 } = {}) {
   } catch (e) {
     throw new ApiError(0, ctrl.signal.aborted ? 'The file is taking too long to download. Try again.' : IS_BROWSER_PREVIEW ? PREVIEW_MSG : "Can't reach EZOFIS. Check your internet connection and try again.");
   } finally { clearTimeout(timer); }
-  if (res.status === 401) { clearSession(); window.dispatchEvent(new Event(SESSION_EXPIRED)); throw new ApiError(401, 'Your session has ended. Sign in again.'); }
+  if (res.status === 401) throw await on401(s, new ApiError(401, 'Your session has ended. Sign in again.'));
   if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
   return res.blob();
 }
@@ -159,9 +173,12 @@ export function saveSession(login, tenant, email) {
     expiresAt: Date.now() + (Number(login.expiresIn) || 86400) * 1000,
     tenantId: tenant.tenantId, tenantName: tenant.name, role: tenant.role, email,
   };
-  try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch (e) { /* storage unavailable */ }
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); localStorage.setItem(LAST_KEY, JSON.stringify({ email, tenantId: tenant.tenantId })); } catch (e) { /* storage unavailable */ }
   return s;
 }
+// last signed-in email and organization, to prefill the sign-in screen (no token or password)
+const LAST_KEY = 'ezofis.lastLogin';
+export function lastLogin() { try { return JSON.parse(localStorage.getItem(LAST_KEY) || 'null') || {}; } catch (e) { return {}; } }
 export function loadSession() {
   try {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');

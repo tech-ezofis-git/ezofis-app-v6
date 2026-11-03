@@ -1,0 +1,13 @@
+{
+  "client_id": "315d2d09-9633-419e-8e85-18b747eb5be5",
+  "authorization_user_agent": "DEFAULT",
+  "redirect_uri": "msauth://com.ezofis.ezofis_mobile/NNnZgQ9Ckk0W1wpT4DQIj%2FKq1Ns%3D",
+  "account_mode": "SINGLE",
+  "broker_redirect_uri_registered": true,
+  "authorities": [
+    {
+      "type": "AAD",
+      "audience": { "type": "AzureADandPersonalMicrosoftAccount" }
+    }
+  ]
+}

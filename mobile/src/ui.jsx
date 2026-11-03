@@ -64,7 +64,8 @@ export const useSplit = () => useMedia('(min-width: 960px)');
 
 export function TopBar({ title, sub, back, right, onBack, tone = 'surface' }) {
   const nav = useNavigate();
-  const goBack = onBack || (() => (typeof back === 'string' ? nav(back) : nav(-1)));
+  // back="/path" goes there; back (true) goes to the previous screen, or Home when the app was opened on this one
+  const goBack = onBack || (() => (typeof back === 'string' ? nav(back) : window.history.state && window.history.state.idx > 0 ? nav(-1) : nav('/app/home')));
   return (
     <header className={'topbar ' + tone}>
       {back !== false && back !== undefined ? (
@@ -99,11 +100,12 @@ const TABS = [
 export function BottomNav() {
   const nav = useNavigate();
   const loc = useLocation();
-  const { requests, live, inboxCount } = useStore();
+  const { requests, live, inboxCount, hasFolders } = useStore();
   const n = live ? inboxCount || 0 : requests.length;
+  const tabs = TABS.filter((t) => hasFolders || t.icon !== 'folder');
   return (
-    <nav className="bottomnav" aria-label="Main">
-      {TABS.map((t) => {
+    <nav className="bottomnav" aria-label="Main" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+      {tabs.map((t) => {
         const active = loc.pathname.startsWith(t.to);
         return (
           <button key={t.to} type="button" className={'tab' + (active ? ' active' : '')} aria-current={active ? 'page' : undefined} onClick={() => nav(t.to)}>
@@ -119,13 +121,13 @@ export function BottomNav() {
 export function Rail() {
   const nav = useNavigate();
   const loc = useLocation();
-  const { requests, unread, live, inboxCount } = useStore();
-  const items = [...TABS.slice(0, 3), ...(live ? [{ to: '/app/ask', icon: 'chat', label: 'Ask AI' }] : []), { to: '/app/notifications', icon: 'bell', label: 'Alerts' }, TABS[3]];
+  const { requests, unread, live, inboxCount, hasFolders } = useStore();
+  const items = [...TABS.slice(0, 3).filter((t) => hasFolders || t.icon !== 'folder'), ...(live ? [{ to: '/app/ask', icon: 'chat', label: 'Ask AI' }] : []), { to: '/app/notifications', icon: 'bell', label: 'Alerts' }, TABS[3]];
   return (
     <nav className="rail" aria-label="Main">
       <img src={markColor} alt="EZOFIS" className="rail-logo" />
       <img src={lockup} alt="ezofis" className="rail-brand" />
-      <button type="button" className="rail-fab" aria-label="Upload documents" onClick={() => nav('/app/upload')}><Icon name="upload" size={22} color="#fff" stroke={2.2} /><span>Upload</span></button>
+      {hasFolders ? <button type="button" className="rail-fab" aria-label="Upload documents" onClick={() => nav('/app/upload')}><Icon name="upload" size={22} color="#fff" stroke={2.2} /><span>Upload</span></button> : null}
       {items.map((t) => {
         const active = loc.pathname.startsWith(t.to);
         const badge = t.icon === 'inbox' ? (live ? inboxCount || 0 : requests.length) : t.icon === 'bell' ? unread : 0;
