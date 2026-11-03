@@ -11,6 +11,10 @@ public interface IWorkflowSubProcessService
     Task<WorkflowSubProcessLinkDto> LinkAsync(
         Guid tenantId, Guid userId, WorkflowSubProcessLinkDto link, CancellationToken cancellationToken = default);
 
+    /// <summary>True when the request is already linked as another request's sub-process.</summary>
+    Task<bool> IsSubProcessAsync(
+        Guid tenantId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default);
+
     /// <summary>Children of a request, limited to workflows the user can access.</summary>
     Task<IReadOnlyList<WorkflowSubProcessRowDto>> GetChildrenAsync(
         Guid tenantId, Guid userId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default);

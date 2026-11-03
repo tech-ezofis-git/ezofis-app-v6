@@ -4,7 +4,6 @@ import { exportWorkflow } from './exportWorkflow'
 import { importWorkflow } from './importWorkflow'
 import { NODE_TOOL_TYPE } from './nodeToolTypes'
 import {
-  getConnectorSaveBlock,
   getWorkflowConnectorErrors,
   getWorkflowInitiatorErrors,
 } from './workflowConnector'
@@ -206,17 +205,5 @@ describe('off localhost', () => {
     } finally {
       vi.stubGlobal('location', { hostname: 'localhost' })
     }
-  })
-})
-
-describe('getConnectorSaveBlock', () => {
-  const manual = node('m', { label: 'm', toolType: NODE_TOOL_TYPE.MANUAL_USER })
-
-  it('blocks saving a connector until the backend supports it', () => {
-    expect(getConnectorSaveBlock([manual, connector()], false)).toMatch(
-      /can't be saved yet/,
-    )
-    expect(getConnectorSaveBlock([manual], false)).toBeNull()
-    expect(getConnectorSaveBlock([manual, connector()], true)).toBeNull()
   })
 })

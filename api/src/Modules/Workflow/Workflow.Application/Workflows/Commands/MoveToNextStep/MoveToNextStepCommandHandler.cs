@@ -28,6 +28,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
     private readonly IWorkflowEndSyncService _endSync;
     private readonly IWorkflowInsightQueue _insightQueue;
     private readonly IWorkflowConditionRouter _conditionRouter;
+    private readonly IWorkflowConnectorRunner _connectorRunner;
     private readonly ILogger<MoveToNextStepCommandHandler> _logger;
 
     public MoveToNextStepCommandHandler(
@@ -50,6 +51,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         IWorkflowEndSyncService endSync,
         IWorkflowInsightQueue insightQueue,
         IWorkflowConditionRouter conditionRouter,
+        IWorkflowConnectorRunner connectorRunner,
         ILogger<MoveToNextStepCommandHandler> logger)
     {
         _repository = repository;
@@ -71,6 +73,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
         _endSync = endSync;
         _insightQueue = insightQueue;
         _conditionRouter = conditionRouter;
+        _connectorRunner = connectorRunner;
         _logger = logger;
     }
 
@@ -623,6 +626,20 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                 cancellationToken);
             if (routed != null)
                 return routed;
+        }
+
+        // Connector block: the API starts the connected workflow, links it as a sub-process and moves
+        // on by itself without waiting for the child. Return where the ticket ended up.
+        if (!isCompleted
+            && nextDefinitionStep != null
+            && WorkflowStepTransitionHelper.IsConnectorStep(nextDefinitionStep))
+        {
+            var ran = await _connectorRunner.TryRunAsync(
+                instance.Id,
+                request.ConditionDepth,
+                cancellationToken);
+            if (ran != null)
+                return ran;
         }
 
         // AI insight for the next step owner (shown on their inbox item only; nothing is shown once the
