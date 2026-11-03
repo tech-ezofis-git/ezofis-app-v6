@@ -329,7 +329,9 @@ async def _portal_submission_performance(ctx: _Ctx) -> tuple[sql.Composable, lis
     return q, ["Every workflow request is counted as a submission (requests do not record a portal source)."]
 
 
-_PENDING_COLS = (Col("Workflow"), Col("Request No"), Col("Status"), Col("Stage"), Col("Created By"), Col("Action By"),
+# Raised By: who submitted the request. Pending With: who has to act on it now (its open transactions'
+# users / groups, as in their Inbox).
+_PENDING_COLS = (Col("Workflow"), Col("Request No"), Col("Status"), Col("Stage"), Col("Raised By"), Col("Pending With"),
                  Col("Created At", "date", "value"), Col("Modified At", "date", "value"),
                  Col("Days Pending", "number", "value")) + _REQUEST_LINKS
 
@@ -348,11 +350,14 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
     if not tables:
         return _empty(_PENDING_COLS), ["No workflow requests found."]
     has_users = {"Id", "Email"} <= await _columns(ctx.conn, "users", "Users")
+    has_groups = {"Id", "Name"} <= await _columns(ctx.conn, "users", "Groups")
     parts = []
     for name, table, cols in tables:
         suffix = table.rsplit("_", 1)[1]
         inbox = f"inbox_{suffix}"
         inbox_cols = await _columns(ctx.conn, "workflow", inbox)
+        tx_table = f"transaction_{suffix}"
+        tx_cols = await _columns(ctx.conn, "workflow", tx_table)
         pf_cols = await _columns(ctx.conn, "workflow", f"process_form_{suffix}")
 
         # Latest inbox row of the request: its stage, and who acted last (email preferred).
@@ -373,6 +378,28 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
         else:
             stage = action_by = sql.SQL("NULL::text")
 
+        # Pending With: the users / groups of the request's open transactions (action_status 0, not at
+        # an END stage) -- the same rows that put it in their Inbox. Without a transaction table, fall
+        # back to the latest inbox row's user.
+        if {"workflow_instance_id", "action_status"} <= tx_cols and ("activity_user_id" in tx_cols or "activity_group_id" in tx_cols):
+            assignee = []
+            if has_users and "activity_user_id" in tx_cols:
+                assignee.append(_user_email(sql.SQL("tx.activity_user_id")))
+            if has_groups and "activity_group_id" in tx_cols:
+                assignee.append(sql.SQL(
+                    "(SELECT g.\"Name\" FROM users.\"Groups\" g "
+                    "WHERE (g.\"Id\")::text = NULLIF(btrim((tx.activity_group_id)::text), '') LIMIT 1)"))
+            not_deleted = sql.SQL(" AND COALESCE(tx.is_deleted, false) = false") if "is_deleted" in tx_cols else sql.SQL("")
+            not_end = (sql.SQL(" AND upper(btrim(COALESCE(tx.stage_type::text, ''))) <> 'END'") if "stage_type" in tx_cols
+                       else sql.SQL(""))
+            pending_with = (sql.SQL(
+                "(SELECT string_agg(DISTINCT w, ', ') FROM (SELECT COALESCE({who}) AS w FROM {tx} tx "
+                "WHERE (tx.workflow_instance_id)::text = (wi.id)::text AND tx.action_status = 0{nd}{ne}) a WHERE w IS NOT NULL)"
+            ).format(who=sql.SQL(", ").join(assignee), tx=_t("workflow", tx_table), nd=not_deleted, ne=not_end)
+                if assignee else sql.SQL("NULL::text"))
+        else:
+            pending_with = action_by
+
         # Request creator: the user who started it, else the one who created its form entry.
         creators = []
         if has_users and "started_by" in cols:
@@ -386,14 +413,12 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
         ref = sql.SQL("wi.reference_number::text") if "reference_number" in cols else sql.SQL("(wi.id)::text")
         tenant = sql.SQL(" AND wi.tenant_id = {}").format(ctx.bind(ctx.tenant_id)) if "tenant_id" in cols else sql.SQL("")
         parts.append(sql.SQL(
-            # Action By: nobody has acted yet on a request without an inbox entry, so its creator
-            # (who submitted it) made the last action.
             "SELECT {wf}::text AS c0, {ref} AS c1, {status} AS c2, {stage} AS c3, {created_by} AS c4, "
-            "COALESCE({action_by}, {created_by}) AS c5, wi.created_at_utc AS c6, {modified} AS c7, "
+            "{pending_with} AS c5, wi.created_at_utc AS c6, {modified} AS c7, "
             "({asof} - (wi.created_at_utc AT TIME ZONE 'UTC')::date) AS c8, (wi.id)::text AS c9, {wf_id} AS c10 "
             "FROM {t} wi WHERE wi.status IN (0, 1, 2){tenant}").format(
             wf=ctx.bind(name), ref=ref, status=_status_label(sql.SQL("wi.status")), stage=stage, created_by=created_by,
-            action_by=action_by, modified=modified, asof=ctx.bind(ctx.as_of, "date"), t=_t("workflow", table), tenant=tenant,
+            pending_with=pending_with, modified=modified, asof=ctx.bind(ctx.as_of, "date"), t=_t("workflow", table), tenant=tenant,
             wf_id=sql.SQL("(wi.workflow_id)::text") if "workflow_id" in cols else sql.SQL("NULL::text")))
     q = sql.SQL("SELECT * FROM ({u}) s ORDER BY c8 DESC NULLS LAST, c0 LIMIT {limit}").format(
         u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))

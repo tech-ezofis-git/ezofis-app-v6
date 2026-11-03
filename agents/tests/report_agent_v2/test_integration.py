@@ -471,9 +471,9 @@ async def test_pending_default_report_shows_creator_email(world, make_client):
     ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
     r = await client.get(f"/api/report-agent-v2/reports/{ids['pending_workflow_requests']}/execute", headers=admin)
     body = r.json()
-    assert [c["label"] for c in body["columns"]] == ["Workflow", "Request No", "Status", "Stage", "Created By", "Action By",
+    assert [c["label"] for c in body["columns"]] == ["Workflow", "Request No", "Status", "Stage", "Raised By", "Pending With",
                                                      "Created At", "Modified At", "Days Pending"]
-    assert body["rows"] and all(row["Created By"] == "owner@a.example.com" for row in body["rows"])
+    assert body["rows"] and all(row["Raised By"] == "owner@a.example.com" for row in body["rows"])
 
 
 # --- wizard round trip: preview, edit, re-preview without LLM, save with highlight + status ----
@@ -562,8 +562,8 @@ async def test_default_report_highlights_and_action_by_fallback(world, make_clie
     pending_id = ids["pending_workflow_requests"]
     run = (await client.get(f"/api/report-agent-v2/reports/{pending_id}/execute", headers=admin)).json()
     assert run["rows"] and all(r["instanceId"] and r["workflowId"] for r in run["rows"])
-    # Every pending request here has an inbox row (name only) or none: Action By is never blank.
-    assert all(r["Action By"] for r in run["rows"])
+    # No transaction table here: Pending With falls back to the latest inbox row's user (every request has one).
+    assert all(r["Pending With"] for r in run["rows"])
 
     rule = {"rules": [{"color": "red", "op": "gt", "value": 30, "label": "Overdue"}], "default": None}
     r = await client.put(f"/api/report-agent-v2/definitions/{pending_id}/highlights",
@@ -728,3 +728,35 @@ async def test_credit_report_includes_v6_billing_credits(world, make_client):
     assert upload["Credits"] == 1 and upload["itemId"] is None
     assert not any(k[0] == "AP_AGENT" or k[1] in ("deleted.pdf", "other.pdf") for k in billing)
     assert run["totals"]["Credits"] >= 4
+
+
+async def test_pending_with_lists_open_transaction_assignees(world, make_client):
+    """Pending With = users / groups of the request's open transactions (action_status 0, not END), as in their Inbox.
+    Runs last: it adds a transaction table, which the other pending-report tests do not expect."""
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    group = uuid.uuid4()
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        inst = conn.execute("SELECT id FROM workflow.workflow_instances_b05ed64d WHERE status IN (0, 1, 2) "
+                            "ORDER BY reference_number LIMIT 1").fetchone()[0]
+        conn.execute('CREATE TABLE IF NOT EXISTS users."Groups" ("Id" uuid, "Name" text)')
+        conn.execute('INSERT INTO users."Groups" VALUES (%s, %s)', (group, "Finance Team"))
+        conn.execute("""CREATE TABLE workflow.transaction_b05ed64d (workflow_instance_id uuid, action_status int,
+                        activity_user_id uuid, activity_group_id uuid, stage_type text, is_deleted boolean)""")
+        conn.execute("INSERT INTO workflow.transaction_b05ed64d VALUES "
+                     "(%s, 0, %s, NULL, 'APPROVAL', false), "  # open, a user
+                     "(%s, 0, NULL, %s, 'APPROVAL', false), "  # open, a group
+                     "(%s, 1, %s, NULL, 'APPROVAL', false), "  # already acted on
+                     "(%s, 0, %s, NULL, 'END', false)",        # end stage
+                     (inst, world.shared, inst, group, inst, world.outsider, inst, world.admin))
+    try:
+        client = await make_client()
+        admin = _h(world, world.admin, role="Admin")
+        ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
+        run = (await client.get(f"/api/report-agent-v2/reports/{ids['pending_workflow_requests']}/execute", headers=admin)).json()
+        row = next(r for r in run["rows"] if r["instanceId"] == str(inst))
+        assert row["Pending With"] == "Finance Team, shared@a.example.com"
+        assert row["Raised By"] == "owner@a.example.com"
+    finally:
+        with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+            conn.execute("DROP TABLE IF EXISTS workflow.transaction_b05ed64d")
+
