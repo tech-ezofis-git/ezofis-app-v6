@@ -17,6 +17,7 @@ feature/xyz ──PR──► testing ──(everyone pulls & tests locally, tes
 5. Rules:
    - Everything in `testing` goes to `main` together. If a feature is broken, **revert it in `testing` first**.
    - Always move `testing` → `main` with a PR. Never copy files or cherry-pick by hand.
+   - **Releasing one PR only** (it's ready, other work on `testing` isn't): run `./scripts/release-pr.ps1 -Pr <number>` from your own account. It copies just that PR onto a branch from `main`, checks the files match, runs the local checks, and opens the release PR into `main`. Then tech approves and merges it, and a PR `main` → `testing` brings the branches back in step. It refuses when the PR isn't merged into `testing`, is already live, or depends on another PR that isn't live yet. Use `-NoPush` to check without pushing.
    - **Urgent production fix:** branch from `main`, PR into `main` (approved by tech), then merge `main` back into `testing`.
    - Open PRs from **your own GitHub account**. `tech-ezofis-git` only approves, because GitHub never lets an account approve its own PR.
    - Pushing to `testing` never deploys. Only `main` deploys.
