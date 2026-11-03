@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import { forwardRef } from 'react'
+import { parseFlexibleDate, toIsoDate } from '@/utils/parseDate'
 import type { InputProps } from './shared/types'
 import InputDate from './InputDate'
 import InputLabel from './InputLabel'
@@ -59,26 +60,16 @@ const splitValue = (value: string | null | undefined) => {
       }
     }
 
-    // Ensure date part is in YYYY-MM-DD if standard parseable
-    let normalizedDate = dateStr
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      normalizedDate = dateStr
-    } else {
-      const parsedDate = dayjs(dateStr)
-      if (parsedDate.isValid()) {
-        normalizedDate = parsedDate.format('YYYY-MM-DD')
-      }
-    }
-
-    return {
-      datePart: normalizedDate || null,
-      timePart: normalizedTime || '00:00',
+    // Date part as YYYY-MM-DD ("15/10/2026" too); unreadable → empty.
+    const normalizedDate = toIsoDate(dateStr)
+    if (normalizedDate) {
+      return { datePart: normalizedDate, timePart: normalizedTime || '00:00' }
     }
   }
 
   // 3. Fallback for date-only string or other standard format
-  const parsedFallback = dayjs(trimmed)
-  if (parsedFallback.isValid()) {
+  const parsedFallback = parseFlexibleDate(trimmed)
+  if (parsedFallback) {
     // If it has a non-midnight time or specific time component
     const hasTime = trimmed.length > 10
     return {
@@ -87,7 +78,8 @@ const splitValue = (value: string | null | undefined) => {
     }
   }
 
-  return { datePart: trimmed || null, timePart: '' }
+  // Not a date ("Net 30"): show it empty so a date can be picked.
+  return { datePart: null as string | null, timePart: '' }
 }
 
 const InputDateTime = forwardRef<HTMLInputElement, Props>(

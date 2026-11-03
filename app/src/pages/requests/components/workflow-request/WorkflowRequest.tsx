@@ -675,8 +675,8 @@ const WorkflowRequest = ({
         const missingFields =
           ('missingFields' in result && result.missingFields) || []
         const groups = groupMissingByPanel(panels, missingFields)
-        // Missing mandatory fields are guidance, not a failure: info toast,
-        // listing each section with its missing fields.
+        // Missing mandatory fields block the submit: error toast, listing
+        // each section with its missing fields.
         showToast({
           autoClose: 8000,
           id: 'mandatory-validation',
@@ -693,7 +693,7 @@ const WorkflowRequest = ({
               </ul>
             </div>
           ),
-          variant: 'info',
+          variant: 'error',
         })
         // Scroll to and focus the first missing field that is on screen
         // (a repo field may not be rendered in every layout).

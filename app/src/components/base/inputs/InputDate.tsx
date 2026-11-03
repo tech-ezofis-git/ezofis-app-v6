@@ -2,24 +2,19 @@ import { DateInput as Base } from '@mantine/dates'
 import { forwardRef } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
+import { toIsoDate } from '@/utils/parseDate'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
 import { classNames, inputWrapperOrder } from './shared/constants'
 
+// The picker only understands YYYY-MM-DD; anything else it shows as
+// "Invalid Date" (dayjs's text for a date it can't read) and its calendar
+// stops working. So convert what we can read ("15/10/2026") and treat the
+// rest ("Net 30", "CUSTOM", "Invalid Date") as empty, so a date can be picked.
 const normalizeDateInputValue = (
   value: string | null | undefined,
-): string | null => {
-  if (value === null || value === undefined) return null
-
-  const str = String(value).trim()
-  if (!str || str === '-') return null
-  if (str.toLowerCase() === 'invalid date') return null
-  // Mode names like "CUSTOM" saved into old entries aren't dates.
-  if (!/\d/.test(str)) return null
-
-  return str
-}
+): string | null => toIsoDate(value)
 
 interface Props extends Omit<
   InputProps,

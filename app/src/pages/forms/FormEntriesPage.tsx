@@ -43,6 +43,7 @@ import Tabs from '@/components/base/tabs/Tabs'
 import showToast from '@/components/base/toast/showToast'
 import BarcodeScannerPanel from '@/components/common/barcode-scanner/BarcodeScannerPanel'
 import CustomFilter from '@/components/common/CustomFilter'
+import FormTypeBadge from '@/components/common/FormTypeBadge'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import {
   LegacyInlineFieldRenderer,
@@ -105,11 +106,15 @@ import {
 } from '@/utils/filterUtils'
 import FormEntryTableField from './components/FormEntryTableField'
 import GenericFormImportModal from './components/GenericFormImportModal'
+import RestoreEntriesDialog, {
+  type RestoreOptions,
+} from './components/RestoreEntriesDialog'
 import {
   buildEntrySearchPayload,
   buildEntryTrashPayload,
   resolveEntryColumn,
 } from './utils/entrySearchFilter'
+import { runEntryBatch } from './utils/runEntryBatch'
 
 const FormEntriesChoiceInput = ({
   field,
@@ -138,7 +143,7 @@ const FormEntriesChoiceInput = ({
       (f: any) =>
         f.id === masterInfo.masterFormParentColumn ||
         f.settings?.specific?.masterFormColumn ===
-        masterInfo.masterFormParentColumn ||
+          masterInfo.masterFormParentColumn ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, masterInfo.masterFormParentColumn])
@@ -151,8 +156,8 @@ const FormEntriesChoiceInput = ({
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
-    parentField.label ||
-    parentField.id
+      parentField.label ||
+      parentField.id
     : masterInfo.masterFormParentColumn
 
   const { data: userFieldOptions = [] } = useQuery({
@@ -210,10 +215,15 @@ const FormEntriesChoiceInput = ({
     return optionsType === 'DYNAMIC'
       ? getFieldOptions(field)
       : getConfiguredFieldOptions(field)
-  }, [masterInfo.enabled, masterFieldOptions, optionsType, userFieldOptions, field])
+  }, [
+    masterInfo.enabled,
+    masterFieldOptions,
+    optionsType,
+    userFieldOptions,
+    field,
+  ])
 
-  const opts =
-    rawOptions.length > 0 ? rawOptions.map((o) => o.name) : []
+  const opts = rawOptions.length > 0 ? rawOptions.map((o) => o.name) : []
 
   useEffect(() => {
     if (rawOptions.length === 1) {
@@ -338,7 +348,7 @@ const FormEntriesSelectInput = ({
       (f: any) =>
         f.id === masterInfo.masterFormParentColumn ||
         f.settings?.specific?.masterFormColumn ===
-        masterInfo.masterFormParentColumn ||
+          masterInfo.masterFormParentColumn ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, masterInfo.masterFormParentColumn])
@@ -351,8 +361,8 @@ const FormEntriesSelectInput = ({
 
   const parentMasterColumn = parentField
     ? getMasterFormInfo(parentField).masterFormColumn ||
-    parentField.label ||
-    parentField.id
+      parentField.label ||
+      parentField.id
     : masterInfo.masterFormParentColumn
 
   const repoParentField = useMemo(() => {
@@ -362,17 +372,17 @@ const FormEntriesSelectInput = ({
       (f: any) =>
         f.id === facetSource.repositoryFieldParent ||
         f.settings?.specific?.repositoryField ===
-        facetSource.repositoryFieldParent ||
+          facetSource.repositoryFieldParent ||
         f.settings?.specific?.masterFormColumn ===
-        facetSource.repositoryFieldParent ||
+          facetSource.repositoryFieldParent ||
         (f.label && f.label.trim().toLowerCase() === target),
     )
   }, [allFields, facetSource.repositoryFieldParent])
 
   const repoParentFieldName = repoParentField
     ? repoParentField.settings?.specific?.repositoryField ||
-    repoParentField.label ||
-    repoParentField.id
+      repoParentField.label ||
+      repoParentField.id
     : facetSource.repositoryFieldParent || ''
 
   const repoParentRawValue = repoParentField
@@ -459,10 +469,12 @@ const FormEntriesSelectInput = ({
       ),
   })
 
-  const normalizedDistinctOptions: FieldOption[] = fieldDistinctOptions.map((o) => ({
-    id: String(o.id),
-    name: o.name,
-  }))
+  const normalizedDistinctOptions: FieldOption[] = fieldDistinctOptions.map(
+    (o) => ({
+      id: String(o.id),
+      name: o.name,
+    }),
+  )
 
   const selectOptions = useMemo<FieldOption[]>(() => {
     let resolved: FieldOption[] = []
@@ -522,9 +534,9 @@ const FormEntriesSelectInput = ({
       if (isMulti) {
         const selectedValues = val
           ? String(val)
-            .split(',')
-            .map((v) => v.trim())
-            .filter(Boolean)
+              .split(',')
+              .map((v) => v.trim())
+              .filter(Boolean)
           : []
         if (selectedValues.length === 0) {
           onChange(singleVal)
@@ -539,15 +551,15 @@ const FormEntriesSelectInput = ({
 
   const allowAddNew = Boolean(
     field.settings?.specific?.allowToAddNewOptions ||
-      field.settings?.specific?.allowCustomEntries,
+    field.settings?.specific?.allowCustomEntries,
   )
 
   if (isMulti) {
     const selectedValues = val
       ? String(val)
-        .split(',')
-        .map((v) => v.trim())
-        .filter(Boolean)
+          .split(',')
+          .map((v) => v.trim())
+          .filter(Boolean)
       : []
     const selectedOpts = selectedValues.map((v) => ({ id: v, name: v }))
 
@@ -648,9 +660,9 @@ const FormEntriesSearchableInput = ({
   return (
     <div className='relative w-full'>
       {masterFill}
-      <div className='flex items-center w-full gap-2'>
+      <div className='flex w-full items-center gap-2'>
         <div
-          className='flex-1 min-w-0'
+          className='min-w-0 flex-1'
           onKeyDown={(e) => {
             if (isSearchField && e.key === 'Enter') {
               e.preventDefault()
@@ -664,7 +676,7 @@ const FormEntriesSearchableInput = ({
           <Tooltip label='Scan QR / Barcode' withArrow>
             <button
               type='button'
-              className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all active:scale-95'
+              className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary transition-all hover:bg-accent-primary hover:text-white active:scale-95'
               onClick={() => setIsScannerOpen((prev) => !prev)}
             >
               <Icon className='size-4' name='lucide:qr-code' />
@@ -676,7 +688,7 @@ const FormEntriesSearchableInput = ({
             <button
               type='button'
               disabled={isSearching}
-              className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary hover:bg-accent-primary hover:text-white transition-all disabled:opacity-50'
+              className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft text-accent-primary transition-all hover:bg-accent-primary hover:text-white disabled:opacity-50'
               onClick={handleSearch}
             >
               {isSearching ? (
@@ -722,9 +734,9 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
     fields.length > 0
       ? fields
       : [
-        { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
-        { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
-      ]
+          { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
+          { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
+        ]
 
   return Array.from({ length: count }).map((_, idx) => {
     const entryId = `Entry #${idx + 1}`
@@ -1001,8 +1013,8 @@ const FormLineItemInlineEditor = ({
                 {(idx === 0 ||
                   normId.includes('item') ||
                   normId.includes('part')) && (
-                    <span className='ml-1 font-bold text-red-9'>*</span>
-                  )}
+                  <span className='ml-1 font-bold text-red-9'>*</span>
+                )}
               </label>
 
               {isLongText ? (
@@ -1148,9 +1160,7 @@ const FormLineItemsEditor = ({
   )
   const columnTotals = useMemo(
     () =>
-      showTotals
-        ? computeTableColumnTotals(field, rows, rawTableColumns)
-        : {},
+      showTotals ? computeTableColumnTotals(field, rows, rawTableColumns) : {},
     [showTotals, field, rows, rawTableColumns],
   )
 
@@ -1269,7 +1279,7 @@ const FormLineItemsEditor = ({
           <div className='custom-scrollbar max-h-[340px] overflow-x-auto overflow-y-auto'>
             <table className='w-full border-collapse text-left text-xs'>
               <thead>
-                <tr className='bg-surface-muted/95 sticky top-0 z-10 border-b border-gray-2 backdrop-blur-xs'>
+                <tr className='sticky top-0 z-10 border-b border-gray-2 bg-surface-muted/95 backdrop-blur-xs'>
                   {columns.map((col) => (
                     <th
                       className='p-2.5 font-bold whitespace-nowrap text-gray-11'
@@ -1292,7 +1302,7 @@ const FormLineItemsEditor = ({
                     <tr
                       key={rIdx}
                       className={cn(
-                        'hover:bg-surface-hover/60 border-b border-gray-1 transition-colors last:border-0',
+                        'border-b border-gray-1 transition-colors last:border-0 hover:bg-surface-hover/60',
                         isHighlighted ? 'animate-pulse bg-accent-soft/20' : '',
                       )}
                     >
@@ -1361,7 +1371,7 @@ const FormLineItemsEditor = ({
           </div>
 
           {/* Table Footer */}
-          <div className='bg-surface-muted/60 flex items-center justify-between border-t border-gray-2 px-4 py-3 text-xs'>
+          <div className='flex items-center justify-between border-t border-gray-2 bg-surface-muted/60 px-4 py-3 text-xs'>
             <span className='text-[11px] font-medium text-gray-7'>
               Showing {rows.length} line {rows.length === 1 ? 'item' : 'items'}
             </span>
@@ -1460,10 +1470,13 @@ const FormEntriesPage = () => {
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, any>>({})
   const [isSaving, setIsSaving] = useState(false)
-  const [deletingEntry, setDeletingEntry] = useState<any | null>(null)
-  const [permanentlyDeletingEntry, setPermanentlyDeletingEntry] = useState<
-    any | null
+  // Entries an action is waiting to be confirmed for: one from a row menu, or
+  // the rows selected in the table.
+  const [deletingEntries, setDeletingEntries] = useState<any[] | null>(null)
+  const [permanentlyDeletingEntries, setPermanentlyDeletingEntries] = useState<
+    any[] | null
   >(null)
+  const [restoringEntries, setRestoringEntries] = useState<any[] | null>(null)
   const [isDeletingEntry, setIsDeletingEntry] = useState(false)
   const canPermanentlyDelete = isAdminRole(
     authUserStore((state) => state.session?.role),
@@ -1539,7 +1552,7 @@ const FormEntriesPage = () => {
       loggedInSession &&
       (String(loggedInSession.id) === String(userId) ||
         String(loggedInSession.email || '').toLowerCase() ===
-        String(userId).toLowerCase())
+          String(userId).toLowerCase())
     ) {
       if (currentUserName) return currentUserName
     }
@@ -1587,6 +1600,17 @@ const FormEntriesPage = () => {
     return ensureNormalizedRuntimeFormJson(formData._json || formData.formJson)
   }, [formData])
 
+  const formType = String(
+    normalizedFormJson.settings?.general?.type || formData?.type || '',
+  )
+    .trim()
+    .toUpperCase()
+  // A workflow form's submissions are requests, not entries; the Forms list
+  // hides the link, but the URL can still be opened directly.
+  const isWorkflowForm = formType === 'WORKFLOW'
+  const canLoadEntries =
+    !!formId && !isLoading && !isDraftForm && !isWorkflowForm
+
   const panels = useMemo(
     () => normalizedFormJson.panels || [],
     [normalizedFormJson],
@@ -1604,9 +1628,7 @@ const FormEntriesPage = () => {
 
   const formName = useMemo(() => {
     if (!formData) return ''
-    return (
-      normalizedFormJson.settings?.general?.name || formData?.name || ''
-    )
+    return normalizedFormJson.settings?.general?.name || formData?.name || ''
   }, [formData, normalizedFormJson])
 
   const isPoMasterForm = useMemo(() => {
@@ -1659,7 +1681,11 @@ const FormEntriesPage = () => {
             })
         } else {
           const trimmed = String(raw).trim()
-          if (trimmed !== 'Option 1' && trimmed !== 'Option 2' && trimmed !== 'Option 3') {
+          if (
+            trimmed !== 'Option 1' &&
+            trimmed !== 'Option 2' &&
+            trimmed !== 'Option 3'
+          ) {
             unique.add(trimmed)
           }
         }
@@ -1674,10 +1700,12 @@ const FormEntriesPage = () => {
     expandState,
     groupState,
     searchState,
+    selectState,
     sortState,
     visibilityState,
     setExpandState,
     setSearchState,
+    setSelectState,
     setVisibilityState,
     ...restState
   } = useDataTableState({
@@ -1701,7 +1729,7 @@ const FormEntriesPage = () => {
     isLoading: isEntriesLoading,
     refetch: refetchEntries,
   } = useQuery({
-    enabled: !!formId && !isLoading && !isDraftForm,
+    enabled: canLoadEntries,
     // Keep the current rows on screen while a new search loads, so the table
     // (and the search box) does not flash to the page skeleton.
     placeholderData: keepPreviousData,
@@ -1768,14 +1796,15 @@ const FormEntriesPage = () => {
     }
   }, [fetchedEntries])
 
-  // Soft-deleted entries, loaded when the Trash tab is opened
+  // Soft-deleted entries. Loaded with the page so the Trash tab can show its
+  // count and "restore all" knows how many there are.
   const {
     data: fetchedTrashEntries,
     isError: isTrashError,
     isFetching: isTrashFetching,
     refetch: refetchTrashEntries,
   } = useQuery({
-    enabled: !!formId && !isLoading && !isDraftForm && tabValue === 'Trash',
+    enabled: canLoadEntries,
     queryKey: ['forms', 'entries', formId, 'trash'],
     queryFn: async () => {
       const { data, error } = await formApi.searchFormEntries(
@@ -1793,10 +1822,10 @@ const FormEntriesPage = () => {
   )
 
   useEffect(() => {
-    if (isTrashError) {
+    if (isTrashError && tabValue === 'Trash') {
       showToast({ message: t`Failed to load Trash`, variant: 'error' })
     }
-  }, [isTrashError, t])
+  }, [isTrashError, tabValue, t])
 
   const handleFieldChange = (fieldId: string, val: any) => {
     setEditValues((prev) => {
@@ -1906,7 +1935,8 @@ const FormEntriesPage = () => {
     )
     if (!validationResult.isValid) {
       const firstErrorMessage: string =
-        Object.values(validationResult.errors)[0] || 'Please complete all required fields correctly.'
+        Object.values(validationResult.errors)[0] ||
+        'Please complete all required fields correctly.'
       showToast({
         message: String(firstErrorMessage),
         variant: 'error',
@@ -1975,74 +2005,163 @@ const FormEntriesPage = () => {
   }
 
   const handleMoveToTrash = async () => {
-    if (!deletingEntry) return
+    if (!deletingEntries?.length) return
     setIsDeletingEntry(true)
-    const { error } = await formApi.deleteFormEntry(
-      formId,
-      String(deletingEntry.entryId),
+    const { failed, succeeded } = await runEntryBatch(deletingEntries, (e) =>
+      formApi.deleteFormEntry(formId, String(e.entryId)),
     )
     setIsDeletingEntry(false)
-    if (error) {
-      setDeletingEntry(null)
-      showToast({ message: t`Failed to delete entry`, variant: 'error' })
-      return
+    setDeletingEntries(null)
+    setSelectState({})
+    if (succeeded.length) {
+      const movedIds = new Set(succeeded.map((e) => e.id))
+      if (selectedEntry && movedIds.has(selectedEntry.id)) closeSidebar()
+      // The list reload takes a few seconds, so drop the rows straight away
+      setEntries((prev) => prev.filter((e) => !movedIds.has(e.id)))
+      queryClient.invalidateQueries({ queryKey: ['forms', 'entries', formId] })
     }
-    showToast({ message: t`Entry moved to Trash`, variant: 'success' })
-    if (selectedEntry?.id === deletingEntry.id) closeSidebar()
-    // The list reload takes a few seconds, so drop the row straight away
-    setEntries((prev) => prev.filter((e) => e.id !== deletingEntry.id))
-    setDeletingEntry(null)
-    queryClient.invalidateQueries({ queryKey: ['forms', 'entries', formId] })
-  }
-
-  const removeFromTrashList = (entry: any) => {
-    queryClient.setQueryData(
-      ['forms', 'entries', formId, 'trash'],
-      (rows: any[] | undefined) =>
-        rows?.filter((e) => parseFetchedEntry(e).entryId !== entry.entryId),
-    )
-    queryClient.invalidateQueries({ queryKey: ['forms', 'entries', formId] })
-  }
-
-  const handleRestore = async (entry: any) => {
-    const { error } = await formApi.restoreFormEntry(
-      formId,
-      String(entry.entryId),
-    )
-    if (error) {
-      showToast({ message: t`Failed to restore entry`, variant: 'error' })
-      return
-    }
-    showToast({ message: t`Entry restored successfully`, variant: 'success' })
-    removeFromTrashList(entry)
-  }
-
-  const handlePermanentDelete = async () => {
-    if (!permanentlyDeletingEntry) return
-    setIsDeletingEntry(true)
-    const { error, inUse } = await formApi.permanentlyDeleteFormEntry(
-      formId,
-      String(permanentlyDeletingEntry.entryId),
-    )
-    setIsDeletingEntry(false)
-    const entry = permanentlyDeletingEntry
-    setPermanentlyDeletingEntry(null)
-    if (error) {
+    if (failed.length) {
       showToast({
-        message: inUse
-          ? t`This entry is linked to a workflow request, so it cannot be deleted permanently.`
-          : t`Failed to delete entry`,
+        message:
+          succeeded.length > 0
+            ? t`${succeeded.length} moved to Trash, ${failed.length} failed.`
+            : t`Failed to delete entry`,
         variant: 'error',
       })
       return
     }
-    showToast({ message: t`Entry deleted permanently`, variant: 'success' })
-    removeFromTrashList(entry)
+    showToast({
+      message:
+        succeeded.length === 1
+          ? t`Entry moved to Trash`
+          : t`${succeeded.length} entries moved to Trash`,
+      variant: 'success',
+    })
   }
+
+  const removeFromTrashList = (removed: any[]) => {
+    const removedIds = new Set(removed.map((e) => String(e.entryId)))
+    queryClient.setQueryData(
+      ['forms', 'entries', formId, 'trash'],
+      (rows: any[] | undefined) =>
+        rows?.filter(
+          (e) => !removedIds.has(String(parseFetchedEntry(e).entryId)),
+        ),
+    )
+    queryClient.invalidateQueries({ queryKey: ['forms', 'entries', formId] })
+  }
+
+  const handleRestore = async ({ openBrowse, scope }: RestoreOptions) => {
+    const targets = scope === 'all' ? trashEntries : restoringEntries || []
+    if (!targets.length) return
+    setIsDeletingEntry(true)
+    const { failed, succeeded } = await runEntryBatch(targets, (e) =>
+      formApi.restoreFormEntry(formId, String(e.entryId)),
+    )
+    setIsDeletingEntry(false)
+    setRestoringEntries(null)
+    setSelectState({})
+    if (succeeded.length) {
+      removeFromTrashList(succeeded)
+      if (openBrowse) setTabValue('Browse')
+    }
+    if (failed.length) {
+      showToast({
+        message:
+          succeeded.length > 0
+            ? t`${succeeded.length} restored, ${failed.length} failed.`
+            : t`Failed to restore entry`,
+        variant: 'error',
+      })
+      return
+    }
+    showToast({
+      message:
+        succeeded.length === 1
+          ? t`Entry restored successfully`
+          : t`${succeeded.length} entries restored`,
+      variant: 'success',
+    })
+  }
+
+  const handlePermanentDelete = async () => {
+    if (!permanentlyDeletingEntries?.length) return
+    setIsDeletingEntry(true)
+    const { failed, succeeded } = await runEntryBatch(
+      permanentlyDeletingEntries,
+      (e) => formApi.permanentlyDeleteFormEntry(formId, String(e.entryId)),
+    )
+    setIsDeletingEntry(false)
+    setPermanentlyDeletingEntries(null)
+    setSelectState({})
+    if (succeeded.length) removeFromTrashList(succeeded)
+    if (failed.length) {
+      const linked = failed.filter((f) => f.result.inUse).length
+      showToast({
+        message:
+          linked === failed.length && failed.length === 1
+            ? t`This entry is linked to a workflow request, so it cannot be deleted permanently.`
+            : linked > 0
+              ? t`${linked} entries are linked to a workflow request and were kept; ${succeeded.length} deleted.`
+              : t`${succeeded.length} deleted, ${failed.length} failed.`,
+        variant: 'error',
+      })
+      return
+    }
+    showToast({
+      message:
+        succeeded.length === 1
+          ? t`Entry deleted permanently`
+          : t`${succeeded.length} entries deleted permanently`,
+      variant: 'success',
+    })
+  }
+
+  // Rows ticked in the table (cleared whenever the tab changes).
+  useEffect(() => {
+    setSelectState({})
+  }, [tabValue, setSelectState])
 
   // Filtering based on active tab and search state
   const activeList = tabValue === 'Browse' ? entries : trashEntries
   const searchVal = searchState.value || ''
+
+  const selectedEntries = useMemo(
+    () => activeList.filter((entry) => selectState[entry.id]),
+    [activeList, selectState],
+  )
+  const bulkActions = useMemo(() => {
+    if (tabValue === 'Browse') {
+      return [
+        {
+          danger: true,
+          icon: 'lucide:trash-2',
+          id: 'trash',
+          label: t`Move to Trash`,
+          onClick: () => setDeletingEntries(selectedEntries),
+        },
+      ]
+    }
+    return [
+      {
+        icon: 'lucide:rotate-ccw',
+        id: 'restore',
+        label: t`Restore`,
+        onClick: () => setRestoringEntries(selectedEntries),
+      },
+      ...(canPermanentlyDelete
+        ? [
+            {
+              danger: true,
+              icon: 'lucide:trash-2',
+              id: 'delete-permanently',
+              label: t`Delete Permanently`,
+              onClick: () => setPermanentlyDeletingEntries(selectedEntries),
+            },
+          ]
+        : []),
+    ]
+  }, [canPermanentlyDelete, selectedEntries, t, tabValue])
 
   // Reset page when tab, search value or sort changes
   useEffect(() => {
@@ -2309,7 +2428,7 @@ const FormEntriesPage = () => {
                     icon='lucide:trash-2'
                     iconClass='text-red-11'
                     label={t`Move to Trash`}
-                    onClick={() => setDeletingEntry(row)}
+                    onClick={() => setDeletingEntries([row])}
                   />
                 </>
               ) : (
@@ -2318,14 +2437,14 @@ const FormEntriesPage = () => {
                     icon='lucide:rotate-ccw'
                     iconClass='text-green-11'
                     label={t`Restore`}
-                    onClick={() => handleRestore(row)}
+                    onClick={() => setRestoringEntries([row])}
                   />
                   {canPermanentlyDelete && (
                     <MenuItem
                       icon='lucide:trash-2'
                       iconClass='text-red-11'
                       label={t`Delete Permanently`}
-                      onClick={() => setPermanentlyDeletingEntry(row)}
+                      onClick={() => setPermanentlyDeletingEntries([row])}
                     />
                   )}
                 </>
@@ -2375,16 +2494,17 @@ const FormEntriesPage = () => {
 
   const { table } = useDataTable({
     columns,
-    enableRowSelection: false,
     rows: formattedRows as any,
     state: {
       expandState,
       groupState,
       searchState,
+      selectState,
       sortState,
       visibilityState,
       setExpandState,
       setSearchState,
+      setSelectState,
       setVisibilityState,
       ...restState,
     },
@@ -2461,7 +2581,7 @@ const FormEntriesPage = () => {
   // Skeleton Loader for initial fetching
   if (isPageLoading) {
     return (
-      <div className='bg-surface-muted/20 flex h-full flex-col p-8'>
+      <div className='flex h-full flex-col bg-surface-muted/20 p-8'>
         <div className='mb-6 flex items-center justify-between border-b border-gray-2 pb-4'>
           <Stack gap='xs'>
             <Skeleton height={14} width={120} />
@@ -2477,8 +2597,8 @@ const FormEntriesPage = () => {
 
   if (isDraftForm) {
     return (
-      <div className='bg-surface-muted/20 flex h-full flex-col items-center justify-center p-8'>
-        <div className='mb-4 flex size-14 items-center justify-center rounded-2xl border border-amber-3 bg-amber-2 text-amber-11'>
+      <div className='flex h-full flex-col items-center justify-center bg-surface-muted/20 p-8'>
+        <div className='border-amber-3 bg-amber-2 text-amber-11 mb-4 flex size-14 items-center justify-center rounded-2xl border'>
           <Icon className='size-7' name='lucide:file-edit' />
         </div>
         <h3 className='text-lg font-bold text-gray-12'>{t`Form is in Draft`}</h3>
@@ -2509,9 +2629,44 @@ const FormEntriesPage = () => {
     )
   }
 
+  if (isWorkflowForm) {
+    return (
+      <div className='flex h-full flex-col items-center justify-center bg-surface-muted/20 p-8'>
+        <div className='mb-4 flex size-14 items-center justify-center rounded-2xl border border-blue-3 bg-blue-2 text-blue-11'>
+          <Icon className='size-7' name='lucide:workflow' />
+        </div>
+        <h3 className='text-lg font-bold text-gray-12'>
+          {formName || t`Workflow form`}
+        </h3>
+        <p className='mt-1 max-w-[360px] text-center text-13 text-gray-10'>
+          {t`This form is used by a workflow, so what people submit with it are requests, not records. Open them from Workflows.`}
+        </p>
+        <div className='mt-6 flex items-center gap-3'>
+          <Button
+            color='gray'
+            icon='lucide:arrow-left'
+            label={t`Back to Forms`}
+            variant='outline'
+            onClick={() =>
+              navigate({
+                to: getSettingsReturnPath('form-configuration') ?? '/forms',
+              })
+            }
+          />
+          <Button
+            color='primary'
+            icon='lucide:inbox'
+            label={t`Open Workflows`}
+            onClick={() => navigate({ to: '/requests' })}
+          />
+        </div>
+      </div>
+    )
+  }
+
   if (isPageError) {
     return (
-      <div className='bg-surface-muted/20 flex h-full flex-col items-center justify-center p-8'>
+      <div className='flex h-full flex-col items-center justify-center bg-surface-muted/20 p-8'>
         <div className='mb-4 flex size-14 items-center justify-center rounded-2xl border border-red-3 bg-red-2 text-red-11'>
           <Icon className='size-7 animate-bounce' name='lucide:alert-circle' />
         </div>
@@ -2560,526 +2715,697 @@ const FormEntriesPage = () => {
       formRules,
     )
 
+    // Sections with something to fill in (rules can hide every field).
+    const visibleSections = panels
+      .map((panel: any, pIdx: number) => ({
+        description: panel.settings?.description || '',
+        fields: (panel.fields || []).filter((f: any) => {
+          const resolvedType = resolveRuntimeFieldType(f)
+          if (['HEADING', 'DIVIDER'].includes(resolvedType)) return false
+          const state = evaluatedFieldStates[f.id]
+          return !(state && !state.visible)
+        }) as Question[],
+        hasTitle: !!panel.settings?.title,
+        key: panel.id || `panel_${pIdx}`,
+        title: panel.settings?.title || t`Section ${pIdx + 1}`,
+      }))
+      .filter((section: { fields: Question[] }) => section.fields.length > 0)
+    const isValueFilled = (value: unknown): boolean => {
+      if (value == null) return false
+      if (Array.isArray(value)) return value.some(isValueFilled)
+      if (typeof value === 'object') {
+        return Object.values(value).some(isValueFilled)
+      }
+      const text = String(value).trim()
+      // Line items are stored as JSON; a blank starter row isn't "filled".
+      if (text.startsWith('[')) {
+        try {
+          return isValueFilled(JSON.parse(text))
+        } catch {
+          return true
+        }
+      }
+      return text !== ''
+    }
+    const isRequiredField = (field: Question) => {
+      const state = evaluatedFieldStates[field.id]
+      return state
+        ? state.required
+        : field.settings?.validation?.fieldRule === 'REQUIRED'
+    }
+    const allVisibleFields: Question[] = visibleSections.flatMap(
+      (section: { fields: Question[] }) => section.fields,
+    )
+    const filledCount = allVisibleFields.filter((f) =>
+      isValueFilled(editValues[f.id]),
+    ).length
+    const requiredLeft = allVisibleFields.filter(
+      (f) => isRequiredField(f) && !isValueFilled(editValues[f.id]),
+    ).length
+    const fillPercent = allVisibleFields.length
+      ? Math.round((filledCount / allVisibleFields.length) * 100)
+      : 0
+    const pageTitle = isAddOpen ? t`New record` : t`Edit record`
+
     return (
-      <div className='bg-surface-muted/20 flex h-full flex-col font-inter'>
-        {/* Compact Enterprise Form Banner Header */}
-        <div className='flex shrink-0 items-center justify-between border-b border-gray-2 bg-surface px-4 py-3.5 shadow-xs'>
-          <div className='flex min-w-0 items-center gap-3.5'>
-            <IconButton
-              color='gray'
-              icon='lucide:arrow-left'
-              title={t`Back to Entries`}
-              variant='ghost'
-              onClick={closeSidebar}
-            />
-            <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft/15 text-accent-primary'>
-              <Icon
-                height={18}
-                name={isAddOpen ? 'lucide:file-plus-2' : 'lucide:file-edit'}
-                width={18}
+      <div className='flex h-full flex-col bg-surface-muted/40'>
+        {/* Header: where you are, and how much of the form is filled */}
+        {/* The app bar already names the form, so this stays one short row. */}
+        <div className='shrink-0 border-b border-gray-3 bg-surface px-6 py-2.5'>
+          <div className='mx-auto flex w-full max-w-[1120px] flex-wrap items-center justify-between gap-4'>
+            <div className='flex min-w-0 items-center gap-2'>
+              <IconButton
+                color='gray'
+                icon='lucide:arrow-left'
+                title={t`Back to records`}
+                variant='ghost'
+                onClick={closeSidebar}
               />
+              <h1 className='truncate text-15 font-semibold text-gray-13'>
+                {pageTitle}
+              </h1>
             </div>
-            <div className='flex min-w-0 flex-col'>
-              <div className='flex items-center gap-2.5'>
-                <h3 className='truncate text-sm font-extrabold text-gray-13'>
-                  {isAddOpen ? t`New Form Entry` : t`Edit Form Entry`}
-                </h3>
-              </div>
-              <p className='truncate text-[11px] font-medium text-gray-7'>
-                {isAddOpen
-                  ? t`Complete required form information using the metadata-driven enterprise canvas below.`
-                  : t`Modify existing form response answers and save changes.`}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Scrollable Form Body with ~80% Width Container */}
-        <div className='custom-scrollbar bg-surface-muted/40 flex-1 overflow-y-auto px-4 py-6'>
-          <div className='mx-auto w-full max-w-[1200px] space-y-6'>
-            {panels.map((panel: any, pIdx: number) => {
-              const panelTitle = panel.settings?.title || t`Section ${pIdx + 1}`
-              const panelDescription = panel.settings?.description || ''
-              const renderableFields = (panel.fields || []).filter((f: any) => {
-                const resolvedType = resolveRuntimeFieldType(f)
-                if (['HEADING', 'DIVIDER'].includes(resolvedType)) return false
-                const state = evaluatedFieldStates[f.id]
-                if (state && !state.visible) return false
-                return true
-              })
-
-              if (renderableFields.length === 0) return null
-
-              return (
-                <div
-                  className='rounded-2xl border border-gray-2 bg-surface p-6 shadow-xs transition-shadow hover:shadow-md'
-                  key={panel.id || `panel_${pIdx}`}
-                >
-                  {/* Block Card Header */}
-                  <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
-                    <div className='flex items-center gap-3'>
-                      <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
-                        <Icon className='size-4' name='lucide:layers' />
-                      </div>
-                      <div>
-                        <h4 className='text-sm font-bold text-gray-12'>
-                          {panelTitle}
-                        </h4>
-                        {panelDescription && (
-                          <p className='text-[11px] text-gray-7'>
-                            {panelDescription}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Block Fields Layout using 12-column grid */}
-                  <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
-                    {renderableFields.map((field: Question) => {
-                      const type = resolveRuntimeFieldType(field)
-                      const val = editValues[field.id] ?? ''
-                      const state = evaluatedFieldStates[field.id]
-                      const isFieldRequired = state
-                        ? state.required
-                        : field.settings?.validation?.fieldRule === 'REQUIRED'
-                      const isReadOnly = state
-                        ? state.disabled
-                        : isFieldReadOnly(field)
-                      const colSpan = getColumnSpan(
-                        field.settings?.general?.size,
-                      )
-
-                      const isTableType =
-                        type === 'TABLE' ||
-                        type === 'DYNAMIC_TABLE' ||
-                        (type !== 'MULTIPLE_CHOICE' &&
-                          type !== 'MULTI_SELECT' &&
-                          typeof val === 'string' &&
-                          val.trim().startsWith('[') &&
-                          val.trim().endsWith(']'))
-
-                      return (
-                        <div
-                          aria-disabled={isReadOnly || undefined}
-                          inert={
-                            isReadOnly && type !== 'CALCULATED'
-                              ? true
-                              : undefined
-                          }
-                          key={field.id}
-                          className={cn(
-                            'flex flex-col justify-start',
-                            colSpan,
-                            isReadOnly &&
-                              type !== 'CALCULATED' &&
-                              'opacity-60 select-none',
-                          )}
-                        >
-                          {/* Label / Required Indicators (rendered internally for table fields) */}
-                          {!isTableType && !isFieldLabelHidden(field) && (
-                            <div className='mb-1.5 flex items-center justify-between'>
-                              <label className='block text-xs font-bold text-gray-12'>
-                                {getEffectiveFieldLabel(
-                                  field,
-                                  'Untitled Question',
-                                )}
-                                {isFieldRequired && (
-                                  <span
-                                    className='ml-1 font-bold text-red-9'
-                                    title='Required field'
-                                  >
-                                    *
-                                  </span>
-                                )}
-                              </label>
-                              {(type === 'CALCULATED' || isReadOnly) && (
-                                <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-8'>
-                                  {type === 'CALCULATED'
-                                    ? 'Auto-calculated'
-                                    : 'Read-only'}
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          {!isTableType &&
-                            getEffectiveFieldDescription(field) && (
-                              <p className='mb-1.5 text-[11px] text-gray-7'>
-                                {getEffectiveFieldDescription(field)}
-                              </p>
-                            )}
-
-                          {/* Form Input Control */}
-                          {type === 'YES_NO_TOGGLE' || type === 'CONSENT' ? (
-                            <div className='bg-surface-muted/50 flex max-w-xs items-center justify-between rounded-xl border border-gray-2 p-2.5 transition-colors hover:border-gray-3'>
-                              <span className='text-xs font-semibold text-gray-11'>
-                                Consent / Enable
-                              </span>
-                              <InputSwitch
-                                checked={
-                                  val === 'Yes' ||
-                                  val === true ||
-                                  val === 'true'
-                                }
-                                disabled={isReadOnly}
-                                onChange={(checked) =>
-                                  handleFieldChange(
-                                    field.id,
-                                    checked ? 'Yes' : 'No',
-                                  )
-                                }
-                              />
-                            </div>
-                          ) : type === 'DATE' || type === 'DATE_TIME' ? (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={val}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              {type === 'DATE_TIME' ? (
-                                <InputDateTime
-                                  disabled={isReadOnly}
-                                  value={val ? val : null}
-                                  format={
-                                    field.settings?.validation?.timeFormat ===
-                                    '24'
-                                      ? '24h'
-                                      : '12h'
-                                  }
-                                  onChange={(dateString) =>
-                                    handleFieldChange(field.id, dateString)
-                                  }
-                                />
-                              ) : (
-                                <InputDate
-                                  disabled={isReadOnly}
-                                  placeholder={getEffectiveFieldPlaceholder(field)}
-                                  value={val ? val : null}
-                                  onChange={(dateString) =>
-                                    handleFieldChange(field.id, dateString)
-                                  }
-                                />
-                              )}
-                            </FormEntriesSearchableInput>
-                          ) : type === 'NUMBER' || type === 'COUNTER' ? (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={val}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              <InputNumber
-                                disabled={isReadOnly}
-                                placeholder={getEffectiveFieldPlaceholder(field)}
-                                value={val}
-                                onChange={(num) =>
-                                  handleFieldChange(field.id, num)
-                                }
-                              />
-                            </FormEntriesSearchableInput>
-                          ) : type === 'CURRENCY_AMOUNT' ? (
-                            <div className='flex max-w-xs items-center gap-1.5'>
-                              <span className='flex h-9 items-center rounded-md border border-gray-3 bg-gray-1 px-2.5 text-xs font-semibold text-gray-11'>
-                                {extractCurrencyCode(val, field)}
-                              </span>
-                              <InputNumber
-                                className='flex-1'
-                                disabled={isReadOnly}
-                                value={extractCurrencyNumericValue(val)}
-                                placeholder={
-                                  getEffectiveFieldPlaceholder(field) || '0.00'
-                                }
-                                onChange={(num) =>
-                                  handleFieldChange(
-                                    field.id,
-                                    updateCurrencyFieldValue(val, num, field),
-                                  )
-                                }
-                              />
-                            </div>
-                          ) : type === 'PHONE_NUMBER' ? (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={extractPhoneInputString(val)}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              <InputText
-                                disabled={isReadOnly}
-                                placeholder={getEffectiveFieldPlaceholder(field)}
-                                value={extractPhoneInputString(val)}
-                                onChange={(text) =>
-                                  handleFieldChange(
-                                    field.id,
-                                    updatePhoneFieldValue(val, text, field),
-                                  )
-                                }
-                              />
-                            </FormEntriesSearchableInput>
-                          ) : type === 'MATRIX' ? (
-                            <RuntimeMatrixField
-                              disabled={isReadOnly}
-                              field={field}
-                              value={val}
-                              onChange={(next) =>
-                                handleFieldChange(field.id, next)
-                              }
-                            />
-                          ) : type === 'POPUP' ||
-                            type === 'TABS' ||
-                            type === 'NESTED_LIST' ||
-                            type === 'LOGIN_AUTHENTICATION' ||
-                            type === 'EMAIL_AUTHENTICATION' ||
-                            type === 'MOBILE_AUTHENTICATION' ? (
-                            <LegacyInlineFieldRenderer
-                              disabled={isReadOnly}
-                              field={field}
-                              value={val}
-                              onChange={(next) =>
-                                handleFieldChange(field.id, next)
-                              }
-                            />
-                          ) : type === 'RATING' ? (
-                            <div className='py-1'>
-                              <Rating
-                                color='yellow'
-                                count={field.settings?.specific?.iconCount || 5}
-                                readOnly={isReadOnly}
-                                size='md'
-                                value={Number(val || 0)}
-                                onChange={(v) => handleFieldChange(field.id, v)}
-                              />
-                            </div>
-                          ) : type === 'OPINION_SCALE' ? (
-                            <div className='flex flex-wrap gap-1 py-1'>
-                              {Array.from({ length: 11 }).map((_, i) => {
-                                const isSelected =
-                                  Number(val) === i && val !== ''
-                                return (
-                                  <button
-                                    disabled={isReadOnly}
-                                    key={i}
-                                    type='button'
-                                    className={cn(
-                                      'size-8 rounded-lg border text-xs font-bold transition-all hover:bg-accent-soft hover:text-accent-primary active:scale-95',
-                                      isSelected
-                                        ? 'border-accent-primary bg-accent-primary text-white'
-                                        : 'border-gray-3 bg-surface text-gray-12',
-                                      isReadOnly &&
-                                        'cursor-not-allowed opacity-60',
-                                    )}
-                                    onClick={() =>
-                                      handleFieldChange(field.id, i)
-                                    }
-                                  >
-                                    {i}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          ) : type === 'SINGLE_CHOICE' ? (
-                            <FormEntriesChoiceInput
-                              allFields={renderableFields}
-                              field={field}
-                              formModel={editValues}
-                              val={val}
-                              onChange={(next) => {
-                                if (!isReadOnly) handleFieldChange(field.id, next)
-                              }}
-                            />
-                          ) : type === 'MULTIPLE_CHOICE' ? (
-                            <FormEntriesChoiceInput
-                              allFields={renderableFields}
-                              field={field}
-                              formModel={editValues}
-                              isMultiple
-                              val={val}
-                              onChange={(next) => {
-                                if (!isReadOnly) handleFieldChange(field.id, next)
-                              }}
-                            />
-                          ) : type === 'SINGLE_SELECT' ||
-                            type === 'MULTI_SELECT' ? (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={val}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              <FormEntriesSelectInput
-                                allFields={renderableFields}
-                                field={field}
-                                fieldDistinctOptions={
-                                  fieldDistinctOptions[field.id] || []
-                                }
-                                formModel={editValues}
-                                val={val}
-                                onChange={(next) => {
-                                  if (!isReadOnly)
-                                    handleFieldChange(field.id, next)
-                                }}
-                              />
-                            </FormEntriesSearchableInput>
-                          ) : type === 'FILE_UPLOAD' ||
-                            type === 'IMAGE_UPLOAD' ? (
-                            <div className='bg-surface-muted/60 flex items-center justify-between rounded-xl border border-gray-2 p-3.5'>
-                              <div className='flex items-center gap-3'>
-                                <div className='flex size-9 items-center justify-center rounded-lg bg-gray-2 text-gray-8'>
-                                  <Icon
-                                    className='size-4.5'
-                                    name='lucide:upload-cloud'
-                                  />
-                                </div>
-                                <div>
-                                  <span className='block text-xs font-bold text-gray-12'>
-                                    Upload Document / Attachment
-                                  </span>
-                                  <span className='block text-[10px] text-gray-7'>
-                                    PDF, PNG, JPG, or DOCX up to 10MB
-                                  </span>
-                                </div>
-                              </div>
-                              <Button
-                                color='gray'
-                                disabled={isReadOnly}
-                                icon='lucide:upload'
-                                label={t`Choose File`}
-                                size='xs'
-                                variant='outline'
-                                onClick={() =>
-                                  showToast({
-                                    message:
-                                      'File picker simulated successfully',
-                                  })
-                                }
-                              />
-                            </div>
-                          ) : type === 'CALCULATED' ? (
-                            <CalculatedFieldInput value={val} hideLabel />
-                          ) : type === 'LONG_TEXT' ? (
-                            <InputTextarea
-                              disabled={isReadOnly}
-                              placeholder={getEffectiveFieldPlaceholder(field)}
-                              value={val != null ? String(val) : ''}
-                              onChange={(text) =>
-                                handleFieldChange(field.id, text)
-                              }
-                            />
-                          ) : hasConfiguredTableColumns(field) ? (
-                            <FormEntryTableField
-                              disabled={isReadOnly}
-                              field={field}
-                              required={isFieldRequired}
-                              value={val}
-                              onChange={(serialized) =>
-                                handleFieldChange(field.id, serialized)
-                              }
-                            />
-                          ) : isTableType ? (
-                            <FormLineItemsEditor
-                              disabled={isReadOnly}
-                              field={field}
-                              isFieldRequired={isFieldRequired}
-                              value={val}
-                              getFieldLabel={getFieldLabel}
-                              onChange={(newVal) =>
-                                handleFieldChange(field.id, newVal)
-                              }
-                            />
-                          ) : (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={val}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              <InputText
-                                disabled={isReadOnly}
-                                placeholder={getEffectiveFieldPlaceholder(field)}
-                                value={
-                                  formatRuntimeFieldDisplayValue(val, field) ===
-                                  '-'
-                                    ? ''
-                                    : formatRuntimeFieldDisplayValue(val, field)
-                                }
-                                onChange={(text) =>
-                                  handleFieldChange(field.id, text)
-                                }
-                              />
-                            </FormEntriesSearchableInput>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
+            {allVisibleFields.length > 0 && (
+              <div className='flex w-60 flex-col gap-1.5'>
+                <div className='flex items-center justify-between text-12'>
+                  <span className='text-gray-10'>
+                    {t`${filledCount} of ${allVisibleFields.length} fields filled`}
+                  </span>
+                  <span className='font-medium text-gray-12'>
+                    {fillPercent}%
+                  </span>
                 </div>
-              )
-            })}
-
-            {panels.length === 0 && (
-              <div className='rounded-2xl border border-dashed border-gray-3 bg-surface py-16 text-center text-xs text-gray-7 shadow-xs'>
-                This form currently has no input fields defined.
+                <div className='h-1.5 overflow-hidden rounded-full bg-gray-3'>
+                  <div
+                    className='h-full rounded-full bg-primary-9 transition-[width] duration-300'
+                    style={{ width: `${fillPercent}%` }}
+                  />
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Sticky Action Footer Bar */}
-        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-surface/95 px-4 py-3.5 shadow-lg backdrop-blur-md'>
-          {/* Action Buttons */}
-          <div className='flex items-center gap-3'>
-            <Button
-              color='gray'
-              label={t`Cancel`}
-              variant='outline'
-              onClick={closeSidebar}
-            />
-            <Button
-              color='primary'
-              disabled={isSaving}
-              icon={isAddOpen ? 'lucide:plus' : 'lucide:check'}
-              label={isAddOpen ? t`Save Entry` : t`Save Changes`}
-              loading={isSaving}
-              variant='solid'
-              onClick={handleSaveEntry}
-            />
+        <div className='custom-scrollbar flex-1 overflow-y-auto px-6 py-6'>
+          <div className='mx-auto flex w-full max-w-[1120px] items-start gap-6'>
+            {/* Section list, only worth showing when there is more than one */}
+            {visibleSections.length > 1 && (
+              <nav className='sticky top-0 hidden w-52 shrink-0 flex-col gap-1 lg:flex'>
+                <span className='mb-1 px-3 text-11 font-semibold tracking-wide text-gray-9 uppercase'>
+                  {t`Sections`}
+                </span>
+                {visibleSections.map(
+                  (
+                    section: { fields: Question[]; key: string; title: string },
+                    sIdx: number,
+                  ) => {
+                    const done = section.fields.every(
+                      (f) =>
+                        !isRequiredField(f) || isValueFilled(editValues[f.id]),
+                    )
+                    return (
+                      <button
+                        className='flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-13 text-gray-11 transition-colors hover:bg-gray-2 hover:text-gray-13 active:bg-gray-3'
+                        key={section.key}
+                        type='button'
+                        onClick={() =>
+                          document
+                            .getElementById(`entry-section-${sIdx}`)
+                            ?.scrollIntoView({ behavior: 'smooth' })
+                        }
+                      >
+                        <span
+                          className={cn(
+                            'flex size-5 shrink-0 items-center justify-center rounded-full text-11 font-semibold',
+                            done
+                              ? 'bg-green-3 text-green-11'
+                              : 'bg-gray-3 text-gray-11',
+                          )}
+                        >
+                          {done ? (
+                            <Icon className='size-3' name='lucide:check' />
+                          ) : (
+                            sIdx + 1
+                          )}
+                        </span>
+                        <span className='truncate'>{section.title}</span>
+                      </button>
+                    )
+                  },
+                )}
+              </nav>
+            )}
+
+            <div className='flex min-w-0 flex-1 flex-col gap-5'>
+              {visibleSections.map(
+                (
+                  section: {
+                    description: string
+                    fields: Question[]
+                    hasTitle: boolean
+                    key: string
+                    title: string
+                  },
+                  sIdx: number,
+                ) => {
+                  const renderableFields = section.fields
+                  const sectionFilled = renderableFields.filter((f) =>
+                    isValueFilled(editValues[f.id]),
+                  ).length
+
+                  return (
+                    <section
+                      className='scroll-mt-2 rounded-xl border border-gray-3 bg-surface shadow-xs'
+                      id={`entry-section-${sIdx}`}
+                      key={section.key}
+                    >
+                      {/* A lone untitled section needs no header of its own. */}
+                      {(visibleSections.length > 1 || section.hasTitle) && (
+                        <header className='flex items-center justify-between gap-3 border-b border-gray-3 px-6 py-4'>
+                          <div className='flex min-w-0 items-center gap-3'>
+                            <span className='flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-3 text-12 font-semibold text-primary-11'>
+                              {sIdx + 1}
+                            </span>
+                            <div className='min-w-0'>
+                              <h2 className='truncate text-15 font-semibold text-gray-13'>
+                                {section.title}
+                              </h2>
+                              {section.description && (
+                                <p className='text-12 text-gray-10'>
+                                  {section.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <span
+                            className={cn(
+                              'shrink-0 rounded-full px-2.5 py-0.5 text-12 font-medium',
+                              sectionFilled === renderableFields.length
+                                ? 'bg-green-3 text-green-11'
+                                : 'bg-gray-2 text-gray-11',
+                            )}
+                          >
+                            {t`${sectionFilled} / ${renderableFields.length} filled`}
+                          </span>
+                        </header>
+                      )}
+
+                      <div className='grid grid-cols-12 gap-x-5 gap-y-5 p-6'>
+                        {renderableFields.map((field: Question) => {
+                          const type = resolveRuntimeFieldType(field)
+                          const val = editValues[field.id] ?? ''
+                          const state = evaluatedFieldStates[field.id]
+                          const isFieldRequired = state
+                            ? state.required
+                            : field.settings?.validation?.fieldRule ===
+                              'REQUIRED'
+                          const isReadOnly = state
+                            ? state.disabled
+                            : isFieldReadOnly(field)
+                          const colSpan = getColumnSpan(
+                            field.settings?.general?.size,
+                          )
+
+                          const isTableType =
+                            type === 'TABLE' ||
+                            type === 'DYNAMIC_TABLE' ||
+                            (type !== 'MULTIPLE_CHOICE' &&
+                              type !== 'MULTI_SELECT' &&
+                              typeof val === 'string' &&
+                              val.trim().startsWith('[') &&
+                              val.trim().endsWith(']'))
+
+                          return (
+                            <div
+                              aria-disabled={isReadOnly || undefined}
+                              inert={
+                                isReadOnly && type !== 'CALCULATED'
+                                  ? true
+                                  : undefined
+                              }
+                              key={field.id}
+                              className={cn(
+                                'flex flex-col justify-start',
+                                colSpan,
+                                isReadOnly &&
+                                  type !== 'CALCULATED' &&
+                                  'opacity-60 select-none',
+                              )}
+                            >
+                              {/* Label / Required Indicators (rendered internally for table fields) */}
+                              {!isTableType && !isFieldLabelHidden(field) && (
+                                <div className='mb-1.5 flex items-center justify-between gap-2'>
+                                  <label className='block text-13 font-medium text-gray-12'>
+                                    {getEffectiveFieldLabel(
+                                      field,
+                                      'Untitled Question',
+                                    )}
+                                    {isFieldRequired && (
+                                      <span
+                                        className='ml-1 font-bold text-red-9'
+                                        title='Required field'
+                                      >
+                                        *
+                                      </span>
+                                    )}
+                                  </label>
+                                  {(type === 'CALCULATED' || isReadOnly) && (
+                                    <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-8'>
+                                      {type === 'CALCULATED'
+                                        ? 'Auto-calculated'
+                                        : 'Read-only'}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {!isTableType &&
+                                getEffectiveFieldDescription(field) && (
+                                  <p className='mb-1.5 text-[11px] text-gray-7'>
+                                    {getEffectiveFieldDescription(field)}
+                                  </p>
+                                )}
+
+                              {/* Form Input Control */}
+                              {type === 'YES_NO_TOGGLE' ||
+                              type === 'CONSENT' ? (
+                                <div className='flex max-w-xs items-center justify-between rounded-xl border border-gray-2 bg-surface-muted/50 p-2.5 transition-colors hover:border-gray-3'>
+                                  <span className='text-xs font-semibold text-gray-11'>
+                                    Consent / Enable
+                                  </span>
+                                  <InputSwitch
+                                    checked={
+                                      val === 'Yes' ||
+                                      val === true ||
+                                      val === 'true'
+                                    }
+                                    disabled={isReadOnly}
+                                    onChange={(checked) =>
+                                      handleFieldChange(
+                                        field.id,
+                                        checked ? 'Yes' : 'No',
+                                      )
+                                    }
+                                  />
+                                </div>
+                              ) : type === 'DATE' || type === 'DATE_TIME' ? (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={val}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  {type === 'DATE_TIME' ? (
+                                    <InputDateTime
+                                      disabled={isReadOnly}
+                                      value={val ? val : null}
+                                      format={
+                                        field.settings?.validation
+                                          ?.timeFormat === '24'
+                                          ? '24h'
+                                          : '12h'
+                                      }
+                                      onChange={(dateString) =>
+                                        handleFieldChange(field.id, dateString)
+                                      }
+                                    />
+                                  ) : (
+                                    <InputDate
+                                      disabled={isReadOnly}
+                                      placeholder={getEffectiveFieldPlaceholder(
+                                        field,
+                                      )}
+                                      value={val ? val : null}
+                                      onChange={(dateString) =>
+                                        handleFieldChange(field.id, dateString)
+                                      }
+                                    />
+                                  )}
+                                </FormEntriesSearchableInput>
+                              ) : type === 'NUMBER' || type === 'COUNTER' ? (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={val}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  <InputNumber
+                                    disabled={isReadOnly}
+                                    placeholder={getEffectiveFieldPlaceholder(
+                                      field,
+                                    )}
+                                    value={val}
+                                    onChange={(num) =>
+                                      handleFieldChange(field.id, num)
+                                    }
+                                  />
+                                </FormEntriesSearchableInput>
+                              ) : type === 'CURRENCY_AMOUNT' ? (
+                                <div className='flex max-w-xs items-center gap-1.5'>
+                                  <span className='flex h-9 items-center rounded-md border border-gray-3 bg-gray-1 px-2.5 text-xs font-semibold text-gray-11'>
+                                    {extractCurrencyCode(val, field)}
+                                  </span>
+                                  <InputNumber
+                                    className='flex-1'
+                                    disabled={isReadOnly}
+                                    value={extractCurrencyNumericValue(val)}
+                                    placeholder={
+                                      getEffectiveFieldPlaceholder(field) ||
+                                      '0.00'
+                                    }
+                                    onChange={(num) =>
+                                      handleFieldChange(
+                                        field.id,
+                                        updateCurrencyFieldValue(
+                                          val,
+                                          num,
+                                          field,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                </div>
+                              ) : type === 'PHONE_NUMBER' ? (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={extractPhoneInputString(val)}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  <InputText
+                                    disabled={isReadOnly}
+                                    placeholder={getEffectiveFieldPlaceholder(
+                                      field,
+                                    )}
+                                    value={extractPhoneInputString(val)}
+                                    onChange={(text) =>
+                                      handleFieldChange(
+                                        field.id,
+                                        updatePhoneFieldValue(val, text, field),
+                                      )
+                                    }
+                                  />
+                                </FormEntriesSearchableInput>
+                              ) : type === 'MATRIX' ? (
+                                <RuntimeMatrixField
+                                  disabled={isReadOnly}
+                                  field={field}
+                                  value={val}
+                                  onChange={(next) =>
+                                    handleFieldChange(field.id, next)
+                                  }
+                                />
+                              ) : type === 'POPUP' ||
+                                type === 'TABS' ||
+                                type === 'NESTED_LIST' ||
+                                type === 'LOGIN_AUTHENTICATION' ||
+                                type === 'EMAIL_AUTHENTICATION' ||
+                                type === 'MOBILE_AUTHENTICATION' ? (
+                                <LegacyInlineFieldRenderer
+                                  disabled={isReadOnly}
+                                  field={field}
+                                  value={val}
+                                  onChange={(next) =>
+                                    handleFieldChange(field.id, next)
+                                  }
+                                />
+                              ) : type === 'RATING' ? (
+                                <div className='py-1'>
+                                  <Rating
+                                    color='yellow'
+                                    count={
+                                      field.settings?.specific?.iconCount || 5
+                                    }
+                                    readOnly={isReadOnly}
+                                    size='md'
+                                    value={Number(val || 0)}
+                                    onChange={(v) =>
+                                      handleFieldChange(field.id, v)
+                                    }
+                                  />
+                                </div>
+                              ) : type === 'OPINION_SCALE' ? (
+                                <div className='flex flex-wrap gap-1 py-1'>
+                                  {Array.from({ length: 11 }).map((_, i) => {
+                                    const isSelected =
+                                      Number(val) === i && val !== ''
+                                    return (
+                                      <button
+                                        disabled={isReadOnly}
+                                        key={i}
+                                        type='button'
+                                        className={cn(
+                                          'size-8 rounded-lg border text-xs font-bold transition-all hover:bg-accent-soft hover:text-accent-primary active:scale-95',
+                                          isSelected
+                                            ? 'border-accent-primary bg-accent-primary text-white'
+                                            : 'border-gray-3 bg-surface text-gray-12',
+                                          isReadOnly &&
+                                            'cursor-not-allowed opacity-60',
+                                        )}
+                                        onClick={() =>
+                                          handleFieldChange(field.id, i)
+                                        }
+                                      >
+                                        {i}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              ) : type === 'SINGLE_CHOICE' ? (
+                                <FormEntriesChoiceInput
+                                  allFields={renderableFields}
+                                  field={field}
+                                  formModel={editValues}
+                                  val={val}
+                                  onChange={(next) => {
+                                    if (!isReadOnly)
+                                      handleFieldChange(field.id, next)
+                                  }}
+                                />
+                              ) : type === 'MULTIPLE_CHOICE' ? (
+                                <FormEntriesChoiceInput
+                                  allFields={renderableFields}
+                                  field={field}
+                                  formModel={editValues}
+                                  isMultiple
+                                  val={val}
+                                  onChange={(next) => {
+                                    if (!isReadOnly)
+                                      handleFieldChange(field.id, next)
+                                  }}
+                                />
+                              ) : type === 'SINGLE_SELECT' ||
+                                type === 'MULTI_SELECT' ? (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={val}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  <FormEntriesSelectInput
+                                    allFields={renderableFields}
+                                    field={field}
+                                    fieldDistinctOptions={
+                                      fieldDistinctOptions[field.id] || []
+                                    }
+                                    formModel={editValues}
+                                    val={val}
+                                    onChange={(next) => {
+                                      if (!isReadOnly)
+                                        handleFieldChange(field.id, next)
+                                    }}
+                                  />
+                                </FormEntriesSearchableInput>
+                              ) : type === 'FILE_UPLOAD' ||
+                                type === 'IMAGE_UPLOAD' ? (
+                                <div className='flex items-center justify-between rounded-xl border border-gray-2 bg-surface-muted/60 p-3.5'>
+                                  <div className='flex items-center gap-3'>
+                                    <div className='flex size-9 items-center justify-center rounded-lg bg-gray-2 text-gray-8'>
+                                      <Icon
+                                        className='size-4.5'
+                                        name='lucide:upload-cloud'
+                                      />
+                                    </div>
+                                    <div>
+                                      <span className='block text-xs font-bold text-gray-12'>
+                                        Upload Document / Attachment
+                                      </span>
+                                      <span className='block text-[10px] text-gray-7'>
+                                        PDF, PNG, JPG, or DOCX up to 10MB
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    color='gray'
+                                    disabled={isReadOnly}
+                                    icon='lucide:upload'
+                                    label={t`Choose File`}
+                                    size='xs'
+                                    variant='outline'
+                                    onClick={() =>
+                                      showToast({
+                                        message:
+                                          'File picker simulated successfully',
+                                      })
+                                    }
+                                  />
+                                </div>
+                              ) : type === 'CALCULATED' ? (
+                                <CalculatedFieldInput value={val} hideLabel />
+                              ) : type === 'LONG_TEXT' ? (
+                                <InputTextarea
+                                  disabled={isReadOnly}
+                                  placeholder={getEffectiveFieldPlaceholder(
+                                    field,
+                                  )}
+                                  value={val != null ? String(val) : ''}
+                                  onChange={(text) =>
+                                    handleFieldChange(field.id, text)
+                                  }
+                                />
+                              ) : hasConfiguredTableColumns(field) ? (
+                                <FormEntryTableField
+                                  disabled={isReadOnly}
+                                  field={field}
+                                  required={isFieldRequired}
+                                  value={val}
+                                  onChange={(serialized) =>
+                                    handleFieldChange(field.id, serialized)
+                                  }
+                                />
+                              ) : isTableType ? (
+                                <FormLineItemsEditor
+                                  disabled={isReadOnly}
+                                  field={field}
+                                  isFieldRequired={isFieldRequired}
+                                  value={val}
+                                  getFieldLabel={getFieldLabel}
+                                  onChange={(newVal) =>
+                                    handleFieldChange(field.id, newVal)
+                                  }
+                                />
+                              ) : (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={val}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  <InputText
+                                    disabled={isReadOnly}
+                                    placeholder={getEffectiveFieldPlaceholder(
+                                      field,
+                                    )}
+                                    value={
+                                      formatRuntimeFieldDisplayValue(
+                                        val,
+                                        field,
+                                      ) === '-'
+                                        ? ''
+                                        : formatRuntimeFieldDisplayValue(
+                                            val,
+                                            field,
+                                          )
+                                    }
+                                    onChange={(text) =>
+                                      handleFieldChange(field.id, text)
+                                    }
+                                  />
+                                </FormEntriesSearchableInput>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  )
+                },
+              )}
+
+              {visibleSections.length === 0 && (
+                <div className='rounded-xl border border-dashed border-gray-3 bg-surface py-16 text-center text-13 text-gray-10'>
+                  {t`This form has no fields to fill in.`}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer: what's still required, and the actions */}
+        <div className='shrink-0 border-t border-gray-3 bg-surface px-6 py-3'>
+          <div className='mx-auto flex w-full max-w-[1120px] items-center justify-between gap-4'>
+            <span
+              className={cn(
+                'flex items-center gap-1.5 text-13',
+                requiredLeft > 0 ? 'text-gray-11' : 'text-green-11',
+              )}
+            >
+              <Icon
+                className='size-4'
+                name={
+                  requiredLeft > 0
+                    ? 'lucide:circle-alert'
+                    : 'lucide:circle-check'
+                }
+              />
+              {requiredLeft > 0
+                ? requiredLeft === 1
+                  ? t`1 required field left`
+                  : t`${requiredLeft} required fields left`
+                : t`All required fields are filled`}
+            </span>
+            <div className='flex items-center gap-3'>
+              <Button
+                color='gray'
+                label={t`Cancel`}
+                variant='outline'
+                onClick={closeSidebar}
+              />
+              <Button
+                color='primary'
+                disabled={isSaving}
+                icon={isAddOpen ? 'lucide:plus' : 'lucide:check'}
+                label={isAddOpen ? t`Save record` : t`Save changes`}
+                loading={isSaving}
+                variant='solid'
+                onClick={handleSaveEntry}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -3088,35 +3414,55 @@ const FormEntriesPage = () => {
 
   return (
     <div className='relative flex h-full flex-col bg-surface'>
-      {/* 1. HEADER (Title, Back button, Browse/Trash Tabs) */}
-      <div className='flex items-center justify-between border-b border-gray-2 px-4'>
-        <div className='flex items-center gap-4'>
-          <IconButton
-            color='gray'
-            icon='lucide:arrow-left'
-            title={t`Back to Forms`}
-            variant='ghost'
-            onClick={() =>
-              navigate({
-                to: getSettingsReturnPath('form-configuration') ?? '/forms',
-              })
-            }
-          />
+      {/* 1. HEADER: one compact row. The app bar already shows the form
+          name, so this row only holds back, tabs (with counts) and actions. */}
+      <div className='flex shrink-0 items-center gap-3 border-b border-gray-3 bg-surface px-6'>
+        <IconButton
+          color='gray'
+          icon='lucide:arrow-left'
+          title={t`Back to Forms`}
+          variant='ghost'
+          onClick={() =>
+            navigate({
+              to: getSettingsReturnPath('form-configuration') ?? '/forms',
+            })
+          }
+        />
+        <div className='-mb-px self-end'>
           <Tabs
             color='primary'
             value={tabValue}
             onChange={(val) => setTabValue(val || 'Browse')}
           >
-            <Tab label={t`Browse`} value='Browse' />
-            <Tab label={t`Trash`} value='Trash' />
+            <Tab label={t`Browse (${entries.length})`} value='Browse' />
+            <Tab
+              value='Trash'
+              label={
+                fetchedTrashEntries
+                  ? t`Trash (${trashEntries.length})`
+                  : t`Trash`
+              }
+            />
           </Tabs>
         </div>
 
-        <div className='flex items-center gap-2'>
+        <div className='ml-auto flex items-center gap-2 py-2'>
+          {formType && formType !== 'ITEM' ? (
+            <FormTypeBadge type={formType} />
+          ) : null}
+          <Button
+            color='gray'
+            icon='tabler:table-import'
+            label={t`Import`}
+            size='sm'
+            variant='outline'
+            onClick={() => setIsImportOpen(true)}
+          />
           <Button
             color='primary'
             icon='lucide:plus'
             label={t`Add Entry`}
+            size='sm'
             variant='solid'
             onClick={openNewEntry}
           />
@@ -3126,13 +3472,21 @@ const FormEntriesPage = () => {
       <ConfirmDialog
         cancelLabel={t`Cancel`}
         confirmLabel={t`Move to Trash`}
-        description={t`Are you sure you want to move this entry to Trash? You can restore it from the Trash tab.`}
         isConfirming={isDeletingEntry}
-        opened={Boolean(deletingEntry)}
-        title={t`Move Entry to Trash`}
+        opened={Boolean(deletingEntries?.length)}
         variant='danger'
+        description={
+          (deletingEntries?.length ?? 0) > 1
+            ? t`Move ${deletingEntries?.length} entries to Trash? You can restore them from the Trash tab.`
+            : t`Are you sure you want to move this entry to Trash? You can restore it from the Trash tab.`
+        }
+        title={
+          (deletingEntries?.length ?? 0) > 1
+            ? t`Move Entries to Trash`
+            : t`Move Entry to Trash`
+        }
         onCancel={() => {
-          if (!isDeletingEntry) setDeletingEntry(null)
+          if (!isDeletingEntry) setDeletingEntries(null)
         }}
         onConfirm={handleMoveToTrash}
       />
@@ -3140,20 +3494,37 @@ const FormEntriesPage = () => {
       <ConfirmDialog
         cancelLabel={t`Cancel`}
         confirmLabel={t`Delete Permanently`}
-        description={t`Are you sure you want to permanently delete this entry? This action is permanent and cannot be undone.`}
         isConfirming={isDeletingEntry}
-        opened={Boolean(permanentlyDeletingEntry)}
-        title={t`Permanently Delete Entry`}
+        opened={Boolean(permanentlyDeletingEntries?.length)}
         variant='danger'
+        description={
+          (permanentlyDeletingEntries?.length ?? 0) > 1
+            ? t`Permanently delete ${permanentlyDeletingEntries?.length} entries? This cannot be undone. Entries linked to a workflow request are kept.`
+            : t`Are you sure you want to permanently delete this entry? This action is permanent and cannot be undone.`
+        }
+        title={
+          (permanentlyDeletingEntries?.length ?? 0) > 1
+            ? t`Permanently Delete Entries`
+            : t`Permanently Delete Entry`
+        }
         onCancel={() => {
-          if (!isDeletingEntry) setPermanentlyDeletingEntry(null)
+          if (!isDeletingEntry) setPermanentlyDeletingEntries(null)
         }}
         onConfirm={handlePermanentDelete}
       />
 
-      {/* 2. MAIN LAYOUT (Table view) */}
+      <RestoreEntriesDialog
+        isRestoring={isDeletingEntry}
+        opened={Boolean(restoringEntries?.length)}
+        selectedCount={restoringEntries?.length ?? 0}
+        trashCount={trashEntries.length}
+        onCancel={() => setRestoringEntries(null)}
+        onConfirm={handleRestore}
+      />
+
+      {/* 2. MAIN LAYOUT (filter bar, then table + pagination in one card) */}
       <div className='relative flex flex-1 overflow-hidden'>
-        <div className='bg-surface-muted/50 flex flex-1 flex-col overflow-hidden p-4'>
+        <div className='flex flex-1 flex-col gap-3 overflow-hidden bg-surface-muted/50 px-6 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             searchPlaceholder={t`Search entries...`}
@@ -3183,27 +3554,18 @@ const FormEntriesPage = () => {
                   else refetchEntries()
                 },
               },
-              {
-                color: 'gray',
-                icon: 'tabler:table-import',
-                id: 'bulk-import',
-                isIconButton: true,
-                tooltip: t`Bulk Import`,
-                variant: 'outline',
-                onClick: () => setIsImportOpen(true),
-              },
             ]}
             filters={[
               ...(nameFieldFilter
                 ? [
-                  {
-                    id: nameFieldFilter.id,
-                    label: nameFieldFilter.label || t`Name`,
-                    options: nameFieldFilter.options || [],
-                    searchable: true,
-                    searchPlaceholder: t`Search name...`,
-                  },
-                ]
+                    {
+                      id: nameFieldFilter.id,
+                      label: nameFieldFilter.label || t`Name`,
+                      options: nameFieldFilter.options || [],
+                      searchable: true,
+                      searchPlaceholder: t`Search name...`,
+                    },
+                  ]
                 : []),
               {
                 id: 'createdBy',
@@ -3232,38 +3594,47 @@ const FormEntriesPage = () => {
               setSearchState({ id: '', value: '' })
               setPage(1)
             }}
-            onSearchChange={() => { }}
+            onSearchChange={() => {}}
           />
-          <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
-            <DataTable
-              actions={[]}
-              hideActionBar={true}
-              hideExport={true}
-              hideFilters={true}
-              hideGrouping={true}
-              hideReload={true}
-              hideSearch={true}
-              isLoading={isPageLoading}
-              isReLoading={isPageLoading}
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-xs'>
+            {tabValue === 'Trash' ? (
+              <div className='flex items-center gap-2 border-b border-gray-3 bg-orange-1/60 px-4 py-2 text-12 text-orange-11'>
+                <Icon className='size-4 shrink-0' name='lucide:info' />
+                {t`Entries in Trash can be restored. Tick several to restore or delete them together.`}
+              </div>
+            ) : null}
+            <div className='min-h-0 flex-1 overflow-hidden'>
+              <DataTable
+                actions={[]}
+                bulkActions={bulkActions}
+                hideActionBar={true}
+                hideExport={true}
+                hideFilters={true}
+                hideGrouping={true}
+                hideReload={true}
+                hideSearch={true}
+                isLoading={isPageLoading}
+                isReLoading={isPageLoading}
+                pageSize={pageSize}
+                stickyHeader={true}
+                table={table}
+                onReload={() => {
+                  refetch()
+                  refetchEntries()
+                }}
+              />
+            </div>
+            <Pagination
+              className='shrink-0 border-t border-gray-3 px-4 py-3'
+              itemLabel={t`Entries`}
+              page={page}
               pageSize={pageSize}
-              stickyHeader={true}
-              table={table}
-              onReload={() => {
-                refetch()
-                refetchEntries()
-              }}
+              showPageNumbers={false}
+              totalItems={totalItems}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
             />
           </div>
-          <Pagination
-            className='mt-4 shrink-0'
-            itemLabel={t`Entries`}
-            page={page}
-            pageSize={pageSize}
-            showPageNumbers={false}
-            totalItems={totalItems}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-          />
         </div>
       </div>
 
@@ -3297,7 +3668,7 @@ const FormEntriesPage = () => {
             <div className='custom-scrollbar max-h-[400px] overflow-x-auto overflow-y-auto rounded-lg border border-gray-2 bg-surface'>
               <table className='w-full border-collapse text-left text-xs'>
                 <thead>
-                  <tr className='bg-surface-muted border-b border-gray-2'>
+                  <tr className='border-b border-gray-2 bg-surface-muted'>
                     {activeLineItems.data.length > 0 &&
                       Object.keys(activeLineItems.data[0]).map((k) => (
                         <th
@@ -3312,7 +3683,7 @@ const FormEntriesPage = () => {
                 <tbody>
                   {activeLineItems.data.map((item: any, idx: number) => (
                     <tr
-                      className='hover:bg-surface-hover/50 border-b border-gray-1 last:border-0'
+                      className='border-b border-gray-1 last:border-0 hover:bg-surface-hover/50'
                       key={idx}
                     >
                       {Object.keys(item).map((k) => (
