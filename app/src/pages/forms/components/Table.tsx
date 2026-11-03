@@ -45,6 +45,7 @@ const Table = ({
           hideSearch={true}
           isLoading={isLoading}
           isReLoading={isRefetching}
+          isSticky={true}
           pageSize={pageSize}
           stickyHeader={true}
           table={table}
