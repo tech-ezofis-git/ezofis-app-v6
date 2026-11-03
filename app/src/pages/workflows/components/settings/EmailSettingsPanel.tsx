@@ -13,6 +13,7 @@ import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import Input from '@/components/base/inputs/InputText'
 import showToast from '@/components/base/toast/showToast'
+import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 import {
   getNodeToolType,
   NODE_TOOL_TYPE,
@@ -25,6 +26,7 @@ import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen
 import cn from '@/utils/cn'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
+import EmailWatchSection from './EmailWatchSection'
 
 const domainNameOptions: Option[] = [
   { id: 1, name: 'example.com' },
@@ -63,6 +65,7 @@ export default function EmailSettingsPanel({
 
   const toolType = getNodeToolType(currentNode.data)
   const provider = toolType === NODE_TOOL_TYPE.OUTLOOK ? 'outlook' : 'gmail'
+  const workflowId = useWorkflowStore((state) => state.workflowId)
 
   // Fetch connections from API
   const { data: apiConnections } = useQuery(getConnectionQueryOptions(provider))
@@ -517,7 +520,7 @@ export default function EmailSettingsPanel({
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-purple-10 h-4 w-4 stroke-[2]'
+                      className='h-4 w-4 stroke-[2] text-purple-10'
                       name='lucide:type'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -561,7 +564,7 @@ export default function EmailSettingsPanel({
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-blue-10 h-4 w-4 stroke-[2]'
+                      className='h-4 w-4 stroke-[2] text-blue-10'
                       name='lucide:paperclip'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -587,7 +590,7 @@ export default function EmailSettingsPanel({
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-yellow-10 h-4 w-4 stroke-[2]'
+                      className='h-4 w-4 stroke-[2] text-yellow-10'
                       name='lucide:file-text'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -631,7 +634,7 @@ export default function EmailSettingsPanel({
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-red-10 h-4 w-4 stroke-[2]'
+                      className='h-4 w-4 stroke-[2] text-red-10'
                       name='lucide:mail'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -678,7 +681,7 @@ export default function EmailSettingsPanel({
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
                     <Icon
-                      className='text-green-10 h-4 w-4 stroke-[2]'
+                      className='h-4 w-4 stroke-[2] text-green-10'
                       name='lucide:globe'
                     />
                     <div className='flex flex-col space-y-1'>
@@ -722,6 +725,13 @@ export default function EmailSettingsPanel({
               </div>
             </div>
           </SettingsSection>
+        )}
+
+        {isTrigger && (
+          <EmailWatchSection
+            defaultProvider={provider}
+            workflowId={workflowId ? String(workflowId) : null}
+          />
         )}
 
         <ConnectionsRouting node={currentNode as any} />

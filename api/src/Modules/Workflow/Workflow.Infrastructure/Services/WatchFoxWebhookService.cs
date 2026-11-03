@@ -5,7 +5,9 @@ using System.Text.Json;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SaaSApp.MultiTenancy;
 using SaaSApp.Workflow.Application.Contracts;
+using SaaSApp.Workflow.Application.Workflows;
 using SaaSApp.Workflow.Infrastructure.Jobs;
 using SaaSApp.Workflow.Infrastructure.Options;
 
@@ -16,16 +18,25 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
     private const string WatchFoxBaseUrl = "https://watchfox.run";
 
     private readonly IOptions<WatchFoxOptions> _options;
+    private readonly IOptions<EmailIngestOptions> _emailIngest;
     private readonly IHttpClientFactory _http;
+    private readonly ITenantConnectionStringResolver _connectionStrings;
+    private readonly WatchFoxWatchStore _store;
     private readonly ILogger<WatchFoxWebhookService> _logger;
 
     public WatchFoxWebhookService(
         IOptions<WatchFoxOptions> options,
+        IOptions<EmailIngestOptions> emailIngest,
         IHttpClientFactory http,
+        ITenantConnectionStringResolver connectionStrings,
+        WatchFoxWatchStore store,
         ILogger<WatchFoxWebhookService> logger)
     {
         _options = options;
+        _emailIngest = emailIngest;
         _http = http;
+        _connectionStrings = connectionStrings;
+        _store = store;
         _logger = logger;
     }
 
@@ -72,41 +83,9 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
             ? unix
             : null;
 
-        var queued = 0;
-        if (isInvoice
-            && email.TryGetProperty("attachments", out var attachments)
-            && attachments.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var attachment in attachments.EnumerateArray())
-            {
-                if (!IsDocument(attachment))
-                    continue;
-
-                var url = ReadString(attachment, "url");
-                if (string.IsNullOrWhiteSpace(url))
-                    continue;
-
-                var fileName = ReadString(attachment, "filename");
-                if (string.IsNullOrWhiteSpace(fileName))
-                    fileName = "document.pdf";
-
-                var attachmentId = ReadString(attachment, "id") ?? queued.ToString();
-                var args = new WatchFoxInvoiceJobArgs(
-                    EventKey: Truncate($"{eventId}:{attachmentId}", 160),
-                    TenantId: tenantId!.Value,
-                    WorkflowId: workflowId!.Value,
-                    FileName: fileName,
-                    ContentType: ReadString(attachment, "content_type"),
-                    DownloadUrl: url,
-                    FromEmail: from,
-                    Subject: subject,
-                    ReceivedUnix: received,
-                    MessageId: messageId);
-
-                BackgroundJob.Enqueue<RunWatchFoxInvoiceJob>(job => job.Execute(args, null));
-                queued++;
-            }
-        }
+        var queued = isInvoice
+            ? QueueInvoiceAttachments(email, eventId, tenantId!.Value, workflowId!.Value, from, subject, received, messageId)
+            : 0;
 
         if (isInvoice && queued == 0)
             _logger.LogInformation("WatchFox invoice event {EventId} has no document attachment. No ticket started.", eventId);
@@ -160,6 +139,494 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
         return Task.CompletedTask;
     }
 
+    public async Task AcceptForWorkflowAsync(
+        string rawBody,
+        string? signatureHeader,
+        Guid tenantId,
+        Guid workflowId,
+        CancellationToken cancellationToken = default)
+    {
+        if (tenantId == Guid.Empty || workflowId == Guid.Empty)
+            throw new InvalidOperationException("tenantId and workflowId are required.");
+
+        var options = _options.Value;
+        var secret = options.WebhookSecret?.Trim();
+        if (string.IsNullOrWhiteSpace(secret) || !SignatureMatches(secret, rawBody, signatureHeader))
+            throw new UnauthorizedAccessException("WatchFox signature is invalid.");
+
+        using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(rawBody) ? "{}" : rawBody);
+        var root = doc.RootElement;
+        var eventType = ReadString(root, "type");
+
+        if (string.Equals(eventType, "connection.needs_attention", StringComparison.OrdinalIgnoreCase))
+        {
+            var connectionId = ReadString(root, "connection_id");
+            if (string.IsNullOrWhiteSpace(connectionId))
+                return;
+            var cs = await RequireTenantConnectionAsync(tenantId);
+            var changed = await _store.SetStatusByConnectionAsync(
+                cs,
+                connectionId,
+                WatchFoxWatchRules.StatusNeedsAttention,
+                ReadString(root, "reason"),
+                cancellationToken);
+            _logger.LogWarning(
+                "WatchFox mailbox {ConnectionId} needs attention; {Count} watch(es) of workflow {WorkflowId} marked.",
+                connectionId,
+                changed,
+                workflowId);
+            return;
+        }
+
+        if (!string.Equals(eventType, "email.matched", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation("WatchFox event {EventType} ignored.", eventType ?? "(none)");
+            return;
+        }
+
+        if (root.TryGetProperty("test", out var test) && test.ValueKind == JsonValueKind.True)
+        {
+            _logger.LogInformation("WatchFox test event for workflow {WorkflowId} received. No ticket started.", workflowId);
+            return;
+        }
+
+        var matched = WatchFoxWatchRules.MatchedTypes(root);
+        if (matched.Count == 0)
+        {
+            _logger.LogInformation("WatchFox event {EventId} has no matched type. No ticket started.", ReadString(root, "id"));
+            return;
+        }
+
+        if (!root.TryGetProperty("email", out var email) || email.ValueKind != JsonValueKind.Object)
+        {
+            _logger.LogInformation("WatchFox event {EventId} has no email object.", ReadString(root, "id"));
+            return;
+        }
+
+        // The saved watch says who connected the mailbox; a removed watch starts nothing.
+        Guid? actorUserId = null;
+        var recordId = ReadMetaGuid(root, "watchRecordId", "watch_record_id");
+        if (recordId != null)
+        {
+            var cs = await RequireTenantConnectionAsync(tenantId);
+            var record = await _store.GetAsync(cs, recordId.Value, cancellationToken);
+            if (record == null || record.WorkflowId != workflowId)
+            {
+                _logger.LogInformation(
+                    "WatchFox event {EventId} is for removed watch {RecordId}. No ticket started.",
+                    ReadString(root, "id"),
+                    recordId);
+                return;
+            }
+
+            actorUserId = record.CreatedBy;
+        }
+
+        var eventId = ReadString(root, "id") ?? Guid.NewGuid().ToString("N");
+        var from = ParseMailbox(ReadString(email, "from"));
+        var subject = ReadString(email, "subject");
+        var messageId = ReadString(email, "message_id") ?? ReadString(email, "id");
+
+        if (WatchFoxWatchRules.UseInvoiceJob(matched, MjbUsAgent.IsThisWorkflow(workflowId, tenantId)))
+        {
+            long? received = email.TryGetProperty("received", out var receivedElement) && receivedElement.TryGetInt64(out var unix)
+                ? unix
+                : null;
+            var queued = QueueInvoiceAttachments(email, eventId, tenantId, workflowId, from, subject, received, messageId);
+            _logger.LogInformation("WatchFox invoice event {EventId} queued {Count} ticket start(s).", eventId, queued);
+            return;
+        }
+
+        QueueEnquiry(options, root, email, eventId, tenantId, from, subject, messageId, workflowId, actorUserId);
+    }
+
+    public async Task<IReadOnlyList<WatchFoxTypeOption>> GetTypesAsync(CancellationToken cancellationToken = default)
+    {
+        var types = new List<WatchFoxTypeOption>();
+        await AddTypesAsync(types, "/v1/presets", custom: false, cancellationToken);
+        if (types.Count == 0)
+            types.AddRange(WatchFoxWatchRules.BuiltInTypes.Select(t => new WatchFoxTypeOption(t.Id, t.Label, false)));
+        await AddTypesAsync(types, "/v1/types", custom: true, cancellationToken);
+        return types;
+    }
+
+    public async Task<WatchFoxWorkflowWatches> ListWorkflowWatchesAsync(
+        Guid tenantId,
+        Guid workflowId,
+        CancellationToken cancellationToken = default)
+    {
+        if (tenantId == Guid.Empty || workflowId == Guid.Empty)
+            throw new InvalidOperationException("tenantId and workflowId are required.");
+
+        var cs = await RequireTenantConnectionAsync(tenantId);
+        var watches = await _store.ListByWorkflowAsync(cs, workflowId, cancellationToken);
+        return new WatchFoxWorkflowWatches(
+            WorkflowEmailWebhookRules.BuildWebhookUrl(_emailIngest.Value.WorkflowWebhookUrl, tenantId, workflowId),
+            watches);
+    }
+
+    public async Task<WatchFoxConnectLinkResult> CreateConnectLinkAsync(
+        WatchFoxConnectRequestArgs request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.TenantId == Guid.Empty || request.WorkflowId == Guid.Empty)
+            throw new InvalidOperationException("tenantId and workflowId are required.");
+
+        var provider = WatchFoxWatchRules.NormalizeProvider(request.Provider);
+        var types = WatchFoxWatchRules.NormalizeTypes(request.Types);
+        var redirect = RequireHttpsRedirect(request.RedirectUrl);
+        var webhookUrl = WorkflowEmailWebhookRules.BuildWebhookUrl(_emailIngest.Value.WorkflowWebhookUrl, request.TenantId, request.WorkflowId);
+
+        var cs = await RequireTenantConnectionAsync(request.TenantId);
+        var record = await _store.InsertPendingAsync(
+            cs,
+            request.WorkflowId,
+            provider,
+            types,
+            webhookUrl,
+            request.UserId,
+            cancellationToken);
+
+        var body = new Dictionary<string, object?>
+        {
+            ["provider"] = provider,
+            ["redirect_url"] = ConnectCallbackUrl(redirect),
+            ["state"] = WatchFoxWatchRules.EncodeState(request.TenantId, record.Id),
+            ["metadata"] = WatchMetadata(request.TenantId, request.WorkflowId, record.Id)
+        };
+        ApplyBranding(body, request.Branding);
+        return await RequestConnectLinkAsync(body, cancellationToken);
+    }
+
+    public async Task<string> CompleteConnectAsync(
+        string? status,
+        string? connectionId,
+        string? email,
+        string? state,
+        string? returnUrl,
+        CancellationToken cancellationToken = default)
+    {
+        if (!WatchFoxWatchRules.TryDecodeState(state, out var tenantId, out var recordId))
+            return AppendQuery(NormalizeReturnUrl(returnUrl), new Dictionary<string, string?>
+            {
+                ["status"] = "error",
+                ["error"] = "Mailbox connect state was missing."
+            });
+
+        var cs = await _connectionStrings.GetConnectionStringAsync(tenantId);
+        var record = cs == null ? null : await _store.GetAsync(cs, recordId, cancellationToken);
+        if (cs == null || record == null)
+        {
+            // A link made before saved watches existed: its state holds the workflow id.
+            return await CompleteMicrosoftConnectAsync(status, connectionId, state, returnUrl, cancellationToken);
+        }
+
+        var redirect = NormalizeReturnUrl(returnUrl);
+        if (!string.Equals(status, "connected", StringComparison.OrdinalIgnoreCase)
+            || string.IsNullOrWhiteSpace(connectionId))
+        {
+            return AppendQuery(redirect, new Dictionary<string, string?>
+            {
+                ["status"] = status ?? "error",
+                ["watchRecordId"] = record.Id.ToString("D"),
+                ["error"] = "The mailbox was not connected."
+            });
+        }
+
+        try
+        {
+            record = string.IsNullOrWhiteSpace(record.WatchId)
+                ? await StartWatchAsync(cs, tenantId, record, connectionId, email, cancellationToken)
+                : await _store.SetStatusAsync(cs, record.Id, WatchFoxWatchRules.StatusActive, null, null, cancellationToken);
+
+            return AppendQuery(redirect, new Dictionary<string, string?>
+            {
+                ["status"] = "connected",
+                ["provider"] = record.Provider,
+                ["connectionId"] = record.ConnectionId,
+                ["watchId"] = record.WatchId,
+                ["watchRecordId"] = record.Id.ToString("D"),
+                ["email"] = record.MailboxEmail,
+                ["tenantId"] = tenantId.ToString("D"),
+                ["workflowId"] = record.WorkflowId.ToString("D")
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "WatchFox watch {RecordId} was not created after mailbox connect.", record.Id);
+            await _store.SetStatusAsync(cs, record.Id, WatchFoxWatchRules.StatusError, ex.Message, null, cancellationToken);
+            return AppendQuery(redirect, new Dictionary<string, string?>
+            {
+                ["status"] = "error",
+                ["connectionId"] = connectionId,
+                ["watchRecordId"] = record.Id.ToString("D"),
+                ["error"] = ex.Message
+            });
+        }
+    }
+
+    public async Task<WatchFoxWatchRecord> UpdateWatchTypesAsync(
+        Guid tenantId,
+        Guid id,
+        IReadOnlyList<string>? types,
+        Guid? userId,
+        CancellationToken cancellationToken = default)
+    {
+        var (cs, record) = await RequireConnectedRecordAsync(tenantId, id, cancellationToken);
+        var normalized = WatchFoxWatchRules.NormalizeTypes(types);
+        var payload = JsonSerializer.Serialize(new { what = normalized });
+        using var patched = await SendWatchFoxAsync(HttpMethod.Patch, $"/v1/watches/{record.WatchId}", payload, cancellationToken);
+        return await _store.UpdateTypesAsync(cs, record.Id, normalized, userId, cancellationToken);
+    }
+
+    public async Task<WatchFoxWatchRecord> PauseWatchAsync(
+        Guid tenantId,
+        Guid id,
+        Guid? userId,
+        CancellationToken cancellationToken = default)
+    {
+        var (cs, record) = await RequireConnectedRecordAsync(tenantId, id, cancellationToken);
+        using var paused = await SendWatchFoxAsync(HttpMethod.Post, $"/v1/watches/{record.WatchId}/pause", null, cancellationToken);
+        return await _store.SetStatusAsync(cs, record.Id, WatchFoxWatchRules.StatusPaused, null, userId, cancellationToken);
+    }
+
+    public async Task<WatchFoxWatchRecord> ResumeWatchAsync(
+        Guid tenantId,
+        Guid id,
+        bool catchUp,
+        Guid? userId,
+        CancellationToken cancellationToken = default)
+    {
+        var (cs, record) = await RequireConnectedRecordAsync(tenantId, id, cancellationToken);
+        var payload = JsonSerializer.Serialize(new { catch_up = catchUp });
+        using var resumed = await SendWatchFoxAsync(HttpMethod.Post, $"/v1/watches/{record.WatchId}/resume", payload, cancellationToken);
+        return await _store.SetStatusAsync(cs, record.Id, WatchFoxWatchRules.StatusActive, null, userId, cancellationToken);
+    }
+
+    public async Task<WatchFoxConnectLinkResult> CreateReconnectLinkAsync(
+        Guid tenantId,
+        Guid id,
+        string? redirectUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, record) = await RequireConnectedRecordAsync(tenantId, id, cancellationToken);
+        var body = new Dictionary<string, object?>
+        {
+            ["connection_id"] = record.ConnectionId,
+            ["redirect_url"] = ConnectCallbackUrl(RequireHttpsRedirect(redirectUrl)),
+            ["state"] = WatchFoxWatchRules.EncodeState(tenantId, record.Id)
+        };
+        ApplyBranding(body, null);
+        return await RequestConnectLinkAsync(body, cancellationToken);
+    }
+
+    public async Task DeleteWatchAsync(Guid tenantId, Guid id, Guid? userId, CancellationToken cancellationToken = default)
+    {
+        var cs = await RequireTenantConnectionAsync(tenantId);
+        var record = await _store.GetAsync(cs, id, cancellationToken)
+            ?? throw new KeyNotFoundException("The mailbox watch was not found.");
+        if (!string.IsNullOrWhiteSpace(record.WatchId))
+        {
+            using var deleted = await SendWatchFoxAsync(
+                HttpMethod.Delete,
+                $"/v1/watches/{record.WatchId}",
+                null,
+                cancellationToken,
+                allowNotFound: true);
+        }
+
+        await _store.SoftDeleteAsync(cs, record.Id, userId, cancellationToken);
+        _logger.LogInformation("WatchFox watch {WatchId} removed from workflow {WorkflowId}.", record.WatchId, record.WorkflowId);
+    }
+
+    private async Task<WatchFoxWatchRecord> StartWatchAsync(
+        string cs,
+        Guid tenantId,
+        WatchFoxWatchRecord record,
+        string connectionId,
+        string? email,
+        CancellationToken cancellationToken)
+    {
+        var connection = connectionId.Trim();
+        if (!connection.StartsWith("cn_", StringComparison.Ordinal))
+            throw new InvalidOperationException("WatchFox returned an unknown connection id.");
+
+        var options = _options.Value;
+        var secret = options.WebhookSecret?.Trim();
+        if (string.IsNullOrWhiteSpace(secret))
+            throw new InvalidOperationException("WatchFox:WebhookSecret is not configured.");
+
+        var webhookUrl = WorkflowEmailWebhookRules.BuildWebhookUrl(_emailIngest.Value.WorkflowWebhookUrl, tenantId, record.WorkflowId);
+
+        // Connecting the same mailbox to the same workflow again replaces its watch.
+        foreach (var old in await _store.ListSameMailboxAsync(cs, record.WorkflowId, connection, record.Id, cancellationToken))
+        {
+            if (!string.IsNullOrWhiteSpace(old.WatchId))
+            {
+                using var deleted = await SendWatchFoxAsync(
+                    HttpMethod.Delete,
+                    $"/v1/watches/{old.WatchId}",
+                    null,
+                    cancellationToken,
+                    allowNotFound: true);
+            }
+
+            await _store.SoftDeleteAsync(cs, old.Id, null, cancellationToken);
+        }
+
+        await DeleteUntrackedWatchesAsync(connection, webhookUrl, record.WorkflowId, cancellationToken);
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            connection_id = connection,
+            what = record.Types,
+            include = new[] { "eml" },
+            webhook_url = webhookUrl,
+            webhook_secret = secret,
+            duplicates = NormalizeWatchMode(options.Duplicates, "skip"),
+            follow_ups = NormalizeWatchMode(options.FollowUps, "skip"),
+            follow_up_days = options.FollowUpDays is >= 1 and <= 60 ? options.FollowUpDays : 60,
+            metadata = WatchMetadata(tenantId, record.WorkflowId, record.Id)
+        });
+
+        using var doc = await SendWatchFoxAsync(HttpMethod.Post, "/v1/watches", payload, cancellationToken);
+        var watchId = ReadString(doc.RootElement, "id");
+        if (string.IsNullOrWhiteSpace(watchId))
+            throw new InvalidOperationException("WatchFox did not return a watch id.");
+
+        _logger.LogInformation(
+            "WatchFox watch {WatchId} started for connection {ConnectionId} workflow {WorkflowId} types {Types}.",
+            watchId,
+            connection,
+            record.WorkflowId,
+            string.Join(",", record.Types));
+
+        return await _store.MarkConnectedAsync(cs, record.Id, connection, watchId, email, cancellationToken);
+    }
+
+    /// <summary>
+    /// Watches on this mailbox that we do not track: an old one with this workflow's URL, or the
+    /// single-URL FTL Enquiries watch this workflow used before (it would start every ticket twice).
+    /// </summary>
+    private async Task DeleteUntrackedWatchesAsync(
+        string connectionId,
+        string webhookUrl,
+        Guid workflowId,
+        CancellationToken cancellationToken)
+    {
+        var legacyUrl = (_options.Value.WebhookUrl?.Trim() is { Length: > 0 } configured
+            ? configured
+            : "https://cloud.ezofis.com/api/email-ingest/watchfox").TrimEnd('/');
+        var isLegacyEnquiryWorkflow = ParseGuid(_options.Value.EnquiryWorkflowId) == workflowId;
+
+        using var doc = await SendWatchFoxAsync(HttpMethod.Get, "/v1/watches", null, cancellationToken);
+        foreach (var watch in Items(doc.RootElement))
+        {
+            if (!string.Equals(ReadString(watch, "connection_id"), connectionId, StringComparison.Ordinal))
+                continue;
+
+            var url = ReadString(watch, "webhook_url")?.Trim().TrimEnd('/');
+            var sameUrl = string.Equals(url, webhookUrl, StringComparison.OrdinalIgnoreCase);
+            var legacyEnquiry = isLegacyEnquiryWorkflow
+                && string.Equals(url, legacyUrl, StringComparison.OrdinalIgnoreCase)
+                && WatchesType(watch, "enquir");
+            var watchId = ReadString(watch, "id");
+            if ((!sameUrl && !legacyEnquiry) || string.IsNullOrWhiteSpace(watchId))
+                continue;
+
+            using var deleted = await SendWatchFoxAsync(
+                HttpMethod.Delete,
+                $"/v1/watches/{watchId}",
+                null,
+                cancellationToken,
+                allowNotFound: true);
+            _logger.LogInformation("Removed untracked WatchFox watch {WatchId} on connection {ConnectionId}.", watchId, connectionId);
+        }
+    }
+
+    private async Task AddTypesAsync(
+        List<WatchFoxTypeOption> types,
+        string path,
+        bool custom,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var doc = await SendWatchFoxAsync(HttpMethod.Get, path, null, cancellationToken);
+            foreach (var item in Items(doc.RootElement))
+            {
+                var id = ReadString(item, "id");
+                if (string.IsNullOrWhiteSpace(id) || types.Any(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                var label = FirstNonEmpty(ReadString(item, "label"), ReadString(item, "name")) ?? id;
+                types.Add(new WatchFoxTypeOption(id, label, custom));
+            }
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or JsonException)
+        {
+            _logger.LogWarning(ex, "WatchFox type list {Path} could not be read.", path);
+        }
+    }
+
+    private async Task<(string ConnectionString, WatchFoxWatchRecord Record)> RequireConnectedRecordAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var cs = await RequireTenantConnectionAsync(tenantId);
+        var record = await _store.GetAsync(cs, id, cancellationToken)
+            ?? throw new KeyNotFoundException("The mailbox watch was not found.");
+        if (string.IsNullOrWhiteSpace(record.WatchId) || string.IsNullOrWhiteSpace(record.ConnectionId))
+            throw new InvalidOperationException("This mailbox is not connected yet.");
+        return (cs, record);
+    }
+
+    private async Task<string> RequireTenantConnectionAsync(Guid tenantId) =>
+        await _connectionStrings.GetConnectionStringAsync(tenantId)
+        ?? throw new InvalidOperationException($"Tenant connection string not found for {tenantId:D}.");
+
+    private static Dictionary<string, string> WatchMetadata(Guid tenantId, Guid workflowId, Guid recordId) => new()
+    {
+        ["tenantId"] = tenantId.ToString("D"),
+        ["workflowId"] = workflowId.ToString("D"),
+        ["watchRecordId"] = recordId.ToString("D")
+    };
+
+    /// <summary>A JSON array, or the first array under <c>data</c>/<c>items</c>/<c>types</c>/<c>presets</c>/<c>watches</c>.</summary>
+    private static IEnumerable<JsonElement> Items(JsonElement root)
+    {
+        if (root.ValueKind == JsonValueKind.Array)
+            return root.EnumerateArray();
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var name in new[] { "data", "items", "types", "presets", "watches" })
+            {
+                if (root.TryGetProperty(name, out var list) && list.ValueKind == JsonValueKind.Array)
+                    return list.EnumerateArray();
+            }
+        }
+
+        return [];
+    }
+
+    private static bool WatchesType(JsonElement watch, string fragment)
+    {
+        if (!watch.TryGetProperty("what", out var what))
+            return false;
+        if (what.ValueKind == JsonValueKind.String)
+            return what.GetString()?.Contains(fragment, StringComparison.OrdinalIgnoreCase) == true;
+        if (what.ValueKind != JsonValueKind.Array)
+            return false;
+        foreach (var item in what.EnumerateArray())
+        {
+            var name = item.ValueKind == JsonValueKind.String ? item.GetString() : item.ToString();
+            if (name?.Contains(fragment, StringComparison.OrdinalIgnoreCase) == true)
+                return true;
+        }
+
+        return false;
+    }
+
     public async Task<WatchFoxConnectLinkResult> CreateMicrosoftConnectLinkAsync(
         Guid tenantId,
         Guid workflowId,
@@ -170,13 +637,36 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
         if (tenantId == Guid.Empty || workflowId == Guid.Empty)
             throw new InvalidOperationException("tenantId and workflowId are required.");
 
+        var redirect = RequireHttpsRedirect(redirectUrl);
+        var body = new Dictionary<string, object?>
+        {
+            ["provider"] = WatchFoxWatchRules.ProviderOutlook,
+            ["redirect_url"] = ConnectCallbackUrl(redirect),
+            ["state"] = EncodeConnectState(tenantId, workflowId),
+            ["metadata"] = new Dictionary<string, string>
+            {
+                ["tenantId"] = tenantId.ToString("D"),
+                ["enquiryWorkflowId"] = workflowId.ToString("D")
+            }
+        };
+        ApplyBranding(body, branding);
+        return await RequestConnectLinkAsync(body, cancellationToken);
+    }
+
+    private static string RequireHttpsRedirect(string? redirectUrl)
+    {
         var redirect = string.IsNullOrWhiteSpace(redirectUrl)
             ? "https://cloud.ezofis.com"
             : redirectUrl.Trim();
         if (!Uri.TryCreate(redirect, UriKind.Absolute, out var redirectUri)
             || redirectUri.Scheme != Uri.UriSchemeHttps)
             throw new InvalidOperationException("redirectUrl must be an https address.");
+        return redirect;
+    }
 
+    /// <summary>Host WatchFox branding, with optional per-link overrides.</summary>
+    private void ApplyBranding(Dictionary<string, object?> body, WatchFoxConnectBranding? branding)
+    {
         var options = _options.Value;
         var appName = Truncate(FirstNonEmpty(branding?.AppName, options.AppName), 60);
         var logoUrl = Truncate(FirstNonEmpty(branding?.LogoUrl, options.LogoUrl), 400);
@@ -188,17 +678,6 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
             && (!Uri.TryCreate(logoUrl, UriKind.Absolute, out var logoUri) || logoUri.Scheme != Uri.UriSchemeHttps))
             throw new InvalidOperationException("logoUrl must be an https address.");
 
-        var body = new Dictionary<string, object?>
-        {
-            ["provider"] = "m365",
-            ["redirect_url"] = ConnectCallbackUrl(redirect),
-            ["state"] = EncodeConnectState(tenantId, workflowId),
-            ["metadata"] = new Dictionary<string, string>
-            {
-                ["tenantId"] = tenantId.ToString("D"),
-                ["enquiryWorkflowId"] = workflowId.ToString("D")
-            }
-        };
         if (!string.IsNullOrWhiteSpace(appName))
             body["app_name"] = appName;
         if (!string.IsNullOrWhiteSpace(logoUrl))
@@ -209,13 +688,17 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
             body["support_email"] = supportEmail;
         if (hidePoweredBy)
             body["hide_powered_by"] = true;
+    }
 
+    private async Task<WatchFoxConnectLinkResult> RequestConnectLinkAsync(
+        Dictionary<string, object?> body,
+        CancellationToken cancellationToken)
+    {
         var payload = JsonSerializer.Serialize(body);
-
         using var doc = await SendWatchFoxAsync(HttpMethod.Post, "/v1/connect-links", payload, cancellationToken);
         var url = ReadString(doc.RootElement, "url");
         if (string.IsNullOrWhiteSpace(url))
-            throw new InvalidOperationException("WatchFox did not return a Microsoft connect URL.");
+            throw new InvalidOperationException("WatchFox did not return a connect URL.");
 
         var expiresIn = 3600;
         if (doc.RootElement.TryGetProperty("expires_in", out var expires) && expires.TryGetInt32(out var seconds))
@@ -373,7 +856,8 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
         HttpMethod method,
         string path,
         string? json,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool allowNotFound = false)
     {
         var apiKey = _options.Value.ApiKey?.Trim();
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -387,6 +871,8 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
 
         using var response = await client.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (allowNotFound && response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return JsonDocument.Parse("{}");
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException($"WatchFox returned {(int)response.StatusCode}: {Truncate(body, 300)}");
 
@@ -401,9 +887,12 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
         Guid? tenantId,
         string? from,
         string? subject,
-        string? messageId)
+        string? messageId,
+        Guid? routeWorkflowId = null,
+        Guid? actorUserId = null)
     {
-        var workflowId = ReadMetaGuid(root, "enquiryWorkflowId", "enquiry_workflow_id")
+        var workflowId = routeWorkflowId
+            ?? ReadMetaGuid(root, "enquiryWorkflowId", "enquiry_workflow_id")
             ?? ParseGuid(options.EnquiryWorkflowId);
         if (tenantId == null || workflowId == null)
             throw new InvalidOperationException("WatchFox tenantId and EnquiryWorkflowId are not configured.");
@@ -425,7 +914,8 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
             Content: eml.Value.Content,
             FromEmail: from,
             Subject: subject,
-            MessageId: messageId);
+            MessageId: messageId,
+            ActorUserId: actorUserId);
         BackgroundJob.Enqueue<RunWatchFoxEnquiryJob>(job => job.Execute(args, null));
 
         _logger.LogInformation(
@@ -433,6 +923,53 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
             eventId,
             workflowId,
             eml.Value.FileName);
+    }
+
+    private int QueueInvoiceAttachments(
+        JsonElement email,
+        string eventId,
+        Guid tenantId,
+        Guid workflowId,
+        string? from,
+        string? subject,
+        long? received,
+        string? messageId)
+    {
+        if (!email.TryGetProperty("attachments", out var attachments) || attachments.ValueKind != JsonValueKind.Array)
+            return 0;
+
+        var queued = 0;
+        foreach (var attachment in attachments.EnumerateArray())
+        {
+            if (!IsDocument(attachment))
+                continue;
+
+            var url = ReadString(attachment, "url");
+            if (string.IsNullOrWhiteSpace(url))
+                continue;
+
+            var fileName = ReadString(attachment, "filename");
+            if (string.IsNullOrWhiteSpace(fileName))
+                fileName = "document.pdf";
+
+            var attachmentId = ReadString(attachment, "id") ?? queued.ToString();
+            var args = new WatchFoxInvoiceJobArgs(
+                EventKey: Truncate($"{eventId}:{attachmentId}", 160),
+                TenantId: tenantId,
+                WorkflowId: workflowId,
+                FileName: fileName,
+                ContentType: ReadString(attachment, "content_type"),
+                DownloadUrl: url,
+                FromEmail: from,
+                Subject: subject,
+                ReceivedUnix: received,
+                MessageId: messageId);
+
+            BackgroundJob.Enqueue<RunWatchFoxInvoiceJob>(job => job.Execute(args, null));
+            queued++;
+        }
+
+        return queued;
     }
 
     private static bool SignatureMatches(string secret, string rawBody, string? header)

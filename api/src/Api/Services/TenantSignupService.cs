@@ -523,6 +523,16 @@ public sealed class TenantSignupService : ITenantSignupService
             "Create-EmailIngest-Tables.sql",
             required: false,
             cancellationToken);
+        await ApplySqlScriptAsync(
+            tenantConnectionString,
+            "Create-WatchFox-Tables.sql",
+            required: false,
+            cancellationToken);
+        await ApplySqlScriptAsync(
+            tenantConnectionString,
+            "Create-WorkflowEmailWebhook-Table.sql",
+            required: false,
+            cancellationToken);
     }
 
     private static async Task ApplySqlScriptAsync(
