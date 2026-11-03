@@ -127,8 +127,10 @@ def _status_label(expr: sql.Composable) -> sql.Composable:
 # Templates
 # ---------------------------------------------------------------------------------------------
 
-_CREDIT_COLS = (Col("Request No"), Col("Workflow"), Col("Skill"), Col("Billing Status"),
-                Col("Runs", "number", "measure", True), Col("Credits", "number", "measure", True),
+# Source: the request's workflow, or the folder of a repository file (OCR, intelligent upload, AI summary).
+# Agent: the AP skill or AI activity that used the credits.
+_CREDIT_COLS = (Col("Request No"), Col("Source"), Col("Agent"), Col("Billing Status"),
+                Col("Credits", "number", "measure", True),
                 Col("Last Used", "date", "value")) + _REQUEST_LINKS + _FILE_LINKS
 
 
@@ -173,8 +175,8 @@ async def _billing_rows(ctx: _Ctx) -> sql.Composable:
     if not ctx.billing:
         return sql.SQL(
             "SELECT NULL::text AS c0, NULL::text AS c1, NULL::text AS c2, NULL::text AS c3, 0::bigint AS c4, "
-            "0::bigint AS c5, NULL::timestamptz AS c6, NULL::text AS c7, NULL::text AS c8, NULL::text AS c9, "
-            "NULL::text AS c10 WHERE false")
+            "NULL::timestamptz AS c5, NULL::text AS c6, NULL::text AS c7, NULL::text AS c8, "
+            "NULL::text AS c9 WHERE false")
     entries = [_billing_entry(r) for r in ctx.billing]
     item_ids = sorted({e[2] for e in entries if e[2]})
     names = sorted({_match_name(e[1]) for e in entries if e[1]})
@@ -212,8 +214,8 @@ async def _billing_rows(ctx: _Ctx) -> sql.Composable:
     return sql.SQL(
         """WITH files AS ({files}), v(activity, fname, mname, item, repo, credit, at) AS (VALUES {values})
            SELECT COALESCE(f.file_name, v.fname, '-') AS c0, f.repo_name AS c1, v.activity AS c2, 'Charged'::text AS c3,
-                  COUNT(*)::bigint AS c4, SUM(v.credit)::bigint AS c5, MAX(v.at) AS c6, NULL::text AS c7, NULL::text AS c8,
-                  f.id AS c9, f.repo_id AS c10
+                  SUM(v.credit)::bigint AS c4, MAX(v.at) AS c5, NULL::text AS c6, NULL::text AS c7,
+                  f.id AS c8, f.repo_id AS c9
            FROM v
            LEFT JOIN LATERAL (
                SELECT * FROM files f
@@ -236,7 +238,7 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
         return _empty(_CREDIT_COLS), ["This organization has no AI credit ledger yet."]
     billing = await _billing_rows(ctx)
     if not has_ledger:
-        return sql.SQL("SELECT * FROM ({billing}) b ORDER BY c6 DESC, c0, c2 LIMIT {limit}").format(
+        return sql.SQL("SELECT * FROM ({billing}) b ORDER BY c5 DESC, c0, c2 LIMIT {limit}").format(
             billing=billing, limit=sql.Literal(ctx.limit)), []
     tid = ctx.bind(str(ctx.tenant_id))
     has_runs = {"id", "item_key"} <= await _columns(ctx.conn, "public", "ap_runs") and "run_id" in ledger_cols
@@ -281,8 +283,8 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     q = sql.SQL(
         """WITH items AS ({items}), insts AS ({insts})
            SELECT COALESCE(i.ref, {identify}, r.item_key, 'Not linked') AS c0, i.wf_name AS c1, {skill} AS c2,
-                  {billing_status} AS c3, COUNT(*) AS c4, COALESCE(SUM(l.credits), 0) AS c5, MAX(l.created_at) AS c6,
-                  i.wi_id AS c7, i.wf_id AS c8, NULL::text AS c9, NULL::text AS c10
+                  {billing_status} AS c3, COALESCE(SUM(l.credits), 0) AS c4, MAX(l.created_at) AS c5,
+                  i.wi_id AS c6, i.wf_id AS c7, NULL::text AS c8, NULL::text AS c9
            FROM public.ap_credit_ledger l
            {runs_join}
            LEFT JOIN items it ON it.item_key = r.item_key
@@ -291,7 +293,7 @@ async def _ai_credit_consumption(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
            GROUP BY 1, 2, 3, 4, i.wi_id, i.wf_id
            UNION ALL
            SELECT * FROM ({billing}) b
-           ORDER BY c6 DESC, c0, c2 LIMIT {limit}"""
+           ORDER BY c5 DESC, c0, c2 LIMIT {limit}"""
     ).format(items=items, insts=insts, identify=identify, skill=skill, billing_status=billing_status, billing=billing,
              runs_join=runs_join, tid=tid,
              since=ctx.bind(ctx.since), until=ctx.bind(ctx.until), limit=sql.Literal(ctx.limit))

@@ -588,7 +588,8 @@ async def test_document_activity_and_credit_column_order(world, make_client):
     assert [c.label for c in TEMPLATES["document_recent_activity"].columns if c.role != "link"][:4] == [
         "Document", "Folder", "Repository", "When"]
     assert [c.label for c in TEMPLATES["ai_credit_consumption"].columns if c.role != "link"][:3] == [
-        "Request No", "Workflow", "Skill"]
+        "Request No", "Source", "Agent"]
+    assert "Runs" not in [c.label for c in TEMPLATES["ai_credit_consumption"].columns]
 
 
 async def test_default_report_spec_follows_template_and_keeps_highlights(world, make_client):
@@ -598,7 +599,7 @@ async def test_default_report_spec_follows_template_and_keeps_highlights(world, 
     rid = ids["ai_credit_consumption"]
     # Simulate a report installed from an older template: different columns, one highlighted.
     stale = {"title": "AI Credit Consumption", "columns": [
-        {"key": "Skill", "label": "Skill", "highlight": {"rules": [{"color": "red", "op": "eq", "value": "x"}]}},
+        {"key": "Agent", "label": "Agent", "highlight": {"rules": [{"color": "red", "op": "eq", "value": "x"}]}},
         {"key": "Old Column", "label": "Old Column"}],
         "agentSpec": {"kind": "system", "template": "ai_credit_consumption"}}
     tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
@@ -608,7 +609,7 @@ async def test_default_report_spec_follows_template_and_keeps_highlights(world, 
     spec = (await client.get(f"/api/report-agent-v2/definitions/{rid}", headers=admin)).json()["reportSpec"]
     keys = [c["key"] for c in spec["columns"]]
     assert keys[0] == "Request No" and "Old Column" not in keys
-    assert next(c for c in spec["columns"] if c["key"] == "Skill")["highlight"]["rules"][0]["color"] == "red"
+    assert next(c for c in spec["columns"] if c["key"] == "Agent")["highlight"]["rules"][0]["color"] == "red"
 
 
 async def test_document_activity_names_what_was_done(world):
@@ -705,10 +706,10 @@ async def test_credit_report_includes_v6_billing_credits(world, make_client):
     ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
     run = (await client.get(f"/api/report-agent-v2/reports/{ids['ai_credit_consumption']}/execute", headers=admin)).json()
     ap = next(r for r in run["rows"] if r["Request No"] == "INV-9")
-    assert ap["Skill"] == "PO Match" and ap["Billing Status"] == "Not charged (billing call failed)"
-    billing = {(r["Skill"], r["Request No"]): r for r in run["rows"] if r["Billing Status"] == "Charged"}
+    assert ap["Agent"] == "PO Match" and ap["Billing Status"] == "Not charged (billing call failed)"
+    billing = {(r["Agent"], r["Request No"]): r for r in run["rows"] if r["Billing Status"] == "Charged"}
     ocr = billing[("OCR Agent", "scan.pdf")]
-    assert ocr["Credits"] == 2 and ocr["Runs"] == 2 and ocr["Workflow"] == "Receipts"
+    assert ocr["Credits"] == 2 and "Runs" not in ocr and ocr["Source"] == "Receipts"
     assert ocr["repositoryId"] == str(repo) and ocr["itemId"]
     summary = billing[("Document Summary", "summary.pdf")]
     assert summary["itemId"] == str(summary_item) and summary["repositoryId"] == str(repo)
