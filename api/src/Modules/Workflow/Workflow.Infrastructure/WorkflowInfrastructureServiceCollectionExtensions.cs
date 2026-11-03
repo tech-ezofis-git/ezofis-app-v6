@@ -174,6 +174,8 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddSingleton<WatchFoxWatchStore>();
         services.AddScoped<IWatchFoxWebhookService, WatchFoxWebhookService>();
         services.AddSingleton<WorkflowEmailWebhookStore>();
+        services.AddScoped<IWorkflowEmailSettingsService, WorkflowEmailSettingsService>();
+        services.AddScoped<WorkflowEmailDispatcher>();
         services.AddScoped<IWorkflowEmailWebhookService, WorkflowEmailWebhookService>();
         services.AddScoped<RunWatchFoxInvoiceJob>();
         services.AddScoped<RunWatchFoxEnquiryJob>();

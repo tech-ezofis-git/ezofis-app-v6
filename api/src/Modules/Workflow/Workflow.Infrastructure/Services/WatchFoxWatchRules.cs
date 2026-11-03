@@ -115,11 +115,4 @@ public static class WatchFoxWatchRules
                 list.Add(id);
         }
     }
-
-    /// <summary>
-    /// Invoice attachments go to the MJB invoice job (only that workflow is wired for it).
-    /// Every other match starts the workflow with the email .eml, like Enquiries.
-    /// </summary>
-    public static bool UseInvoiceJob(IReadOnlyList<string> matchedTypes, bool isMjbWorkflow) =>
-        isMjbWorkflow && matchedTypes.Any(t => t.Contains("invoice", StringComparison.OrdinalIgnoreCase));
 }

@@ -1,10 +1,8 @@
 using System.Text.Json;
-using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SaaSApp.MultiTenancy;
 using SaaSApp.Workflow.Application.Contracts;
-using SaaSApp.Workflow.Infrastructure.Jobs;
 using SaaSApp.Workflow.Infrastructure.Options;
 
 namespace SaaSApp.Workflow.Infrastructure.Services;
@@ -14,17 +12,20 @@ public sealed class WorkflowEmailWebhookService : IWorkflowEmailWebhookService
     private readonly IOptions<EmailIngestOptions> _options;
     private readonly ITenantConnectionStringResolver _connectionStrings;
     private readonly WorkflowEmailWebhookStore _store;
+    private readonly WorkflowEmailDispatcher _dispatcher;
     private readonly ILogger<WorkflowEmailWebhookService> _logger;
 
     public WorkflowEmailWebhookService(
         IOptions<EmailIngestOptions> options,
         ITenantConnectionStringResolver connectionStrings,
         WorkflowEmailWebhookStore store,
+        WorkflowEmailDispatcher dispatcher,
         ILogger<WorkflowEmailWebhookService> logger)
     {
         _options = options;
         _connectionStrings = connectionStrings;
         _store = store;
+        _dispatcher = dispatcher;
         _logger = logger;
     }
 
@@ -91,27 +92,34 @@ public sealed class WorkflowEmailWebhookService : IWorkflowEmailWebhookService
         if (email.Eml.Length > WorkflowEmailWebhookRules.MaxEmlBytes)
             throw new InvalidOperationException("The email is larger than 25 MB.");
 
+        var headers = WorkflowEmailDispatcher.ReadHeaders(email.Eml);
         var messageId = email.MessageId ?? WorkflowEmailWebhookRules.ReadHeader(email.Eml, "Message-ID");
         var safeName = string.IsNullOrWhiteSpace(fileName) ? "message.eml" : Path.GetFileName(fileName.Trim());
-        var args = new WatchFoxEnquiryJobArgs(
-            EventKey: WorkflowEmailWebhookRules.EventKey(workflowId, messageId, email.Eml),
-            TenantId: tenantId,
-            WorkflowId: workflowId,
-            FileName: safeName,
-            ContentType: "message/rfc822",
-            DownloadUrl: null,
-            Content: email.Eml,
-            FromEmail: email.From ?? WorkflowEmailWebhookRules.ReadHeader(email.Eml, "From"),
-            Subject: email.Subject ?? WorkflowEmailWebhookRules.ReadHeader(email.Eml, "Subject"),
-            MessageId: messageId,
-            ActorUserId: row.CreatedBy);
-        BackgroundJob.Enqueue<RunWatchFoxEnquiryJob>(job => job.Execute(args, null));
+
+        // The workflow's email settings decide: one ticket with the .eml, or one per attachment.
+        var queued = await _dispatcher.DispatchAsync(
+            new IncomingEmail(
+                TenantId: tenantId,
+                WorkflowId: workflowId,
+                Source: "webhook",
+                EventKey: WorkflowEmailWebhookRules.EventKey(workflowId, messageId, email.Eml),
+                Eml: email.Eml,
+                EmlUrl: null,
+                EmlFileName: safeName,
+                From: WorkflowEmailDispatcher.CleanAddress(email.From) ?? headers.From,
+                Subject: email.Subject ?? headers.Subject,
+                MessageId: messageId,
+                ReceivedUnix: null,
+                ActorUserId: row.CreatedBy,
+                Attachments: WorkflowEmailDispatcher.ReadAttachments(email.Eml)),
+            cancellationToken);
 
         await _store.TouchAsync(cs, row.Id, cancellationToken);
         _logger.LogInformation(
-            "Email webhook {KeyPrefix} queued workflow {WorkflowId} start with {FileName}.",
+            "Email webhook {KeyPrefix} for workflow {WorkflowId} queued {Count} ticket start(s) from {FileName}.",
             row.KeyPrefix,
             workflowId,
+            queued,
             safeName);
     }
 

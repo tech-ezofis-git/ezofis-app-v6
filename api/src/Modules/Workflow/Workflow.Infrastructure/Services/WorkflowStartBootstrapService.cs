@@ -215,6 +215,8 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
             }
         }
 
+        await UploadExtraAttachmentsAsync(request, repositoryGuid, currentTransactionId, cancellationToken);
+
         var formEntryItemId = await InsertFormEntryAsync(
             connectionString,
             workflow.FormId,
@@ -441,6 +443,8 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
             blobPath ??= archived.FilePath;
         }
 
+        await UploadExtraAttachmentsAsync(request, repositoryGuid, currentTransactionId, cancellationToken);
+
         await InsertProcessFormRowAsync(
             connectionString,
             workflowSuffix,
@@ -551,6 +555,76 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
     /// Start/submit already called move-next. Sync the completed row to sent first, then the open
     /// next row to inbox so the initiator is not left in inbox when the next user is someone else.
     /// </summary>
+    /// <summary>
+    /// Stores <see cref="WorkflowStartBootstrapRequest.ExtraAttachments"/> next to the main file.
+    /// A failed extra file is logged and never fails the start.
+    /// </summary>
+    private async Task UploadExtraAttachmentsAsync(
+        WorkflowStartBootstrapRequest request,
+        Guid? repositoryGuid,
+        int? transactionId,
+        CancellationToken cancellationToken)
+    {
+        if (request.ExtraAttachments is not { Count: > 0 } extras)
+            return;
+        if (repositoryGuid is not Guid repoId)
+        {
+            _logger.LogWarning(
+                "Extra start attachments skipped: workflow {WorkflowId} has no resolvable repository.",
+                request.Workflow.Id);
+            return;
+        }
+
+        foreach (var extra in extras)
+        {
+            if (extra.Content is not { Length: > 0 } || string.IsNullOrWhiteSpace(extra.FileName))
+                continue;
+            try
+            {
+                await using var stream = new MemoryStream(extra.Content);
+                if (_attachmentArchive != null)
+                {
+                    await _attachmentArchive.UploadAsync(
+                        request.Instance.TenantId,
+                        request.Workflow.Id,
+                        request.Instance.Id,
+                        repoId,
+                        stream,
+                        extra.FileName,
+                        extra.ContentType,
+                        extra.Content.Length,
+                        metadataJson: null,
+                        transactionId,
+                        request.UserId,
+                        cancellationToken,
+                        allowIncompleteFolderMetadata: true);
+                }
+                else if (_attachmentUploader != null)
+                {
+                    await _attachmentUploader.UploadAsync(
+                        request.Instance.TenantId,
+                        repoId,
+                        request.Workflow.Id,
+                        request.Instance.Id,
+                        transactionId,
+                        stream,
+                        extra.FileName,
+                        extra.ContentType,
+                        request.UserId,
+                        cancellationToken);
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Extra start attachment {FileName} was not stored for instance {InstanceId}.",
+                    extra.FileName,
+                    request.Instance.Id);
+            }
+        }
+    }
+
     private async Task SyncAdvanceMailboxAsync(
         Guid workflowId,
         WorkflowLegacyTransactionSyncResult reviewSync,

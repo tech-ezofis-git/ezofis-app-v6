@@ -22,6 +22,7 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
     private readonly IHttpClientFactory _http;
     private readonly ITenantConnectionStringResolver _connectionStrings;
     private readonly WatchFoxWatchStore _store;
+    private readonly WorkflowEmailDispatcher _dispatcher;
     private readonly ILogger<WatchFoxWebhookService> _logger;
 
     public WatchFoxWebhookService(
@@ -30,6 +31,7 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
         IHttpClientFactory http,
         ITenantConnectionStringResolver connectionStrings,
         WatchFoxWatchStore store,
+        WorkflowEmailDispatcher dispatcher,
         ILogger<WatchFoxWebhookService> logger)
     {
         _options = options;
@@ -37,6 +39,7 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
         _http = http;
         _connectionStrings = connectionStrings;
         _store = store;
+        _dispatcher = dispatcher;
         _logger = logger;
     }
 
@@ -223,21 +226,74 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
         }
 
         var eventId = ReadString(root, "id") ?? Guid.NewGuid().ToString("N");
-        var from = ParseMailbox(ReadString(email, "from"));
-        var subject = ReadString(email, "subject");
-        var messageId = ReadString(email, "message_id") ?? ReadString(email, "id");
+        var eml = FindEml(email);
+        long? received = email.TryGetProperty("received", out var receivedElement) && receivedElement.TryGetInt64(out var unix)
+            ? unix
+            : null;
 
-        if (WatchFoxWatchRules.UseInvoiceJob(matched, MjbUsAgent.IsThisWorkflow(workflowId, tenantId)))
+        // The workflow's email settings decide: one ticket with the .eml, or one per attachment.
+        await _dispatcher.DispatchAsync(
+            new IncomingEmail(
+                TenantId: tenantId,
+                WorkflowId: workflowId,
+                Source: "watchfox",
+                EventKey: Truncate($"enquiry:{eventId}", 160),
+                Eml: eml?.Content,
+                EmlUrl: eml?.Url,
+                EmlFileName: eml?.FileName ?? "message.eml",
+                From: ParseMailbox(ReadString(email, "from")),
+                Subject: ReadString(email, "subject"),
+                MessageId: ReadString(email, "message_id") ?? ReadString(email, "id"),
+                ReceivedUnix: received,
+                ActorUserId: actorUserId,
+                Attachments: ReadAttachments(email)),
+            cancellationToken);
+    }
+
+    /// <summary>The event's file attachments (not the .eml itself), with WatchFox links or inline content.</summary>
+    private static IReadOnlyList<IncomingEmailAttachment> ReadAttachments(JsonElement email)
+    {
+        if (!email.TryGetProperty("attachments", out var attachments) || attachments.ValueKind != JsonValueKind.Array)
+            return [];
+
+        var list = new List<IncomingEmailAttachment>();
+        foreach (var attachment in attachments.EnumerateArray())
         {
-            long? received = email.TryGetProperty("received", out var receivedElement) && receivedElement.TryGetInt64(out var unix)
-                ? unix
-                : null;
-            var queued = QueueInvoiceAttachments(email, eventId, tenantId, workflowId, from, subject, received, messageId);
-            _logger.LogInformation("WatchFox invoice event {EventId} queued {Count} ticket start(s).", eventId, queued);
-            return;
+            var name = ReadString(attachment, "filename");
+            var type = ReadString(attachment, "content_type");
+            if ((name?.EndsWith(".eml", StringComparison.OrdinalIgnoreCase) ?? false)
+                || (type?.Contains("rfc822", StringComparison.OrdinalIgnoreCase) ?? false))
+                continue;
+
+            var url = ReadString(attachment, "url");
+            var content = DecodeBase64(ReadString(attachment, "content_base64"));
+            if (string.IsNullOrWhiteSpace(url) && content is not { Length: > 0 })
+                continue;
+
+            long? size = attachment.TryGetProperty("size", out var sizeElement) && sizeElement.TryGetInt64(out var bytes)
+                ? bytes
+                : content?.Length;
+            list.Add(new IncomingEmailAttachment(
+                new EmailAttachmentInfo(ReadString(attachment, "id") ?? list.Count.ToString(), name, type, size, Inline: false),
+                content,
+                string.IsNullOrWhiteSpace(url) ? null : url));
         }
 
-        QueueEnquiry(options, root, email, eventId, tenantId, from, subject, messageId, workflowId, actorUserId);
+        return list;
+    }
+
+    private static byte[]? DecodeBase64(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+        try
+        {
+            return Convert.FromBase64String(value.Trim());
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
     }
 
     public async Task<IReadOnlyList<WatchFoxTypeOption>> GetTypesAsync(CancellationToken cancellationToken = default)
@@ -887,12 +943,9 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
         Guid? tenantId,
         string? from,
         string? subject,
-        string? messageId,
-        Guid? routeWorkflowId = null,
-        Guid? actorUserId = null)
+        string? messageId)
     {
-        var workflowId = routeWorkflowId
-            ?? ReadMetaGuid(root, "enquiryWorkflowId", "enquiry_workflow_id")
+        var workflowId = ReadMetaGuid(root, "enquiryWorkflowId", "enquiry_workflow_id")
             ?? ParseGuid(options.EnquiryWorkflowId);
         if (tenantId == null || workflowId == null)
             throw new InvalidOperationException("WatchFox tenantId and EnquiryWorkflowId are not configured.");
@@ -914,8 +967,7 @@ public sealed class WatchFoxWebhookService : IWatchFoxWebhookService
             Content: eml.Value.Content,
             FromEmail: from,
             Subject: subject,
-            MessageId: messageId,
-            ActorUserId: actorUserId);
+            MessageId: messageId);
         BackgroundJob.Enqueue<RunWatchFoxEnquiryJob>(job => job.Execute(args, null));
 
         _logger.LogInformation(
