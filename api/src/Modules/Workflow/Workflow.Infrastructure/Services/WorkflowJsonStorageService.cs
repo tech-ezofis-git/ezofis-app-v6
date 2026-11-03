@@ -50,14 +50,16 @@ public sealed class WorkflowJsonStorageService : IWorkflowJsonStorageService
     {
         var filePath = GetLocalFilePath(workflowId);
         var fileExists = File.Exists(filePath);
-        var blobClient = GetBlobClient(workflowId);
+        // Read-only: no container create, and one download instead of exists + properties + download
+        // (each blob call is a ~250 ms round trip). The download carries LastModified too.
+        var blobClient = GetBlobClient(workflowId, createContainer: false);
 
-        if (blobClient != null && await blobClient.ExistsAsync(cancellationToken))
+        var download = blobClient == null ? null : await BlobReads.TryDownloadAsync(blobClient, cancellationToken);
+        if (download != null)
         {
             if (fileExists)
             {
-                var blobModified = (await blobClient.GetPropertiesAsync(cancellationToken: cancellationToken))
-                    .Value.LastModified.UtcDateTime;
+                var blobModified = download.Details.LastModified.UtcDateTime;
                 var fileModified = File.GetLastWriteTimeUtc(filePath);
 
                 if (fileModified > blobModified)
@@ -69,12 +71,11 @@ public sealed class WorkflowJsonStorageService : IWorkflowJsonStorageService
                 }
             }
 
-            var download = await blobClient.DownloadContentAsync(cancellationToken);
             _logger.LogInformation(
                 "Workflow JSON loaded from blob for workflow {WorkflowId}: {BlobPath}",
                 workflowId,
-                blobClient.Uri);
-            return download.Value.Content.ToString();
+                blobClient!.Uri);
+            return download.Content.ToString();
         }
 
         if (!fileExists)
@@ -127,7 +128,7 @@ public sealed class WorkflowJsonStorageService : IWorkflowJsonStorageService
         return true;
     }
 
-    private BlobClient? GetBlobClient(Guid workflowId)
+    private BlobClient? GetBlobClient(Guid workflowId, bool createContainer = true)
     {
         var connectionString = ResolveBlobConnectionString();
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -138,9 +139,9 @@ public sealed class WorkflowJsonStorageService : IWorkflowJsonStorageService
         var containerName = $"{containerPrefix}{tenantId}";
         var blobPath = $"Flow Json/{workflowId:N}.json";
 
-        var service = new BlobServiceClient(connectionString);
-        var container = service.GetBlobContainerClient(containerName);
-        container.CreateIfNotExists();
+        var container = BlobReads.ServiceClient(connectionString).GetBlobContainerClient(containerName);
+        if (createContainer)
+            container.CreateIfNotExists();
         return container.GetBlobClient(blobPath);
     }
 

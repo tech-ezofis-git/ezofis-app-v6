@@ -60,15 +60,16 @@ public sealed class FormJsonStorageService : IFormJsonStorageService
 
     private async Task<string?> TryGetFromBlobAsync(string formId, CancellationToken cancellationToken)
     {
-        var blobClient = GetBlobClient(formId);
-        if (blobClient == null || !await blobClient.ExistsAsync(cancellationToken))
+        // Read-only: no container create, and one download instead of exists + download.
+        var blobClient = GetBlobClient(formId, createContainer: false);
+        if (blobClient == null)
             return null;
 
-        var download = await blobClient.DownloadContentAsync(cancellationToken);
-        return download.Value.Content.ToString();
+        var download = await BlobReads.TryDownloadAsync(blobClient, cancellationToken);
+        return download?.Content.ToString();
     }
 
-    private BlobClient? GetBlobClient(string formId)
+    private BlobClient? GetBlobClient(string formId, bool createContainer = true)
     {
         var connectionString = _configuration["EzofisBlobStorage:ConnectionString"]
             ?? _configuration["WorkflowJsonStorage:Blob:ConnectionString"]
@@ -83,9 +84,9 @@ public sealed class FormJsonStorageService : IFormJsonStorageService
         var containerName = $"{containerPrefix}{tenantId}";
         var blobPath = $"Form Json/{SanitizeFileName(formId)}.json";
 
-        var service = new BlobServiceClient(connectionString);
-        var container = service.GetBlobContainerClient(containerName);
-        container.CreateIfNotExists();
+        var container = BlobReads.ServiceClient(connectionString).GetBlobContainerClient(containerName);
+        if (createContainer)
+            container.CreateIfNotExists();
         return container.GetBlobClient(blobPath);
     }
 }
