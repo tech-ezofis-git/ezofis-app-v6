@@ -102,8 +102,12 @@ const toNumber = (value: unknown) => {
   return Number.isFinite(num) ? num : 0
 }
 
+// Small totals (AI cost in USD, e.g. 0.000223) keep their digits instead of
+// rounding to 0.
 const formatTotal = (value: number) =>
-  value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+  value.toLocaleString(undefined, {
+    maximumFractionDigits: value !== 0 && Math.abs(value) < 1 ? 6 : 2,
+  })
 
 // View, download and print only; editing and workflow actions stay on the
 // Folders page.

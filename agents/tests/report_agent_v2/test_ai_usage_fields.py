@@ -86,7 +86,6 @@ async def test_folder_report_joins_on_file_item(monkeypatch):
 
 AI_DEFAULT_LABELS = ["AI Agent", "AI Model", "Burgr Suggested Model", "AI Status", "AI Duration (s)",
                      "AI Tokens", "AI Cost (USD)", "AI Credits", "AI Runs"]
-AI_TOTAL_LABELS = ["AI Runs", "AI Duration (s)", "AI Tokens", "AI Cost (USD)", "AI Credits"]
 
 
 def _grouped() -> ReportSpec:
@@ -110,21 +109,42 @@ async def test_ai_defaults_on_folder_reports(monkeypatch):
     assert [col.label for col in with_ticket_columns(_spec("Vendor"), c).columns] == ["Vendor", *AI_DEFAULT_LABELS]
 
 
-async def test_grouped_reports_get_ai_totals(monkeypatch):
+async def test_grouped_prompts_become_one_row_per_request(monkeypatch):
     c = await _with_ai_fields(_workflow(), monkeypatch)
+    c.fields["sys.request_no"] = FieldDef("sys.request_no", "Request No", "system", "text", "e", column="Supplier", pg_type="text")
+    c.fields["sys.current_stage"] = FieldDef("sys.current_stage", "Stage", "system", "text", "e", column="Supplier", pg_type="text")
     spec = with_ticket_columns(_grouped(), c)
-    assert [col.label for col in spec.columns] == ["Supplier", "Count", *AI_TOTAL_LABELS]
-    assert all(m.fn == "sum" for m in spec.measures if m.id.startswith("ai_"))
-    text = compile_spec(spec, c, max_rows=100).query.as_string(None)
-    assert "GROUP BY" in text and "SUM(ROUND((al.cost_usd)::numeric, 6))" in text
-    # Re-applying (as after wizard edits) does not add them twice.
-    assert with_ticket_columns(spec, c).columns == spec.columns
+    assert not spec.group_by and not spec.measures
+    assert [col.label for col in spec.columns] == ["Request No", "Supplier", "Stage", *AI_DEFAULT_LABELS]
+    assert [o.ref for o in spec.order_by] == ["supplier"]  # same supplier rows stay together
+    assert spec.totals
+    compiled = compile_spec(spec, c, max_rows=100)
+    text = compiled.query.as_string(None)
+    assert "GROUP BY" not in text and "STRING_AGG" not in text
+    totals = {col.ref for col in compiled.columns if col.total}
+    assert totals == {"sys.ai_duration", "sys.ai_tokens", "sys.ai_cost", "sys.ai_credits", "sys.ai_runs"}
+    assert with_ticket_columns(spec, c) == spec  # idempotent
+
+
+async def test_measure_filters_and_sorts_are_dropped(monkeypatch):
+    c = await _with_ai_fields(_workflow(), monkeypatch)
+    grouped = ReportSpec.model_validate({
+        "title": "t", "description": "d", "groupBy": ["supplier"],
+        "measures": [{"id": "n", "fn": "count", "label": "Count"}],
+        "filters": [{"ref": "n", "op": "gt", "value": "1"}, {"ref": "supplier", "op": "isNotEmpty"}],
+        "orderBy": [{"ref": "n", "direction": "desc"}],
+        "columns": [{"ref": "supplier", "label": "Supplier"}, {"ref": "n", "label": "Count"}],
+    })
+    spec = with_ticket_columns(grouped, c)
+    assert [f.ref for f in spec.filters] == ["supplier"]
+    assert [o.ref for o in spec.order_by] == ["supplier"]
+    compile_spec(spec, c, max_rows=100)
 
 
 async def test_no_ai_defaults_without_the_log_table(monkeypatch):
     plain = await _with_ai_fields(_workflow(), monkeypatch, columns={})
     assert not any(col.ref.startswith("sys.ai_") for col in with_ticket_columns(_spec("supplier"), plain).columns)
-    assert with_ticket_columns(_grouped(), plain).columns == _grouped().columns
+    assert [col.label for col in with_ticket_columns(_grouped(), plain).columns] == ["Supplier"]
 
 
 async def test_ai_columns_already_in_the_report_are_not_repeated(monkeypatch):
