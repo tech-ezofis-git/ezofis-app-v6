@@ -13,7 +13,13 @@ v2's executable spec travels along under AGENT_SPEC_KEY; the existing ReportSpec
 from __future__ import annotations
 
 from app.models.report_agent import ReportSpec as AiReportSpec
-from app.models.report_agent import ReportSpecColumn, ReportSpecFilter, ReportSpecSort
+from app.models.report_agent import (
+    ReportSpecColumn,
+    ReportSpecFilter,
+    ReportSpecHighlight,
+    ReportSpecHighlightRule,
+    ReportSpecSort,
+)
 from app.report_agent.report_spec import report_spec_to_prompt
 from app.report_agent_v2.domain.compiler import CompiledQuery
 from app.report_agent_v2.domain.source_catalog import SourceCatalog
@@ -256,9 +262,19 @@ def build_ai_spec(
     return spec_json, prompt_text
 
 
+def _template_highlight(col) -> ReportSpecHighlight | None:
+    """A default report column's built-in pills (system_reports.Col colors / color_default)."""
+    if not (col.colors or col.color_default):
+        return None
+    return ReportSpecHighlight(
+        default=col.color_default,
+        rules=[ReportSpecHighlightRule(op="eq", value=value, color=color) for value, color in col.colors])
+
+
 def build_system_ai_spec(template) -> tuple[dict, str]:
     """(ReportSpecJson, ReportPrompt) for a default report (system_reports.Template): same V6 format, no agent spec."""
-    columns = [ReportSpecColumn(key=c.label, label=c.label, editable=False, kind="default", selected=True) for c in template.columns]
+    columns = [ReportSpecColumn(key=c.label, label=c.label, editable=False, kind="default", selected=True,
+                                highlight=_template_highlight(c)) for c in template.columns]
     ai = AiReportSpec(
         title=template.name,
         objective=template.description,

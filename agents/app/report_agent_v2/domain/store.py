@@ -76,9 +76,10 @@ def _refresh_default_spec(row: dict) -> None:
         for col in (row["ReportSpec"].get(lst) or [])
         if isinstance(col, dict) and col.get("highlight")
     }
+    # A column the template colors itself keeps the template's highlight.
     for lst in ("columns", "defaultColumns"):
         for col in fresh.get(lst) or []:
-            if col.get("key") in kept:
+            if col.get("key") in kept and not col.get("highlight"):
                 col["highlight"] = kept[col["key"]]
     row["ReportSpec"] = fresh
 

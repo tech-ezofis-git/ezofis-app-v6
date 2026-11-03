@@ -474,6 +474,11 @@ async def test_pending_default_report_shows_creator_email(world, make_client):
     assert [c["label"] for c in body["columns"]] == ["Workflow", "Request No", "Status", "Stage", "Raised By", "Pending With",
                                                      "Created At", "Modified At", "Days Pending"]
     assert body["rows"] and all(row["Raised By"] == "owner@a.example.com" for row in body["rows"])
+    # Status and Stage carry the template's built-in pills.
+    spec = (await client.get(f"/api/report-agent-v2/definitions/{ids['pending_workflow_requests']}", headers=admin)).json()["reportSpec"]
+    hl = {c["key"]: c["highlight"] for c in spec["columns"] if c.get("highlight")}
+    assert {r["value"]: r["color"] for r in hl["Status"]["rules"]} == {"Running": "blue", "Pending": "orange", "Paused": "gray"}
+    assert hl["Stage"]["default"] == "purple" and not hl["Stage"]["rules"]
 
 
 # --- wizard round trip: preview, edit, re-preview without LLM, save with highlight + status ----

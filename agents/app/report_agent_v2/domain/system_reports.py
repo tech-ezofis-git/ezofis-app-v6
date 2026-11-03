@@ -37,6 +37,9 @@ class Col:
     dtype: str = "text"  # text | number | date
     role: str = "dimension"  # dimension | measure | value | link (hidden row id)
     total: bool = False
+    # Built-in highlight: (value, color) pills, plus the color of every other value.
+    colors: tuple[tuple[str, str], ...] = ()
+    color_default: str | None = None
 
 
 @dataclass(frozen=True)
@@ -331,7 +334,9 @@ async def _portal_submission_performance(ctx: _Ctx) -> tuple[sql.Composable, lis
 
 # Raised By: who submitted the request. Pending With: who has to act on it now (its open transactions'
 # users / groups, as in their Inbox).
-_PENDING_COLS = (Col("Workflow"), Col("Request No"), Col("Status"), Col("Stage"), Col("Raised By"), Col("Pending With"),
+_PENDING_COLS = (Col("Workflow"), Col("Request No"),
+                 Col("Status", colors=(("Running", "blue"), ("Pending", "orange"), ("Paused", "gray"))),
+                 Col("Stage", color_default="purple"), Col("Raised By"), Col("Pending With"),
                  Col("Created At", "date", "value"), Col("Modified At", "date", "value"),
                  Col("Days Pending", "number", "value")) + _REQUEST_LINKS
 
