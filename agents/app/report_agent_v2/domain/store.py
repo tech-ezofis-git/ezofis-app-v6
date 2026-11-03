@@ -76,9 +76,10 @@ def _refresh_default_spec(row: dict) -> None:
         for col in (row["ReportSpec"].get(lst) or [])
         if isinstance(col, dict) and col.get("highlight")
     }
+    # A column the template colors itself keeps the template's highlight.
     for lst in ("columns", "defaultColumns"):
         for col in fresh.get(lst) or []:
-            if col.get("key") in kept:
+            if col.get("key") in kept and not col.get("highlight"):
                 col["highlight"] = kept[col["key"]]
     row["ReportSpec"] = fresh
 
@@ -299,6 +300,28 @@ async def install_default_report(conn: AsyncConnection, *, tenant_id: uuid.UUID,
              prompt_text, json.dumps(spec_json, ensure_ascii=False), now, now, user_id, user_id),
         )
     return await load_definition(conn, tenant_id, report_id), True
+
+
+async def install_missing_default_reports(conn: AsyncConnection, *, tenant_id: uuid.UUID, user_id: uuid.UUID,
+                                          templates) -> int:
+    """Create the default reports this tenant has never had (a new tenant, or a template added later),
+    owned by `user_id`. A default that exists, or was deleted on purpose, is left alone. Returns how many
+    were created; 0 when the tenant has no reporting tables yet."""
+    cur = await conn.execute("""SELECT to_regclass('reporting."ReportAiDefinitions"') IS NOT NULL""")
+    if not (await cur.fetchone())[0]:
+        return 0
+    cur = await conn.execute(
+        """SELECT DISTINCT "SessionId" FROM reporting."ReportAiDefinitions"
+           WHERE "TenantId" = %s AND "SessionId" LIKE %s""",
+        (tenant_id, f"{DEFAULT_SESSION_PREFIX}%"),
+    )
+    present = {row[0] for row in await cur.fetchall()}
+    created = 0
+    for template in templates:
+        if f"{DEFAULT_SESSION_PREFIX}{template.key}" not in present:
+            _, made = await install_default_report(conn, tenant_id=tenant_id, user_id=user_id, template=template)
+            created += made
+    return created
 
 
 def system_template_key(definition: dict) -> str | None:

@@ -12,6 +12,7 @@ import type {
 import {
   deleteReportAiReport,
   getReportAiReport,
+  isLegacyReportSpec,
   listReportAiReports,
   runReportAiReport,
   saveReportAiReport,
@@ -154,6 +155,7 @@ export const useReportAgentDataQuery = (report: Report | null | undefined) => {
     retry: false,
     queryFn: async () => {
       const { data, error } = await runReportAiReport(agent!.id, {
+        legacy: isLegacyReportSpec(agent!.reportSpec),
         page: 1,
         pageSize: AGENT_REPORT_PAGE_SIZE,
       })

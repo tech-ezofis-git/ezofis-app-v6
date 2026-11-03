@@ -117,6 +117,8 @@ export interface ReportAiRecord extends ReportAiListItem {
 }
 
 export interface ReportAiRunRequest {
+  /** A report saved by the old AI builder: run by the V6 API, not Report Agent v2. */
+  legacy?: boolean
   page?: number
   pageSize?: number
   /** Send the edited prompt/spec so the run uses UI changes. */
@@ -304,6 +306,10 @@ interface V2Definition {
   workflowName?: string | null
 }
 
+/** True for a report saved by the old AI builder (its spec has no Report Agent v2 part). */
+export const isLegacyReportSpec = (spec: unknown) =>
+  kindOfSpec(spec as ReportSpec | undefined) === 'legacy'
+
 const kindOfSpec = (spec: ReportSpec | undefined): ReportAiKind =>
   spec?.agentSpec?.kind === 'system'
     ? 'default'
@@ -415,6 +421,28 @@ export const runReportAiReport = async (
       }
     }
     if (!id) return { data: null, error: REPORT_RUN_ERROR_MESSAGE }
+    if (body.legacy) {
+      // Old AI builder reports still run on the V6 API, which returns the
+      // same columns/rows shape.
+      const { data } = await axiosV6({
+        data: { page: body.page ?? 1, pageSize: body.pageSize ?? 500 },
+        method: 'POST',
+        skipCancellation: true,
+        url: `/report-ai-builder/${encodeURIComponent(id)}/run`,
+      })
+      const result = data as
+        | (V2RunPayload & { title?: string; totalCount?: number })
+        | null
+      if (!result) return { data: null, error: REPORT_RUN_ERROR_MESSAGE }
+      return {
+        data: {
+          ...toRunResult({ ...result, rowCount: result.totalCount }),
+          id,
+          title: result.title,
+        },
+        error: '',
+      }
+    }
     const { data } = await axiosV6({
       headers: getTenantHeaders(),
       method: 'GET',
@@ -544,7 +572,8 @@ export const listReportAiReports = async () => {
     const { data } = await axiosV6({
       headers: getTenantHeaders(),
       method: 'GET',
-      params: { pageSize: 500 },
+      // `all`: reports saved by the old AI builder too (run on the V6 API).
+      params: { kind: 'all', pageSize: 500 },
       skipCancellation: true,
       url: `${reportAgentBase()}/reports`,
     })

@@ -177,6 +177,8 @@ describe('Report Agent v2 API', () => {
     })
     const list = await listReportAiReports()
     expect(lastCall().url).toBe(`${BASE}/reports`)
+    // Old AI builder reports are listed too.
+    expect(lastCall().params).toMatchObject({ kind: 'all' })
     expect(list.data[0]).toMatchObject({
       id: 'r-1',
       kind: 'default',
@@ -186,5 +188,31 @@ describe('Report Agent v2 API', () => {
     axiosMock.mockResolvedValue({ data: { error: 'Report not found.' } })
     const missing = await getReportAiReport('nope')
     expect(missing.notFound).toBe(true)
+  })
+
+  it('runs an old AI builder report on the V6 API', async () => {
+    axiosMock.mockResolvedValue({
+      data: {
+        columns: [{ key: 'RequestNo', label: 'Request No' }],
+        rows: [{ RequestNo: 'REQ-1' }],
+        title: 'Accounts Payable Report',
+        totalCount: 12,
+      },
+    })
+    const run = await runReportAiReport('old-1', {
+      legacy: true,
+      pageSize: 500,
+    })
+    expect(lastCall()).toMatchObject({
+      data: { page: 1, pageSize: 500 },
+      method: 'POST',
+      url: '/report-ai-builder/old-1/run',
+    })
+    expect(run.data).toMatchObject({
+      columns: [{ key: 'RequestNo', label: 'Request No' }],
+      rows: [{ RequestNo: 'REQ-1' }],
+      title: 'Accounts Payable Report',
+      totalCount: 12,
+    })
   })
 })

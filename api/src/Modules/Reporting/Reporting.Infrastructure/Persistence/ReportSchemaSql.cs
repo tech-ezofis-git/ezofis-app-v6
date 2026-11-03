@@ -66,5 +66,47 @@ internal static class ReportSchemaSql
         ALTER TABLE reporting."ReportAiDefinitions" ADD COLUMN IF NOT EXISTS "Visibility" varchar(32) NOT NULL DEFAULT 'Private';
         ALTER TABLE reporting."ReportAiDefinitions" ADD COLUMN IF NOT EXISTS "SharedUsers" text NOT NULL DEFAULT '[]';
         ALTER TABLE reporting."ReportAiDefinitions" ADD COLUMN IF NOT EXISTS "SharedGroups" text NOT NULL DEFAULT '[]';
+
+        -- Report Agent v2 (agents service): saved report specs and run log. Same definitions as
+        -- agents/app/report_agent_v2/migrations/001_report_agent_tables.sql, so a new tenant can
+        -- save and run AI / default reports without a separate migration.
+        CREATE TABLE IF NOT EXISTS reporting."ReportAgentSpecs" (
+            "Id"                uuid NOT NULL CONSTRAINT "PK_ReportAgentSpecs" PRIMARY KEY,
+            "TenantId"          uuid NOT NULL,
+            "ReportId"          uuid NOT NULL,
+            "Version"           integer NOT NULL,
+            "SchemaVersion"     integer NOT NULL,
+            "Prompt"            text NOT NULL,
+            "SpecJson"          jsonb NOT NULL,
+            "SourceType"        varchar(32) NOT NULL,
+            "WorkflowId"        uuid NULL,
+            "RepositoryId"      uuid NULL,
+            "SourceFormId"      varchar(64) NULL,
+            "SourceFingerprint" varchar(64) NOT NULL,
+            "Model"             varchar(128) NULL,
+            "Status"            varchar(32) NOT NULL DEFAULT 'Active',
+            "Warnings"          jsonb NOT NULL DEFAULT '[]'::jsonb,
+            "CreatedAtUtc"      timestamptz NOT NULL DEFAULT now(),
+            "CreatedBy"         uuid NOT NULL,
+            CONSTRAINT "UQ_ReportAgentSpecs_Version" UNIQUE ("TenantId", "ReportId", "Version"),
+            CONSTRAINT "CK_ReportAgentSpecs_Source" CHECK ("WorkflowId" IS NOT NULL OR "RepositoryId" IS NOT NULL)
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS "UX_ReportAgentSpecs_Active"
+            ON reporting."ReportAgentSpecs" ("TenantId", "ReportId") WHERE "Status" = 'Active';
+
+        CREATE TABLE IF NOT EXISTS reporting."ReportAgentRuns" (
+            "Id"            uuid NOT NULL CONSTRAINT "PK_ReportAgentRuns" PRIMARY KEY,
+            "TenantId"      uuid NOT NULL,
+            "ReportId"      uuid NOT NULL,
+            "SpecVersion"   integer NOT NULL,
+            "UserId"        uuid NOT NULL,
+            "RowCount"      integer NOT NULL,
+            "DurationMs"    integer NOT NULL,
+            "Status"        varchar(32) NOT NULL,
+            "Error"         varchar(2000) NULL,
+            "CreatedAtUtc"  timestamptz NOT NULL DEFAULT now()
+        );
+        CREATE INDEX IF NOT EXISTS "IX_ReportAgentRuns_Report"
+            ON reporting."ReportAgentRuns" ("TenantId", "ReportId", "CreatedAtUtc" DESC);
         """;
 }

@@ -471,9 +471,14 @@ async def test_pending_default_report_shows_creator_email(world, make_client):
     ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
     r = await client.get(f"/api/report-agent-v2/reports/{ids['pending_workflow_requests']}/execute", headers=admin)
     body = r.json()
-    assert [c["label"] for c in body["columns"]] == ["Workflow", "Request No", "Status", "Stage", "Created By", "Action By",
+    assert [c["label"] for c in body["columns"]] == ["Workflow", "Request No", "Status", "Stage", "Raised By", "Pending With",
                                                      "Created At", "Modified At", "Days Pending"]
-    assert body["rows"] and all(row["Created By"] == "owner@a.example.com" for row in body["rows"])
+    assert body["rows"] and all(row["Raised By"] == "owner@a.example.com" for row in body["rows"])
+    # Status and Stage carry the template's built-in pills.
+    spec = (await client.get(f"/api/report-agent-v2/definitions/{ids['pending_workflow_requests']}", headers=admin)).json()["reportSpec"]
+    hl = {c["key"]: c["highlight"] for c in spec["columns"] if c.get("highlight")}
+    assert {r["value"]: r["color"] for r in hl["Status"]["rules"]} == {"Running": "blue", "Pending": "orange", "Paused": "gray"}
+    assert hl["Stage"]["default"] == "purple" and not hl["Stage"]["rules"]
 
 
 # --- wizard round trip: preview, edit, re-preview without LLM, save with highlight + status ----
@@ -562,8 +567,8 @@ async def test_default_report_highlights_and_action_by_fallback(world, make_clie
     pending_id = ids["pending_workflow_requests"]
     run = (await client.get(f"/api/report-agent-v2/reports/{pending_id}/execute", headers=admin)).json()
     assert run["rows"] and all(r["instanceId"] and r["workflowId"] for r in run["rows"])
-    # Every pending request here has an inbox row (name only) or none: Action By is never blank.
-    assert all(r["Action By"] for r in run["rows"])
+    # No transaction table here: Pending With falls back to the latest inbox row's user (every request has one).
+    assert all(r["Pending With"] for r in run["rows"])
 
     rule = {"rules": [{"color": "red", "op": "gt", "value": 30, "label": "Overdue"}], "default": None}
     r = await client.put(f"/api/report-agent-v2/definitions/{pending_id}/highlights",
@@ -586,9 +591,10 @@ async def test_document_activity_and_credit_column_order(world, make_client):
     from app.report_agent_v2.domain.system_reports import TEMPLATES
 
     assert [c.label for c in TEMPLATES["document_recent_activity"].columns if c.role != "link"][:4] == [
-        "Document", "Folder", "Repository", "When"]
+        "Document", "Repository", "Updated On", "Activity"]
     assert [c.label for c in TEMPLATES["ai_credit_consumption"].columns if c.role != "link"][:3] == [
-        "Request No", "Workflow", "Skill"]
+        "Request No", "Source", "Agent"]
+    assert "Runs" not in [c.label for c in TEMPLATES["ai_credit_consumption"].columns]
 
 
 async def test_default_report_spec_follows_template_and_keeps_highlights(world, make_client):
@@ -598,7 +604,7 @@ async def test_default_report_spec_follows_template_and_keeps_highlights(world, 
     rid = ids["ai_credit_consumption"]
     # Simulate a report installed from an older template: different columns, one highlighted.
     stale = {"title": "AI Credit Consumption", "columns": [
-        {"key": "Skill", "label": "Skill", "highlight": {"rules": [{"color": "red", "op": "eq", "value": "x"}]}},
+        {"key": "Agent", "label": "Agent", "highlight": {"rules": [{"color": "red", "op": "eq", "value": "x"}]}},
         {"key": "Old Column", "label": "Old Column"}],
         "agentSpec": {"kind": "system", "template": "ai_credit_consumption"}}
     tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
@@ -608,7 +614,7 @@ async def test_default_report_spec_follows_template_and_keeps_highlights(world, 
     spec = (await client.get(f"/api/report-agent-v2/definitions/{rid}", headers=admin)).json()["reportSpec"]
     keys = [c["key"] for c in spec["columns"]]
     assert keys[0] == "Request No" and "Old Column" not in keys
-    assert next(c for c in spec["columns"] if c["key"] == "Skill")["highlight"]["rules"][0]["color"] == "red"
+    assert next(c for c in spec["columns"] if c["key"] == "Agent")["highlight"]["rules"][0]["color"] == "red"
 
 
 async def test_document_activity_names_what_was_done(world):
@@ -619,7 +625,7 @@ async def test_document_activity_names_what_was_done(world):
     from app.report_agent_v2.domain.system_reports import compile_system_report
 
     tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
-    repo, item, gone = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    repo, item, gone, fresh = uuid.uuid4(), uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
         conn.execute("CREATE SCHEMA IF NOT EXISTS repository")
         conn.execute('CREATE TABLE IF NOT EXISTS repository."Repositories" ("Id" uuid, "TenantId" uuid, "Name" text, "ItemsTableName" text, "IsDeleted" boolean)')
@@ -629,6 +635,9 @@ async def test_document_activity_names_what_was_done(world):
         conn.execute("""CREATE TABLE IF NOT EXISTS repository.items_d0c0ffee_history (id uuid, folder_id uuid, file_name text, file_type text,
                         created_at_utc timestamptz, created_by uuid, modified_by uuid, is_deleted boolean, "Supplier" text, "Lines" text,
                         history_id bigint, history_operation text, history_recorded_at timestamptz)""")
+        # inv.pdf came in from the upload & index screen: its stage row points to the item.
+        conn.execute("CREATE TABLE IF NOT EXISTS repository.items_d0c0ffee_stage (id uuid, promoted_item_id uuid)")
+        conn.execute("INSERT INTO repository.items_d0c0ffee_stage VALUES (%s,%s)", (uuid.uuid4(), item))
         conn.execute('INSERT INTO repository."Repositories" VALUES (%s,%s,%s,%s,false)', (repo, world.tenant_a, "Invoices", "items_d0c0ffee"))
         conn.execute('INSERT INTO repository."RepositoryFields" VALUES (%s,%s,%s)', (repo, "Supplier Name", "Supplier"))
         conn.execute("INSERT INTO repository.items_d0c0ffee VALUES (%s,NULL,'inv.pdf','application/pdf','2026-10-20',%s,%s,false,'Acme','[1, 2]')",
@@ -642,11 +651,19 @@ async def test_document_activity_names_what_was_done(world):
                          (item, world.owner, world.owner, sup, lines, hid, op, at))
         conn.execute("INSERT INTO repository.items_d0c0ffee_history VALUES (%s,NULL,'old.pdf','application/pdf','2026-10-01',%s,%s,false,NULL,NULL,3,'D','2026-10-23')",
                      (gone, world.owner, world.owner))
+        # new.pdf: uploaded straight into the folder, then its empty index fields filled for the first time.
+        conn.execute("INSERT INTO repository.items_d0c0ffee VALUES (%s,NULL,'new.pdf','application/pdf','2026-10-24',%s,%s,false,'Beta','[3]')",
+                     (fresh, world.owner, world.owner))
+        conn.execute("INSERT INTO repository.items_d0c0ffee_history VALUES (%s,NULL,'new.pdf','application/pdf','2026-10-24',%s,%s,false,NULL,NULL,4,'U','2026-10-25')",
+                     (fresh, world.owner, world.owner))
     async with await psycopg.AsyncConnection.connect(npgsql_to_conninfo(await _tenant_cs(world)).replace("password=x", f"password={dict(p.split('=', 1) for p in TEST_PG.split()).get('password', 'x')}"), autocommit=True) as aconn:
         compiled = await compile_system_report(aconn, world.tenant_a, "document_recent_activity", as_of=_date(2026, 10, 29), limit=50)
         _, out, _ = _shape(compiled.columns, await _run(aconn, compiled, 30000))
-    by_when = {(r["Document"], str(r["When"])[:10]): r for r in out}
-    assert by_when[("inv.pdf", "2026-10-20")]["Activity"] == "Uploaded"
+    by_when = {(r["Document"], str(r["Updated On"])[:10]): r for r in out}
+    assert "Folder" not in out[0] and "Action By" in out[0]
+    assert by_when[("inv.pdf", "2026-10-20")]["Activity"] == "Archived"
+    assert by_when[("new.pdf", "2026-10-24")]["Activity"] == "Uploaded"
+    assert by_when[("new.pdf", "2026-10-25")]["Activity"] == "Indexed"
     edit = by_when[("inv.pdf", "2026-10-21")]
     assert edit["Activity"] == "Index updated" and edit["Details"] == "Supplier Name: - -> Acme"
     assert by_when[("inv.pdf", "2026-10-22")]["Activity"] == "Saved (no changes)"
@@ -705,10 +722,10 @@ async def test_credit_report_includes_v6_billing_credits(world, make_client):
     ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
     run = (await client.get(f"/api/report-agent-v2/reports/{ids['ai_credit_consumption']}/execute", headers=admin)).json()
     ap = next(r for r in run["rows"] if r["Request No"] == "INV-9")
-    assert ap["Skill"] == "PO Match" and ap["Billing Status"] == "Not charged (billing call failed)"
-    billing = {(r["Skill"], r["Request No"]): r for r in run["rows"] if r["Billing Status"] == "Charged"}
+    assert ap["Agent"] == "PO Match" and ap["Billing Status"] == "Not charged (billing call failed)"
+    billing = {(r["Agent"], r["Request No"]): r for r in run["rows"] if r["Billing Status"] == "Charged"}
     ocr = billing[("OCR Agent", "scan.pdf")]
-    assert ocr["Credits"] == 2 and ocr["Runs"] == 2 and ocr["Workflow"] == "Receipts"
+    assert ocr["Credits"] == 2 and "Runs" not in ocr and ocr["Source"] == "Receipts"
     assert ocr["repositoryId"] == str(repo) and ocr["itemId"]
     summary = billing[("Document Summary", "summary.pdf")]
     assert summary["itemId"] == str(summary_item) and summary["repositoryId"] == str(repo)
@@ -716,3 +733,63 @@ async def test_credit_report_includes_v6_billing_credits(world, make_client):
     assert upload["Credits"] == 1 and upload["itemId"] is None
     assert not any(k[0] == "AP_AGENT" or k[1] in ("deleted.pdf", "other.pdf") for k in billing)
     assert run["totals"]["Credits"] >= 4
+
+
+async def test_pending_with_lists_open_transaction_assignees(world, make_client):
+    """Pending With = users / groups of the request's open transactions (action_status 0, not END), as in their Inbox.
+    Runs last: it adds a transaction table, which the other pending-report tests do not expect."""
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    group = uuid.uuid4()
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        inst = conn.execute("SELECT id FROM workflow.workflow_instances_b05ed64d WHERE status IN (0, 1, 2) "
+                            "ORDER BY reference_number LIMIT 1").fetchone()[0]
+        conn.execute('CREATE TABLE IF NOT EXISTS users."Groups" ("Id" uuid, "Name" text)')
+        conn.execute('INSERT INTO users."Groups" VALUES (%s, %s)', (group, "Finance Team"))
+        conn.execute("""CREATE TABLE workflow.transaction_b05ed64d (workflow_instance_id uuid, action_status int,
+                        activity_user_id uuid, activity_group_id uuid, stage_type text, is_deleted boolean)""")
+        conn.execute("INSERT INTO workflow.transaction_b05ed64d VALUES "
+                     "(%s, 0, %s, NULL, 'APPROVAL', false), "  # open, a user
+                     "(%s, 0, NULL, %s, 'APPROVAL', false), "  # open, a group
+                     "(%s, 1, %s, NULL, 'APPROVAL', false), "  # already acted on
+                     "(%s, 0, %s, NULL, 'END', false)",        # end stage
+                     (inst, world.shared, inst, group, inst, world.outsider, inst, world.admin))
+    try:
+        client = await make_client()
+        admin = _h(world, world.admin, role="Admin")
+        ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
+        run = (await client.get(f"/api/report-agent-v2/reports/{ids['pending_workflow_requests']}/execute", headers=admin)).json()
+        row = next(r for r in run["rows"] if r["instanceId"] == str(inst))
+        assert row["Pending With"] == "Finance Team, shared@a.example.com"
+        assert row["Raised By"] == "owner@a.example.com"
+    finally:
+        with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+            conn.execute("DROP TABLE IF EXISTS workflow.transaction_b05ed64d")
+
+
+async def test_admin_list_installs_missing_default_reports(world, make_client):
+    """A new tenant needs no /defaults/install: the first Admin list creates the defaults it never had."""
+    from app.report_agent_v2.domain.system_reports import TEMPLATES
+
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        conn.execute("""DELETE FROM reporting."ReportAiDefinitions" WHERE "SessionId" LIKE 'default:%%'""")
+    client = await make_client()
+
+    # A plain user's list installs nothing (and would not show these private reports anyway).
+    user_list = (await client.get("/api/report-agent-v2/reports?kind=default", headers=_h(world, world.owner))).json()
+    assert user_list["total"] == 0
+
+    admin = _h(world, world.admin, role="Admin")
+    first = (await client.get("/api/report-agent-v2/reports?kind=default", headers=admin)).json()
+    assert first["total"] == len(TEMPLATES)
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        owners = {r[0] for r in conn.execute(
+            """SELECT "OwnerUserId" FROM reporting."ReportAiDefinitions" WHERE "SessionId" LIKE 'default:%%'""").fetchall()}
+        assert owners == {world.admin}
+        # A default deleted on purpose stays deleted.
+        conn.execute("""UPDATE reporting."ReportAiDefinitions" SET "IsDeleted" = true WHERE "SessionId" = 'default:ai_credit_consumption'""")
+    again = (await client.get("/api/report-agent-v2/reports?kind=default", headers=admin)).json()
+    assert again["total"] == len(TEMPLATES) - 1
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        conn.execute("""UPDATE reporting."ReportAiDefinitions" SET "IsDeleted" = false WHERE "SessionId" = 'default:ai_credit_consumption'""")
+
