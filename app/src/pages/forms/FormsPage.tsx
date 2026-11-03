@@ -167,11 +167,11 @@ const FormsPage = () => {
 
     return filters.length > 0
       ? [
-          {
-            filters,
-            groupCondition: '',
-          },
-        ]
+        {
+          filters,
+          groupCondition: '',
+        },
+      ]
       : []
   }, [activeFilters])
 
@@ -244,38 +244,6 @@ const FormsPage = () => {
         },
       },
       {
-        // Same rule as "View Entries" in the row menu, but visible, since
-        // users didn't find the entries page behind the three dots.
-        enableSorting: false,
-        id: 'records',
-        label: t`Records`,
-        size: 170,
-        renderCell: (row: any) => {
-          if (isFormDraft(row) || isWorkflowForm(row)) {
-            return <span className='text-gray-9'>-</span>
-          }
-          return (
-            <button
-              className='group/records inline-flex items-center gap-1 rounded-md text-13 font-medium whitespace-nowrap text-primary-11 underline-offset-2 transition-colors hover:text-primary-12 hover:underline active:scale-95'
-              type='button'
-              onClick={() =>
-                navigate({
-                  params: { formId: row.uid || row.id },
-                  to: '/forms/$formId/entries',
-                })
-              }
-            >
-              <Icon className='size-4' name='lucide:table' />
-              {t`Open records`}
-              <Icon
-                className='size-3.5 transition-transform duration-200 group-hover/records:translate-x-0.5'
-                name='lucide:arrow-right'
-              />
-            </button>
-          )
-        },
-      },
-      {
         id: 'createdBy',
         label: t`Created By`,
         size: 240,
@@ -306,59 +274,72 @@ const FormsPage = () => {
           ),
       },
       {
-        className: 'p-1',
+        className: 'py-1 pl-5 last:pr-2',
         enableSorting: false,
         hideHeader: true,
         id: 'actions',
         isDisplayColumn: true,
         label: t`Actions`,
         showMenu: false,
-        size: 40,
+        size: 149,
         renderCell: (row: any) => {
-          const isDraft = isFormDraft(row)
+          const hasEntries = !isFormDraft(row) && !isWorkflowForm(row)
 
           return (
-            <div className='flex items-center justify-center'>
-              <Menu
-                position='bottom-end'
-                width={160}
-                target={
-                  <IconButton
-                    color='gray'
-                    icon='lucide:more-vertical'
-                    variant='ghost'
-                  />
+            <div className='flex items-center justify-end'>
+              <div
+                className={
+                  hasEntries
+                    ? 'inline-flex h-7 items-center overflow-hidden rounded-md border border-gray-6'
+                    : 'inline-flex items-center'
                 }
               >
-                {!isDraft && !isWorkflowForm(row) && (
-                  <MenuItem
-                    icon='lucide:table'
-                    label={t`Open records`}
+                {hasEntries && (
+                  <button
+                    className='inline-flex h-full items-center gap-1.5 border-r border-gray-6 px-2.5 text-13 font-medium whitespace-nowrap text-primary-11 transition-colors hover:bg-primary-4 hover:text-primary-12 active:scale-95'
+                    type='button'
                     onClick={() =>
                       navigate({
                         params: { formId: row.uid || row.id },
                         to: '/forms/$formId/entries',
                       })
                     }
-                  />
+                  >
+                    <Icon className='size-4' name='lucide:layers' />
+                    {t`Entries`}
+                  </button>
                 )}
-                <MenuItem
-                  icon='lucide:edit'
-                  label={t`Edit`}
-                  onClick={() =>
-                    navigate({
-                      params: { formId: row.uid || row.id },
-                      to: '/form-builder/$formId',
-                    })
+                <Menu
+                  position='bottom-end'
+                  width={160}
+                  target={
+                    <IconButton
+                      className='shrink-0 rounded-none'
+                      color='gray'
+                      icon='lucide:more-vertical'
+                      size='sm'
+                      variant='ghost'
+                    />
                   }
-                />
-                <MenuItem
-                  icon='lucide:trash-2'
-                  iconClass='text-red-11'
-                  label={t`Delete`}
-                  onClick={() => setDeletingForm(row)}
-                />
-              </Menu>
+                >
+                  <MenuItem
+                    icon='lucide:edit'
+                    label={t`Edit`}
+                    onClick={() =>
+                      navigate({
+                        params: { formId: row.uid || row.id },
+                        to: '/form-builder/$formId',
+                      })
+                    }
+                  />
+                  <MenuItem
+                    icon='lucide:trash-2'
+                    iconClass='text-red-11'
+                    label={t`Delete`}
+                    onClick={() => setDeletingForm(row)}
+                  />
+                </Menu>
+              </div>
             </div>
           )
         },
@@ -542,8 +523,8 @@ const FormsPage = () => {
 
   const deletingFormName = String(
     deletingForm?._json?.settings?.general?.name ||
-      deletingForm?.name ||
-      t`Untitled Form`,
+    deletingForm?.name ||
+    t`Untitled Form`,
   )
 
   if (showAiBuilder) {
@@ -680,7 +661,7 @@ const FormsPage = () => {
             setSearchState({ id: '', value: '' })
             setPage(1)
           }}
-          onSearchChange={() => {}}
+          onSearchChange={() => { }}
         />
         <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
           <Table
