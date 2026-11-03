@@ -1,9 +1,12 @@
 import { motion } from 'motion/react'
+import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 
 interface Option {
   id: number | string
   name: string
+  /** Optional icon shown before the name. */
+  icon?: string
 }
 
 interface Props {
@@ -60,13 +63,16 @@ export default function InputSegmentedControl({
               role='tab'
               type='button'
               className={cn(
-                'relative z-10 flex flex-1 items-center justify-center rounded-full px-2 text-[12px] font-semibold transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary-4',
+                'relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[12px] font-semibold transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary-4',
                 isActive
                   ? 'text-primary-10'
                   : 'text-gray-10 hover:text-gray-12',
               )}
               onClick={() => onChange(option)}
             >
+              {option.icon ? (
+                <Icon className='size-3.5 shrink-0' name={option.icon} />
+              ) : null}
               {option.name}
             </button>
           )
