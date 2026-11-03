@@ -2715,536 +2715,697 @@ const FormEntriesPage = () => {
       formRules,
     )
 
+    // Sections with something to fill in (rules can hide every field).
+    const visibleSections = panels
+      .map((panel: any, pIdx: number) => ({
+        description: panel.settings?.description || '',
+        fields: (panel.fields || []).filter((f: any) => {
+          const resolvedType = resolveRuntimeFieldType(f)
+          if (['HEADING', 'DIVIDER'].includes(resolvedType)) return false
+          const state = evaluatedFieldStates[f.id]
+          return !(state && !state.visible)
+        }) as Question[],
+        hasTitle: !!panel.settings?.title,
+        key: panel.id || `panel_${pIdx}`,
+        title: panel.settings?.title || t`Section ${pIdx + 1}`,
+      }))
+      .filter((section: { fields: Question[] }) => section.fields.length > 0)
+    const isValueFilled = (value: unknown): boolean => {
+      if (value == null) return false
+      if (Array.isArray(value)) return value.some(isValueFilled)
+      if (typeof value === 'object') {
+        return Object.values(value).some(isValueFilled)
+      }
+      const text = String(value).trim()
+      // Line items are stored as JSON; a blank starter row isn't "filled".
+      if (text.startsWith('[')) {
+        try {
+          return isValueFilled(JSON.parse(text))
+        } catch {
+          return true
+        }
+      }
+      return text !== ''
+    }
+    const isRequiredField = (field: Question) => {
+      const state = evaluatedFieldStates[field.id]
+      return state
+        ? state.required
+        : field.settings?.validation?.fieldRule === 'REQUIRED'
+    }
+    const allVisibleFields: Question[] = visibleSections.flatMap(
+      (section: { fields: Question[] }) => section.fields,
+    )
+    const filledCount = allVisibleFields.filter((f) =>
+      isValueFilled(editValues[f.id]),
+    ).length
+    const requiredLeft = allVisibleFields.filter(
+      (f) => isRequiredField(f) && !isValueFilled(editValues[f.id]),
+    ).length
+    const fillPercent = allVisibleFields.length
+      ? Math.round((filledCount / allVisibleFields.length) * 100)
+      : 0
+    const pageTitle = isAddOpen ? t`New record` : t`Edit record`
+
     return (
-      <div className='flex h-full flex-col bg-surface-muted/20 font-inter'>
-        {/* Compact Enterprise Form Banner Header */}
-        <div className='flex shrink-0 items-center justify-between border-b border-gray-2 bg-surface px-4 py-3.5 shadow-xs'>
-          <div className='flex min-w-0 items-center gap-3.5'>
-            <IconButton
-              color='gray'
-              icon='lucide:arrow-left'
-              title={t`Back to Entries`}
-              variant='ghost'
-              onClick={closeSidebar}
-            />
-            <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft/15 text-accent-primary'>
-              <Icon
-                height={18}
-                name={isAddOpen ? 'lucide:file-plus-2' : 'lucide:file-edit'}
-                width={18}
+      <div className='flex h-full flex-col bg-surface-muted/40'>
+        {/* Header: where you are, and how much of the form is filled */}
+        {/* The app bar already names the form, so this stays one short row. */}
+        <div className='shrink-0 border-b border-gray-3 bg-surface px-6 py-2.5'>
+          <div className='mx-auto flex w-full max-w-[1120px] flex-wrap items-center justify-between gap-4'>
+            <div className='flex min-w-0 items-center gap-2'>
+              <IconButton
+                color='gray'
+                icon='lucide:arrow-left'
+                title={t`Back to records`}
+                variant='ghost'
+                onClick={closeSidebar}
               />
+              <h1 className='truncate text-15 font-semibold text-gray-13'>
+                {pageTitle}
+              </h1>
             </div>
-            <div className='flex min-w-0 flex-col'>
-              <div className='flex items-center gap-2.5'>
-                <h3 className='truncate text-sm font-extrabold text-gray-13'>
-                  {isAddOpen ? t`New Form Entry` : t`Edit Form Entry`}
-                </h3>
-              </div>
-              <p className='truncate text-[11px] font-medium text-gray-7'>
-                {isAddOpen
-                  ? t`Complete required form information using the metadata-driven enterprise canvas below.`
-                  : t`Modify existing form response answers and save changes.`}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Scrollable Form Body with ~80% Width Container */}
-        <div className='custom-scrollbar flex-1 overflow-y-auto bg-surface-muted/40 px-4 py-6'>
-          <div className='mx-auto w-full max-w-[1200px] space-y-6'>
-            {panels.map((panel: any, pIdx: number) => {
-              const panelTitle = panel.settings?.title || t`Section ${pIdx + 1}`
-              const panelDescription = panel.settings?.description || ''
-              const renderableFields = (panel.fields || []).filter((f: any) => {
-                const resolvedType = resolveRuntimeFieldType(f)
-                if (['HEADING', 'DIVIDER'].includes(resolvedType)) return false
-                const state = evaluatedFieldStates[f.id]
-                if (state && !state.visible) return false
-                return true
-              })
-
-              if (renderableFields.length === 0) return null
-
-              return (
-                <div
-                  className='rounded-2xl border border-gray-2 bg-surface p-6 shadow-xs transition-shadow hover:shadow-md'
-                  key={panel.id || `panel_${pIdx}`}
-                >
-                  {/* Block Card Header */}
-                  <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
-                    <div className='flex items-center gap-3'>
-                      <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
-                        <Icon className='size-4' name='lucide:layers' />
-                      </div>
-                      <div>
-                        <h4 className='text-sm font-bold text-gray-12'>
-                          {panelTitle}
-                        </h4>
-                        {panelDescription && (
-                          <p className='text-[11px] text-gray-7'>
-                            {panelDescription}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Block Fields Layout using 12-column grid */}
-                  <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
-                    {renderableFields.map((field: Question) => {
-                      const type = resolveRuntimeFieldType(field)
-                      const val = editValues[field.id] ?? ''
-                      const state = evaluatedFieldStates[field.id]
-                      const isFieldRequired = state
-                        ? state.required
-                        : field.settings?.validation?.fieldRule === 'REQUIRED'
-                      const isReadOnly = state
-                        ? state.disabled
-                        : isFieldReadOnly(field)
-                      const colSpan = getColumnSpan(
-                        field.settings?.general?.size,
-                      )
-
-                      const isTableType =
-                        type === 'TABLE' ||
-                        type === 'DYNAMIC_TABLE' ||
-                        (type !== 'MULTIPLE_CHOICE' &&
-                          type !== 'MULTI_SELECT' &&
-                          typeof val === 'string' &&
-                          val.trim().startsWith('[') &&
-                          val.trim().endsWith(']'))
-
-                      return (
-                        <div
-                          aria-disabled={isReadOnly || undefined}
-                          inert={
-                            isReadOnly && type !== 'CALCULATED'
-                              ? true
-                              : undefined
-                          }
-                          key={field.id}
-                          className={cn(
-                            'flex flex-col justify-start',
-                            colSpan,
-                            isReadOnly &&
-                              type !== 'CALCULATED' &&
-                              'opacity-60 select-none',
-                          )}
-                        >
-                          {/* Label / Required Indicators (rendered internally for table fields) */}
-                          {!isTableType && !isFieldLabelHidden(field) && (
-                            <div className='mb-1.5 flex items-center justify-between'>
-                              <label className='block text-xs font-bold text-gray-12'>
-                                {getEffectiveFieldLabel(
-                                  field,
-                                  'Untitled Question',
-                                )}
-                                {isFieldRequired && (
-                                  <span
-                                    className='ml-1 font-bold text-red-9'
-                                    title='Required field'
-                                  >
-                                    *
-                                  </span>
-                                )}
-                              </label>
-                              {(type === 'CALCULATED' || isReadOnly) && (
-                                <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-8'>
-                                  {type === 'CALCULATED'
-                                    ? 'Auto-calculated'
-                                    : 'Read-only'}
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          {!isTableType &&
-                            getEffectiveFieldDescription(field) && (
-                              <p className='mb-1.5 text-[11px] text-gray-7'>
-                                {getEffectiveFieldDescription(field)}
-                              </p>
-                            )}
-
-                          {/* Form Input Control */}
-                          {type === 'YES_NO_TOGGLE' || type === 'CONSENT' ? (
-                            <div className='flex max-w-xs items-center justify-between rounded-xl border border-gray-2 bg-surface-muted/50 p-2.5 transition-colors hover:border-gray-3'>
-                              <span className='text-xs font-semibold text-gray-11'>
-                                Consent / Enable
-                              </span>
-                              <InputSwitch
-                                checked={
-                                  val === 'Yes' ||
-                                  val === true ||
-                                  val === 'true'
-                                }
-                                disabled={isReadOnly}
-                                onChange={(checked) =>
-                                  handleFieldChange(
-                                    field.id,
-                                    checked ? 'Yes' : 'No',
-                                  )
-                                }
-                              />
-                            </div>
-                          ) : type === 'DATE' || type === 'DATE_TIME' ? (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={val}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              {type === 'DATE_TIME' ? (
-                                <InputDateTime
-                                  disabled={isReadOnly}
-                                  value={val ? val : null}
-                                  format={
-                                    field.settings?.validation?.timeFormat ===
-                                    '24'
-                                      ? '24h'
-                                      : '12h'
-                                  }
-                                  onChange={(dateString) =>
-                                    handleFieldChange(field.id, dateString)
-                                  }
-                                />
-                              ) : (
-                                <InputDate
-                                  disabled={isReadOnly}
-                                  placeholder={getEffectiveFieldPlaceholder(
-                                    field,
-                                  )}
-                                  value={val ? val : null}
-                                  onChange={(dateString) =>
-                                    handleFieldChange(field.id, dateString)
-                                  }
-                                />
-                              )}
-                            </FormEntriesSearchableInput>
-                          ) : type === 'NUMBER' || type === 'COUNTER' ? (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={val}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              <InputNumber
-                                disabled={isReadOnly}
-                                placeholder={getEffectiveFieldPlaceholder(
-                                  field,
-                                )}
-                                value={val}
-                                onChange={(num) =>
-                                  handleFieldChange(field.id, num)
-                                }
-                              />
-                            </FormEntriesSearchableInput>
-                          ) : type === 'CURRENCY_AMOUNT' ? (
-                            <div className='flex max-w-xs items-center gap-1.5'>
-                              <span className='flex h-9 items-center rounded-md border border-gray-3 bg-gray-1 px-2.5 text-xs font-semibold text-gray-11'>
-                                {extractCurrencyCode(val, field)}
-                              </span>
-                              <InputNumber
-                                className='flex-1'
-                                disabled={isReadOnly}
-                                value={extractCurrencyNumericValue(val)}
-                                placeholder={
-                                  getEffectiveFieldPlaceholder(field) || '0.00'
-                                }
-                                onChange={(num) =>
-                                  handleFieldChange(
-                                    field.id,
-                                    updateCurrencyFieldValue(val, num, field),
-                                  )
-                                }
-                              />
-                            </div>
-                          ) : type === 'PHONE_NUMBER' ? (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={extractPhoneInputString(val)}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              <InputText
-                                disabled={isReadOnly}
-                                placeholder={getEffectiveFieldPlaceholder(
-                                  field,
-                                )}
-                                value={extractPhoneInputString(val)}
-                                onChange={(text) =>
-                                  handleFieldChange(
-                                    field.id,
-                                    updatePhoneFieldValue(val, text, field),
-                                  )
-                                }
-                              />
-                            </FormEntriesSearchableInput>
-                          ) : type === 'MATRIX' ? (
-                            <RuntimeMatrixField
-                              disabled={isReadOnly}
-                              field={field}
-                              value={val}
-                              onChange={(next) =>
-                                handleFieldChange(field.id, next)
-                              }
-                            />
-                          ) : type === 'POPUP' ||
-                            type === 'TABS' ||
-                            type === 'NESTED_LIST' ||
-                            type === 'LOGIN_AUTHENTICATION' ||
-                            type === 'EMAIL_AUTHENTICATION' ||
-                            type === 'MOBILE_AUTHENTICATION' ? (
-                            <LegacyInlineFieldRenderer
-                              disabled={isReadOnly}
-                              field={field}
-                              value={val}
-                              onChange={(next) =>
-                                handleFieldChange(field.id, next)
-                              }
-                            />
-                          ) : type === 'RATING' ? (
-                            <div className='py-1'>
-                              <Rating
-                                color='yellow'
-                                count={field.settings?.specific?.iconCount || 5}
-                                readOnly={isReadOnly}
-                                size='md'
-                                value={Number(val || 0)}
-                                onChange={(v) => handleFieldChange(field.id, v)}
-                              />
-                            </div>
-                          ) : type === 'OPINION_SCALE' ? (
-                            <div className='flex flex-wrap gap-1 py-1'>
-                              {Array.from({ length: 11 }).map((_, i) => {
-                                const isSelected =
-                                  Number(val) === i && val !== ''
-                                return (
-                                  <button
-                                    disabled={isReadOnly}
-                                    key={i}
-                                    type='button'
-                                    className={cn(
-                                      'size-8 rounded-lg border text-xs font-bold transition-all hover:bg-accent-soft hover:text-accent-primary active:scale-95',
-                                      isSelected
-                                        ? 'border-accent-primary bg-accent-primary text-white'
-                                        : 'border-gray-3 bg-surface text-gray-12',
-                                      isReadOnly &&
-                                        'cursor-not-allowed opacity-60',
-                                    )}
-                                    onClick={() =>
-                                      handleFieldChange(field.id, i)
-                                    }
-                                  >
-                                    {i}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          ) : type === 'SINGLE_CHOICE' ? (
-                            <FormEntriesChoiceInput
-                              allFields={renderableFields}
-                              field={field}
-                              formModel={editValues}
-                              val={val}
-                              onChange={(next) => {
-                                if (!isReadOnly)
-                                  handleFieldChange(field.id, next)
-                              }}
-                            />
-                          ) : type === 'MULTIPLE_CHOICE' ? (
-                            <FormEntriesChoiceInput
-                              allFields={renderableFields}
-                              field={field}
-                              formModel={editValues}
-                              isMultiple
-                              val={val}
-                              onChange={(next) => {
-                                if (!isReadOnly)
-                                  handleFieldChange(field.id, next)
-                              }}
-                            />
-                          ) : type === 'SINGLE_SELECT' ||
-                            type === 'MULTI_SELECT' ? (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={val}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              <FormEntriesSelectInput
-                                allFields={renderableFields}
-                                field={field}
-                                fieldDistinctOptions={
-                                  fieldDistinctOptions[field.id] || []
-                                }
-                                formModel={editValues}
-                                val={val}
-                                onChange={(next) => {
-                                  if (!isReadOnly)
-                                    handleFieldChange(field.id, next)
-                                }}
-                              />
-                            </FormEntriesSearchableInput>
-                          ) : type === 'FILE_UPLOAD' ||
-                            type === 'IMAGE_UPLOAD' ? (
-                            <div className='flex items-center justify-between rounded-xl border border-gray-2 bg-surface-muted/60 p-3.5'>
-                              <div className='flex items-center gap-3'>
-                                <div className='flex size-9 items-center justify-center rounded-lg bg-gray-2 text-gray-8'>
-                                  <Icon
-                                    className='size-4.5'
-                                    name='lucide:upload-cloud'
-                                  />
-                                </div>
-                                <div>
-                                  <span className='block text-xs font-bold text-gray-12'>
-                                    Upload Document / Attachment
-                                  </span>
-                                  <span className='block text-[10px] text-gray-7'>
-                                    PDF, PNG, JPG, or DOCX up to 10MB
-                                  </span>
-                                </div>
-                              </div>
-                              <Button
-                                color='gray'
-                                disabled={isReadOnly}
-                                icon='lucide:upload'
-                                label={t`Choose File`}
-                                size='xs'
-                                variant='outline'
-                                onClick={() =>
-                                  showToast({
-                                    message:
-                                      'File picker simulated successfully',
-                                  })
-                                }
-                              />
-                            </div>
-                          ) : type === 'CALCULATED' ? (
-                            <CalculatedFieldInput value={val} hideLabel />
-                          ) : type === 'LONG_TEXT' ? (
-                            <InputTextarea
-                              disabled={isReadOnly}
-                              placeholder={getEffectiveFieldPlaceholder(field)}
-                              value={val != null ? String(val) : ''}
-                              onChange={(text) =>
-                                handleFieldChange(field.id, text)
-                              }
-                            />
-                          ) : hasConfiguredTableColumns(field) ? (
-                            <FormEntryTableField
-                              disabled={isReadOnly}
-                              field={field}
-                              required={isFieldRequired}
-                              value={val}
-                              onChange={(serialized) =>
-                                handleFieldChange(field.id, serialized)
-                              }
-                            />
-                          ) : isTableType ? (
-                            <FormLineItemsEditor
-                              disabled={isReadOnly}
-                              field={field}
-                              isFieldRequired={isFieldRequired}
-                              value={val}
-                              getFieldLabel={getFieldLabel}
-                              onChange={(newVal) =>
-                                handleFieldChange(field.id, newVal)
-                              }
-                            />
-                          ) : (
-                            <FormEntriesSearchableInput
-                              allFields={renderableFields}
-                              editValues={editValues}
-                              field={field}
-                              formId={formId}
-                              val={val}
-                              onUpdateModel={(patch) =>
-                                setEditValues((prev: any) => ({
-                                  ...prev,
-                                  ...patch,
-                                }))
-                              }
-                            >
-                              <InputText
-                                disabled={isReadOnly}
-                                placeholder={getEffectiveFieldPlaceholder(
-                                  field,
-                                )}
-                                value={
-                                  formatRuntimeFieldDisplayValue(val, field) ===
-                                  '-'
-                                    ? ''
-                                    : formatRuntimeFieldDisplayValue(val, field)
-                                }
-                                onChange={(text) =>
-                                  handleFieldChange(field.id, text)
-                                }
-                              />
-                            </FormEntriesSearchableInput>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
+            {allVisibleFields.length > 0 && (
+              <div className='flex w-60 flex-col gap-1.5'>
+                <div className='flex items-center justify-between text-12'>
+                  <span className='text-gray-10'>
+                    {t`${filledCount} of ${allVisibleFields.length} fields filled`}
+                  </span>
+                  <span className='font-medium text-gray-12'>
+                    {fillPercent}%
+                  </span>
                 </div>
-              )
-            })}
-
-            {panels.length === 0 && (
-              <div className='rounded-2xl border border-dashed border-gray-3 bg-surface py-16 text-center text-xs text-gray-7 shadow-xs'>
-                This form currently has no input fields defined.
+                <div className='h-1.5 overflow-hidden rounded-full bg-gray-3'>
+                  <div
+                    className='h-full rounded-full bg-primary-9 transition-[width] duration-300'
+                    style={{ width: `${fillPercent}%` }}
+                  />
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Sticky Action Footer Bar */}
-        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-surface/95 px-4 py-3.5 shadow-lg backdrop-blur-md'>
-          {/* Action Buttons */}
-          <div className='flex items-center gap-3'>
-            <Button
-              color='gray'
-              label={t`Cancel`}
-              variant='outline'
-              onClick={closeSidebar}
-            />
-            <Button
-              color='primary'
-              disabled={isSaving}
-              icon={isAddOpen ? 'lucide:plus' : 'lucide:check'}
-              label={isAddOpen ? t`Save Entry` : t`Save Changes`}
-              loading={isSaving}
-              variant='solid'
-              onClick={handleSaveEntry}
-            />
+        <div className='custom-scrollbar flex-1 overflow-y-auto px-6 py-6'>
+          <div className='mx-auto flex w-full max-w-[1120px] items-start gap-6'>
+            {/* Section list, only worth showing when there is more than one */}
+            {visibleSections.length > 1 && (
+              <nav className='sticky top-0 hidden w-52 shrink-0 flex-col gap-1 lg:flex'>
+                <span className='mb-1 px-3 text-11 font-semibold tracking-wide text-gray-9 uppercase'>
+                  {t`Sections`}
+                </span>
+                {visibleSections.map(
+                  (
+                    section: { fields: Question[]; key: string; title: string },
+                    sIdx: number,
+                  ) => {
+                    const done = section.fields.every(
+                      (f) =>
+                        !isRequiredField(f) || isValueFilled(editValues[f.id]),
+                    )
+                    return (
+                      <button
+                        className='flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-13 text-gray-11 transition-colors hover:bg-gray-2 hover:text-gray-13 active:bg-gray-3'
+                        key={section.key}
+                        type='button'
+                        onClick={() =>
+                          document
+                            .getElementById(`entry-section-${sIdx}`)
+                            ?.scrollIntoView({ behavior: 'smooth' })
+                        }
+                      >
+                        <span
+                          className={cn(
+                            'flex size-5 shrink-0 items-center justify-center rounded-full text-11 font-semibold',
+                            done
+                              ? 'bg-green-3 text-green-11'
+                              : 'bg-gray-3 text-gray-11',
+                          )}
+                        >
+                          {done ? (
+                            <Icon className='size-3' name='lucide:check' />
+                          ) : (
+                            sIdx + 1
+                          )}
+                        </span>
+                        <span className='truncate'>{section.title}</span>
+                      </button>
+                    )
+                  },
+                )}
+              </nav>
+            )}
+
+            <div className='flex min-w-0 flex-1 flex-col gap-5'>
+              {visibleSections.map(
+                (
+                  section: {
+                    description: string
+                    fields: Question[]
+                    hasTitle: boolean
+                    key: string
+                    title: string
+                  },
+                  sIdx: number,
+                ) => {
+                  const renderableFields = section.fields
+                  const sectionFilled = renderableFields.filter((f) =>
+                    isValueFilled(editValues[f.id]),
+                  ).length
+
+                  return (
+                    <section
+                      className='scroll-mt-2 rounded-xl border border-gray-3 bg-surface shadow-xs'
+                      id={`entry-section-${sIdx}`}
+                      key={section.key}
+                    >
+                      {/* A lone untitled section needs no header of its own. */}
+                      {(visibleSections.length > 1 || section.hasTitle) && (
+                        <header className='flex items-center justify-between gap-3 border-b border-gray-3 px-6 py-4'>
+                          <div className='flex min-w-0 items-center gap-3'>
+                            <span className='flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-3 text-12 font-semibold text-primary-11'>
+                              {sIdx + 1}
+                            </span>
+                            <div className='min-w-0'>
+                              <h2 className='truncate text-15 font-semibold text-gray-13'>
+                                {section.title}
+                              </h2>
+                              {section.description && (
+                                <p className='text-12 text-gray-10'>
+                                  {section.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <span
+                            className={cn(
+                              'shrink-0 rounded-full px-2.5 py-0.5 text-12 font-medium',
+                              sectionFilled === renderableFields.length
+                                ? 'bg-green-3 text-green-11'
+                                : 'bg-gray-2 text-gray-11',
+                            )}
+                          >
+                            {t`${sectionFilled} / ${renderableFields.length} filled`}
+                          </span>
+                        </header>
+                      )}
+
+                      <div className='grid grid-cols-12 gap-x-5 gap-y-5 p-6'>
+                        {renderableFields.map((field: Question) => {
+                          const type = resolveRuntimeFieldType(field)
+                          const val = editValues[field.id] ?? ''
+                          const state = evaluatedFieldStates[field.id]
+                          const isFieldRequired = state
+                            ? state.required
+                            : field.settings?.validation?.fieldRule ===
+                              'REQUIRED'
+                          const isReadOnly = state
+                            ? state.disabled
+                            : isFieldReadOnly(field)
+                          const colSpan = getColumnSpan(
+                            field.settings?.general?.size,
+                          )
+
+                          const isTableType =
+                            type === 'TABLE' ||
+                            type === 'DYNAMIC_TABLE' ||
+                            (type !== 'MULTIPLE_CHOICE' &&
+                              type !== 'MULTI_SELECT' &&
+                              typeof val === 'string' &&
+                              val.trim().startsWith('[') &&
+                              val.trim().endsWith(']'))
+
+                          return (
+                            <div
+                              aria-disabled={isReadOnly || undefined}
+                              inert={
+                                isReadOnly && type !== 'CALCULATED'
+                                  ? true
+                                  : undefined
+                              }
+                              key={field.id}
+                              className={cn(
+                                'flex flex-col justify-start',
+                                colSpan,
+                                isReadOnly &&
+                                  type !== 'CALCULATED' &&
+                                  'opacity-60 select-none',
+                              )}
+                            >
+                              {/* Label / Required Indicators (rendered internally for table fields) */}
+                              {!isTableType && !isFieldLabelHidden(field) && (
+                                <div className='mb-1.5 flex items-center justify-between gap-2'>
+                                  <label className='block text-13 font-medium text-gray-12'>
+                                    {getEffectiveFieldLabel(
+                                      field,
+                                      'Untitled Question',
+                                    )}
+                                    {isFieldRequired && (
+                                      <span
+                                        className='ml-1 font-bold text-red-9'
+                                        title='Required field'
+                                      >
+                                        *
+                                      </span>
+                                    )}
+                                  </label>
+                                  {(type === 'CALCULATED' || isReadOnly) && (
+                                    <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-8'>
+                                      {type === 'CALCULATED'
+                                        ? 'Auto-calculated'
+                                        : 'Read-only'}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {!isTableType &&
+                                getEffectiveFieldDescription(field) && (
+                                  <p className='mb-1.5 text-[11px] text-gray-7'>
+                                    {getEffectiveFieldDescription(field)}
+                                  </p>
+                                )}
+
+                              {/* Form Input Control */}
+                              {type === 'YES_NO_TOGGLE' ||
+                              type === 'CONSENT' ? (
+                                <div className='flex max-w-xs items-center justify-between rounded-xl border border-gray-2 bg-surface-muted/50 p-2.5 transition-colors hover:border-gray-3'>
+                                  <span className='text-xs font-semibold text-gray-11'>
+                                    Consent / Enable
+                                  </span>
+                                  <InputSwitch
+                                    checked={
+                                      val === 'Yes' ||
+                                      val === true ||
+                                      val === 'true'
+                                    }
+                                    disabled={isReadOnly}
+                                    onChange={(checked) =>
+                                      handleFieldChange(
+                                        field.id,
+                                        checked ? 'Yes' : 'No',
+                                      )
+                                    }
+                                  />
+                                </div>
+                              ) : type === 'DATE' || type === 'DATE_TIME' ? (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={val}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  {type === 'DATE_TIME' ? (
+                                    <InputDateTime
+                                      disabled={isReadOnly}
+                                      value={val ? val : null}
+                                      format={
+                                        field.settings?.validation
+                                          ?.timeFormat === '24'
+                                          ? '24h'
+                                          : '12h'
+                                      }
+                                      onChange={(dateString) =>
+                                        handleFieldChange(field.id, dateString)
+                                      }
+                                    />
+                                  ) : (
+                                    <InputDate
+                                      disabled={isReadOnly}
+                                      placeholder={getEffectiveFieldPlaceholder(
+                                        field,
+                                      )}
+                                      value={val ? val : null}
+                                      onChange={(dateString) =>
+                                        handleFieldChange(field.id, dateString)
+                                      }
+                                    />
+                                  )}
+                                </FormEntriesSearchableInput>
+                              ) : type === 'NUMBER' || type === 'COUNTER' ? (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={val}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  <InputNumber
+                                    disabled={isReadOnly}
+                                    placeholder={getEffectiveFieldPlaceholder(
+                                      field,
+                                    )}
+                                    value={val}
+                                    onChange={(num) =>
+                                      handleFieldChange(field.id, num)
+                                    }
+                                  />
+                                </FormEntriesSearchableInput>
+                              ) : type === 'CURRENCY_AMOUNT' ? (
+                                <div className='flex max-w-xs items-center gap-1.5'>
+                                  <span className='flex h-9 items-center rounded-md border border-gray-3 bg-gray-1 px-2.5 text-xs font-semibold text-gray-11'>
+                                    {extractCurrencyCode(val, field)}
+                                  </span>
+                                  <InputNumber
+                                    className='flex-1'
+                                    disabled={isReadOnly}
+                                    value={extractCurrencyNumericValue(val)}
+                                    placeholder={
+                                      getEffectiveFieldPlaceholder(field) ||
+                                      '0.00'
+                                    }
+                                    onChange={(num) =>
+                                      handleFieldChange(
+                                        field.id,
+                                        updateCurrencyFieldValue(
+                                          val,
+                                          num,
+                                          field,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                </div>
+                              ) : type === 'PHONE_NUMBER' ? (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={extractPhoneInputString(val)}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  <InputText
+                                    disabled={isReadOnly}
+                                    placeholder={getEffectiveFieldPlaceholder(
+                                      field,
+                                    )}
+                                    value={extractPhoneInputString(val)}
+                                    onChange={(text) =>
+                                      handleFieldChange(
+                                        field.id,
+                                        updatePhoneFieldValue(val, text, field),
+                                      )
+                                    }
+                                  />
+                                </FormEntriesSearchableInput>
+                              ) : type === 'MATRIX' ? (
+                                <RuntimeMatrixField
+                                  disabled={isReadOnly}
+                                  field={field}
+                                  value={val}
+                                  onChange={(next) =>
+                                    handleFieldChange(field.id, next)
+                                  }
+                                />
+                              ) : type === 'POPUP' ||
+                                type === 'TABS' ||
+                                type === 'NESTED_LIST' ||
+                                type === 'LOGIN_AUTHENTICATION' ||
+                                type === 'EMAIL_AUTHENTICATION' ||
+                                type === 'MOBILE_AUTHENTICATION' ? (
+                                <LegacyInlineFieldRenderer
+                                  disabled={isReadOnly}
+                                  field={field}
+                                  value={val}
+                                  onChange={(next) =>
+                                    handleFieldChange(field.id, next)
+                                  }
+                                />
+                              ) : type === 'RATING' ? (
+                                <div className='py-1'>
+                                  <Rating
+                                    color='yellow'
+                                    count={
+                                      field.settings?.specific?.iconCount || 5
+                                    }
+                                    readOnly={isReadOnly}
+                                    size='md'
+                                    value={Number(val || 0)}
+                                    onChange={(v) =>
+                                      handleFieldChange(field.id, v)
+                                    }
+                                  />
+                                </div>
+                              ) : type === 'OPINION_SCALE' ? (
+                                <div className='flex flex-wrap gap-1 py-1'>
+                                  {Array.from({ length: 11 }).map((_, i) => {
+                                    const isSelected =
+                                      Number(val) === i && val !== ''
+                                    return (
+                                      <button
+                                        disabled={isReadOnly}
+                                        key={i}
+                                        type='button'
+                                        className={cn(
+                                          'size-8 rounded-lg border text-xs font-bold transition-all hover:bg-accent-soft hover:text-accent-primary active:scale-95',
+                                          isSelected
+                                            ? 'border-accent-primary bg-accent-primary text-white'
+                                            : 'border-gray-3 bg-surface text-gray-12',
+                                          isReadOnly &&
+                                            'cursor-not-allowed opacity-60',
+                                        )}
+                                        onClick={() =>
+                                          handleFieldChange(field.id, i)
+                                        }
+                                      >
+                                        {i}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              ) : type === 'SINGLE_CHOICE' ? (
+                                <FormEntriesChoiceInput
+                                  allFields={renderableFields}
+                                  field={field}
+                                  formModel={editValues}
+                                  val={val}
+                                  onChange={(next) => {
+                                    if (!isReadOnly)
+                                      handleFieldChange(field.id, next)
+                                  }}
+                                />
+                              ) : type === 'MULTIPLE_CHOICE' ? (
+                                <FormEntriesChoiceInput
+                                  allFields={renderableFields}
+                                  field={field}
+                                  formModel={editValues}
+                                  isMultiple
+                                  val={val}
+                                  onChange={(next) => {
+                                    if (!isReadOnly)
+                                      handleFieldChange(field.id, next)
+                                  }}
+                                />
+                              ) : type === 'SINGLE_SELECT' ||
+                                type === 'MULTI_SELECT' ? (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={val}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  <FormEntriesSelectInput
+                                    allFields={renderableFields}
+                                    field={field}
+                                    fieldDistinctOptions={
+                                      fieldDistinctOptions[field.id] || []
+                                    }
+                                    formModel={editValues}
+                                    val={val}
+                                    onChange={(next) => {
+                                      if (!isReadOnly)
+                                        handleFieldChange(field.id, next)
+                                    }}
+                                  />
+                                </FormEntriesSearchableInput>
+                              ) : type === 'FILE_UPLOAD' ||
+                                type === 'IMAGE_UPLOAD' ? (
+                                <div className='flex items-center justify-between rounded-xl border border-gray-2 bg-surface-muted/60 p-3.5'>
+                                  <div className='flex items-center gap-3'>
+                                    <div className='flex size-9 items-center justify-center rounded-lg bg-gray-2 text-gray-8'>
+                                      <Icon
+                                        className='size-4.5'
+                                        name='lucide:upload-cloud'
+                                      />
+                                    </div>
+                                    <div>
+                                      <span className='block text-xs font-bold text-gray-12'>
+                                        Upload Document / Attachment
+                                      </span>
+                                      <span className='block text-[10px] text-gray-7'>
+                                        PDF, PNG, JPG, or DOCX up to 10MB
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    color='gray'
+                                    disabled={isReadOnly}
+                                    icon='lucide:upload'
+                                    label={t`Choose File`}
+                                    size='xs'
+                                    variant='outline'
+                                    onClick={() =>
+                                      showToast({
+                                        message:
+                                          'File picker simulated successfully',
+                                      })
+                                    }
+                                  />
+                                </div>
+                              ) : type === 'CALCULATED' ? (
+                                <CalculatedFieldInput value={val} hideLabel />
+                              ) : type === 'LONG_TEXT' ? (
+                                <InputTextarea
+                                  disabled={isReadOnly}
+                                  placeholder={getEffectiveFieldPlaceholder(
+                                    field,
+                                  )}
+                                  value={val != null ? String(val) : ''}
+                                  onChange={(text) =>
+                                    handleFieldChange(field.id, text)
+                                  }
+                                />
+                              ) : hasConfiguredTableColumns(field) ? (
+                                <FormEntryTableField
+                                  disabled={isReadOnly}
+                                  field={field}
+                                  required={isFieldRequired}
+                                  value={val}
+                                  onChange={(serialized) =>
+                                    handleFieldChange(field.id, serialized)
+                                  }
+                                />
+                              ) : isTableType ? (
+                                <FormLineItemsEditor
+                                  disabled={isReadOnly}
+                                  field={field}
+                                  isFieldRequired={isFieldRequired}
+                                  value={val}
+                                  getFieldLabel={getFieldLabel}
+                                  onChange={(newVal) =>
+                                    handleFieldChange(field.id, newVal)
+                                  }
+                                />
+                              ) : (
+                                <FormEntriesSearchableInput
+                                  allFields={renderableFields}
+                                  editValues={editValues}
+                                  field={field}
+                                  formId={formId}
+                                  val={val}
+                                  onUpdateModel={(patch) =>
+                                    setEditValues((prev: any) => ({
+                                      ...prev,
+                                      ...patch,
+                                    }))
+                                  }
+                                >
+                                  <InputText
+                                    disabled={isReadOnly}
+                                    placeholder={getEffectiveFieldPlaceholder(
+                                      field,
+                                    )}
+                                    value={
+                                      formatRuntimeFieldDisplayValue(
+                                        val,
+                                        field,
+                                      ) === '-'
+                                        ? ''
+                                        : formatRuntimeFieldDisplayValue(
+                                            val,
+                                            field,
+                                          )
+                                    }
+                                    onChange={(text) =>
+                                      handleFieldChange(field.id, text)
+                                    }
+                                  />
+                                </FormEntriesSearchableInput>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  )
+                },
+              )}
+
+              {visibleSections.length === 0 && (
+                <div className='rounded-xl border border-dashed border-gray-3 bg-surface py-16 text-center text-13 text-gray-10'>
+                  {t`This form has no fields to fill in.`}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer: what's still required, and the actions */}
+        <div className='shrink-0 border-t border-gray-3 bg-surface px-6 py-3'>
+          <div className='mx-auto flex w-full max-w-[1120px] items-center justify-between gap-4'>
+            <span
+              className={cn(
+                'flex items-center gap-1.5 text-13',
+                requiredLeft > 0 ? 'text-gray-11' : 'text-green-11',
+              )}
+            >
+              <Icon
+                className='size-4'
+                name={
+                  requiredLeft > 0
+                    ? 'lucide:circle-alert'
+                    : 'lucide:circle-check'
+                }
+              />
+              {requiredLeft > 0
+                ? requiredLeft === 1
+                  ? t`1 required field left`
+                  : t`${requiredLeft} required fields left`
+                : t`All required fields are filled`}
+            </span>
+            <div className='flex items-center gap-3'>
+              <Button
+                color='gray'
+                label={t`Cancel`}
+                variant='outline'
+                onClick={closeSidebar}
+              />
+              <Button
+                color='primary'
+                disabled={isSaving}
+                icon={isAddOpen ? 'lucide:plus' : 'lucide:check'}
+                label={isAddOpen ? t`Save record` : t`Save changes`}
+                loading={isSaving}
+                variant='solid'
+                onClick={handleSaveEntry}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -3253,61 +3414,21 @@ const FormEntriesPage = () => {
 
   return (
     <div className='relative flex h-full flex-col bg-surface'>
-      {/* 1. HEADER (back, form name + count, actions; Browse/Trash tabs) */}
-      <div className='border-b border-gray-3 bg-surface px-6 pt-4'>
-        <div className='flex flex-wrap items-start justify-between gap-4'>
-          <div className='flex min-w-0 items-start gap-3'>
-            <IconButton
-              className='mt-0.5'
-              color='gray'
-              icon='lucide:arrow-left'
-              title={t`Back to Forms`}
-              variant='outline'
-              onClick={() =>
-                navigate({
-                  to: getSettingsReturnPath('form-configuration') ?? '/forms',
-                })
-              }
-            />
-            <div className='min-w-0'>
-              <div className='flex min-w-0 items-center gap-2'>
-                <h1 className='truncate text-18 font-semibold text-gray-13'>
-                  {formName || t`Records`}
-                </h1>
-                {formType && formType !== 'ITEM' ? (
-                  <FormTypeBadge type={formType} />
-                ) : null}
-              </div>
-              <p className='mt-0.5 text-13 text-gray-10'>
-                {entries.length === 1
-                  ? t`1 record`
-                  : t`${entries.length} records`}
-                {normalizedFormJson.settings?.general?.description
-                  ? ` · ${normalizedFormJson.settings.general.description}`
-                  : ''}
-              </p>
-            </div>
-          </div>
-
-          <div className='flex items-center gap-2'>
-            <Button
-              color='gray'
-              icon='tabler:table-import'
-              label={t`Import`}
-              variant='outline'
-              onClick={() => setIsImportOpen(true)}
-            />
-            <Button
-              color='primary'
-              icon='lucide:plus'
-              label={t`Add Entry`}
-              variant='solid'
-              onClick={openNewEntry}
-            />
-          </div>
-        </div>
-
-        <div className='mt-3 -mb-px'>
+      {/* 1. HEADER: one compact row. The app bar already shows the form
+          name, so this row only holds back, tabs (with counts) and actions. */}
+      <div className='flex shrink-0 items-center gap-3 border-b border-gray-3 bg-surface px-6'>
+        <IconButton
+          color='gray'
+          icon='lucide:arrow-left'
+          title={t`Back to Forms`}
+          variant='ghost'
+          onClick={() =>
+            navigate({
+              to: getSettingsReturnPath('form-configuration') ?? '/forms',
+            })
+          }
+        />
+        <div className='-mb-px self-end'>
           <Tabs
             color='primary'
             value={tabValue}
@@ -3323,6 +3444,28 @@ const FormEntriesPage = () => {
               }
             />
           </Tabs>
+        </div>
+
+        <div className='ml-auto flex items-center gap-2 py-2'>
+          {formType && formType !== 'ITEM' ? (
+            <FormTypeBadge type={formType} />
+          ) : null}
+          <Button
+            color='gray'
+            icon='tabler:table-import'
+            label={t`Import`}
+            size='sm'
+            variant='outline'
+            onClick={() => setIsImportOpen(true)}
+          />
+          <Button
+            color='primary'
+            icon='lucide:plus'
+            label={t`Add Entry`}
+            size='sm'
+            variant='solid'
+            onClick={openNewEntry}
+          />
         </div>
       </div>
 
@@ -3381,7 +3524,7 @@ const FormEntriesPage = () => {
 
       {/* 2. MAIN LAYOUT (filter bar, then table + pagination in one card) */}
       <div className='relative flex flex-1 overflow-hidden'>
-        <div className='flex flex-1 flex-col gap-3 overflow-hidden bg-surface-muted/50 p-6'>
+        <div className='flex flex-1 flex-col gap-3 overflow-hidden bg-surface-muted/50 px-6 py-4'>
           <CustomFilter
             activeFilters={activeFilters}
             searchPlaceholder={t`Search entries...`}

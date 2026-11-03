@@ -249,7 +249,7 @@ const FormsPage = () => {
         enableSorting: false,
         id: 'records',
         label: t`Records`,
-        size: 150,
+        size: 170,
         renderCell: (row: any) => {
           if (isFormDraft(row) || isWorkflowForm(row)) {
             return <span className='text-gray-9'>-</span>
