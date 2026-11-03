@@ -21,4 +21,10 @@ public sealed class WorkflowSlaOptions
 
     /// <summary>Send attempts before an outbox message is marked failed.</summary>
     public int MaxSendAttempts { get; set; } = 5;
+
+    /// <summary>
+    /// Timers more than this many minutes past due are skipped (no email, SMS or escalation), so switching
+    /// SLA on, or a long outage, does not notify about old tickets. 0 sends them however late.
+    /// </summary>
+    public int MaxLateMinutes { get; set; } = 60;
 }

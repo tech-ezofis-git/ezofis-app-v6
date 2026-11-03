@@ -38,6 +38,52 @@ public class WorkflowSlaRuntimeTests
     }
 
     [Fact]
+    public void IsStale_SkipsTimersLongPastDue_WhenSlaWasOff()
+    {
+        var due = Arrived.AddMinutes(30);
+
+        // A normal pass runs within a minute or two of the due time: sent.
+        Assert.False(WorkflowSlaSchedule.IsStale(due, due.AddMinutes(1), 60));
+        Assert.False(WorkflowSlaSchedule.IsStale(due, due.AddMinutes(60), 60));
+        // A ticket from last month when SLA is switched on today: skipped.
+        Assert.True(WorkflowSlaSchedule.IsStale(due, due.AddDays(30), 60));
+        Assert.True(WorkflowSlaSchedule.IsStale(due, due.AddMinutes(61), 60));
+        // Not due yet, or skipping turned off: never stale.
+        Assert.False(WorkflowSlaSchedule.IsStale(due, due.AddMinutes(-5), 60));
+        Assert.False(WorkflowSlaSchedule.IsStale(due, due.AddDays(30), 0));
+    }
+
+    [Fact]
+    public void AppliesTo_OnlyTicketsThatArrivedAfterTheSlaWasSet()
+    {
+        var slaSaved = Arrived.AddMinutes(10);
+
+        // REQ created at 09:00, SLA saved at 09:10: no timers for it.
+        Assert.False(WorkflowSlaSchedule.AppliesTo(Arrived, slaSaved));
+        Assert.True(WorkflowSlaSchedule.AppliesTo(slaSaved, slaSaved));
+        Assert.True(WorkflowSlaSchedule.AppliesTo(slaSaved.AddSeconds(1), slaSaved));
+        Assert.True(WorkflowSlaSchedule.AppliesTo(Arrived, null));
+    }
+
+    [Fact]
+    public void Fingerprint_ChangesOnlyWhenSlaSettingsChange()
+    {
+        WorkflowJsonDto Json(string label, decimal minutes) => new(
+            Blocks:
+            [
+                new("a", "INTERNAL_ACTOR", new WorkflowBlockSettingsDto(Label: label,
+                    SlaSettings: new("standard", [Rule("level-1", minutes, "minutes")], null, null))),
+                new("b", "INTERNAL_ACTOR", new WorkflowBlockSettingsDto(Label: "B")),
+            ]);
+
+        var original = WorkflowSlaSchedule.Fingerprint(Json("Review", 2));
+        // Renaming a stage keeps when the SLA was set...
+        Assert.Equal(original, WorkflowSlaSchedule.Fingerprint(Json("Review step", 2)));
+        // ...changing the SLA itself starts it again.
+        Assert.NotEqual(original, WorkflowSlaSchedule.Fingerprint(Json("Review", 5)));
+    }
+
+    [Fact]
     public void RetryDelay_BacksOffAndCaps()
     {
         Assert.Equal(TimeSpan.FromMinutes(1), WorkflowSlaSchedule.RetryDelay(1));
