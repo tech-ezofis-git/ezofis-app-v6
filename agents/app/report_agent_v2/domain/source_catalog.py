@@ -71,6 +71,9 @@ class SourceCatalog:
     transaction_table: str | None = None  # the request's steps (workflow.transaction_<suffix>)
     transaction_columns: dict[str, str] = field(default_factory=dict)
     has_users: bool = False  # users."Users" exists: user ids can be shown as emails
+    # ai.agent_request_logs is readable: AI usage per ticket/file can be joined (alias "al").
+    has_ai_log: bool = False
+    tenant_id: uuid.UUID | None = None
     fields: dict[str, FieldDef] = field(default_factory=dict)
 
     @property
@@ -292,6 +295,7 @@ async def load_workflow_catalog(
 
     catalog.has_users = {"Id", "Email"} <= (await _columns(conn, "users", "Users")).keys()
     _add_workflow_system_fields(catalog)
+    await _add_ai_usage_fields(conn, catalog, tenant_id)
     return catalog
 
 
@@ -337,6 +341,40 @@ def _add_workflow_system_fields(c: SourceCatalog) -> None:
             add("sys.last_action_by", "Action By", "text", "mb", "last_action_by", {"inbox"} | starter)
         if {"started_at_utc", "created_at_utc", "transaction_created_at"} & c.inbox_columns.keys():
             add("sys.stage_since", "In Stage Since", "date", "mb", "stage_since", {"inbox"})
+
+
+# AI usage per ticket (Workflow) or file (Folder), from ai.agent_request_logs (written by the
+# orchestrator, app/control/agent_request_log.py). Latest run for agent/model/status, totals for
+# the rest. Only offered when the table is readable, so tenants without AI runs see no change.
+AI_USAGE_FIELDS = (
+    ("sys.ai_agent", "AI Agent", "text", "ai_agent"),
+    ("sys.ai_model", "AI Model", "text", "ai_model"),
+    ("sys.ai_burgr_model", "Burgr Suggested Model", "text", "ai_burgr_model"),
+    ("sys.ai_status", "AI Status", "text", "ai_status"),
+    ("sys.ai_duration", "AI Duration (s)", "number", "ai_duration"),
+    ("sys.ai_tokens", "AI Tokens", "number", "ai_tokens"),
+    ("sys.ai_cost", "AI Cost (USD)", "number", "ai_cost"),
+    ("sys.ai_credits", "AI Credits", "number", "ai_credits"),
+    ("sys.ai_runs", "AI Runs", "number", "ai_runs"),
+)
+AI_LOG_LINK_COLUMNS = {"tenant_id", "instance_id", "form_entry_id", "repository_item_id", "started_at_utc"}
+
+
+async def _add_ai_usage_fields(conn: AsyncConnection, c: SourceCatalog, tenant_id: uuid.UUID) -> None:
+    c.tenant_id = tenant_id
+    if not AI_LOG_LINK_COLUMNS <= (await _columns(conn, "ai", "agent_request_logs")).keys():
+        return
+    # A row is linked through the ticket's instance id (or form entry id), or the file's item id.
+    if c.source_type == "Workflow" and not (c.process_form_table or "item_id" in c.items_columns):
+        return
+    if c.source_type == "Folder" and "id" not in c.items_columns:
+        return
+    c.has_ai_log = True
+    for fid, label, dtype, system in AI_USAGE_FIELDS:
+        c.fields[fid] = FieldDef(
+            id=fid, label=label, kind="system", data_type=dtype, alias="al", system=system,
+            requires=frozenset({"ailog"}), pg_type="numeric" if dtype == "number" else "text",
+        )
 
 
 # ---------------------------------------------------------------------------------------------
@@ -410,4 +448,5 @@ async def load_folder_catalog(
                 id=f"sys.{physical}", label=label, kind="system", data_type="date", alias="e",
                 column=physical, system=physical, pg_type=columns[physical],
             )
+    await _add_ai_usage_fields(conn, catalog, tenant_id)
     return catalog

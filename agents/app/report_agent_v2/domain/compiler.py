@@ -68,6 +68,20 @@ class CompiledQuery:
     warnings: list[str] = field(default_factory=list)
 
 
+# AI usage columns over the "al" summary join (see _Compiler._ai_log_join). Fixed SQL, no input.
+_AI_USAGE_SQL = {
+    "ai_agent": "al.agent_name",
+    "ai_model": "al.model_used",
+    "ai_burgr_model": "al.burgr_suggested_model",
+    "ai_status": "al.status",
+    "ai_duration": "ROUND((al.duration_ms)::numeric / 1000, 2)",
+    "ai_tokens": "(al.total_tokens)::numeric",
+    "ai_cost": "ROUND((al.cost_usd)::numeric, 6)",
+    "ai_credits": "(al.credits_charged)::numeric",
+    "ai_runs": "(al.runs)::numeric",
+}
+
+
 def _ident(*parts: str) -> sql.Composable:
     return sql.SQL(".").join(sql.Identifier(p) for p in parts)
 
@@ -209,6 +223,8 @@ class _Compiler:
                      o=sql.SQL(" ORDER BY {} DESC").format(acted) if acted is not None else sql.SQL("")), "text")
         if f.system == "stage_since":
             return Expr(self._coalesce_inbox(["started_at_utc", "created_at_utc", "transaction_created_at"], "date"), "date")
+        if f.system in _AI_USAGE_SQL:
+            return Expr(sql.SQL(_AI_USAGE_SQL[f.system]), f.data_type)
         raise SpecValidationError([f"Field '{f.id}' cannot be compiled."])
 
     def _coalesce_inbox(self, columns: list[str], want: str) -> sql.Composable:
@@ -532,7 +548,29 @@ class _Compiler:
                     _ident("workflow", c.inbox_table), sql.SQL(" OR ").join(match), order
                 )
             )
+        if "ailog" in self.requires and c.has_ai_log:
+            parts.append(self._ai_log_join())
         return sql.SQL(" ").join(parts), base_where
+
+    def _ai_log_join(self) -> sql.Composable:
+        """One summary row of ai.agent_request_logs per ticket/file (latest run + totals)."""
+        c = self.catalog
+        if c.source_type == "Folder":
+            match = sql.SQL("al0.repository_item_id = (e.id)::text")
+        elif c.process_form_table:
+            match = sql.SQL("(al0.instance_id)::text = (pf.workflow_instance_id)::text")
+        else:
+            match = sql.SQL("al0.form_entry_id = (e.item_id)::text")
+        tenant = self.bind(str(c.tenant_id), "uuid") if c.tenant_id else None
+        where = sql.SQL("al0.tenant_id = {} AND {}").format(tenant, match) if tenant else match
+        latest = "(array_agg(al0.{col} ORDER BY al0.started_at_utc DESC))[1] AS {col}"
+        return sql.SQL(
+            "LEFT JOIN LATERAL (SELECT "
+            + ", ".join(latest.format(col=col) for col in ("agent_name", "model_used", "burgr_suggested_model", "status"))
+            + ", SUM(al0.duration_ms) AS duration_ms, SUM(al0.total_tokens) AS total_tokens"
+            ", SUM(al0.cost_usd) AS cost_usd, SUM(al0.credits_charged) AS credits_charged, COUNT(*) AS runs"
+            " FROM ai.agent_request_logs al0 WHERE {}) al ON true"
+        ).format(where)
 
     # -- main ----------------------------------------------------------------------------
     def compile(self, extra_filters: list[Condition], limit_override: int | None) -> CompiledQuery:
