@@ -66,7 +66,10 @@ public sealed class RunWatchFoxEnquiryJob
             using var scope = _scopes.CreateScope();
             var services = scope.ServiceProvider;
             services.GetRequiredService<ITenantConnectionProvider>().SetConnectionString(connectionString);
-            var actorUserId = await ResolveActorUserIdAsync(connectionString, args.TenantId);
+            // Per-workflow watches start as the user who connected the mailbox.
+            var actorUserId = args.ActorUserId is { } connectedBy && connectedBy != Guid.Empty
+                ? connectedBy
+                : await ResolveActorUserIdAsync(connectionString, args.TenantId);
             var jobContext = services.GetRequiredService<JobExecutionContext>();
             jobContext.Set(args.TenantId, actorUserId);
             try
