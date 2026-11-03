@@ -50,6 +50,8 @@ export interface ReportAgentRunResult {
   page?: number
   pageSize?: number
   reportType?: string
+  /** A Refresh saved the report's updated default columns as a new version. */
+  specSaved?: boolean
   title?: string
   totalCount?: number
   warnings?: string[]
@@ -121,6 +123,8 @@ export interface ReportAiRunRequest {
   legacy?: boolean
   page?: number
   pageSize?: number
+  /** Refresh button: bring the saved report's default columns up to date first (no LLM). */
+  refreshDefaults?: boolean
   /** Send the edited prompt/spec so the run uses UI changes. */
   reportPrompt?: string
   reportSpec?: Record<string, unknown>
@@ -257,9 +261,10 @@ const sourceFromSpec = (spec: Record<string, unknown> | undefined) => {
 }
 
 interface V2RunPayload {
-  columns?: { key: string; calc?: string; label?: string }[]
+  columns?: { calc?: string; key: string; label?: string }[]
   rowCount?: number
   rows?: Record<string, unknown>[]
+  specSaved?: boolean
   truncated?: boolean
   warnings?: string[]
 }
@@ -446,14 +451,22 @@ export const runReportAiReport = async (
     const { data } = await axiosV6({
       headers: getTenantHeaders(),
       method: 'GET',
-      params: body.pageSize ? { limit: body.pageSize } : undefined,
+      params: {
+        ...(body.pageSize ? { limit: body.pageSize } : {}),
+        ...(body.refreshDefaults ? { refreshDefaults: true } : {}),
+      },
       skipCancellation: true,
       url: `${reportAgentBase()}/reports/${encodeURIComponent(id)}/execute`,
     })
     const result = data as (V2RunPayload & { name?: string }) | null
     if (!result) return { data: null, error: REPORT_RUN_ERROR_MESSAGE }
     return {
-      data: { ...toRunResult(result), id, title: result.name },
+      data: {
+        ...toRunResult(result),
+        id,
+        specSaved: Boolean(result.specSaved),
+        title: result.name,
+      },
       error: '',
     }
   } catch (error: unknown) {

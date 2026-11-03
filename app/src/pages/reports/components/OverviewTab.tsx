@@ -175,8 +175,11 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
   const runError = (isAgentReport ? agentQuery.error : legacyQuery.error)
     ?.message
 
+  // Agent reports: Refresh also brings the saved report's default columns up to date.
   const refresh = () =>
-    void (isAgentReport ? agentQuery.refetch() : legacyQuery.refetch())
+    void (isAgentReport
+      ? agentQuery.refreshWithDefaults()
+      : legacyQuery.refetch())
 
   // Highlights sent on the run response win over the ones saved with the report.
   const fieldSettings = useMemo(

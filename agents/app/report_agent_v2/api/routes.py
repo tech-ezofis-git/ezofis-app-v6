@@ -346,7 +346,8 @@ async def execute_report(
 ) -> dict:
     """Run a saved report. The body is optional: with no body (or {}) the saved definition runs as-is."""
     body = body or ExecuteReportRequest()
-    options = ExecutionOptions(as_of=body.as_of_date, filters=list(body.filters), limit=body.limit)
+    options = ExecutionOptions(as_of=body.as_of_date, filters=list(body.filters), limit=body.limit,
+                               refresh_defaults=body.refresh_defaults)
     return await request.app.state.execution_agent.execute(conn, ctx, report_id, options)
 
 
@@ -356,11 +357,15 @@ async def execute_report_by_id(
     request: Request,
     as_of_date: date | None = Query(default=None, alias="asOfDate"),
     limit: int | None = Query(default=None, ge=1, le=100_000),
+    refresh_defaults: bool = Query(default=False, alias="refreshDefaults"),
     ctx: TenantContext = Depends(tenant_user),
     conn: AsyncConnection = Depends(tenant_connection),
 ) -> dict:
-    """Run a saved report with only its id (e.g. when a report is clicked in the list). No body needed."""
-    options = ExecutionOptions(as_of=as_of_date, limit=limit)
+    """Run a saved report with only its id (e.g. when a report is clicked in the list). No body needed.
+
+    refreshDefaults=true (the Refresh button) first brings its default columns up to date.
+    """
+    options = ExecutionOptions(as_of=as_of_date, limit=limit, refresh_defaults=refresh_defaults)
     return await request.app.state.execution_agent.execute(conn, ctx, report_id, options)
 
 

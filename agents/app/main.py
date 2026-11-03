@@ -165,6 +165,7 @@ from app.models.report_agent import (
 from app.config import get_settings
 from app.dashboard.llm import configure_dashboard_llm
 from app.dashboard.store import DashboardStore, DashboardStoreUnavailableError
+from app.control import agent_request_log
 from app.control.audit import AuditMiddleware, configure_app_logging
 from app.control.audit_store import AuditStore
 from app.control.console_auth import ConsoleAuthMiddleware
@@ -348,13 +349,14 @@ async def lifespan(app: FastAPI):
         max_size=settings.database_pool_max_size,
     )
     tenant_pools = ApTenantDbPools(
-        settings.database_url,
+        settings.ap_tenant_db_base_url.strip() or settings.database_url,
         fallback_pool=db_pool,
         create_pool=asyncpg.create_pool,
         prefix=settings.ap_tenant_db_prefix,
         min_size=0,
         max_size=settings.database_pool_max_size,
     )
+    agent_request_log.configure(agent_request_log.AgentRequestLogWriter(tenant_pools))
     try:
         from app.ap_skills.tenant_db import ensure_ap_schema
 
@@ -733,6 +735,7 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
     await redis_client.aclose()
+    agent_request_log.configure(None)
     await tenant_pools.close()
     if catalog_pool is not None:
         await catalog_pool.close()
@@ -2681,9 +2684,34 @@ _CHAT_MULTIPART_SCHEMA = {
     },
 )
 async def chat(request: Request, background_tasks: BackgroundTasks) -> ChatResponse | HTMLResponse:
+    # One ai.agent_request_logs row per /chat request (see app/control/agent_request_log.py).
+    run, token = agent_request_log.start("chat", correlation_id=getattr(request.state, "correlation_id", None))
+    status, error_type = "Success", None
+    try:
+        return await _chat(request, background_tasks)
+    except Exception as exc:
+        status, error_type = agent_request_log.status_for_exception(exc)
+        raise
+    finally:
+        agent_request_log.finish(run, token, status=status, error_type=error_type,
+                                 agent_name=getattr(request.state, "intent", None))
+
+
+async def _chat(request: Request, background_tasks: BackgroundTasks) -> ChatResponse | HTMLResponse:
     started_at = time.perf_counter()
     parsed = await parse_chat_request(request)
     payload = parsed.chat
+    doc = payload.payload
+    if doc is not None:
+        agent_request_log.annotate(
+            tenant_id=doc.tenant_id,
+            skill_id=",".join(doc.skills) if doc.skills else None,
+            workflow_id=doc.workflow_id,
+            instance_id=doc.instance_id,
+            form_entry_id=doc.form_entry_id,
+            repository_id=doc.repository_id,
+            repository_item_id=doc.repository_item_id,
+        )
 
     context_manager: ContextManager = request.app.state.context_manager
     intent_router: IntentRouter = request.app.state.intent_router

@@ -33,6 +33,7 @@ from app.ap_skills.types import (
     ApSkillError,
     ApSkillResult,
 )
+from app.control import agent_request_log
 
 # ApRunInProgressError (raised by ApStore.create_run on a concurrent
 # duplicate) is intentionally not imported/caught here — it propagates
@@ -411,7 +412,9 @@ class ApSkillRunner:
                 if skill_id == "extract_invoice" and not has_invoice_json:
                     heartbeat = progress.start_extract_heartbeat()
                 try:
-                    result = await handler(ctx)
+                    # Each skill is a sub-agent in ai.agent_request_logs (sub_agents, llm_call_details).
+                    with agent_request_log.step(skill_id):
+                        result = await handler(ctx)
                 finally:
                     await progress.stop_extract_heartbeat(heartbeat)
                 artifact = dict(result.data)

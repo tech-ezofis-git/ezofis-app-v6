@@ -23,6 +23,11 @@ GRANT SELECT, INSERT, UPDATE ON reporting."ReportDefinitions" TO report_agent_rt
 GRANT SELECT, INSERT, UPDATE ON reporting."ReportAgentSpecs" TO report_agent_rt;
 GRANT SELECT, INSERT ON reporting."ReportAgentRuns" TO report_agent_rt;
 
+-- AI usage columns (read-only). The orchestrator creates ai.agent_request_logs on first write;
+-- run this after it exists. Without it the AI columns are simply not offered.
+GRANT USAGE ON SCHEMA ai TO report_agent_rt;
+GRANT SELECT ON ai.agent_request_logs TO report_agent_rt;
+
 -- Catalog database (separate login is fine; read-only is enough):
 --   GRANT USAGE ON SCHEMA catalog TO report_agent_catalog_ro;
 --   GRANT SELECT ON catalog."Tenants", catalog."UserTenants" TO report_agent_catalog_ro;
