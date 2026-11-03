@@ -162,15 +162,14 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
         return new LegacyMailboxListResult(pageItems, totalCount, page, pageSize, TableExists: true);
     }
 
+    /// <summary>Tickets returned by by-activity when the caller sends no page size (the pre-paging behaviour).</summary>
+    private const int ByActivityUnpagedLimit = 5000;
+
     public async Task<LegacyMailboxListResult> ListByActivityIdsAsync(
         LegacyMailboxByActivityRequest request,
         CancellationToken cancellationToken = default)
     {
-        var activityIds = request.ActivityIds
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        var activityIds = NormalizeActivityIds(request.ActivityIds);
         if (activityIds.Length == 0)
         {
             return new LegacyMailboxListResult(Array.Empty<LegacyMailboxRowDto>(), 0, 1, 0, TableExists: false);
@@ -187,26 +186,26 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
 
-        var inboxRows = await ReadMailboxByActivityIdsAsync(
-            connection, LegacyMailboxTableKind.Inbox, "inbox", suffix, fullWorkflowKey, request, activityIds, cancellationToken);
-        var sentRows = await ReadMailboxByActivityIdsAsync(
-            connection, LegacyMailboxTableKind.Sent, "sent", suffix, fullWorkflowKey, request, activityIds, cancellationToken);
-        var completedRows = await ReadMailboxByActivityIdsAsync(
-            connection, LegacyMailboxTableKind.Completed, "completed", suffix, fullWorkflowKey, request, activityIds, cancellationToken);
+        // Pass 1: every matching ticket, keys only. Pass 2: full rows + enrichment for the requested page only.
+        var tickets = await ReadCurrentStageTicketsAsync(connection, suffix, fullWorkflowKey, request, activityIds, cancellationToken);
 
-        var items = KeepCurrentStageRows(inboxRows, sentRows, completedRows);
+        var paged = request.PageSize > 0;
+        var pageSize = paged ? Math.Min(request.PageSize, MaxPageSize) : ByActivityUnpagedLimit;
+        var pageNumber = paged ? Math.Max(request.PageNumber, 1) : 1;
+        var pageKeys = tickets.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
 
-        // Newest tickets first (same rule as inbox/sent list SQL).
-        items.Sort((a, b) =>
+        var items = new List<LegacyMailboxRowDto>(pageKeys.Count);
+        foreach (var group in pageKeys.GroupBy(k => k.Kind))
         {
-            var byCreated = Nullable.Compare(b.TransactionCreatedAt, a.TransactionCreatedAt);
-            if (byCreated != 0)
-                return byCreated;
-            var byInstanceCreated = Nullable.Compare(b.CreatedAtUtc, a.CreatedAtUtc);
-            if (byInstanceCreated != 0)
-                return byInstanceCreated;
-            return b.Id.CompareTo(a.Id);
-        });
+            items.AddRange(await ReadMailboxRowsByIdAsync(
+                connection, group.Key, suffix, fullWorkflowKey, request, activityIds, group.Select(k => k.Id).ToArray(), cancellationToken));
+        }
+
+        var position = new Dictionary<(string?, int), int>();
+        for (var i = 0; i < pageKeys.Count; i++)
+            position[(pageKeys[i].Mailbox, pageKeys[i].Id)] = i;
+        items.Sort((a, b) => position.GetValueOrDefault((a.Mailbox, a.Id), int.MaxValue)
+            .CompareTo(position.GetValueOrDefault((b.Mailbox, b.Id), int.MaxValue)));
 
         await EnrichFormDataAsync(connection, items, cancellationToken);
         await EnrichRepositoryItemAsync(items, cancellationToken);
@@ -214,28 +213,44 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
             request.WorkflowId, request.CurrentUserId, items,
             row => string.Equals(row.Mailbox, "inbox", StringComparison.OrdinalIgnoreCase), cancellationToken);
 
-        var tableExists = inboxRows.Count > 0 || sentRows.Count > 0 || completedRows.Count > 0
+        var tableExists = tickets.Count > 0
             || await MailboxTableExistsAsync(connection, suffix, fullWorkflowKey, cancellationToken);
-        return new LegacyMailboxListResult(items, items.Count, 1, activityIds.Length, tableExists);
+        return new LegacyMailboxListResult(items, tickets.Count, pageNumber, paged ? pageSize : activityIds.Length, tableExists);
     }
 
     public async Task<LegacyMailboxActivityCountResult> CountByActivityIdsAsync(
         LegacyMailboxByActivityRequest request,
         CancellationToken cancellationToken = default)
     {
-        var listed = await ListByActivityIdsAsync(request, cancellationToken);
+        var activityIds = NormalizeActivityIds(request.ActivityIds);
         var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var id in request.ActivityIds.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var id in activityIds)
             counts[id] = 0;
 
-        foreach (var row in listed.Items)
+        if (activityIds.Length > 0)
         {
-            var activityId = row.ActivityId?.Trim();
-            if (string.IsNullOrWhiteSpace(activityId))
-                continue;
+            var connectionString = _tenantContext.ConnectionString;
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException("Tenant connection string not resolved.");
 
-            var key = counts.Keys.FirstOrDefault(id => ActivityKeysMatch(id, activityId)) ?? activityId;
-            counts[key] = counts.GetValueOrDefault(key) + 1;
+            var suffix = request.WorkflowId.ToString("N")[..8];
+            var fullWorkflowKey = request.WorkflowId.ToString("N");
+            await _mailboxSync.EnsureConfiguredAssigneesAsync(request.WorkflowId, cancellationToken);
+
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync(cancellationToken);
+
+            // Same tickets as ListByActivityIdsAsync, without loading rows or form data.
+            var tickets = await ReadCurrentStageTicketsAsync(connection, suffix, fullWorkflowKey, request, activityIds, cancellationToken);
+            foreach (var ticket in tickets)
+            {
+                var activityId = ticket.ActivityId?.Trim();
+                if (string.IsNullOrWhiteSpace(activityId))
+                    continue;
+
+                var key = counts.Keys.FirstOrDefault(id => ActivityKeysMatch(id, activityId)) ?? activityId;
+                counts[key] = counts.GetValueOrDefault(key) + 1;
+            }
         }
 
         var items = counts.Select(pair => new LegacyMailboxActivityCountItem(pair.Key, pair.Value)).ToList();
@@ -244,6 +259,13 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
             items.Sum(item => item.Count),
             items);
     }
+
+    private static string[] NormalizeActivityIds(IReadOnlyList<string> activityIds) =>
+        activityIds
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     private async Task<bool> MailboxTableExistsAsync(
         NpgsqlConnection connection,
@@ -261,34 +283,6 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
         return completed.Exists;
     }
 
-    /// <summary>One row per ticket: the mailbox row for the stage the ticket is on now.</summary>
-    private static List<LegacyMailboxRowDto> KeepCurrentStageRows(
-        IReadOnlyList<LegacyMailboxRowDto> inboxRows,
-        IReadOnlyList<LegacyMailboxRowDto> sentRows,
-        IReadOnlyList<LegacyMailboxRowDto> completedRows)
-    {
-        var byInstance = new Dictionary<string, LegacyMailboxRowDto>(StringComparer.OrdinalIgnoreCase);
-        foreach (var row in inboxRows.Concat(sentRows).Concat(completedRows))
-        {
-            var key = string.IsNullOrWhiteSpace(row.WorkflowInstanceId)
-                ? $"row:{row.Id}"
-                : row.WorkflowInstanceId.Trim();
-            if (!byInstance.TryGetValue(key, out var existing) || MailboxRank(row.Mailbox) < MailboxRank(existing.Mailbox))
-                byInstance[key] = row;
-        }
-
-        return byInstance.Values.ToList();
-    }
-
-    private static int MailboxRank(string? mailbox) =>
-        mailbox switch
-        {
-            "inbox" => 0,
-            "sent" => 1,
-            "completed" => 2,
-            _ => 3
-        };
-
     private static bool ActivityKeysMatch(string left, string right)
     {
         var a = left.Trim();
@@ -300,25 +294,144 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
             && aId == bId;
     }
 
-    private async Task<List<LegacyMailboxRowDto>> ReadMailboxByActivityIdsAsync(
+    /// <summary>A by-activity ticket: which mailbox row represents it, plus the keys needed to sort and count.</summary>
+    private sealed record ActivityTicketKey(
+        LegacyMailboxTableKind Kind,
+        string Mailbox,
+        int Id,
+        string? WorkflowInstanceId,
+        string? ActivityId,
+        DateTime? TransactionCreatedAt,
+        DateTime? CreatedAtUtc);
+
+    private sealed record ByActivityFilter(string TableFull, string WhereSql, List<NpgsqlParameter> Parameters, string TransactionTable, bool TransactionTableExists);
+
+    private static readonly (LegacyMailboxTableKind Kind, string Mailbox)[] ByActivityMailboxes =
+    [
+        // Order matters: a ticket in inbox wins over sent, sent over completed (one row per ticket).
+        (LegacyMailboxTableKind.Inbox, "inbox"),
+        (LegacyMailboxTableKind.Sent, "sent"),
+        (LegacyMailboxTableKind.Completed, "completed"),
+    ];
+
+    /// <summary>
+    /// Every current-stage ticket for the activity ids, one per instance, newest first. Reads only key columns
+    /// (no stage/agent joins, no form data), so it stays cheap for workflows with tens of thousands of tickets.
+    /// </summary>
+    private async Task<List<ActivityTicketKey>> ReadCurrentStageTicketsAsync(
         NpgsqlConnection connection,
-        LegacyMailboxTableKind kind,
-        string tablePrefix,
         string suffix,
         string fullWorkflowKey,
         LegacyMailboxByActivityRequest request,
         string[] activityIds,
         CancellationToken cancellationToken)
     {
+        var byInstance = new Dictionary<string, ActivityTicketKey>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (kind, mailbox) in ByActivityMailboxes)
+        {
+            var filter = await BuildByActivityFilterAsync(connection, kind, suffix, fullWorkflowKey, request, activityIds, cancellationToken);
+            if (filter is null)
+                continue;
+
+            var sql = $@"
+WITH mailbox_ranked AS (
+    SELECT
+        m.id, m.workflow_instance_id, m.activity_id, m.transaction_created_at, m.created_at_utc,
+        ROW_NUMBER() OVER (
+            PARTITION BY m.workflow_instance_id
+            ORDER BY m.transaction_created_at DESC, m.id DESC) AS mailbox_rn
+    FROM {filter.TableFull} m
+    WHERE {filter.WhereSql}
+)
+SELECT id, workflow_instance_id, activity_id, transaction_created_at, created_at_utc
+FROM mailbox_ranked
+WHERE mailbox_rn = 1;";
+            await using var cmd = new NpgsqlCommand(sql, connection) { CommandTimeout = 120 };
+            foreach (var p in filter.Parameters)
+                cmd.Parameters.Add(CloneParameter(p));
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var ticket = new ActivityTicketKey(
+                    kind,
+                    mailbox,
+                    reader.GetInt32(0),
+                    reader.IsDBNull(1) ? null : reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetString(2),
+                    reader.IsDBNull(3) ? null : reader.GetFieldValue<DateTime>(3),
+                    reader.IsDBNull(4) ? null : reader.GetFieldValue<DateTime>(4));
+                var key = string.IsNullOrWhiteSpace(ticket.WorkflowInstanceId)
+                    ? $"row:{ticket.Id}"
+                    : ticket.WorkflowInstanceId.Trim();
+                byInstance.TryAdd(key, ticket);
+            }
+        }
+
+        var tickets = byInstance.Values.ToList();
+        // Newest tickets first (same rule as inbox/sent list SQL).
+        tickets.Sort((a, b) =>
+        {
+            var byCreated = Nullable.Compare(b.TransactionCreatedAt, a.TransactionCreatedAt);
+            if (byCreated != 0)
+                return byCreated;
+            var byInstanceCreated = Nullable.Compare(b.CreatedAtUtc, a.CreatedAtUtc);
+            if (byInstanceCreated != 0)
+                return byInstanceCreated;
+            return b.Id.CompareTo(a.Id);
+        });
+        return tickets;
+    }
+
+    /// <summary>Full mailbox rows (stage, agent data, ...) for the given row ids of one mailbox.</summary>
+    private async Task<List<LegacyMailboxRowDto>> ReadMailboxRowsByIdAsync(
+        NpgsqlConnection connection,
+        LegacyMailboxTableKind kind,
+        string suffix,
+        string fullWorkflowKey,
+        LegacyMailboxByActivityRequest request,
+        string[] activityIds,
+        int[] rowIds,
+        CancellationToken cancellationToken)
+    {
+        var filter = await BuildByActivityFilterAsync(connection, kind, suffix, fullWorkflowKey, request, activityIds, cancellationToken);
+        if (filter is null || rowIds.Length == 0)
+            return [];
+
+        var parameters = filter.Parameters.ToList();
+        parameters.Add(new NpgsqlParameter("@MailboxRowIds", NpgsqlDbType.Array | NpgsqlDbType.Integer) { Value = rowIds });
+        var agentJoin = await BuildAgentValidationApplyAsync(connection, $"agent_data_validation_{suffix}", cancellationToken);
+        var currentStageJoin = BuildCurrentStageJoin(filter.TransactionTable, filter.TransactionTableExists);
+        var dataSql = BuildListSql(
+            filter.TableFull,
+            "m.id = ANY(@MailboxRowIds) AND " + filter.WhereSql,
+            agentJoin,
+            currentStageJoin,
+            latestOnlyPerInstance: false,
+            showViewerActions: kind == LegacyMailboxTableKind.Inbox);
+        var mailbox = ByActivityMailboxes.First(x => x.Kind == kind).Mailbox;
+        var rows = await ReadListPageAsync(connection, dataSql, parameters, 0, rowIds.Length, cancellationToken);
+        return rows.Select(row => row with { Mailbox = mailbox }).ToList();
+    }
+
+    /// <summary>User + activity + current-stage filter shared by both by-activity passes. Null when the mailbox table is missing.</summary>
+    private async Task<ByActivityFilter?> BuildByActivityFilterAsync(
+        NpgsqlConnection connection,
+        LegacyMailboxTableKind kind,
+        string suffix,
+        string fullWorkflowKey,
+        LegacyMailboxByActivityRequest request,
+        string[] activityIds,
+        CancellationToken cancellationToken)
+    {
+        var tablePrefix = ByActivityMailboxes.First(x => x.Kind == kind).Mailbox;
         var (_, tableFull, tableExists) = await ResolveMailboxTableAsync(
             connection, tablePrefix, suffix, fullWorkflowKey, cancellationToken);
         if (!tableExists)
-            return [];
+            return null;
 
         var transactionTableName = $"transaction_{suffix}";
         var transactionTable = $"workflow.{transactionTableName}";
         var transactionTableExists = await TableExistsAsync(connection, transactionTableName, cancellationToken);
-        var pageSize = 5000;
         var listRequest = new LegacyMailboxListRequest(
             kind,
             request.WorkflowId,
@@ -326,7 +439,7 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
             TransactionId: null,
             request.CurrentUserId,
             PageNumber: 1,
-            PageSize: pageSize);
+            PageSize: ByActivityUnpagedLimit);
         var (whereSql, parameters) = BuildUserFilter(listRequest, transactionTable, transactionTableExists);
         whereSql += " AND LOWER(BTRIM(m.activity_id)) = ANY(@ActivityIds)";
         parameters.Add(new NpgsqlParameter("@ActivityIds", NpgsqlDbType.Array | NpgsqlDbType.Text)
@@ -336,24 +449,7 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
         if (transactionTableExists)
             whereSql += " AND " + BuildCurrentActivityMatchSql(transactionTable);
 
-        var agentTable = $"agent_data_validation_{suffix}";
-        var agentJoin = await BuildAgentValidationApplyAsync(connection, agentTable, cancellationToken);
-        var currentStageJoin = BuildCurrentStageJoin(transactionTable, transactionTableExists);
-        var dataSql = BuildListSql(
-            tableFull,
-            whereSql,
-            agentJoin,
-            currentStageJoin,
-            latestOnlyPerInstance: true,
-            showViewerActions: kind == LegacyMailboxTableKind.Inbox);
-        var mailbox = kind switch
-        {
-            LegacyMailboxTableKind.Inbox => "inbox",
-            LegacyMailboxTableKind.Sent => "sent",
-            _ => "completed"
-        };
-        var rows = await ReadListPageAsync(connection, dataSql, parameters, 0, pageSize, cancellationToken);
-        return rows.Select(row => row with { Mailbox = mailbox }).ToList();
+        return new ByActivityFilter(tableFull, whereSql, parameters, transactionTable, transactionTableExists);
     }
 
     /// <summary>
