@@ -115,11 +115,13 @@ export default function transformColumns(
     enableSorting: false,
     id: 'select',
     meta: {
-      className: 'p-1',
+      // The table pads its first cell (first:pl-6), which pushed the
+      // checkbox out of this narrow column; keep it small here.
+      className: 'px-3 py-1 first:pl-3',
       label: '',
       showMenu: false,
     },
-    size: 40,
+    size: 44,
     cell: ({ row }) => {
       const isGroup =
         row.original.rowType === 'group' || row.original.type === 'group'

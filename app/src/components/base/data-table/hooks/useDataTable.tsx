@@ -53,11 +53,17 @@ export default function useDataTable({
     [columns, enableRowSelection],
   )
   const transformedRows = useMemo(() => transformRows(rows), [rows])
+  // The row checkbox column isn't one of `columns`, so put it first here;
+  // otherwise TanStack places it after the last column.
   const newOrderState = useMemo(
     (): ColumnOrderState => [
-      ...new Set([...orderState, ...columns.map(({ id }) => id)]),
+      ...new Set([
+        ...(enableRowSelection ? ['select'] : []),
+        ...orderState,
+        ...columns.map(({ id }) => id),
+      ]),
     ],
-    [columns, orderState],
+    [columns, enableRowSelection, orderState],
   )
 
   const handleGroupStateChange = (
