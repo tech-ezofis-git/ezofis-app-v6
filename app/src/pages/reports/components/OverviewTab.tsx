@@ -913,7 +913,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                     }
                     onClick={() => setShowBreakdown(true)}
                   >
-                    <span className='text-12 font-medium text-primary-11'>
+                    <span className='text-13 font-bold text-primary-12'>
                       {t`Total ${label}`}
                     </span>
                     <span className='text-15 font-bold text-primary-12'>
@@ -1004,21 +1004,29 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
 
         {columnTotals.length > 0 &&
           filteredRows.length > 0 &&
-          !totalsInToolbar && (
+          (!totalsInToolbar ||
+            (totalsBreakdown && totalsBreakdown.items.length > 1)) && (
             // Label column + chips column, so both rows' chips start at the same edge.
             <div className='grid shrink-0 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
-              <span className='text-12 text-gray-11'>{t`Totals:`}</span>
-              <div className='flex flex-wrap items-center gap-2'>
-                {columnTotals.map(({ label, total }) => (
-                  <span
-                    className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
-                    key={label}
-                  >
-                    {t`Total ${label}`}
-                    <span className='font-semibold'>{formatTotal(total)}</span>
-                  </span>
-                ))}
-              </div>
+              {/* A toolbar total (Total Credits) is not repeated here. */}
+              {!totalsInToolbar && (
+                <>
+                  <span className='text-12 text-gray-11'>{t`Totals:`}</span>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    {columnTotals.map(({ label, total }) => (
+                      <span
+                        className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
+                        key={label}
+                      >
+                        {t`Total ${label}`}
+                        <span className='font-semibold'>
+                          {formatTotal(total)}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
               {totalsBreakdown && totalsBreakdown.items.length > 1 && (
                 <>
                   <span className='text-12 text-gray-11'>
