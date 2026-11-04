@@ -1387,6 +1387,16 @@ const QuoteAgentResultView = ({
       },
     )
 
+    // A form with no Freight field still has to send the screen's freight to the PDF.
+    if (
+      activeVariantTotals.freight > 0 &&
+      !formFields.some((item) =>
+        compactControl(getFieldHeading(item)).includes('freight'),
+      )
+    ) {
+      data.Freight = activeVariantTotals.freight
+    }
+
     return data
   }
 
