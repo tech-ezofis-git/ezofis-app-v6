@@ -95,6 +95,11 @@ const normalizeName = (value: string | undefined) =>
   (value ?? '').toLowerCase().replace(/[\s_\-.#]/g, '')
 
 // Columns a report's totals are split by (normalized names).
+// Filters shown inline (one row); the rest are added from the "+" picker.
+const MAX_INLINE_FILTERS = 4
+// A column with more distinct values than this isn't a quick filter.
+const MAX_INLINE_FILTER_OPTIONS = 25
+
 const BREAKDOWN_COLUMN_NAMES = ['agent', 'skill', 'activity', 'activitytype']
 
 const toNumber = (value: unknown) => {
@@ -572,10 +577,33 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     })
   }, [previewColumns, columnTypes, sourceRows, valueForColumn, t])
 
-  // Manual reports have no default/other split, so all their filters stay inline.
+  // One row of inline filters: the first few columns with a short list of
+  // values (Workflow, Status, Stage...). Columns with near-unique values
+  // (Request No), dates and numbers go behind the "+" picker with the rest.
+  // Manual reports have no default/other split, so any column may be inline.
+  const inlineFilterIds = useMemo(() => {
+    const candidates = allFilterDefinitions.filter(
+      (def) =>
+        def.options.length > 0 &&
+        (!defaultColumnKeys || defaultColumnKeys.has(def.id)),
+    )
+    const isShortList = (def: FilterDefinition) =>
+      !isDateColumnType(def.dataType) &&
+      !isNumberColumnType(def.dataType) &&
+      def.options.length <= MAX_INLINE_FILTER_OPTIONS
+    return new Set(
+      [
+        ...candidates.filter(isShortList),
+        ...candidates.filter((def) => !isShortList(def)),
+      ]
+        .slice(0, MAX_INLINE_FILTERS)
+        .map((def) => def.id),
+    )
+  }, [allFilterDefinitions, defaultColumnKeys])
+
   const isInlineFilter = useCallback(
-    (id: string) => !defaultColumnKeys || defaultColumnKeys.has(id),
-    [defaultColumnKeys],
+    (id: string) => inlineFilterIds.has(id),
+    [inlineFilterIds],
   )
 
   const filterDefinitions = useMemo(
