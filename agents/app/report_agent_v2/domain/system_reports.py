@@ -334,11 +334,31 @@ async def _portal_submission_performance(ctx: _Ctx) -> tuple[sql.Composable, lis
 
 # Raised By: who submitted the request. Pending With: who has to act on it now (its open transactions'
 # users / groups, as in their Inbox).
+_SLA_STATUS_COLORS = (("Within SLA", "green"), ("Breached", "red"))
 _PENDING_COLS = (Col("Workflow"), Col("Request No"),
                  Col("Status", colors=(("Running", "blue"), ("Pending", "orange"), ("Paused", "gray"))),
-                 Col("Stage", color_default="purple"), Col("Raised By"), Col("Pending With"),
-                 Col("Created At", "date", "value"), Col("Modified At", "date", "value"),
-                 Col("Days Pending", "number", "value")) + _REQUEST_LINKS
+                 Col("Stage", color_default="purple"),
+                 Col("Priority", colors=(("Low", "gray"), ("Normal", "blue"), ("High", "orange"), ("Critical", "red"),
+                                         ("Emergency", "red"))),
+                 Col("Raised By"), Col("Raised On", "date", "value"),
+                 Col("Pending With"), Col("Pending Since", "date", "value"), Col("With User For"),
+                 Col("Last Acted On", "date", "value"), Col("Last Acted Stage"), Col("First Actioner"),
+                 Col("Response Due", "date", "value"), Col("Response Time (Hrs)", "number", "value"),
+                 Col("Response Status", colors=_SLA_STATUS_COLORS),
+                 Col("Resolution Due", "date", "value"), Col("Resolution Time (Hrs)", "number", "value"),
+                 Col("Resolution Status", colors=_SLA_STATUS_COLORS),
+                 Col("Escalated", colors=(("Yes", "red"),)),
+                 Col("Days Pending", "number", "value"), Col("Open For"), Col("Month")) + _REQUEST_LINKS
+
+
+def _elapsed_text(since: sql.Composable) -> sql.Composable:
+    """'2 Days 3 Hours' / '5 Hours' / '54 Minutes' from a timestamp until now (like V5's Days Open)."""
+    return sql.SQL(
+        "(CASE WHEN {s} IS NULL THEN NULL "
+        "WHEN now() - {s} >= interval '1 day' THEN extract(day FROM now() - {s})::int || ' Days ' "
+        "|| extract(hour FROM now() - {s})::int || ' Hours' "
+        "WHEN now() - {s} >= interval '1 hour' THEN extract(hour FROM now() - {s})::int || ' Hours' "
+        "ELSE greatest(extract(minute FROM now() - {s})::int, 0) || ' Minutes' END)").format(s=since)
 
 
 def _user_email(user_id: sql.Composable) -> sql.Composable:
@@ -356,6 +376,8 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
         return _empty(_PENDING_COLS), ["No workflow requests found."]
     has_users = {"Id", "Email"} <= await _columns(ctx.conn, "users", "Users")
     has_groups = {"Id", "Name"} <= await _columns(ctx.conn, "users", "Groups")
+    has_timers = {"workflow_instance_id", "scope", "status", "due_at_utc", "transaction_id", "outcome"} <= await _columns(
+        ctx.conn, "workflow", "sla_timers")
     parts = []
     for name, table, cols in tables:
         suffix = table.rsplit("_", 1)[1]
@@ -417,16 +439,93 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
         modified = sql.SQL("wi.last_activity_at_utc") if "last_activity_at_utc" in cols else sql.SQL("NULL::timestamptz")
         ref = sql.SQL("wi.reference_number::text") if "reference_number" in cols else sql.SQL("(wi.id)::text")
         tenant = sql.SQL(" AND wi.tenant_id = {}").format(ctx.bind(ctx.tenant_id)) if "tenant_id" in cols else sql.SQL("")
+
+        # SlaPriority on the request: 0 Low, 1 Normal, 2 High, 3 Critical, 4 Emergency (text kept as-is).
+        priority = (sql.SQL("(CASE btrim(wi.priority::text) WHEN '0' THEN 'Low' WHEN '1' THEN 'Normal' WHEN '2' THEN 'High' "
+                            "WHEN '3' THEN 'Critical' WHEN '4' THEN 'Emergency' ELSE NULLIF(btrim(wi.priority::text), '') END)")
+                    if "priority" in cols else sql.SQL("NULL::text"))
+        if "started_by" in cols:  # a starter no longer in Users reads "Unknown user", not an empty cell
+            created_by = sql.SQL("COALESCE({}, CASE WHEN wi.started_by IS NOT NULL THEN 'Unknown user' END)").format(created_by)
+
+        # The request's steps (transactions): the open one (pending since), the last completed one, the first actioner.
+        tx = _t("workflow", tx_table)
+        mine = sql.SQL("(x.workflow_instance_id)::text = (wi.id)::text") + (
+            sql.SQL(" AND COALESCE(x.is_deleted, false) = false") if "is_deleted" in tx_cols else sql.SQL(""))
+        is_open = sql.SQL(" AND x.action_status = 0") + (
+            sql.SQL(" AND upper(btrim(COALESCE(x.stage_type::text, ''))) <> 'END'") if "stage_type" in tx_cols else sql.SQL(""))
+        if {"workflow_instance_id", "action_status", "created_at"} <= tx_cols:
+            pending_since = sql.SQL("(SELECT MIN(x.created_at) FROM {tx} x WHERE {m}{o})").format(tx=tx, m=mine, o=is_open)
+            acted_at = sql.SQL("COALESCE(x.modified_at, x.created_at)") if "modified_at" in tx_cols else sql.SQL("x.created_at")
+            last_done = sql.SQL("FROM {tx} x WHERE {m} AND x.action_status <> 0 ORDER BY {a} DESC LIMIT 1").format(
+                tx=tx, m=mine, a=acted_at)
+            last_on = sql.SQL("COALESCE((SELECT {a} {l}), {mod})").format(a=acted_at, l=last_done, mod=modified)
+            last_stage = (sql.SQL("(SELECT x.stage_name::text {})").format(last_done) if "stage_name" in tx_cols
+                          else sql.SQL("NULL::text"))
+            not_start = (sql.SQL(" AND upper(btrim(COALESCE(x.stage_type::text, ''))) <> 'START'") if "stage_type" in tx_cols
+                         else sql.SQL(""))
+            first_actioner = (sql.SQL(
+                "(SELECT {e} FROM {tx} x WHERE {m} AND x.activity_user_id IS NOT NULL{ns} ORDER BY x.created_at, x.id LIMIT 1)"
+            ).format(e=_user_email(sql.SQL("x.activity_user_id")), tx=tx, m=mine, ns=not_start)
+                if has_users and "activity_user_id" in tx_cols else sql.SQL("NULL::text"))
+        else:
+            pending_since = sql.SQL("NULL::timestamptz")
+            last_stage = first_actioner = sql.SQL("NULL::text")
+            last_on = modified
+
+        # SLA (V6 SLA timers): response = the current step's rules, resolution = the request's; the earliest
+        # rule is the deadline, and any fired rule means it was breached.
+        if has_timers:
+            open_steps = (sql.SQL("(SELECT x.id FROM {tx} x WHERE {m}{o})").format(tx=tx, m=mine, o=is_open)
+                          if {"workflow_instance_id", "action_status", "id"} <= tx_cols else sql.SQL("(SELECT NULL::int WHERE false)"))
+            sla = sql.SQL(
+                "LEFT JOIN LATERAL (SELECT "
+                "MIN(st.due_at_utc) FILTER (WHERE st.scope LIKE '%%response' AND st.transaction_id IN {open}) AS resp_due, "
+                "bool_or(st.status = 1) FILTER (WHERE st.scope LIKE '%%response' AND st.transaction_id IN {open}) AS resp_fired, "
+                "MIN(st.due_at_utc) FILTER (WHERE st.scope LIKE '%%resolution') AS res_due, "
+                "bool_or(st.status = 1) FILTER (WHERE st.scope LIKE '%%resolution') AS res_fired, "
+                "bool_or(st.status = 1 AND (st.outcome LIKE '%%reassigned to %%' OR st.outcome LIKE '%%moved to stage %%')) "
+                "AS escalated "
+                "FROM workflow.sla_timers st WHERE (st.workflow_instance_id)::text = (wi.id)::text AND st.status IN (0, 1)) sla ON true"
+            ).format(open=open_steps)
+        else:
+            sla = sql.SQL("LEFT JOIN LATERAL (SELECT NULL::timestamptz AS resp_due, NULL::boolean AS resp_fired, "
+                          "NULL::timestamptz AS res_due, NULL::boolean AS res_fired, NULL::boolean AS escalated) sla ON true")
+
         parts.append(sql.SQL(
-            "SELECT {wf}::text AS c0, {ref} AS c1, {status} AS c2, {stage} AS c3, {created_by} AS c4, "
-            "{pending_with} AS c5, wi.created_at_utc AS c6, {modified} AS c7, "
-            "({asof} - (wi.created_at_utc AT TIME ZONE 'UTC')::date) AS c8, (wi.id)::text AS c9, {wf_id} AS c10 "
-            "FROM {t} wi WHERE wi.status IN (0, 1, 2){tenant}").format(
-            wf=ctx.bind(name), ref=ref, status=_status_label(sql.SQL("wi.status")), stage=stage, created_by=created_by,
-            pending_with=pending_with, modified=modified, asof=ctx.bind(ctx.as_of, "date"), t=_t("workflow", table), tenant=tenant,
+            "SELECT {wf}::text AS wf, {ref} AS ref, {status} AS status, {stage} AS stage, {priority} AS priority, "
+            "{created_by} AS raised, wi.created_at_utc AS raised_on, "
+            "{pending_with} AS pending_with, {pending_since} AS pending_since, {last_on} AS last_on, {last_stage} AS last_stage, "
+            "{first_actioner} AS first_actioner, sla.resp_due, sla.resp_fired, sla.res_due, sla.res_fired, sla.escalated, "
+            "({asof} - (wi.created_at_utc AT TIME ZONE 'UTC')::date) AS days, (wi.id)::text AS inst, {wf_id} AS wf_id "
+            "FROM {t} wi {sla} WHERE wi.status IN (0, 1, 2){tenant}").format(
+            wf=ctx.bind(name), ref=ref, status=_status_label(sql.SQL("wi.status")), stage=stage,
+            priority=priority, created_by=created_by,
+            pending_with=pending_with, pending_since=pending_since, last_on=last_on, last_stage=last_stage,
+            first_actioner=first_actioner, sla=sla, asof=ctx.bind(ctx.as_of, "date"), t=_t("workflow", table), tenant=tenant,
             wf_id=sql.SQL("(wi.workflow_id)::text") if "workflow_id" in cols else sql.SQL("NULL::text")))
-    q = sql.SQL("SELECT * FROM ({u}) s ORDER BY c8 DESC NULLS LAST, c0 LIMIT {limit}").format(
-        u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
+
+    def hours_left(due: sql.Composable) -> sql.Composable:
+        # Hours to the deadline: positive = still within it, negative = overdue (like V5's +16 / -3).
+        return sql.SQL("round((extract(epoch FROM ({d} - now())) / 3600)::numeric)").format(d=due)
+
+    def status_of(due: sql.Composable, fired: sql.Composable) -> sql.Composable:
+        return sql.SQL("(CASE WHEN {d} IS NULL THEN NULL WHEN {f} OR {d} < now() THEN 'Breached' ELSE 'Within SLA' END)").format(
+            d=due, f=fired)
+
+    q = sql.SQL(
+        "SELECT s.wf AS c0, s.ref AS c1, s.status AS c2, s.stage AS c3, s.priority AS c4, "
+        "s.raised AS c5, s.raised_on AS c6, s.pending_with AS c7, s.pending_since AS c8, {with_user} AS c9, "
+        "s.last_on AS c10, s.last_stage AS c11, s.first_actioner AS c12, "
+        "s.resp_due AS c13, {resp_hours} AS c14, {resp_status} AS c15, "
+        "s.res_due AS c16, {res_hours} AS c17, {res_status} AS c18, "
+        "CASE WHEN s.escalated THEN 'Yes' WHEN s.resp_due IS NOT NULL OR s.res_due IS NOT NULL THEN 'No' END AS c19, "
+        "s.days AS c20, {open_for} AS c21, to_char(s.raised_on, 'Mon') || chr(39) || to_char(s.raised_on, 'YY') AS c22, "
+        "s.inst AS c23, s.wf_id AS c24 "
+        "FROM ({u}) s ORDER BY s.days DESC NULLS LAST, s.wf LIMIT {limit}"
+    ).format(with_user=_elapsed_text(sql.SQL("s.pending_since")), open_for=_elapsed_text(sql.SQL("s.raised_on")),
+             resp_hours=hours_left(sql.SQL("s.resp_due")), resp_status=status_of(sql.SQL("s.resp_due"), sql.SQL("s.resp_fired")),
+             res_hours=hours_left(sql.SQL("s.res_due")), res_status=status_of(sql.SQL("s.res_due"), sql.SQL("s.res_fired")),
+             u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
     return q, []
 
 

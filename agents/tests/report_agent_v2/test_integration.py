@@ -471,8 +471,12 @@ async def test_pending_default_report_shows_creator_email(world, make_client):
     ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
     r = await client.get(f"/api/report-agent-v2/reports/{ids['pending_workflow_requests']}/execute", headers=admin)
     body = r.json()
-    assert [c["label"] for c in body["columns"]] == ["Workflow", "Request No", "Status", "Stage", "Raised By", "Pending With",
-                                                     "Created At", "Modified At", "Days Pending"]
+    assert [c["label"] for c in body["columns"]] == [
+        "Workflow", "Request No", "Status", "Stage", "Priority", "Raised By", "Raised On",
+        "Pending With", "Pending Since", "With User For", "Last Acted On", "Last Acted Stage", "First Actioner",
+        "Response Due", "Response Time (Hrs)", "Response Status", "Resolution Due", "Resolution Time (Hrs)",
+        "Resolution Status", "Escalated", "Days Pending", "Open For", "Month"]
+    assert all(row["Open For"] and row["Month"] for row in body["rows"])
     assert body["rows"] and all(row["Raised By"] == "owner@a.example.com" for row in body["rows"])
     # Status and Stage carry the template's built-in pills.
     spec = (await client.get(f"/api/report-agent-v2/definitions/{ids['pending_workflow_requests']}", headers=admin)).json()["reportSpec"]
@@ -852,3 +856,46 @@ async def test_sla_report_lists_each_sla_event(world):
             for t in ("sla_timers", "sla_notification_outbox", "transaction_b05ed64d"):
                 conn.execute(f"DROP TABLE IF EXISTS workflow.{t}")
             conn.execute("ALTER TABLE workflow.workflow_instances_b05ed64d DROP COLUMN IF EXISTS started_by")
+
+
+async def test_pending_report_sla_and_timing_columns(world):
+    """Response SLA = the open step's timers, resolution = the request's; hours left are signed; the open
+    step gives Pending Since / With User For; the last completed step gives Last Acted Stage."""
+    from datetime import date as _date
+
+    from app.report_agent_v2.domain.executor import run_compiled as _run, shape_result as _shape
+    from app.report_agent_v2.domain.system_reports import compile_system_report
+
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        inst = conn.execute("SELECT id FROM workflow.workflow_instances_b05ed64d WHERE status IN (0, 1, 2) "
+                            "ORDER BY reference_number LIMIT 1").fetchone()[0]
+        conn.execute("""CREATE TABLE workflow.transaction_b05ed64d (id int, workflow_instance_id uuid, stage_name text,
+                        stage_type text, action_status int, activity_user_id uuid, created_at timestamptz,
+                        modified_at timestamptz, is_deleted boolean)""")
+        conn.execute("INSERT INTO workflow.transaction_b05ed64d VALUES "
+                     "(1, %s, 'Submit', 'START', 1, %s, now() - interval '3 days', now() - interval '3 days', false), "
+                     "(2, %s, 'Finance Approval', 'INTERNAL_ACTOR', 0, %s, now() - interval '2 days 5 hours', NULL, false)",
+                     (inst, world.owner, inst, world.shared))
+        conn.execute("""CREATE TABLE workflow.sla_timers (id bigint PRIMARY KEY, workflow_instance_id uuid, scope varchar(16),
+                        transaction_id int, status smallint, outcome text, due_at_utc timestamptz)""")
+        conn.execute("INSERT INTO workflow.sla_timers VALUES "
+                     "(1, %s, 'response', 2, 1, 'queued 1 email(s); reassigned to x', now() - interval '10 hours'), "
+                     "(2, %s, 'resolution', 0, 0, NULL, now() + interval '20 hours')", (inst, inst))
+    try:
+        async with await psycopg.AsyncConnection.connect(npgsql_to_conninfo(await _tenant_cs(world)).replace("password=x", f"password={dict(p.split('=', 1) for p in TEST_PG.split()).get('password', 'x')}"), autocommit=True) as aconn:
+            compiled = await compile_system_report(aconn, world.tenant_a, "pending_workflow_requests", as_of=_date.today(), limit=50)
+            _, out, _ = _shape(compiled.columns, await _run(aconn, compiled, 30000))
+        row = next(r for r in out if r["instanceId"] == str(inst))
+        assert row["Pending With"] == "shared@a.example.com" and row["With User For"] == "2 Days 5 Hours"
+        assert row["Last Acted Stage"] == "Submit" and row["First Actioner"] == "shared@a.example.com"
+        assert (row["Response Status"], float(row["Response Time (Hrs)"])) == ("Breached", -10)
+        assert (row["Resolution Status"], float(row["Resolution Time (Hrs)"])) == ("Within SLA", 20)
+        assert row["Escalated"] == "Yes" and row["Priority"] is None
+        other = next(r for r in out if r["instanceId"] != str(inst))
+        assert other["Response Status"] is None and other["Escalated"] is None  # no SLA on that request
+    finally:
+        with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+            conn.execute("DROP TABLE IF EXISTS workflow.transaction_b05ed64d")
+            conn.execute("DROP TABLE IF EXISTS workflow.sla_timers")
+
