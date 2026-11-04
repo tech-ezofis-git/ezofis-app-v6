@@ -1,53 +1,42 @@
 import formApi from '@/api/form/form'
-import { getFieldHeading, getFieldId } from './qualifierResultUtils'
+import { getFieldHeading } from './qualifierResultUtils'
 
-/** The client details RFQ Master can fill on a quote's form. */
-export type ClientDetails = {
+export type ClientMaster = {
+  clients: ClientMasterRow[]
+  masterFormId: string
+}
+
+/** A client row in RFQ Master, as far as the quote form needs it. */
+export type ClientMasterRow = {
   billing: string
+  /** The master column Bill To is read from, used to save edits back. */
+  billingColumn: string
   company: string
-  contact: string
   email: string
-  phone: string
-  shipping: string
+  id: string
 }
 
-export type ClientMasterRow = ClientDetails & {
-  /** The master column each detail was read from, used to save edits back. */
-  columns: Partial<Record<keyof ClientDetails, string>>
-  id: string
-  masterFormId?: string
-}
+const MASTER_FORM_NAME = 'rfqmaster'
+const ENTRY_PAGE_SIZE = 5000
+const BILLING_LABELS = ['billingaddress', 'billto']
+const COMPANY_LABELS = ['companyname', 'company', 'customername', 'customer']
+const EMAIL_LABELS = ['email', 'contactemail']
 
 /** The agent's bookkeeping for RFQ Master, never a field a user fills in. */
 const MASTER_TAG_LABELS = [
   'billingaddressfrommaster',
   'shippingaddressfrommaster',
   'rfqmastermatch',
+  'rfqmasternomatch',
 ]
-
-export const isMasterTagLabel = (label: unknown) =>
-  MASTER_TAG_LABELS.includes(
-    String(label ?? '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, ''),
-  )
-
-const MASTER_FORM_NAME = 'rfqmaster'
-const ENTRY_PAGE_SIZE = 5000
-
-const CLIENT_LABELS: Record<keyof ClientDetails, string[]> = {
-  billing: ['billingaddress', 'billto'],
-  company: ['companyname', 'company', 'customername', 'customer'],
-  contact: ['contactname', 'contactperson', 'contact'],
-  email: ['email', 'contactemail'],
-  phone: ['phonenumber', 'phone', 'contactphone'],
-  shipping: ['shippingaddress', 'shipto'],
-}
 
 const compact = (value: unknown) =>
   String(value ?? '')
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
+
+export const isMasterTagLabel = (label: unknown) =>
+  MASTER_TAG_LABELS.includes(compact(label))
 
 const parseObject = (value: unknown): Record<string, unknown> | null => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -106,42 +95,33 @@ export const clientsFromEntries = (
     const values = new Map<string, { key: string; text: string }>()
     Object.entries(flattenEntry(entry)).forEach(([key, value]) => {
       if (value === null || typeof value === 'object') return
-      const text = String(value).trim()
-      values.set(labelById.get(key) || compact(key), { key, text })
+      values.set(labelById.get(key) || compact(key), {
+        key,
+        text: String(value).trim(),
+      })
     })
-    const cell = (kind: keyof ClientDetails) =>
-      CLIENT_LABELS[kind].map((label) => values.get(label)).find(Boolean)
-    const read = (kind: keyof ClientDetails) => cell(kind)?.text || ''
-    const columns: ClientMasterRow['columns'] = {}
-    ;(Object.keys(CLIENT_LABELS) as (keyof ClientDetails)[]).forEach((kind) => {
-      const key = cell(kind)?.key
-      if (key) columns[kind] = key
-    })
+    const cell = (labels: string[]) =>
+      labels.map((label) => values.get(label)).find(Boolean)
     return {
-      billing: read('billing'),
-      columns,
-      company: read('company'),
-      contact: read('contact'),
-      email: read('email'),
+      billing: cell(BILLING_LABELS)?.text || '',
+      billingColumn: cell(BILLING_LABELS)?.key || 'Billing Address',
+      company: cell(COMPANY_LABELS)?.text || '',
+      email: cell(EMAIL_LABELS)?.text || '',
       id: String(
         entry.itemId ?? entry.item_id ?? entry.entryId ?? entry.id ?? index,
       ),
-      phone: read('phone'),
-      shipping: read('shipping'),
     }
   })
-  return clients
-    .filter((client) => client.company)
-    .sort((a, b) => a.company.localeCompare(b.company))
+  return clients.filter((client) => client.company)
 }
 
-/** Clients from this tenant's RFQ Master form; none when the tenant doesn't have one. */
-export const fetchClientMaster = async (): Promise<ClientMasterRow[]> => {
+/** This tenant's RFQ Master form and clients; null when the tenant doesn't have the form. */
+export const fetchClientMaster = async (): Promise<ClientMaster | null> => {
   const forms = await formApi.listAllForms(1, 500, '', [])
   const master = listOf(forms.data).find(
     (form) => compact(form?.name) === MASTER_FORM_NAME,
   )
-  if (!master?.id) return []
+  if (!master?.id) return null
 
   const [definition, entries] = await Promise.all([
     formApi.getFormDataById(String(master.id)),
@@ -151,92 +131,76 @@ export const fetchClientMaster = async (): Promise<ClientMasterRow[]> => {
     definition.data?.formJson || definition.data?._json,
   ) as { panels?: { fields?: any[] }[] } | null
   const fields = (formJson?.panels || []).flatMap((panel) => panel.fields || [])
-  return clientsFromEntries(listOf(entries.data), fields).map((client) => ({
-    ...client,
+  return {
+    clients: clientsFromEntries(listOf(entries.data), fields),
     masterFormId: String(master.id),
-  }))
+  }
 }
 
-/** The client whose email matches, if exactly one does; otherwise the company match. */
+/** The client with this email if exactly one has it; otherwise the same check on company. */
 export const matchClient = (
   clients: ClientMasterRow[],
   email: unknown,
   company: unknown,
 ): ClientMasterRow | null => {
-  const wanted = String(email ?? '')
+  const wantedEmail = String(email ?? '')
     .trim()
     .toLowerCase()
-  const byEmail = wanted
-    ? clients.filter((client) => client.email.toLowerCase() === wanted)
+  const byEmail = wantedEmail
+    ? clients.filter((client) => client.email.toLowerCase() === wantedEmail)
     : []
-  return byEmail.length === 1
-    ? byEmail[0]
-    : matchClientByCompany(clients, company)
+  if (byEmail.length === 1) return byEmail[0]
+  const wantedCompany = compact(company)
+  const byCompany = wantedCompany
+    ? clients.filter((client) => compact(client.company) === wantedCompany)
+    : []
+  return byCompany.length === 1 ? byCompany[0] : null
 }
 
-/** The client whose company matches the form's current company, if exactly one does. */
-export const matchClientByCompany = (
-  clients: ClientMasterRow[],
-  company: unknown,
-): ClientMasterRow | null => {
-  const wanted = compact(company)
-  if (!wanted) return null
-  const matches = clients.filter((client) => compact(client.company) === wanted)
-  return matches.length === 1 ? matches[0] : null
-}
-
-/**
- * Form field id -> value for a chosen client. Only Quote 1's own header fields
- * match (not "quote_2 Email"), and a blank master value never clears a field.
- */
-export const buildClientFieldPatch = (
-  client: ClientDetails,
-  formFields: any[],
-): { field: any; id: string; value: string }[] => {
-  const patch: { field: any; id: string; value: string }[] = []
-  ;(Object.keys(CLIENT_LABELS) as (keyof ClientDetails)[]).forEach((kind) => {
-    const value = client[kind]
-    if (!value) return
-    const field = CLIENT_LABELS[kind]
-      .map((label) =>
-        formFields.find((item) => compact(getFieldHeading(item)) === label),
-      )
-      .find(Boolean)
-    const id = field ? getFieldId(field) : ''
-    if (id) patch.push({ field, id, value })
-  })
-  return patch
-}
-
-/**
- * The detail a form field saves to RFQ Master. The company is left out: it
- * identifies the client, and typing in it must never rename a master row.
- */
-export const clientDetailForField = (
-  field: any,
-): Exclude<keyof ClientDetails, 'company'> | null => {
-  const label = compact(getFieldHeading(field))
-  const kinds = ['billing', 'contact', 'email', 'phone', 'shipping'] as const
-  return kinds.find((kind) => CLIENT_LABELS[kind].includes(label)) || null
-}
-
-/** The partial update for one detail, or null when nothing should be saved. */
-export const buildMasterUpdate = (
-  client: ClientMasterRow,
-  kind: Exclude<keyof ClientDetails, 'company'>,
-  value: unknown,
-): Record<string, string> | null => {
-  const text = String(value ?? '').trim()
-  const column = client.columns[kind]
-  if (!text || !column || text === client[kind]) return null
-  if (!client.masterFormId || !/^[0-9a-f-]{36}$/i.test(client.id)) return null
-  return { [column]: text }
-}
-
-export const saveClientUpdate = (
-  client: ClientMasterRow,
-  fields: Record<string, string>,
-) => formApi.saveFormEntry(String(client.masterFormId), client.id, { fields })
+/** Quote 1's own Bill To, not "quote_2 Billing Address". */
+export const isBillingField = (field: any) =>
+  BILLING_LABELS.includes(compact(getFieldHeading(field)))
 
 export const isCompanyField = (field: any) =>
-  CLIENT_LABELS.company.includes(compact(getFieldHeading(field)))
+  COMPANY_LABELS.includes(compact(getFieldHeading(field)))
+
+export const isEmailField = (field: any) =>
+  EMAIL_LABELS.includes(compact(getFieldHeading(field)))
+
+/**
+ * The master save for an edited Bill To: its row when the client has one, a new
+ * row when not, and null when nothing should be saved.
+ */
+export const buildBillingSave = (
+  client: ClientMasterRow | null,
+  billing: unknown,
+  company: unknown,
+  email: unknown,
+): { entryId?: string; fields: Record<string, string> } | null => {
+  const text = String(billing ?? '').trim()
+  if (!text) return null
+  if (client) {
+    if (text === client.billing || !/^[0-9a-f-]{36}$/i.test(client.id)) {
+      return null
+    }
+    return { entryId: client.id, fields: { [client.billingColumn]: text } }
+  }
+  const companyText = String(company ?? '').trim()
+  if (!companyText) return null
+  const emailText = String(email ?? '').trim()
+  return {
+    fields: {
+      'Billing Address': text,
+      'Company Name': companyText,
+      ...(emailText ? { Email: emailText } : {}),
+    },
+  }
+}
+
+export const saveBillingToMaster = (
+  masterFormId: string,
+  save: { entryId?: string; fields: Record<string, string> },
+) =>
+  save.entryId
+    ? formApi.saveFormEntry(masterFormId, save.entryId, { fields: save.fields })
+    : formApi.saveFormEntry(masterFormId, undefined, { fields: save.fields })

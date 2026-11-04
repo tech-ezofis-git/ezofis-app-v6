@@ -225,9 +225,14 @@ _COMPANY_NAMES = ("companyname", "customername", "company", "customer")
 def _clean_company_name(text: str, contact: str) -> str:
     """"Test Co. / Pat Example (pat@x.com)" -> "Test Co.". A "/" part only goes when it comes with an
     email or is the contact's name, so a company name that really has a slash stays whole."""
-    name = re.sub(r"\s+", " ", _EMPTY_BRACKETS_RE.sub(" ", _EMAIL_IN_TEXT_RE.sub(" ", text))).strip(" ,;:-–—|/")
+    name = _EMPTY_BRACKETS_RE.sub(" ", _EMAIL_IN_TEXT_RE.sub(" ", text))
+    without_contact = re.sub(
+        r"\(([^()]*)\)", lambda m: " " if contact and _compact(m.group(1)) == _compact(contact) else m.group(0), name
+    )
+    had_contact = without_contact != name
+    name = re.sub(r"\s+", " ", without_contact).strip(" ,;:-–—|/")
     parts = re.split(r"\s+/\s+", name)
-    if len(parts) > 1 and (_EMAIL_IN_TEXT_RE.search(text) or _compact(parts[-1]) == _compact(contact)):
+    if len(parts) > 1 and (had_contact or _EMAIL_IN_TEXT_RE.search(text) or _compact(parts[-1]) == _compact(contact)):
         return parts[0]
     return name
 

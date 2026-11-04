@@ -228,3 +228,10 @@ def test_pdf_address_boxes_get_the_clean_company():
     form = _form(**{"Company Name": "Test Elevator Co / Pat Example (office@example.com)", "Billing Address": "1 Main St"})
     quote_2, _n = form_data_for_quote_type(form_data=form, quote_type="quote_2")
     assert quote_2["Company Name"] == "Test Elevator Co"
+
+
+def test_contact_in_brackets_and_the_part_after_it_leave_the_company():
+    out = clean_contact_fields(
+        {"Company Name": "Test Elevator Co (Pat Example) / Test Consulting Ltd", "Contact": "Pat Example"}
+    )
+    assert out["Company Name"] == "Test Elevator Co"
