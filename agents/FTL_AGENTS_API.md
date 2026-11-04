@@ -47,7 +47,7 @@ Other rules from the v1.1 rulebook:
 - **Both agents:** read the "Number of Elevators" clause and openings table as the car count, and list email attachments they could not read.
 - **Estimator:** the $0 line reads `SGV2 Car Door Restriction Function - Included`. OL100 governors and car safeties are held for review.
 
-**Client details (RFQ Master):** the addresses come from a matched RFQ Master row. Contact, phone and email fill only blank fields, and only on an exact email or company match. If two different clients match equally well, nothing is filled. An email written inside the contact name moves to `Email`. On the Agent tab, the **Client** picker fills the same six header fields, and they stay editable.
+**Client details (RFQ Master):** the addresses come from a matched RFQ Master row. Contact, phone and email fill only blank fields, and only on an exact email or company match. If two different clients match equally well, nothing is filled. An email written inside the contact name moves to `Email`. On the Agent tab, the **Client** picker fills the same six header fields, and they stay editable. Leaving an edited Contact, Phone, Email, Bill To or Ship To field updates that client's RFQ Master row; the company name is never changed this way.
 
 ## End-to-end flow
 

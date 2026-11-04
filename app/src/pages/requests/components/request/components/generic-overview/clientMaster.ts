@@ -11,7 +11,26 @@ export type ClientDetails = {
   shipping: string
 }
 
-export type ClientMasterRow = ClientDetails & { id: string }
+export type ClientMasterRow = ClientDetails & {
+  /** The master column each detail was read from, used to save edits back. */
+  columns: Partial<Record<keyof ClientDetails, string>>
+  id: string
+  masterFormId?: string
+}
+
+/** The agent's bookkeeping for RFQ Master, never a field a user fills in. */
+const MASTER_TAG_LABELS = [
+  'billingaddressfrommaster',
+  'shippingaddressfrommaster',
+  'rfqmastermatch',
+]
+
+export const isMasterTagLabel = (label: unknown) =>
+  MASTER_TAG_LABELS.includes(
+    String(label ?? '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, ''),
+  )
 
 const MASTER_FORM_NAME = 'rfqmaster'
 const ENTRY_PAGE_SIZE = 5000
@@ -84,20 +103,29 @@ export const clientsFromEntries = (
   })
 
   const clients = entries.map((entry, index) => {
-    const values = new Map<string, string>()
+    const values = new Map<string, { key: string; text: string }>()
     Object.entries(flattenEntry(entry)).forEach(([key, value]) => {
       if (value === null || typeof value === 'object') return
       const text = String(value).trim()
-      if (text) values.set(labelById.get(key) || compact(key), text)
+      values.set(labelById.get(key) || compact(key), { key, text })
     })
-    const read = (kind: keyof ClientDetails) =>
-      CLIENT_LABELS[kind].map((label) => values.get(label)).find(Boolean) || ''
+    const cell = (kind: keyof ClientDetails) =>
+      CLIENT_LABELS[kind].map((label) => values.get(label)).find(Boolean)
+    const read = (kind: keyof ClientDetails) => cell(kind)?.text || ''
+    const columns: ClientMasterRow['columns'] = {}
+    ;(Object.keys(CLIENT_LABELS) as (keyof ClientDetails)[]).forEach((kind) => {
+      const key = cell(kind)?.key
+      if (key) columns[kind] = key
+    })
     return {
       billing: read('billing'),
+      columns,
       company: read('company'),
       contact: read('contact'),
       email: read('email'),
-      id: String(entry.id ?? entry.entryId ?? index),
+      id: String(
+        entry.itemId ?? entry.item_id ?? entry.entryId ?? entry.id ?? index,
+      ),
       phone: read('phone'),
       shipping: read('shipping'),
     }
@@ -123,7 +151,27 @@ export const fetchClientMaster = async (): Promise<ClientMasterRow[]> => {
     definition.data?.formJson || definition.data?._json,
   ) as { panels?: { fields?: any[] }[] } | null
   const fields = (formJson?.panels || []).flatMap((panel) => panel.fields || [])
-  return clientsFromEntries(listOf(entries.data), fields)
+  return clientsFromEntries(listOf(entries.data), fields).map((client) => ({
+    ...client,
+    masterFormId: String(master.id),
+  }))
+}
+
+/** The client whose email matches, if exactly one does; otherwise the company match. */
+export const matchClient = (
+  clients: ClientMasterRow[],
+  email: unknown,
+  company: unknown,
+): ClientMasterRow | null => {
+  const wanted = String(email ?? '')
+    .trim()
+    .toLowerCase()
+  const byEmail = wanted
+    ? clients.filter((client) => client.email.toLowerCase() === wanted)
+    : []
+  return byEmail.length === 1
+    ? byEmail[0]
+    : matchClientByCompany(clients, company)
 }
 
 /** The client whose company matches the form's current company, if exactly one does. */
@@ -159,6 +207,36 @@ export const buildClientFieldPatch = (
   })
   return patch
 }
+
+/**
+ * The detail a form field saves to RFQ Master. The company is left out: it
+ * identifies the client, and typing in it must never rename a master row.
+ */
+export const clientDetailForField = (
+  field: any,
+): Exclude<keyof ClientDetails, 'company'> | null => {
+  const label = compact(getFieldHeading(field))
+  const kinds = ['billing', 'contact', 'email', 'phone', 'shipping'] as const
+  return kinds.find((kind) => CLIENT_LABELS[kind].includes(label)) || null
+}
+
+/** The partial update for one detail, or null when nothing should be saved. */
+export const buildMasterUpdate = (
+  client: ClientMasterRow,
+  kind: Exclude<keyof ClientDetails, 'company'>,
+  value: unknown,
+): Record<string, string> | null => {
+  const text = String(value ?? '').trim()
+  const column = client.columns[kind]
+  if (!text || !column || text === client[kind]) return null
+  if (!client.masterFormId || !/^[0-9a-f-]{36}$/i.test(client.id)) return null
+  return { [column]: text }
+}
+
+export const saveClientUpdate = (
+  client: ClientMasterRow,
+  fields: Record<string, string>,
+) => formApi.saveFormEntry(String(client.masterFormId), client.id, { fields })
 
 export const isCompanyField = (field: any) =>
   CLIENT_LABELS.company.includes(compact(getFieldHeading(field)))

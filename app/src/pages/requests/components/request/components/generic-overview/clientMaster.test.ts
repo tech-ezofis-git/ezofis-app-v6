@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildClientFieldPatch,
+  buildMasterUpdate,
+  clientDetailForField,
   clientsFromEntries,
   isCompanyField,
+  isMasterTagLabel,
+  matchClient,
   matchClientByCompany,
 } from './clientMaster'
 
@@ -32,6 +36,14 @@ describe('client master', () => {
   it('reads physical column names', () => {
     expect(client).toEqual({
       billing: '1 Bill Street, Toronto, ON',
+      columns: {
+        billing: 'Billing_Address',
+        company: 'Company_Name',
+        contact: 'Contact_Name',
+        email: 'Email',
+        phone: 'Phone_Number',
+        shipping: 'Shipping_Address',
+      },
       company: 'Test Elevator Co.',
       contact: 'Pat Example',
       email: 'pat@example.com',
@@ -94,6 +106,62 @@ describe('client master', () => {
     expect(matchClientByCompany([client], 'test elevator co')).toEqual(client)
     expect(matchClientByCompany(rows, 'Test Elevator Co.')).toBeNull()
     expect(matchClientByCompany([client], '')).toBeNull()
+  })
+
+  it('matches by email before company', () => {
+    const other = clientsFromEntries([
+      {
+        ...entry,
+        Company_Name: 'Other Co',
+        Email: 'o@example.com',
+        id: 'row-2',
+      },
+    ])[0]
+    expect(
+      matchClient([client, other], 'O@example.com', 'Test Elevator Co.'),
+    ).toEqual(other)
+    expect(matchClient([client, other], '', 'Other Co')).toEqual(other)
+  })
+
+  it('saves an edited detail under its master column', () => {
+    const row = {
+      ...client,
+      id: '0d5f7a52-6a43-4f0e-9d25-2f7a7ce1a111',
+      masterFormId: 'form-1',
+    }
+    expect(buildMasterUpdate(row, 'billing', ' 9 New Road ')).toEqual({
+      Billing_Address: '9 New Road',
+    })
+  })
+
+  it('saves nothing when unchanged, blank, or without a real row', () => {
+    const row = {
+      ...client,
+      id: '0d5f7a52-6a43-4f0e-9d25-2f7a7ce1a111',
+      masterFormId: 'form-1',
+    }
+    expect(buildMasterUpdate(row, 'email', client.email)).toBeNull()
+    expect(buildMasterUpdate(row, 'email', '  ')).toBeNull()
+    expect(
+      buildMasterUpdate({ ...row, id: 'row-1' }, 'email', 'n@example.com'),
+    ).toBeNull()
+    expect(
+      buildMasterUpdate({ ...row, columns: {} }, 'email', 'n@example.com'),
+    ).toBeNull()
+    expect(buildMasterUpdate(client, 'email', 'n@example.com')).toBeNull()
+  })
+
+  it('never saves the company back to the master', () => {
+    expect(clientDetailForField({ label: 'Company Name' })).toBeNull()
+    expect(clientDetailForField({ label: 'Billing Address' })).toBe('billing')
+    expect(clientDetailForField({ label: 'quote_2 Email' })).toBeNull()
+  })
+
+  it('recognises the agent master tags', () => {
+    expect(isMasterTagLabel('Billing Address From Master')).toBe(true)
+    expect(isMasterTagLabel('shipping_address_from_master')).toBe(true)
+    expect(isMasterTagLabel('Rfq Master Match')).toBe(true)
+    expect(isMasterTagLabel('Billing Address')).toBe(false)
   })
 
   it('recognises company fields', () => {

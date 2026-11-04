@@ -30,10 +30,14 @@ import { REQUEST_ATTACHMENTS_CHANGED_EVENT } from '@/pages/requests/utils/reques
 import cn from '@/utils/cn'
 import {
   buildClientFieldPatch,
+  buildMasterUpdate,
+  clientDetailForField,
   type ClientMasterRow,
   fetchClientMaster,
   isCompanyField,
-  matchClientByCompany,
+  isMasterTagLabel,
+  matchClient,
+  saveClientUpdate,
 } from './clientMaster'
 import { editableValueClass, onEditableValueKeyDown } from './editableValue'
 import {
@@ -1431,19 +1435,56 @@ const QuoteAgentResultView = ({
 
   const companyField = formFields.find(isCompanyField) || null
   const canPickClient = canEditField(companyField)
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [], refetch: refetchClients } = useQuery({
     enabled: canPickClient,
     queryFn: fetchClientMaster,
     queryKey: ['ftlClientMaster'],
     staleTime: 5 * 60 * 1000,
   })
   const [pickedClientId, setPickedClientId] = useState<string | null>(null)
+  const emailField =
+    formFields.find((field) => clientDetailForField(field) === 'email') || null
   const pickedClient: ClientMasterRow | null =
     clients.find((client) => client.id === pickedClientId) ||
-    matchClientByCompany(
+    matchClient(
       clients,
+      emailField ? formModel?.[getFieldId(emailField)] : '',
       companyField ? formModel?.[getFieldId(companyField)] : '',
     )
+  // Keep the same master row while its details are being edited.
+  const matchedClientId = pickedClient?.id ?? null
+  useEffect(() => {
+    if (matchedClientId && !pickedClientId) setPickedClientId(matchedClientId)
+  }, [matchedClientId, pickedClientId])
+
+  // Leaving an edited header field saves that one detail to the client's master row.
+  const saveEditedFieldToMaster = async (fieldId: string) => {
+    const field = formFields.find((item) => getFieldId(item) === fieldId)
+    const kind = field ? clientDetailForField(field) : null
+    if (!kind || !pickedClient || !canEditField(field)) return
+    const update = buildMasterUpdate(
+      pickedClient,
+      kind,
+      formModel?.[fieldId],
+    )
+    if (!update) return
+    const { error } = await saveClientUpdate(pickedClient, update)
+    showToast(
+      error
+        ? {
+            message: t`Could not update RFQ Master: ${error}`,
+            variant: 'error',
+          }
+        : { message: t`RFQ Master updated`, variant: 'success' },
+    )
+    if (!error) void refetchClients()
+  }
+
+  const changeActiveEdit = (nextId: string | null) => {
+    const leftId = activeEditId
+    setActiveEditId(nextId)
+    if (leftId && leftId !== nextId) void saveEditedFieldToMaster(leftId)
+  }
 
   // Choosing a client fills the header once; later edits to those fields stay.
   const applyClient = (clientId: string) => {
@@ -2419,6 +2460,7 @@ const QuoteAgentResultView = ({
       const variant = resolveQuoteFieldVariant(label)
       if (variant !== 'main' && /^(alt|opt)/i.test(label.trim())) return false
       const compact = label.toLowerCase().replace(/[\s_-]+/g, '')
+      if (isMasterTagLabel(label)) return false
       if (
         compact.includes('discount') ||
         compact.includes('subtotal') ||
@@ -2465,7 +2507,7 @@ const QuoteAgentResultView = ({
           editor={renderScalarEditor(entry, resolved.raw, true)}
           fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
           label={label}
-          onActivate={setActiveEditId}
+          onActivate={changeActiveEdit}
         >
           <TruncatedExpandText
             className='w-full'
