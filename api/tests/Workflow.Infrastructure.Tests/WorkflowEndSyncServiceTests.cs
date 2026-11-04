@@ -255,6 +255,112 @@ public sealed class WorkflowEndSyncServiceTests
     }
 
     [Fact]
+    public async Task TrySync_matches_master_row_on_every_main_field()
+    {
+        var formEntry = new CapturingFormEntryService();
+        var service = CreateService(
+            workflowJson: """
+                {"blocks":[{"id":"step-1","type":"INTERNAL_ACTOR","settings":{
+                  "endSync":{
+                    "enabled":true,
+                    "target":"MASTER_FORM",
+                    "masterFormId":"master-form",
+                    "fieldMappings":[
+                      {"workflowFieldId":"Vendor_Name","masterFieldId":"Vendor","IsMainField":true},
+                      {"workflowFieldId":"Amount","masterFieldId":"Total","IsMainField":false},
+                      {"workflowFieldId":"Invoice_No","masterFieldId":"Invoice","IsMainField":true}
+                    ]
+                  }
+                }}]}
+                """,
+            persistedJson: """{"Vendor_Name":"Acme","Amount":"99","Invoice_No":"INV-7"}""",
+            formEntry);
+
+        await service.TrySyncOnStepCompleteAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "step-1",
+            "workflow-form",
+            Guid.NewGuid(),
+            submittedFormDataJson: null,
+            formDataFields: null);
+
+        var request = formEntry.LastRequest!;
+        Assert.Equal("Vendor", request.MatchColumnId);
+        Assert.Equal("Acme", request.MatchValue);
+        var filter = Assert.Single(request.MatchFilters!);
+        Assert.Equal("Invoice", filter.ColumnId);
+        Assert.Equal("INV-7", filter.ColumnValue);
+        Assert.Equal("INV-7", ReadField(request, "Invoice"));
+        Assert.Equal("99", ReadField(request, "Total"));
+    }
+
+    [Fact]
+    public async Task TrySync_normalises_main_field_whitespace_so_existing_row_matches()
+    {
+        var formEntry = new CapturingFormEntryService();
+        var service = CreateService(
+            workflowJson: EndSyncJson(blockId: "step-1"),
+            persistedJson: "{\"Vendor_Name\":\"  March Elevator \\n  Limited \",\"Amount\":\" 12 \"}",
+            formEntry);
+
+        await service.TrySyncOnStepCompleteAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "step-1",
+            "workflow-form",
+            Guid.NewGuid(),
+            submittedFormDataJson: null,
+            formDataFields: null);
+
+        Assert.Equal("March Elevator Limited", formEntry.LastRequest!.MatchValue);
+        Assert.Equal("March Elevator Limited", ReadField(formEntry.LastRequest, "Vendor"));
+    }
+
+    [Fact]
+    public async Task TrySync_skips_when_any_main_field_has_no_value()
+    {
+        var formEntry = new CapturingFormEntryService();
+        var service = CreateService(
+            workflowJson: """
+                {"blocks":[{"id":"step-1","type":"INTERNAL_ACTOR","settings":{
+                  "endSync":{
+                    "enabled":true,
+                    "target":"MASTER_FORM",
+                    "masterFormId":"master-form",
+                    "fieldMappings":[
+                      {"workflowFieldId":"Vendor_Name","masterFieldId":"Vendor","IsMainField":true},
+                      {"workflowFieldId":"Invoice_No","masterFieldId":"Invoice","IsMainField":true}
+                    ]
+                  }
+                }}]}
+                """,
+            persistedJson: """{"Vendor_Name":"Acme","Invoice_No":"  "}""",
+            formEntry);
+
+        await service.TrySyncOnStepCompleteAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "step-1",
+            "workflow-form",
+            Guid.NewGuid(),
+            submittedFormDataJson: null,
+            formDataFields: null);
+
+        // Matching on Vendor alone could update the wrong row; never insert with half a key either.
+        Assert.Null(formEntry.LastRequest);
+    }
+
+    [Fact]
+    public void Master_match_sql_collapses_whitespace_and_compares_plain_numbers()
+    {
+        var sql = FormEntryService.ScalarEqualsSql("\"Total\"", "@Filter0");
+        Assert.Contains("regexp_replace(", sql);
+        Assert.Contains("[[:space:]", sql);
+        Assert.Contains("::numeric", sql);
+    }
+
+    [Fact]
     public void Master_match_sql_is_case_insensitive()
     {
         var where = new List<string>();
