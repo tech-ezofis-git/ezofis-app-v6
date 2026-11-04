@@ -1,0 +1,1320 @@
+{
+  "snapshot_date": "2026-10-16",
+  "source": "inFlow_ProductDetails.csv snapshot",
+  "items": [
+    {
+      "product_name": "SGV2_CLUTCH_OTIS_LH",
+      "sku": "1023806A01-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "CLUTCH + CAR DOOR LOCK (OTIS-LEFT HAND)",
+      "price_cad": 1010.4,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_CLUTCH_OTIS_RH",
+      "sku": "1023806A02-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "CLUTCH + CAR DOOR LOCK (OTIS-RIGHT HAND)",
+      "price_cad": 1010.4,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_CLUTCH_WEST_LH",
+      "sku": "1031490A01-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "CLUTCH + CAR DOOR LOCK (WEST-LEFT HAND)",
+      "price_cad": 1197.93,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_CLUTCH_WEST_RH",
+      "sku": "1031490A02-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "CLUTCH + CAR DOOR LOCK (WEST-RIGHT HAND)",
+      "price_cad": 1197.93,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_CLUTCH_G.M.D._LH",
+      "sku": "1031827A01-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "CLUTCH + CAR DOOR LOCK (G.M.D. -LEFT HAND)",
+      "price_cad": 1161.94,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_CLUTCH_G.M.D._RH",
+      "sku": "1031827A02=RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "CLUTCH + CAR DOOR LOCK (G.M.D. -RIGHT HAND)",
+      "price_cad": 1161.94,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2C48_L",
+      "sku": "1048189A01-48-L",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 \u2013 CENTER/OPENING DOOR (48\") - LEFT HAND",
+      "price_cad": 5741.52,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2C48_R",
+      "sku": "1048189A02-48-R",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 \u2013 CENTER/OPENING DOOR (48\") - RIGHT HAND",
+      "price_cad": 5741.52,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_TOOLS",
+      "sku": "900050G01",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "WITTUR PROGRAMING TOOL (DOOR OP - MOD KIT)",
+      "price_cad": 698.5,
+      "active": true
+    },
+    {
+      "product_name": "CSGB03_CAR_SAFETIES",
+      "sku": "CSGB03CAR-SYNC",
+      "category": "SAFETY GEAR - SAFETIES",
+      "item_type": "Stocked product",
+      "description": "UNIDIRECTIONAL CAR SAFETIES (SYNC) *SET OF 2*",
+      "price_cad": 5591.6,
+      "active": true
+    },
+    {
+      "product_name": "WG_OL35_GOVERNOR_MT",
+      "sku": "OL35-MT",
+      "category": "SAFETY GEAR - GOVENOR",
+      "item_type": "Stocked product",
+      "description": "MANUAL TRIP GOVENOR (NO SET)",
+      "price_cad": 2007.6,
+      "active": true
+    },
+    {
+      "product_name": "WG_OL35_GOVERNOR_RC_LH",
+      "sku": "OL35-RC_LH",
+      "category": "SAFETY GEAR - GOVENOR",
+      "item_type": "Stocked product",
+      "description": "REMOTE CONTROL GOVENOR (NO SET)",
+      "price_cad": 2654.4,
+      "active": true
+    },
+    {
+      "product_name": "WG_OL35_GOVERNOR_RE_LH",
+      "sku": "OL35-RE_LH",
+      "category": "SAFETY GEAR - GOVENOR",
+      "item_type": "Stocked product",
+      "description": "REMOTE+ENCODER GOVENOR (CAR ONLY) INCLUDES SWINGARM TENSION WEIGHT & FIXINGS",
+      "price_cad": 3480.4,
+      "active": true
+    },
+    {
+      "product_name": "WRG100_CAR",
+      "sku": "RG100CAR",
+      "category": "WRG-ROLLER GUIDE ASSY",
+      "item_type": "Stocked product",
+      "description": "ROLLER GUIDE (1PC) - LOW-PRO W COVER *FULL SET = 4*",
+      "price_cad": 765.0,
+      "active": true
+    },
+    {
+      "product_name": "WRG125_CAR",
+      "sku": "RG125CAR",
+      "category": "WRG-ROLLER GUIDE ASSY",
+      "item_type": "Stocked product",
+      "description": "ROLLER GUIDE (1PC) - LOW-PRO W COVER *FULL SET = 4*",
+      "price_cad": 775.0,
+      "active": true
+    },
+    {
+      "product_name": "WRG150_CAR",
+      "sku": "RG150CAR",
+      "category": "WRG-ROLLER GUIDE ASSY",
+      "item_type": "Stocked product",
+      "description": "ROLLER GUIDE (1PC) - LOW-PRO W COVER *FULL SET = 4*",
+      "price_cad": 785.0,
+      "active": true
+    },
+    {
+      "product_name": "WRG200_CAR",
+      "sku": "RG200CAR",
+      "category": "WRG-ROLLER GUIDE ASSY",
+      "item_type": "Stocked product",
+      "description": "ROLLER GUIDE (1PC) - LOW-PRO W COVER *FULL SET = 4*",
+      "price_cad": 1540.0,
+      "active": true
+    },
+    {
+      "product_name": "WRG300_CAR",
+      "sku": "RG300CAR",
+      "category": "WRG-ROLLER GUIDE ASSY",
+      "item_type": "Stocked product",
+      "description": "ROLLER GUIDE (1PC) - LOW-PRO W COVER *FULL SET = 4*",
+      "price_cad": 2478.0,
+      "active": true
+    },
+    {
+      "product_name": "WRG80_CAR",
+      "sku": "RG80CAR",
+      "category": "WRG-ROLLER GUIDE ASSY",
+      "item_type": "Stocked product",
+      "description": "ROLLER GUIDE (1PC) - LOW-PRO W COVER *FULL SET = 4*",
+      "price_cad": 468.5,
+      "active": true
+    },
+    {
+      "product_name": "WSLG_4A",
+      "sku": "SLG4A",
+      "category": "WRG-ROLLER GUIDE ASSY",
+      "item_type": "Stocked product",
+      "description": "SLIPPER GUIDE (1PC) - CAR/CWT-LOW-PRO *FULL SET = 4*",
+      "price_cad": 1391.6,
+      "active": true
+    },
+    {
+      "product_name": "FS_VISIONPLUS_POWERSUPPLY",
+      "sku": "FS_POWERSUP_FZU-1442",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "LOW VOLTAGE POWER SUPPLY - 2D/3D KITS FPS-0274US01",
+      "price_cad": 169.5,
+      "active": true
+    },
+    {
+      "product_name": "FS_SAFESCREEN_CAR_DOOR_DET",
+      "sku": "SAFESCREEN - FCU-0547",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "3D-FORMULA SYSTEMS DOOR DECTECTOR SAFETY SOLUTION",
+      "price_cad": 995.0,
+      "active": true
+    },
+    {
+      "product_name": "SHIP_BOX_C04PA4051",
+      "sku": "C04PA4051",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Packing Boxes - Wittur Mexico Box Pallet DIM: 24\"X24\"X110\"",
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "IP54_REL4_SEMATIC_DRV_BRD",
+      "sku": "BL-B157AAUX05",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Sematic Drive System Controller Assembly Board. SDS DC-PWM Encoder - IP54 Release Version No. 4 (CURRENT) 2000B-HR-NA - All Product Lines (Doors)",
+      "price_cad": 2964.88,
+      "active": true
+    },
+    {
+      "product_name": "WITTUR_SELCOM_TRANSFORMER",
+      "sku": "1047486A01",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "TRANSFORMER UNIT - SELCOM",
+      "price_cad": 1155.53,
+      "active": true
+    },
+    {
+      "product_name": "SUPRA_MOTOR_ASSY(DRV2) - LH",
+      "sku": "1047537A03-LH",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Geared Supra Motor Assembly - Drive 2 - Left Hand Sticker Number = 1047537A03 Wittur Designation = Coupler on left",
+      "price_cad": 3255.0,
+      "active": true
+    },
+    {
+      "product_name": "SUPRA_MOTOR_ASSY(DRV2) - RH",
+      "sku": "1047537A04-RH",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Geared Supra Motor Assembly - Drive 2 - Right Hand Sticker Number = 1047537A04 Wittur Designation = Coupler on right",
+      "price_cad": 3255.0,
+      "active": true
+    },
+    {
+      "product_name": "MIDI_SUPRA(V2)_TKE_CANBUS (PARTS)",
+      "sku": "1093118A01",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "MIDI / Supra V2 Spare Part \ufffd Special Software.",
+      "price_cad": 3875.0,
+      "active": true
+    },
+    {
+      "product_name": "MIDI_SUPRA(V2)_STD_CANBUS",
+      "sku": "1093118A05",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "MIDI / Supra V2 Spare Part - Can Open Standard.",
+      "price_cad": 3875.0,
+      "active": true
+    },
+    {
+      "product_name": "SVG2_BRACKET_1S/2C",
+      "sku": "1039395A03",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "SGV2 Operator Bracket for 1S & 2C",
+      "price_cad": 480.5,
+      "active": true
+    },
+    {
+      "product_name": "FLAT_SCREW_12X9_M8",
+      "sku": "1044055P01",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Flat Head Screw 12x9 - M8 (5pcs Replacement Kit)",
+      "price_cad": 7.45,
+      "active": true
+    },
+    {
+      "product_name": "FLAT_SCREW_20x17_M8",
+      "sku": "1044055P02",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Flat Head Screw 20x17 - M8 (5pcs Replacement Kit)",
+      "price_cad": 7.95,
+      "active": true
+    },
+    {
+      "product_name": "SOCKET_CAP_SCREW-M8x16-8.8",
+      "sku": "W001041",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Socket Cap Screw DIN 7984 \ufffd M8 \ufffd 16 \ufffd 8.8 \ufffd ZINC",
+      "price_cad": 7.95,
+      "active": true
+    },
+    {
+      "product_name": "CONTACT_WASHER_8 - FST-ZINC",
+      "sku": "W001280",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Contact Washer 8 - FST - ZINC Plated 550821-32",
+      "price_cad": 6.95,
+      "active": true
+    },
+    {
+      "product_name": "OTIS_LANDING_DOOR_LOCKBRACKET",
+      "sku": "905147G01",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "OTIS Landing Door Lock Bracket",
+      "price_cad": 58.75,
+      "active": true
+    },
+    {
+      "product_name": "AMD_HANGER_CLUTCH/LOCK_COUPLER - LH",
+      "sku": "1047306A05-A",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Lock Coupler - AMD01L Coupler Left NH=300 (605390G05) Part #: 1047306A05-A",
+      "price_cad": 3964.51,
+      "active": true
+    },
+    {
+      "product_name": "MIDI_SUPRA(V2)_TKE_CANBUS (SGV2_MOD)",
+      "sku": "1093118A01-RMA_STK",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 595.0,
+      "active": true
+    },
+    {
+      "product_name": "2T_UNIVERSAL_CAR_DOOR - 48 X 84 (2-DOORS/SET)",
+      "sku": "2PSO_UNI_48_X_84",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Stocked product",
+      "description": "2PSO / 2-SPEED (TWO-PANEL SIDE OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 2161.6,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_MAC36_LH",
+      "sku": "0905049A01-36-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "MAC DOOR PANEL ADAPTER (36\") - LEFT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_MAC42_LH",
+      "sku": "0905049A01-42-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "MAC DOOR PANEL ADAPTER (42\") - LEFT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_MAC36_RH",
+      "sku": "0905049A02-36-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "MAC DOOR PANEL ADAPTER (36\") - RIGHT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_MAC42_RH",
+      "sku": "0905049A02-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "MAC DOOR PANEL ADAPTER (42\") - RIGHT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_GAL36_LH",
+      "sku": "0905051A01-36-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "GAL DOOR PANEL ADAPTER (36\") - LEFT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_GAL42_LH",
+      "sku": "0905051A01-42-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "GAL DOOR PANEL ADAPTER (42\") - LEFT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_GAL36_RH",
+      "sku": "0905051A02-36-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "GAL DOOR PANEL ADAPTER (36\") - RIGHT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_GAL42_RH",
+      "sku": "0905051A02-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "GAL DOOR PANEL ADAPTER (42\") - RIGHT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_DOV36_LH",
+      "sku": "0905052A01-36-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (36\") - LEFT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_DOV42_LH",
+      "sku": "0905052A01-42-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (42\") - LEFT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_DOV36_RH",
+      "sku": "0905052A02-36-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (36\") - RIGHT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_DOV42_RH",
+      "sku": "0905052A02-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (42\") - RIGHT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC36_LH",
+      "sku": "0905388A03-36-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC42_LH",
+      "sku": "0905388A03-42-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC48_LH",
+      "sku": "0905388A03-48-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL36_LH",
+      "sku": "0905389A03-36-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL42_LH",
+      "sku": "0905389A03-42-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL48_LH",
+      "sku": "0905389A03-48-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV36_LH",
+      "sku": "0905390A03-36-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV42_LH",
+      "sku": "0905390A03-42-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (42\") - LEFT HAND",
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV48_LH",
+      "sku": "0905390A03-48-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_MAC42_LH",
+      "sku": "0905392A21-42-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "MAC DOOR PANEL ADAPTER (42\") - LEFT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_MAC42_RH",
+      "sku": "0905392A22-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "MAC DOOR PANEL ADAPTER (42\") - RIGHT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_GAL42_LH",
+      "sku": "0905393A21-42-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "GAL DOOR PANEL ADAPTER (42\") - LEFT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_GAL48_LH",
+      "sku": "0905393A21-48-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "GAL DOOR PANEL ADAPTER (48\") - LEFT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_GAL42_RH",
+      "sku": "0905393A22-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "GAL DOOR PANEL ADAPTER (42\") - RIGHT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_GAL48_RH",
+      "sku": "0905393A22-48-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "GAL DOOR PANEL ADAPTER (48\") - RIGHT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_DOV42_LH",
+      "sku": "0905394A21-42-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (42\") - LEFT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_DOV48_LH",
+      "sku": "0905394A21-48-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (48\") - LEFT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_DOV42_RH",
+      "sku": "0905394A22-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (42\") - RIGHT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_DOV48_RH",
+      "sku": "0905394A22-48-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (48\") - RIGHT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC36_RH",
+      "sku": "0905388A03-36-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC42_RH",
+      "sku": "0905388A03-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC48_RH",
+      "sku": "0905388A03-48-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL36_RH",
+      "sku": "0905389A03-36-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL42_RH",
+      "sku": "0905389A03-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL48_RH",
+      "sku": "0905389A03-48-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV36_RH",
+      "sku": "0905390A03-36-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV42_RH",
+      "sku": "0905390A03-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "DOVER DOOR PANEL ADAPTER (42\") - RIGHT HAND",
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV48_RH",
+      "sku": "0905390A03-48-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_MAC48_LH",
+      "sku": "0905392A21-48-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "MAC DOOR PANEL ADAPTER (48\") - LEFT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2T)_PANEL_ADAPTOR_MAC48_RH",
+      "sku": "0905392A22-48-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "MAC DOOR PANEL ADAPTER (48\") - RIGHT HAND",
+      "price_cad": 306.88,
+      "active": true
+    },
+    {
+      "product_name": "1S_UNIVERSAL_CAR_DOOR - 36 X 84",
+      "sku": "1S_UNI_36_X_84",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Stocked product",
+      "description": "SSSO / 1SSO (SINGLE SECTION SIDE OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 1730.4,
+      "active": true
+    },
+    {
+      "product_name": "1S_UNIVERSAL_CAR_DOOR - 42 X 84",
+      "sku": "1PSO_UNI_42_X_48",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Stocked product",
+      "description": "SSSO / 1SSO (SINGLE SECTION SIDE OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 1797.6,
+      "active": true
+    },
+    {
+      "product_name": "1S_UNIVERSAL_CAR_DOOR - 48 X 84",
+      "sku": "1PSO_UNI_48_X_84",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Stocked product",
+      "description": "SSSO / 1SSO (SINGLE SECTION SIDE OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 1943.2,
+      "active": true
+    },
+    {
+      "product_name": "2C_UNIVERSAL_CAR_DOOR - 36 X 84 (2-DOORS/SET)",
+      "sku": "2PCO_UVI_ 36_X_84",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Stocked product",
+      "description": "2PCO / CP (TWO-PANEL CENTER OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 1640.8,
+      "active": true
+    },
+    {
+      "product_name": "2C_UNIVERSAL_CAR_DOOR - 48 X 84 (2-DOORS/SET)",
+      "sku": "2PCO_UVI_48_X_84",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Stocked product",
+      "description": "2PCO / CP (TWO-PANEL CENTER OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 1947.6,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2C42_R",
+      "sku": "1048189A02-42-R",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 \u2013 CENTER/OPENING DOOR (42\") - RIGHT HAND",
+      "price_cad": 5730.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2C42_L",
+      "sku": "1048189A01-42-L",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 \u2013 CENTER/OPENING DOOR (42\") - LEFT HAND",
+      "price_cad": 5730.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2C36_R",
+      "sku": "1048189A02-36-R",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 \u2013 CENTER/OPENING DOOR (36\") - RIGHT HAND",
+      "price_cad": 5682.72,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2C36_L",
+      "sku": "1048189A01-36-L",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 \u2013 CENTER/OPENING DOOR (36\") - LEFT HAND",
+      "price_cad": 5682.72,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_1S42_R",
+      "sku": "1048783A02-42-R",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 1/SPEED DOOR (42\") - RIGHT HAND",
+      "price_cad": 4955.28,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_1S36_R",
+      "sku": "1048783A02-36-R",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 1/SPEED DOOR (36\") - RIGHT HAND",
+      "price_cad": 4930.08,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_1S36_L",
+      "sku": "1048783A01-36-L",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 1/SPEED DOOR (36\") - LEFT HAND",
+      "price_cad": 4930.08,
+      "active": true
+    },
+    {
+      "product_name": "FS_VISIONPLUS_3D_CAR_DOOR_DET",
+      "sku": "FS_VISION_PLUS_FZU-1442",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "3D-FORMULA VISION PLUS CAR DOOR DECTECTOR SAFETY SOLUTION",
+      "price_cad": 1295.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_1S42_L",
+      "sku": "1048783A01-42-L",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 1/SPEED DOOR (42\") - LEFT HAND",
+      "price_cad": 4955.28,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2T48_LH_C",
+      "sku": "1039539A01-48-LH_C",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 2/SPEED DOOR (48\") - LEFT HAND",
+      "price_cad": 5252.08,
+      "active": true
+    },
+    {
+      "product_name": "FREIGHT",
+      "sku": null,
+      "category": "Default Category",
+      "item_type": "Service",
+      "description": null,
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "2T_DOOR_OP_BELT (54\") - LEFT HAND",
+      "sku": "1047718P0103-54-A",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Toothed Belt (54\") - 2T Door LH = 3433,20",
+      "price_cad": 582.0,
+      "active": true
+    },
+    {
+      "product_name": "WG_OL35_TENSION_SHEAVE_SWINGARM",
+      "sku": "OLSWINGARM-TS",
+      "category": "SAFETY GEAR - GOVENOR",
+      "item_type": "Stocked product",
+      "description": "SWINGARM TENSION WEIGHT c/w SHEAVE (CWT)",
+      "price_cad": 1849.0,
+      "active": true
+    },
+    {
+      "product_name": "DISCOUNT",
+      "sku": null,
+      "category": "Default Category",
+      "item_type": "Service",
+      "description": null,
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "DEMOKITS_SGVCARDOORMOD",
+      "sku": "DEMOKITSGVDOORMOD",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "Demo Kits - SGV Car Door Mod Includes Operator, Clutch, Unistrut, Universal Door Panel and Stand",
+      "price_cad": 5500.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2-NA(1S_RH)_CAR_DOOR_PACKAGE",
+      "sku": null,
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Stocked product",
+      "description": "1-Speed Side Opening \u2013 New Construction (CAR) Kit Includes: - SGV2 Linear Car Door Operator (SUPRA Motor) - Car Door Clutch c/w Interlock - Hanger Tracks and Rollers - Stainless Steel #4 Finish (Car Panel Skin) - Nickel Silver Car Sill (C3 Loading)",
+      "price_cad": 13966.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV-NA(1S_RH)_LANDING_DOOR - 42x84",
+      "sku": "SGVNA_HALL_42x84_1SRH",
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Stocked product",
+      "description": "1-Speed Side Opening \u2013 New Construction (HALL) Kit Includes: - Door Panel / Finish Single Skin Steel (SS #4 - Type 441) - Frame Type / Construction Full Wall Jambs (Bolted) - 12\" Maximum Wall Thickness - Landing Hanger Tracks and Rollers - Pick Up Roller Assemblies / Landing Track Mounted Interlocks - Stainless Steel #4 Finish (Hall Panel Skin)",
+      "price_cad": 7165.0,
+      "active": true
+    },
+    {
+      "product_name": "WG_OL35_GOVERNOR_RC_RH",
+      "sku": "OL35_RC_RH",
+      "category": "SAFETY GEAR - GOVENOR",
+      "item_type": "Stocked product",
+      "description": "REMOTE CONTROL GOVENOR (NO SET)",
+      "price_cad": 2654.4,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(CUSTOM)_CAR-DOOR-KIT",
+      "sku": "SGV2-CUSTOM_CAR-KIT",
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Non-stocked product",
+      "description": "TEMPLATE ONLY - CHANGE TO NEW PRODUCT ONCE PRICING Custom WITTUR SGV-2 Door Operator KIT - TEMPLATE Custom Car Door Clutch with Code Compliant Car Door Interlock (Gate). Custom Car Panel Adaptor Plates. *Restrictor is NOT required with Wittur's Interlock*",
+      "price_cad": 13140.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(CUSTOM)_HALL-DOOR-KIT",
+      "sku": "SGV2-CUSTOM_HALL-KIT",
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Non-stocked product",
+      "description": "TEMPLATE ONLY - CHANGE TO NEW PRODUCT ONCE PRICING Custom WITTUR SGV-2 Landing Mechanism - TEMPLATE Replacement Upgrade to Original (Obsolete) Dianna Wittur Design Custom Landing Panel Adaptors, Mounting Brackets, and Pick-Ups/Hanger Tracks c/w Rollers. FTL's KIT also includes Mounting Brackets, Panel Adapters. Tracks, Rollers, and Interlocks/Pick-Ups. FINAL SITE VISIT REQUIRED",
+      "price_cad": 8280.0,
+      "active": true
+    },
+    {
+      "product_name": "WRG80_CWT_T82",
+      "sku": "RG80CWT-T82",
+      "category": "WRG-ROLLER GUIDE ASSY",
+      "item_type": "Stocked product",
+      "description": "T82 CWT WRG80 Roller Guide Assembly for Counterweight Application",
+      "price_cad": 468.5,
+      "active": true
+    },
+    {
+      "product_name": "WRG80_CWT_T89",
+      "sku": "RG80CWT-T89",
+      "category": "WRG-ROLLER GUIDE ASSY",
+      "item_type": "Stocked product",
+      "description": "T89 CWT WRG80 Roller Guide Assembly for Counterweight Application",
+      "price_cad": 468.5,
+      "active": true
+    },
+    {
+      "product_name": "MINI_SUPRA_V2_OPEN",
+      "sku": null,
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": null,
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "AMD_LANDING_DOOR_HANGER_ASSY_LH",
+      "sku": "BL-H153ADDX",
+      "category": "SPARE PART LIST",
+      "item_type": "Stocked product",
+      "description": "AMD -1x Landing Lock Replacement Kit (H153ACSX) Center-Opening (2C) - All Door Sizes Product Lines 2000B-HR-NA All Product Lines - Doors Includes: brackets, counter and lock rollers, carrier roller, and mounting plates.",
+      "price_cad": 998.65,
+      "active": true
+    },
+    {
+      "product_name": "WG_OL100_GOVERNOR_RE_LH",
+      "sku": "OL100-NA_STATIC_SHAFT__LH",
+      "category": "SAFETY GEAR - GOVENOR",
+      "item_type": "Stocked product",
+      "description": "REMOTE+ENCODER GOVENOR (CAR ONLY) INCLUDES VERTICAL TENSION WEIGHT INCLUDES FILLER WEIGHTS (X6) & FIXINGS",
+      "price_cad": 14400.0,
+      "active": true
+    },
+    {
+      "product_name": "WS_WSGB10_CAR_SAFETIES",
+      "sku": "WSGB10CAR-SYNC",
+      "category": "SAFETY GEAR - SAFETIES",
+      "item_type": "Stocked product",
+      "description": "UNIDIRECTIONAL CAR SAFETIES (SYNC) *SET OF 2 - SIMPLEX* INTEGRATED HOUSING AND SYNCHRONIZATION",
+      "price_cad": 13968.0,
+      "active": true
+    },
+    {
+      "product_name": "WS_WCWSG10_CWT_SAFETIES",
+      "sku": "WCWSG10CWT-SYNC",
+      "category": "SAFETY GEAR - SAFETIES",
+      "item_type": "Stocked product",
+      "description": "UNIDIRECTIONAL CWT SAFETIES (SYNC) *SET OF 2 - SIMPLEX* [BUFFER SPACERS & GUIDE SHOE ADAPTORS - SOLD SEPERATE]",
+      "price_cad": 16995.0,
+      "active": true
+    },
+    {
+      "product_name": "WS_CSGB02_CAR_SAFETIES",
+      "sku": "CSGB02CAR-SYNC",
+      "category": "SAFETY GEAR - SAFETIES",
+      "item_type": "Stocked product",
+      "description": "UNIDIRECTIONAL CAR SAFETIES (SYNC) *SET OF 2* WITH HOUSING AND SYNCHRONIZATION",
+      "price_cad": 5591.6,
+      "active": true
+    },
+    {
+      "product_name": "SGV-NA(1S_LH)_LANDING_DOOR - 42x84",
+      "sku": "SGVNA_HALL_42X84_1SLH",
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Stocked product",
+      "description": "1-Speed Side Opening \u2013 New Construction (HALL) Kit Includes: - Door Panel / Finish Single Skin Steel (SS #4 - Type 441) - Frame Type / Construction Full Wall Jambs (Bolted) - 12\" Maximum Wall Thickness - Landing Hanger Tracks and Rollers - Pick Up Roller Assemblies / Landing Track Mounted Interlocks - Stainless Steel #4 Finish (Hall Panel Skin)",
+      "price_cad": 7165.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV-NA(2T_RH)_LANDING_DOOR - 48x84",
+      "sku": "SGVNA_HALL_48x84_2TRH",
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Stocked product",
+      "description": "2-Speed Side Opening \u2013 New Construction (HALL) Kit Includes: - Door Panel / Finish Single Skin Steel (SS #4 - Type 441) - Frame Type / Construction Full Wall Jambs (Bolted) - 12\" Maximum Wall Thickness - Landing Hanger Tracks and Rollers - Pick Up Roller Assemblies / Landing Track Mounted Interlocks - Stainless Steel #4 Finish (Hall Panel Skin)",
+      "price_cad": 7590.0,
+      "active": true
+    },
+    {
+      "product_name": "CSGB03-D_CAR_SAFETIES_DUPLEX",
+      "sku": "CSGB03-D-CAR-SYNC",
+      "category": "SAFETY GEAR - SAFETIES",
+      "item_type": "Stocked product",
+      "description": "UNIDIRECTIONAL CAR SAFETIES (SYNC) *SET OF 2*",
+      "price_cad": 11085.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV-NA(4C_RH)_LANDING_DOOR - 96x118",
+      "sku": "SGVNA_HALL_96x118_4CRH",
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Stocked product",
+      "description": "2-Speed Center Opening \u2013 New Construction (HALL) Kit Includes: - Door Panel s/ Finish Single Skin Steel (SS #4 - Type 441) - Frame Type / Construction Full Wall Jambs (Bolted) - 12\" Maximum Wall Thickness - Landing Hanger Tracks and Rollers - Pick Up Roller Assemblies / Landing Track Mounted Interlocks - Stainless Steel #4 Finish (Hall Panel Skin)",
+      "price_cad": 9590.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2-4C_RH_CAR-DOOR-KIT_96x118",
+      "sku": "SGV2-4CRH_CAR-KIT_96X118",
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Non-stocked product",
+      "description": "Custom WITTUR SGV-2 Door Operator KIT : - 4C-RH - Includes Custom 96 x 118 SGV2 Door Operator for a 2-Speed Center Opening Application. - Custom Car Door Clutch with Code Compliant Car Door Interlock (Gate). - New Custom Car Doors (x4) c/w Panel Adaptor Plates. *Restrictor is NOT required with Wittur's Interlock*",
+      "price_cad": 22685.0,
+      "active": true
+    },
+    {
+      "product_name": "SEMATIC_SGF120_DCMOTOR - RH",
+      "sku": "BL-B105AALX02",
+      "category": "SPARE PART LIST",
+      "item_type": "Non-stocked product",
+      "description": "ONE (1) - Prewired DC Motor GR 63x55, 24VCC - CABLE 1500MM SEMATIC SGF120 SERIES DOOR OPERATOR MOTOR",
+      "price_cad": 4995.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_CAR_DOOR_RESTRICTOR",
+      "sku": "SGV2_UNI_CP_RESTRICTOR",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Service",
+      "description": "Mechanical door restriction system designed to prevent car door opening outside the unlocking zone, enhancing passenger safety and supporting code-compliant modernization applications. Included with SGV Operator MOD Kit.",
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(2C)_PANEL_ADAPTOR_OTIS42_RH",
+      "sku": "0905391A03-42-RH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "OTIS DOOR PANEL ADAPTER (42\") - RIGHT HAND",
+      "price_cad": 300.16,
+      "active": true
+    },
+    {
+      "product_name": "2T_UNIVERSAL_CAR_DOOR - 54 X 96 (2-DOORS/SET)",
+      "sku": "2PSO_UVI_54_X_96",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Stocked product",
+      "description": "2PSO / 2-SPEED (TWO-PANEL SIDE OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 2998.5,
+      "active": true
+    },
+    {
+      "product_name": "2T_UNIVERSAL_CAR_DOOR - 60 X 96 (2-DOORS/SET)",
+      "sku": "2PSO_UNI_60_X_96",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Stocked product",
+      "description": "2PSO / 2-SPEED (TWO-PANEL SIDE OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 3110.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2T54_L",
+      "sku": "1039539A01-54-L",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 2_SPEED_DOOR (54\") - LEFT HAND",
+      "price_cad": 6304.8,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2T54_R",
+      "sku": "1039539A02-54-R",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 2_SPEED_DOOR (54\") - RIGHT HAND",
+      "price_cad": 6304.8,
+      "active": true
+    },
+    {
+      "product_name": "SGV2(1S)_PANEL_ADAPTOR_OTIS36_LH",
+      "sku": "0905099A01-36-LH",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "OTIS DOOR PANEL ADAPTER (36\") - LEFT HAND",
+      "price_cad": 264.32,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_BER_INTERLOCK",
+      "sku": "SGV2_CD_LOCK_BERSEL",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "BERNSTEIN_SEL2_A1Z_P SGV2_CAR_DOOR_INTERLOCK",
+      "price_cad": 279.6,
+      "active": true
+    },
+    {
+      "product_name": "SGV2-NA(2C_RH)_CAR_DOOR_PACKAGE",
+      "sku": "SGVNA_CAR_36X84_2CRH",
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Stocked product",
+      "description": "1SCO: 1-Speed Center Opening \u2013 New Construction (CAR) Kit Size (36 x 84) - Includes: - SGV2 Linear Car Door Operator (SUPRA Motor) - Car Door Clutch c/w Interlock - Hanger Tracks and Rollers - Stainless Steel #4 Finish (Car Panel Skin) - Nickel Silver Car Sill (Class-A Loading) - Gibbs and Associated Hardware",
+      "price_cad": 12966.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2-NA(2C_RH)_HALL_DOOR_PACKAGE",
+      "sku": "SGVNA_HALL_36X84_2CRH",
+      "category": "SPECIAL-PROJECTS-CUSTOM",
+      "item_type": "Stocked product",
+      "description": "1SCO: 1-Speed Center Opening \u2013 New Construction Hall Door Kit (36 x 84) - Includes: - Door Panel / Finish Single Skin Steel (SS #4 - Type 441) - Frame Type / Construction Full Wall Jambs (Bolted) - 12\" Maximum Wall Thickness - Landing Hanger Tracks and Rollers - Pick Up Roller Assemblies / Landing Track Mounted Interlocks - Gibbs and Associated Hardware",
+      "price_cad": 7165.0,
+      "active": true
+    },
+    {
+      "product_name": "MIDI_SUPRA_MOTOR_ASSY(DRV2)-LH",
+      "sku": "903375G03",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "Complete gear motor MIDI left",
+      "price_cad": 2998.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2T42_L",
+      "sku": "1039539A01-42-L",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 2/SPEED DOOR (42\") - LEFT HAND",
+      "price_cad": 5210.08,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2T48_L",
+      "sku": "1039539A01-48-L",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 2_SPEED_DOOR (48\") - LEFT HAND",
+      "price_cad": 5252.08,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2T42_R",
+      "sku": "1039539A02-42-R",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 2/SPEED DOOR (42\") - RIGHT HAND",
+      "price_cad": 5210.08,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2T48_R",
+      "sku": "1039539A02-48-R",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 2/SPEED DOOR (48\") - RIGHT HAND",
+      "price_cad": 5252.08,
+      "active": true
+    },
+    {
+      "product_name": "2T_UNIVERSAL_CAR_DOOR - 42 X 84 (2-DOORS/SET)",
+      "sku": "2PSO_UNI_42_X_84 - Deactivated",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Non-stocked product",
+      "description": "2PSO / 2-SPEED (TWO-PANEL SIDE OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 2077.6,
+      "active": true
+    },
+    {
+      "product_name": "SGV2NA(2T)_PANEL_ADAPTER_GMD42_LH",
+      "sku": "PA_SGV2NA_GMD42_LH",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "UNIVERSAL CAR DOOR PANEL ADAPTER - 42 LH",
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2NA(2T)_PANEL_ADAPTER_GMD42_RH",
+      "sku": "PA_SGV2NA_GMD42_RH",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "UNIVERSAL CAR DOOR PANEL ADAPTER - 42 LH",
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2NA(2T)_PANEL_ADAPTER_GMD48_LH",
+      "sku": "PA_SGV2NA_GMD48_LH",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "UNIVERSAL CAR DOOR PANEL ADAPTER - 48 LH",
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2NA(2T)_PANEL_ADAPTER_GMD48_RH",
+      "sku": "PA_SGV2NA_GMD48_RH",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "UNIVERSAL CAR DOOR PANEL ADAPTER - 48 RH",
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "2C_UNIVERSAL_CAR_DOOR - 42 X 84 (2-DOORS/SET)",
+      "sku": "2PCO_UVI_42_X_84",
+      "category": "CAR DOOR (NEW) - UNIVERSAL DOOR PANEL",
+      "item_type": "Non-stocked product",
+      "description": "2PCO / CP (TWO-PANEL CENTER OPENING) CAR DOOR PANEL - MULTI SLOT (MOD) #4 STAINLESS STEEL (S.S.) - 441 - BRUSHED FINISH",
+      "price_cad": 1705.2,
+      "active": true
+    },
+    {
+      "product_name": "SGV2NA(2C)_PANEL_ADAPTER_GMD42_LH/RH",
+      "sku": "PA_SGV2NA_GMD42_LH/RH",
+      "category": "Default Category",
+      "item_type": "Non-stocked product",
+      "description": "UNIVERSAL CAR DOOR PANEL ADAPTER - 42 LH/RH",
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "SGV2NA(2C)_PANEL_ADAPTER_GMD48_LH/RH",
+      "sku": "PA_SGV2NA_GMD48_LH/RH",
+      "category": "Default Category",
+      "item_type": "Non-stocked product",
+      "description": "UNIVERSAL CAR DOOR PANEL ADAPTER - 42 LH/RH",
+      "price_cad": 0.0,
+      "active": true
+    },
+    {
+      "product_name": "SGB01",
+      "sku": "SGB01CAR-SYNC",
+      "category": "SAFETY GEAR - SAFETIES",
+      "item_type": "Non-stocked product",
+      "description": "SGB01 safety gear set with housing and synchronization",
+      "price_cad": 4998.95,
+      "active": true
+    },
+    {
+      "product_name": "SGV2_DOOR_OP_2T60_L",
+      "sku": "1039539A01-60-L",
+      "category": "CAR DOOR MOD KIT",
+      "item_type": "Stocked product",
+      "description": "SGV2 - 2_SPEED_DOOR (60\") - LEFT HAND",
+      "price_cad": 6689.6,
+      "active": true
+    },
+    {
+      "product_name": "Pulley ASSY",
+      "sku": "1048586A01",
+      "category": "Default Category",
+      "item_type": "Stocked product",
+      "description": "Diverting pulley ASSY - 2C/1S",
+      "price_cad": 388.0,
+      "active": true
+    },
+    {
+      "product_name": "AMD_HANGER_CLUTCH - 1SR_42-RH",
+      "sku": "AMD(1S)_CLUTCH_42_RH",
+      "category": "SPARE PART LIST",
+      "item_type": "Non-stocked product",
+      "description": "HANGER MOUNTED CAR DOOR CLUTCH - AMD SERIES - 42\" - RIGHT HAND",
+      "price_cad": 3976.0,
+      "active": true
+    }
+  ]
+}

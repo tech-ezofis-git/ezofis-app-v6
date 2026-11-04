@@ -31,6 +31,10 @@ Inputs are case-insensitive, and the older key names still work: `Project`, `Pro
 
 Use a new `session_id` for each fresh test run so an earlier session doesn't mix into the result.
 
+## Rulebook and prices
+
+The estimator uses FTL rulebook v1.1 (`app/ftl/quote_estimator/data/rulebook/`). A product's price comes from the first of these that has it: the inFlow snapshot (`inflow_snapshot.json`), the Contractor Price Book (`price_book_overlay.json`), then the Product Master (`product_master.json`). Old product codes that FTL renamed are still accepted.
+
 ## End-to-end flow
 
 | Step | Call | Send | Get back |

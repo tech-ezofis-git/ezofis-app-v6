@@ -166,5 +166,13 @@
     "approved_range_value": "Oiled 18,430-34,061 lb; dry 18,265-34,061 lb",
     "conditions_notes": "Nominal <=500 fpm; trip <=625 fpm",
     "source": "TC.7.004750.EN.03"
+  },
+  {
+    "family": "Formula VisionPlus",
+    "model_type": "FZU-1442US01",
+    "parameter": "Basic electrical connectivity",
+    "approved_range_value": "18-30 VDC; NPN normally-closed control signal switched to ground",
+    "conditions_notes": "Controller-less/direct-connect design depending on model; separate PSU not automatic on SGV2",
+    "source": "Formula Vision Plus FZU-1442US01 guide pp.3/6"
   }
 ]

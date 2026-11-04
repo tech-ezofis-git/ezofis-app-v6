@@ -43,17 +43,17 @@
   },
   {
     "trigger_id": "RT-007",
-    "condition": "Programming tool price required",
+    "condition": "Programming tool is requested as free/discounted or customer says it already owns one",
     "severity": "REVIEW",
-    "agent_response": "Resolve $598.50 vs $698.50/customer waiver",
-    "required_resolution": "Customer pricing profile"
+    "agent_response": "Keep live inFlow tool price unless estimator manually waives/discounts",
+    "required_resolution": "Estimator approval / ownership confirmation"
   },
   {
     "trigger_id": "RT-008",
-    "condition": "Detector final wiring/order release",
-    "severity": "BLOCK",
-    "agent_response": "Resolve 24 VAC claim vs +24 VDC manual and current draw",
-    "required_resolution": "Formula datasheet"
+    "condition": "VisionPlus used on non-standard controller/interface or separate power supply is proposed",
+    "severity": "REVIEW",
+    "agent_response": "Do not invent power/interface BOM",
+    "required_resolution": "Validate against Formula FZU-1442US01 and controller requirements"
   },
   {
     "trigger_id": "RT-009",
@@ -66,8 +66,8 @@
     "trigger_id": "RT-010",
     "condition": "Any OL100 selection",
     "severity": "REVIEW",
-    "agent_response": "No final SKU/BOM",
-    "required_resolution": "Resolve base + $2,950 tension content"
+    "agent_response": "Do not auto-release OL100/tension commercial BOM",
+    "required_resolution": "Resolve I-006: separate tension line vs inFlow all-in description and exact tension SKU"
   },
   {
     "trigger_id": "RT-011",
@@ -94,15 +94,15 @@
     "trigger_id": "RT-014",
     "condition": "Any safety gear selection",
     "severity": "BLOCK",
-    "agent_response": "No safety SKU/price until CSGB/SGB and full survey resolved",
-    "required_resolution": "Safety engineering"
+    "agent_response": "No safety SKU/price until full engineering inputs are satisfied and exact product/master price is controlled",
+    "required_resolution": "Safety engineering + I-008 normalization"
   },
   {
     "trigger_id": "RT-015",
-    "condition": "Discount, incentive, payment terms or freight lacks approved profile",
+    "condition": "Any discount/special price, freight outside controlled single-SGV2 rule, or payment terms without record",
     "severity": "REVIEW",
     "agent_response": "No commercial assumption",
-    "required_resolution": "Estimator/customer record"
+    "required_resolution": "Manual estimator/customer-record approval"
   },
   {
     "trigger_id": "RT-016",
@@ -110,5 +110,19 @@
     "severity": "BLOCK",
     "agent_response": "Preserve both facts and issue ID",
     "required_resolution": "Resolve conflict before release"
+  },
+  {
+    "trigger_id": "RT-017",
+    "condition": "2C/2T universal-door automatic price requested while UOM remains set-vs-panel ambiguous",
+    "severity": "BLOCK",
+    "agent_response": "Keep physical panel count but do not auto-price disputed UOM",
+    "required_resolution": "Normalize inFlow UOM/ProductName and close I-004"
+  },
+  {
+    "trigger_id": "RT-018",
+    "condition": "Site survey is incomplete for one entrance",
+    "severity": "BLOCK",
+    "agent_response": "Hold only affected selection and generate targeted field request",
+    "required_resolution": "Collect missing field/photo for that entrance; do not guess or require full re-survey unnecessarily"
   }
 ]
