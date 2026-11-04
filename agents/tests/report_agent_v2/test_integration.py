@@ -906,3 +906,52 @@ async def test_pending_report_sla_and_timing_columns(world):
             conn.execute("DROP TABLE IF EXISTS workflow.transaction_b05ed64d")
             conn.execute("DROP TABLE IF EXISTS workflow.sla_timers")
 
+
+async def test_user_activity_lists_one_users_logins_and_events(world, make_client):
+    """The User Login and Security Activity drill-down: one user's logins (newest first, channel, IP,
+    device) and the security events the report counts; Admin only, and only for that report."""
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+    from datetime import timezone as _tz
+
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    now = _dt.now(_tz.utc)
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        conn.execute("CREATE SCHEMA IF NOT EXISTS auth")
+        conn.execute("CREATE SCHEMA IF NOT EXISTS activitylog")
+        conn.execute("""CREATE TABLE auth."LoginHistory" ("Id" uuid, "TenantId" uuid, "Email" text, "LoggedFrom" text,
+                        "IpAddress" text, "UserAgent" text, "CreatedAtUtc" timestamptz)""")
+        conn.execute("""CREATE TABLE activitylog."EventLogs" ("Id" uuid, "TenantId" uuid, "UserEmail" text, "EventTitle" text,
+                        "EventType" text, "Category" text, "Severity" text, "IpAddress" text, "CreatedAtUtc" timestamptz)""")
+        chrome = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+        for at, frm, ip, ua in [(now - _td(hours=1), "WEB", "10.0.0.1", chrome), (now - _td(days=2), "MOBILE", "10.0.0.2", "EZOFIS/1.4"),
+                                (now - _td(days=40), "WEB", "10.0.0.3", chrome)]:  # outside the 30-day window
+            conn.execute('INSERT INTO auth."LoginHistory" VALUES (%s,%s,%s,%s,%s,%s,%s)',
+                         (uuid.uuid4(), world.tenant_a, "Owner@A.example.com", frm, ip, ua, at))
+        conn.execute('INSERT INTO auth."LoginHistory" VALUES (%s,%s,%s,%s,%s,%s,%s)',
+                     (uuid.uuid4(), world.tenant_a, "shared@a.example.com", "WEB", "10.9.9.9", chrome, now))
+        for title, etype, cat, sev in [("Password changed", "Password Changed", "Security", "Info"),
+                                       ("Role updated", "Permission Changed", "Admin", "Info"),
+                                       ("Report viewed", "Viewed", "Report", "Info")]:  # not a counted event
+            conn.execute('INSERT INTO activitylog."EventLogs" VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                         (uuid.uuid4(), world.tenant_a, "owner@a.example.com", title, etype, cat, sev, "10.0.0.1", now))
+    try:
+        client = await make_client()
+        admin = _h(world, world.admin, role="Admin")
+        ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
+        url = f"/api/report-agent-v2/reports/{ids['user_login_security']}/user-activity"
+        body = (await client.get(url, params={"email": "owner@a.example.com"}, headers=admin)).json()
+        assert [(x["channel"], x["ip"], x["device"]) for x in body["logins"]] == [
+            ("Web", "10.0.0.1", "Chrome on Windows"), ("Mobile", "10.0.0.2", "EZOFIS/1.4")]
+        assert sorted(e["event"] for e in body["events"]) == ["Password changed", "Role updated"]
+        # Admin only, and only behind the login report.
+        user = await client.get(url, params={"email": "owner@a.example.com"}, headers=_h(world, world.owner))
+        assert user.status_code == 403
+        other = await client.get(f"/api/report-agent-v2/reports/{ids['ai_credit_consumption']}/user-activity",
+                                 params={"email": "owner@a.example.com"}, headers=admin)
+        assert other.status_code == 404
+    finally:
+        with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+            conn.execute('DROP TABLE IF EXISTS auth."LoginHistory"')
+            conn.execute('DROP TABLE IF EXISTS activitylog."EventLogs"')
+

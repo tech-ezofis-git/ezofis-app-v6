@@ -61,6 +61,7 @@ import JsonValueTable, {
   parseJsonValue,
 } from './JsonValueTable'
 import StatusPill from './StatusPill'
+import UserActivityModal from './UserActivityModal'
 
 interface OverviewColumn {
   id: string
@@ -190,6 +191,12 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
   const isAgentReport = Boolean(report.agentConfig)
   const isFolderReport = report.sourceType === 'Folder'
   const isDefaultReport = report.domain === DEFAULT_REPORT_DOMAIN
+  // User Login and Security Activity: a user's row opens their logins / events.
+  const isLoginReport =
+    isDefaultReport &&
+    (report.agentConfig?.reportSpec as unknown as ReportSpec | undefined)
+      ?.agentSpec?.template === 'user_login_security'
+  const [activityEmail, setActivityEmail] = useState<string | null>(null)
   const legacyQuery = useReportBuilderDataQuery(
     isAgentReport ? null : report.id,
   )
@@ -484,6 +491,17 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               )
             }
             const value = row[key] as string
+            if (isLoginReport && normalizeName(col.label) === 'user' && value) {
+              return (
+                <button
+                  className='cursor-pointer truncate font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70'
+                  type='button'
+                  onClick={() => setActivityEmail(String(value))}
+                >
+                  {value}
+                </button>
+              )
+            }
             // Source names a workflow (request rows) or a folder (repository
             // files: OCR, intelligent upload, AI summary); the icon tells which.
             if (isDefaultReport && isSourceColumn(col)) {
@@ -513,6 +531,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
       requestOverview.loadingInstanceId,
       isFolderReport,
       isDefaultReport,
+      isLoginReport,
     ],
   )
 
@@ -1087,6 +1106,14 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               )}
             </div>
           )}
+
+        {isLoginReport && (
+          <UserActivityModal
+            email={activityEmail}
+            reportId={report.id}
+            onClose={() => setActivityEmail(null)}
+          />
+        )}
 
         <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
           <DataTable

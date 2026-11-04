@@ -35,7 +35,7 @@ from app.report_agent_v2.domain.compiler import CompiledQuery, SpecValidationErr
 from app.report_agent_v2.domain.executor import run_compiled, shape_result
 from app.report_agent_v2.domain.source_catalog import SourceCatalog
 from app.report_agent_v2.domain.spec import ReportSpec
-from app.report_agent_v2.errors import BadRequestError, ConflictError, ForbiddenError, UnprocessableError
+from app.report_agent_v2.errors import BadRequestError, ConflictError, ForbiddenError, NotFoundError, UnprocessableError
 from app.report_agent_v2.security.authorization import ReportAccess, evaluate_report_access, tenant_admin, tenant_user
 from app.report_agent_v2.security.principal import TenantContext
 
@@ -348,6 +348,21 @@ async def execute_report(
     body = body or ExecuteReportRequest()
     options = ExecutionOptions(as_of=body.as_of_date, filters=list(body.filters), limit=body.limit)
     return await request.app.state.execution_agent.execute(conn, ctx, report_id, options)
+
+
+@router.get("/reports/{report_id}/user-activity")
+async def user_activity(
+    report_id: uuid.UUID,
+    email: str = Query(min_length=3, max_length=320),
+    as_of_date: date | None = Query(default=None, alias="asOfDate"),
+    ctx: TenantContext = Depends(tenant_admin),
+    conn: AsyncConnection = Depends(tenant_connection),
+) -> dict:
+    """One user's logins and security events behind a row of User Login and Security Activity (Admin)."""
+    definition = await store.load_definition(conn, ctx.tenant_id, report_id)
+    if definition is None or store.system_template_key(definition) != "user_login_security":
+        raise NotFoundError("Report not found.")
+    return await system_reports.user_login_activity(conn, ctx.tenant_id, email, as_of=as_of_date or date.today())
 
 
 @router.get("/reports/{report_id}/execute")

@@ -885,6 +885,72 @@ async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str
     return q, []
 
 
+# ---------------------------------------------------------------------------------------------
+# Drill-down: one user's logins and security events (User Login and Security Activity)
+# ---------------------------------------------------------------------------------------------
+
+_BROWSERS = (("Edg/", "Edge"), ("OPR/", "Opera"), ("Chrome/", "Chrome"), ("Firefox/", "Firefox"), ("Safari/", "Safari"))
+_SYSTEMS = (("Windows", "Windows"), ("Android", "Android"), ("iPhone", "iOS"), ("iPad", "iOS"), ("Mac OS X", "macOS"),
+            ("Linux", "Linux"))
+
+
+def device_label(user_agent: str | None) -> str | None:
+    """'Chrome on Windows' from a user-agent; the raw text (short) when it is not a browser (a mobile app)."""
+    ua = (user_agent or "").strip()
+    if not ua:
+        return None
+    browser = next((name for token, name in _BROWSERS if token in ua), None)
+    system = next((name for token, name in _SYSTEMS if token in ua), None)
+    if browser and system:
+        return f"{browser} on {system}"
+    return browser or system or ua[:60]
+
+
+async def user_login_activity(conn: AsyncConnection, tenant_id: uuid.UUID, email: str, *, as_of: date,
+                              limit: int = 500) -> dict:
+    """Every login and security event of one user in the report's window (the User Login and Security
+    Activity report counts them per user; this lists them)."""
+    template = TEMPLATES["user_login_security"]
+    until = datetime.combine(as_of + timedelta(days=1), time.min, tzinfo=timezone.utc)
+    since = until - timedelta(days=template.window_days)
+    who = email.strip().lower()
+    logins: list[dict] = []
+    if {"Email", "LoggedFrom", "IpAddress", "CreatedAtUtc", "TenantId"} <= await _columns(conn, "auth", "LoginHistory"):
+        agent = 'NULLIF(btrim("UserAgent"), \'\')' if "UserAgent" in await _columns(conn, "auth", "LoginHistory") else "NULL"
+        cur = await conn.execute(
+            f"""SELECT "CreatedAtUtc", "LoggedFrom", "IpAddress", {agent} FROM auth."LoginHistory"
+                WHERE "TenantId" = %s AND lower("Email") = %s AND "CreatedAtUtc" >= %s AND "CreatedAtUtc" < %s
+                ORDER BY "CreatedAtUtc" DESC LIMIT %s""",
+            (tenant_id, who, since, until, limit),
+        )
+        logins = [
+            {"at": at.isoformat() if at else None,
+             "channel": {"WEB": "Web", "MOBILE": "Mobile"}.get(str(channel or "").upper(), channel),
+             "ip": ip, "device": device_label(ua)}
+            for at, channel, ip, ua in await cur.fetchall()
+        ]
+    events: list[dict] = []
+    if {"UserEmail", "Category", "Severity", "EventType", "CreatedAtUtc", "TenantId"} <= await _columns(
+            conn, "activitylog", "EventLogs"):
+        cols = await _columns(conn, "activitylog", "EventLogs")
+        title = '"EventTitle"' if "EventTitle" in cols else '"EventType"'
+        ip = '"IpAddress"' if "IpAddress" in cols else "NULL"
+        # The same events the report counts: Security, Critical, Warning and permission changes.
+        cur = await conn.execute(
+            f"""SELECT "CreatedAtUtc", {title}, "EventType", "Category", "Severity", {ip} FROM activitylog."EventLogs"
+                WHERE "TenantId" = %s AND lower("UserEmail") = %s AND "CreatedAtUtc" >= %s AND "CreatedAtUtc" < %s
+                  AND ("Category" = 'Security' OR "Severity" IN ('Critical', 'Warning') OR "EventType" = 'Permission Changed')
+                ORDER BY "CreatedAtUtc" DESC LIMIT %s""",
+            (tenant_id, who, since, until, limit),
+        )
+        events = [
+            {"at": at.isoformat() if at else None, "event": ttl or etype, "type": etype, "category": cat,
+             "severity": sev, "ip": addr}
+            for at, ttl, etype, cat, sev, addr in await cur.fetchall()
+        ]
+    return {"email": who, "since": since.isoformat(), "until": until.isoformat(), "logins": logins, "events": events}
+
+
 TEMPLATES: dict[str, Template] = {t.key: t for t in (
     Template("ai_credit_consumption", "AI Credit Consumption",
              "AI credits used per request and skill (AP agent), plus AI summary, OCR and intelligent upload credits from billing, over the last 90 days.", "tenant", 90, _CREDIT_COLS, _ai_credit_consumption),
