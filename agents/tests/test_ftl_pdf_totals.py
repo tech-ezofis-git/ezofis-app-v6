@@ -196,3 +196,35 @@ def test_pdf_form_data_has_a_clean_contact():
     quote_2, _n = form_data_for_quote_type(form_data=form, quote_type="quote_2")
     assert quote_1["Contact"] == quote_2["Contact"] == "Test Estimating Team"
     assert quote_1["Email"] == quote_2["Email"] == "bids@example.com"
+
+
+def test_person_and_email_leave_the_company_name():
+    out = clean_contact_fields(
+        {"Company Name": "Test Elevator Co. / Pat Example (office@example.com)", "Contact": "Pat Example", "Email": "pat@example.com"}
+    )
+    assert out["Company Name"] == "Test Elevator Co."
+    assert out["Contact"] == "Pat Example"
+    assert out["Email"] == "pat@example.com"
+
+
+def test_company_email_does_not_become_the_contact_email():
+    out = clean_contact_fields({"customer_name": "Test Elevator Co (office@example.com)", "email": ""})
+    assert out["customer_name"] == "Test Elevator Co"
+    assert out["email"] == ""
+
+
+def test_contact_name_part_leaves_the_company_without_an_email():
+    out = clean_contact_fields({"Company Name": "Test Elevator Co / Pat Example", "Contact": "Pat Example"})
+    assert out["Company Name"] == "Test Elevator Co"
+
+
+def test_real_company_names_stay_whole():
+    for name in ("Test Lifts / Hoists Inc", "Test Elevators – Modernization", "Test Co (Canada)"):
+        out = clean_contact_fields({"Company Name": name, "Contact": "Pat Example"})
+        assert out["Company Name"] == name
+
+
+def test_pdf_address_boxes_get_the_clean_company():
+    form = _form(**{"Company Name": "Test Elevator Co / Pat Example (office@example.com)", "Billing Address": "1 Main St"})
+    quote_2, _n = form_data_for_quote_type(form_data=form, quote_type="quote_2")
+    assert quote_2["Company Name"] == "Test Elevator Co"

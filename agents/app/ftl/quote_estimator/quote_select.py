@@ -219,9 +219,24 @@ _EMAIL_IN_TEXT_RE = re.compile(r"[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}", re.IG
 _EMPTY_BRACKETS_RE = re.compile(r"\(\s*\)|<\s*>|\[\s*\]")
 
 
+_COMPANY_NAMES = ("companyname", "customername", "company", "customer")
+
+
+def _clean_company_name(text: str, contact: str) -> str:
+    """"Test Co. / Pat Example (pat@x.com)" -> "Test Co.". A "/" part only goes when it comes with an
+    email or is the contact's name, so a company name that really has a slash stays whole."""
+    name = re.sub(r"\s+", " ", _EMPTY_BRACKETS_RE.sub(" ", _EMAIL_IN_TEXT_RE.sub(" ", text))).strip(" ,;:-–—|/")
+    parts = re.split(r"\s+/\s+", name)
+    if len(parts) > 1 and (_EMAIL_IN_TEXT_RE.search(text) or _compact(parts[-1]) == _compact(contact)):
+        return parts[0]
+    return name
+
+
 def clean_contact_fields(data: Dict[str, Any]) -> Dict[str, Any]:
     """A contact name must hold only the name: the model sometimes writes "Name (name@x.com)", which
-    overflows the PDF's contact box. The email moves to a blank Email field; a stated one is kept."""
+    overflows the PDF's contact box. The email moves to a blank Email field; a stated one is kept.
+    A company name must hold only the company, because the PDF prints it at the top of Bill To and
+    Ship To. An email found there is dropped, because it can belong to whoever forwarded the RFQ."""
     out = dict(data)
     for key in _keys_named(out, _CONTACT_NAMES):
         text = out[key]
@@ -234,6 +249,11 @@ def clean_contact_fields(data: Dict[str, Any]) -> Dict[str, Any]:
         if not any(str(out.get(email_key) or "").strip() for email_key in email_keys):
             for email_key in email_keys:
                 out[email_key] = match.group(0)
+    contact_keys = _keys_named(out, _CONTACT_NAMES)
+    contact = str(out[contact_keys[0]] or "") if contact_keys else ""
+    for key in _keys_named(out, _COMPANY_NAMES):
+        if isinstance(out[key], str) and out[key].strip():
+            out[key] = _clean_company_name(out[key], contact)
     return out
 
 
