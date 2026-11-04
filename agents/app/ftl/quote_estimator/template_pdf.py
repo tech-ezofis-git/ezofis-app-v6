@@ -475,6 +475,26 @@ def _expand_containers(fields: List[Dict[str, Any]], data: Dict[str, Any], to_un
     return out
 
 
+def _child_key(child: Dict[str, Any]) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(child.get("dataKey") or child.get("name") or "").lower())
+
+
+def _with_freight_row(children: List[Any], data: Dict[str, Any]) -> List[Any]:
+    """A totals box whose template has no freight row still shows freight when there is some, so the
+    printed rows add up to the printed Total. The new row copies the style of the box's first row."""
+    rows = [c for c in children if isinstance(c, dict) and str(c.get("type", "")).lower() == "key_value"]
+    keys = [_child_key(c) for c in rows]
+    if "total" not in keys or any("freight" in key for key in keys):
+        return children
+    value = resolve_metadata_value({"dataKey": "Freight"}, data, "")
+    if _is_zero_or_blank(value):
+        return children
+    tax_or_total = next(c for c, key in zip(rows, keys) if key in ("hst", "tax", "gst", "total"))
+    freight_row = {**rows[0], "name": "Freight", "label": "Freight", "dataKey": "Freight"}
+    position = children.index(tax_or_total)
+    return children[:position] + [freight_row] + children[position:]
+
+
 def _container_fields(box: Dict[str, Any], data: Dict[str, Any], to_unit: float) -> List[Dict[str, Any]]:
     """A container is a background box whose ``key_value`` children are stacked as equal-height rows,
     label on the left and the formData value on the right."""
@@ -495,7 +515,7 @@ def _container_fields(box: Dict[str, Any], data: Dict[str, Any], to_unit: float)
         shapes.append(rect(f"{prefix}Background", y, h, box))
 
     rows = []
-    for child in box.get("children") or []:
+    for child in _with_freight_row(box.get("children") or [], data):
         if not isinstance(child, dict) or str(child.get("type", "")).lower() != "key_value":
             continue
         value = resolve_metadata_value(child, data, "")
