@@ -6,6 +6,7 @@ import {
 } from '@/features/sub-workflow/utils/blockSettings'
 import { ensureStartAndEndNodes } from '@/services/ai/workflowConfig'
 import useWorkflowStore from '../stores/useWorkflowStore'
+import { serializeBusinessHours } from './businessHours'
 import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
 import { resolvePoSource } from './poSourceConfig'
 import { serializeSlaSettings } from './slaSettings'
@@ -540,13 +541,9 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
           slaMasterFormId: 0,
           slaType: 'STANDARD',
           smsNotify: false,
-          timeZone: '',
-          workDays: [],
           workflowFormSLAFieldId: '',
-          workHours: {
-            from: '',
-            to: '',
-          },
+          // Business hours (workflow main settings); empty = calendar time.
+          ...serializeBusinessHours(storeState.businessHours ?? null),
         },
         smtpEmailId: 0,
         superuser: [],

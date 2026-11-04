@@ -72,7 +72,7 @@ public sealed class WorkflowLegacyMailboxSyncService : IWorkflowLegacyMailboxSyn
         await connection.OpenAsync(cancellationToken);
 
         await using (var alter = new NpgsqlCommand(
-            $"ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS user_ids text NULL;",
+            $"ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS user_ids text NULL; ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS group_ids text NULL;",
             connection))
         {
             try
@@ -86,12 +86,14 @@ public sealed class WorkflowLegacyMailboxSyncService : IWorkflowLegacyMailboxSyn
         }
 
         var openRows = new List<(int Id, string? ActivityId, string? UserIds)>();
+        // A row escalated to a group (group_ids holds its id) keeps the group's members, not the stage's users.
         var sql = $@"
 SELECT id, activity_id, user_ids
 FROM {transactionTable}
 WHERE is_deleted = false
   AND action_status = 0
-  AND UPPER(TRIM(COALESCE(stage_type, ''))) <> 'END';";
+  AND UPPER(TRIM(COALESCE(stage_type, ''))) <> 'END'
+  AND COALESCE(group_ids, '') !~* '^[0-9a-f]{{8}}-[0-9a-f]{{4}}-';";
         await using (var cmd = new NpgsqlCommand(sql, connection))
         await using (var reader = await cmd.ExecuteReaderAsync(cancellationToken))
         {
@@ -532,7 +534,8 @@ INSERT INTO {ownerTable}
         }
 
         var stepUserIds = targetTable == inboxTable
-            ? await ListStepAssigneeUserIdsAsync(connection, workflowId, activityId, cancellationToken)
+            ? await ListGroupEscalationUserIdsAsync(connection, transactionTable, transactionRowId, cancellationToken)
+                ?? await ListStepAssigneeUserIdsAsync(connection, workflowId, activityId, cancellationToken)
             : Array.Empty<Guid>();
         if (stepUserIds.Count > 0)
             await SetTransactionUserIdsAsync(connection, transactionTable, transactionRowId, stepUserIds, cancellationToken);
@@ -669,6 +672,34 @@ INSERT INTO {ownerTable}
                     cancellationToken);
             }
         }
+    }
+
+    /// <summary>
+    /// The members on a transaction that an SLA escalated to a group (<c>group_ids</c> = the group's id,
+    /// <c>user_ids</c> = its members). Null for any other transaction (legacy numeric group ids included).
+    /// </summary>
+    private static async Task<IReadOnlyList<Guid>?> ListGroupEscalationUserIdsAsync(
+        NpgsqlConnection connection,
+        string transactionTable,
+        int transactionRowId,
+        CancellationToken cancellationToken)
+    {
+        await using var cmd = new NpgsqlCommand(
+            $"SELECT group_ids, user_ids FROM {transactionTable} WHERE id = @Id;",
+            connection);
+        cmd.Parameters.AddWithValue("@Id", transactionRowId);
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken) || reader.IsDBNull(0) || reader.IsDBNull(1))
+            return null;
+        if (!Guid.TryParse(reader.GetString(0).Trim(), out _))
+            return null;
+
+        return reader.GetString(1)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(v => Guid.TryParse(v, out var id) ? id : Guid.Empty)
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
     }
 
     private static async Task<IReadOnlyList<Guid>> ListStepAssigneeUserIdsAsync(

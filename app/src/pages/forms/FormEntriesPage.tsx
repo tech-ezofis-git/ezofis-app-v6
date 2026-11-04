@@ -105,6 +105,7 @@ import {
   matchesDateRangeValue,
 } from '@/utils/filterUtils'
 import FormEntryTableField from './components/FormEntryTableField'
+import { getTablePreviewColumns } from './utils/tablePreviewColumns'
 import GenericFormImportModal from './components/GenericFormImportModal'
 import RestoreEntriesDialog, {
   type RestoreOptions,
@@ -1491,6 +1492,7 @@ const FormEntriesPage = () => {
   // Active line items for the modal table explorer
   const [activeLineItems, setActiveLineItems] = useState<{
     colLabel: string
+    columns: string[]
     data: any[]
     rowId: string
   } | null>(null)
@@ -2335,6 +2337,7 @@ const FormEntriesPage = () => {
                   onClick={() =>
                     setActiveLineItems({
                       colLabel: fieldLabel,
+                      columns: getTablePreviewColumns(field, parsedData),
                       data: parsedData,
                       rowId: row.id,
                     })
@@ -3670,7 +3673,7 @@ const FormEntriesPage = () => {
                 <thead>
                   <tr className='border-b border-gray-2 bg-surface-muted'>
                     {activeLineItems.data.length > 0 &&
-                      Object.keys(activeLineItems.data[0]).map((k) => (
+                      activeLineItems.columns.map((k) => (
                         <th
                           className='p-3 font-bold whitespace-nowrap text-gray-11'
                           key={k}
@@ -3686,7 +3689,7 @@ const FormEntriesPage = () => {
                       className='border-b border-gray-1 last:border-0 hover:bg-surface-hover/50'
                       key={idx}
                     >
-                      {Object.keys(item).map((k) => (
+                      {activeLineItems.columns.map((k) => (
                         <td
                           className='p-3 font-medium whitespace-nowrap text-gray-12'
                           key={k}

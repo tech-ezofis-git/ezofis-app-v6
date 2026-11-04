@@ -1,14 +1,69 @@
 import { generateId } from './generateId'
 import { getNodeToolType, NODE_TOOL_TYPE } from './nodeToolTypes'
 
+export type SlaAdvancedRule = {
+  breachAction: SlaBreachAction
+  conditions: SlaCondition[]
+  enabled: boolean
+  entryIds: string[]
+  /** How several entries are used: first | shortest | longest | each. */
+  entryStrategy: SlaEntryStrategy
+  id: string
+  initiator: boolean
+  /** True = all conditions (AND), false = any (OR). */
+  matchAll: boolean
+  name: string
+  notifyUserIds: string[]
+  priority: number
+  /** Working minutes before each deadline; null = no reminder. */
+  reminderMinutes: null | number
+  stopAfterMatch: boolean
+}
+export type SlaBreachAction = {
+  on: SlaBreachOn
+  stageId: null | string
+  type: SlaBreachType
+}
+export type SlaBreachOn = 'both' | 'resolution' | 'response'
+export type SlaBreachType = 'none' | 'notify' | 'reassign' | 'stage'
 export type SlaChannels = { email: boolean; sms: boolean }
+export type SlaCondition = {
+  fieldId: string
+  id: string
+  logic: string
+  value: string
+}
 export type SlaDurationUnit = 'days' | 'hours' | 'minutes'
+export type SlaEntryStrategy = 'each' | 'first' | 'longest' | 'shortest'
 export type SlaEscalation = {
+  /** Type `group` only: the tenant group that receives the request. */
+  groupId?: null | string
   stageId: null | string
   type: null | SlaEscalationType
   userId: null | string
 }
-export type SlaEscalationType = 'stage' | 'user'
+export type SlaEscalationType = 'group' | 'stage' | 'user'
+
+/** SLA Master field (jsonId) for each SLA property (Advanced). */
+export type SlaFieldMapping = {
+  escalationUsers: null | string
+  name: null | string
+  notifyUsers: null | string
+  resolutionDuration: null | string
+  resolutionUnit: null | string
+  responseDuration: null | string
+  responseUnit: null | string
+}
+
+/** Advanced: one SLA Master entry and what happens at its time. */
+export type SlaMasterRow = {
+  entryId: null | string
+  /** Tell the entry's Escalate users (on a stage, also reassign to the first). */
+  escalate: boolean
+  id: string
+  /** Tell the entry's Notify users. */
+  notify: boolean
+}
 
 export type SlaMode = 'advanced' | 'standard'
 
@@ -22,6 +77,8 @@ export type SlaRule = {
   id: string
   initiator: boolean
   name: string
+  /** Editor only: the Notify checkbox. Unset = on when the rule has recipients. */
+  notify?: boolean
   notifyUserIds: string[]
 }
 
@@ -31,9 +88,21 @@ export type SlaRule = {
 export type SlaScope = 'block' | 'workflow'
 
 export type SlaSettings = {
+  /** Advanced (workflow settings): rules picking SLA Master entries. */
+  advancedRules?: SlaAdvancedRule[]
+  /** Advanced: entry used when no rule matches; null = no SLA then. */
+  fallbackEntryId?: null | string
+  /** Advanced: SLA Master fields the SLA values are read from. */
+  fieldMapping?: SlaFieldMapping
+  /** Advanced: the entries used, each with its own time and action. */
+  masterEntries?: SlaMasterRow[]
+  /** Advanced: the SLA Master field (jsonId) that names the entries, e.g. Name. */
+  masterFieldId?: null | string
   mode: SlaMode
   /** Advanced mode channels, and the default for rules saved without `channels`. */
   notifications: SlaChannels
+  /** Advanced: stage whose first action meets the response SLA; null = no response SLA. */
+  responseStageId?: null | string
   rules: SlaRule[]
   slaMasterId: null | string
 }
@@ -48,6 +117,78 @@ export const SLA_DURATION_UNITS: { id: SlaDurationUnit; name: string }[] = [
 ]
 
 const DURATION_UNIT_IDS = new Set<string>(SLA_DURATION_UNITS.map((u) => u.id))
+
+export const SLA_ENTRY_STRATEGIES: { id: SlaEntryStrategy; name: string }[] = [
+  { id: 'first', name: 'First entry in the list' },
+  { id: 'shortest', name: 'Shortest SLA' },
+  { id: 'longest', name: 'Longest SLA' },
+  { id: 'each', name: 'Each entry separately' },
+]
+
+/** Operators shared with the condition block (WorkflowConditionEvaluator). */
+export const SLA_CONDITION_OPERATORS: { id: string; name: string }[] = [
+  { id: 'IS_EQUALS_TO', name: 'Equals' },
+  { id: 'IS_NOT_EQUALS_TO', name: 'Not equals' },
+  { id: 'CONTAINS', name: 'Contains' },
+  { id: 'NOT_CONTAINS', name: 'Not contains' },
+  { id: 'IS_ANY_OF', name: 'In (comma list)' },
+  { id: 'IS_NOT_ANY_OF', name: 'Not in (comma list)' },
+  { id: 'IS_GREATER_THAN', name: 'Greater than' },
+  { id: 'IS_LESSER_THAN', name: 'Less than' },
+  { id: 'IS_EMPTY', name: 'Is empty' },
+  { id: 'IS_NOT_EMPTY', name: 'Is not empty' },
+]
+
+const NO_VALUE_OPERATORS = new Set(['IS_EMPTY', 'IS_NOT_EMPTY'])
+export const conditionNeedsValue = (logic: string) =>
+  !NO_VALUE_OPERATORS.has(logic)
+
+const STRATEGY_IDS = new Set<string>(SLA_ENTRY_STRATEGIES.map((s) => s.id))
+const OPERATOR_IDS = new Set(SLA_CONDITION_OPERATORS.map((o) => o.id))
+
+export const emptyFieldMapping = (): SlaFieldMapping => ({
+  escalationUsers: null,
+  name: null,
+  notifyUsers: null,
+  resolutionDuration: null,
+  resolutionUnit: null,
+  responseDuration: null,
+  responseUnit: null,
+})
+
+export const createSlaCondition = (): SlaCondition => ({
+  fieldId: '',
+  id: `cond-${generateId()}`,
+  logic: 'IS_EQUALS_TO',
+  value: '',
+})
+
+export const createAdvancedRule = (priority: number): SlaAdvancedRule => ({
+  breachAction: { on: 'resolution', stageId: null, type: 'notify' },
+  conditions: [createSlaCondition()],
+  enabled: true,
+  entryIds: [],
+  entryStrategy: 'first',
+  id: `sla-adv-${generateId()}`,
+  initiator: false,
+  matchAll: true,
+  name: '',
+  notifyUserIds: [],
+  priority,
+  reminderMinutes: null,
+  stopAfterMatch: true,
+})
+
+export const createSlaMasterRow = (): SlaMasterRow => ({
+  entryId: null,
+  escalate: false,
+  id: `sla-row-${generateId()}`,
+  notify: true,
+})
+
+/** The Notify checkbox: explicit once touched, else on when the rule has recipients. */
+export const isNotifyOn = (rule: SlaRule) =>
+  rule.notify ?? (rule.notifyUserIds.length > 0 || rule.initiator)
 
 const emptyEscalation = (): SlaEscalation => ({
   stageId: null,
@@ -122,22 +263,152 @@ export const normalizeSlaSettings = (
             const type = String(r.escalateTo?.type ?? '').toLowerCase()
             rule.escalateTo = setEscalationType(
               emptyEscalation(),
-              type === 'user' || type === 'stage' ? type : null,
+              type === 'user' || type === 'stage' || type === 'group'
+                ? type
+                : null,
             )
             if (type === 'user')
               rule.escalateTo.userId = toId(r.escalateTo?.userId)
             if (type === 'stage')
               rule.escalateTo.stageId = toId(r.escalateTo?.stageId)
+            if (type === 'group')
+              rule.escalateTo.groupId = toId(r.escalateTo?.groupId)
           }
           return rule
         })
     : []
 
-  return {
+  const settings: SlaSettings = {
     mode,
     notifications,
     rules,
     slaMasterId: toId(source.slaMasterId),
+  }
+  // SLA Master entries (stage and workflow scope). Settings saved with a single
+  // entryId become one row doing both, with the same id so its timers still match.
+  const masterRows: SlaMasterRow[] = Array.isArray(source.masterEntries)
+    ? source.masterEntries
+        .filter((r: unknown) => r && typeof r === 'object')
+        .map((r: Partial<SlaMasterRow>) => ({
+          entryId: toId(r.entryId),
+          escalate: r.escalate === true,
+          id: toId(r.id) ?? `sla-row-${generateId()}`,
+          notify: r.notify === true,
+        }))
+    : source.entryId
+      ? [
+          {
+            entryId: toId(source.entryId),
+            escalate: true,
+            id: String(source.entryId),
+            notify: true,
+          },
+        ]
+      : []
+  if (source.masterFieldId || masterRows.length > 0) {
+    settings.masterFieldId = toId(source.masterFieldId)
+    settings.masterEntries = masterRows
+  }
+  // Advanced keys only when saved, so Standard / older settings keep their shape.
+  const hasAdvanced = [
+    'advancedRules',
+    'fallbackEntryId',
+    'fieldMapping',
+    'responseStageId',
+  ].some((key) => key in source)
+  if (scope === 'workflow' && hasAdvanced) {
+    settings.fieldMapping = normalizeFieldMapping(source.fieldMapping)
+    settings.advancedRules = Array.isArray(source.advancedRules)
+      ? source.advancedRules
+          .filter((r: unknown) => r && typeof r === 'object')
+          .map(normalizeAdvancedRule)
+      : []
+    settings.responseStageId = toId(source.responseStageId)
+    settings.fallbackEntryId = toId(source.fallbackEntryId)
+  }
+  return settings
+}
+
+const normalizeFieldMapping = (raw: unknown): SlaFieldMapping => {
+  const mapping = emptyFieldMapping()
+  if (!raw || typeof raw !== 'object') return mapping
+  const source = raw as Record<string, unknown>
+  for (const key of Object.keys(mapping) as (keyof SlaFieldMapping)[])
+    mapping[key] = toId(source[key])
+  return mapping
+}
+
+/** A saved advanced rule, before normalizing (any field may be missing or mistyped). */
+type SavedAdvancedRule = {
+  breachAction?: { on?: unknown; stageId?: unknown; type?: unknown }
+  conditions?: unknown
+  enabled?: unknown
+  entryIds?: unknown
+  entryStrategy?: unknown
+  id?: unknown
+  initiator?: unknown
+  matchAll?: unknown
+  name?: unknown
+  notifyUserIds?: unknown
+  priority?: unknown
+  reminderMinutes?: unknown
+  stopAfterMatch?: unknown
+}
+
+type SavedCondition = {
+  fieldId?: unknown
+  id?: unknown
+  logic?: unknown
+  value?: unknown
+}
+
+const normalizeAdvancedRule = (
+  r: SavedAdvancedRule,
+  index: number,
+): SlaAdvancedRule => {
+  const strategy = String(r.entryStrategy ?? '').toLowerCase()
+  const type = String(r.breachAction?.type ?? 'none').toLowerCase()
+  const on = String(r.breachAction?.on ?? 'resolution').toLowerCase()
+  const reminder = Number(r.reminderMinutes)
+  const priority = Number(r.priority)
+  return {
+    breachAction: {
+      on: on === 'response' || on === 'both' ? on : 'resolution',
+      stageId: toId(r.breachAction?.stageId),
+      type:
+        type === 'notify' || type === 'reassign' || type === 'stage'
+          ? type
+          : 'none',
+    },
+    conditions: Array.isArray(r.conditions)
+      ? r.conditions.map((c: SavedCondition) => ({
+          fieldId: String(c?.fieldId ?? ''),
+          id: toId(c?.id) ?? `cond-${generateId()}`,
+          logic: String(c?.logic || 'IS_EQUALS_TO').toUpperCase(),
+          value: String(c?.value ?? ''),
+        }))
+      : [],
+    enabled: r.enabled !== false,
+    entryIds: Array.isArray(r.entryIds)
+      ? r.entryIds.map(String).filter(Boolean)
+      : [],
+    entryStrategy: STRATEGY_IDS.has(strategy)
+      ? (strategy as SlaEntryStrategy)
+      : 'first',
+    id: toId(r.id) ?? `sla-adv-${generateId()}`,
+    initiator: Boolean(r.initiator),
+    matchAll: r.matchAll !== false,
+    name: String(r.name ?? ''),
+    notifyUserIds: Array.isArray(r.notifyUserIds)
+      ? r.notifyUserIds.map(String).filter(Boolean)
+      : [],
+    priority:
+      r.priority !== null && r.priority !== '' && Number.isFinite(priority)
+        ? priority
+        : index + 1,
+    reminderMinutes:
+      Number.isFinite(reminder) && reminder > 0 ? Math.round(reminder) : null,
+    stopAfterMatch: r.stopAfterMatch === true,
   }
 }
 
@@ -148,7 +419,12 @@ export const setEscalationType = (
 ): SlaEscalation => {
   const current = escalation ?? emptyEscalation()
   if (current.type === type) return current
-  return { stageId: null, type, userId: null }
+  return {
+    stageId: null,
+    type,
+    userId: null,
+    ...(type === 'group' ? { groupId: null } : {}),
+  }
 }
 
 /**
@@ -177,9 +453,9 @@ export const serializeSlaSettings = (
             duration: rule.duration,
             durationUnit: rule.durationUnit,
             id: rule.id,
-            initiator: rule.initiator,
+            initiator: isNotifyOn(rule) && rule.initiator,
             name: rule.name.trim(),
-            notifyUserIds: [...rule.notifyUserIds],
+            notifyUserIds: isNotifyOn(rule) ? [...rule.notifyUserIds] : [],
           }
           if (scope === 'block') {
             const esc = rule.escalateTo ?? emptyEscalation()
@@ -187,11 +463,67 @@ export const serializeSlaSettings = (
               stageId: esc.type === 'stage' ? esc.stageId : null,
               type: esc.type,
               userId: esc.type === 'user' ? esc.userId : null,
+              ...(esc.type === 'group' ? { groupId: esc.groupId ?? null } : {}),
             }
           }
           return base
         }),
   slaMasterId: settings.mode === 'advanced' ? settings.slaMasterId : null,
+  ...(settings.mode === 'advanced' && hasMasterEntry(settings)
+    ? {
+        masterEntries: (settings.masterEntries ?? []).map((row) => ({
+          entryId: row.entryId,
+          escalate: row.escalate,
+          id: row.id,
+          notify: row.notify,
+        })),
+        masterFieldId: settings.masterFieldId ?? null,
+      }
+    : {}),
+  // Rule-based Advanced settings saved earlier keep working until an entry is chosen.
+  ...(scope === 'workflow' &&
+  settings.mode === 'advanced' &&
+  !hasMasterEntry(settings) &&
+  hasLegacyAdvanced(settings)
+    ? serializeAdvanced(settings)
+    : {}),
+})
+
+const hasMasterEntry = (settings: SlaSettings) =>
+  Boolean(settings.masterFieldId || settings.masterEntries?.length)
+
+const hasLegacyAdvanced = (settings: SlaSettings) =>
+  (settings.advancedRules?.length ?? 0) > 0 || Boolean(settings.fallbackEntryId)
+
+const serializeAdvanced = (settings: SlaSettings) => ({
+  advancedRules: (settings.advancedRules ?? []).map((rule) => ({
+    breachAction: {
+      on: rule.breachAction.on,
+      stageId:
+        rule.breachAction.type === 'stage' ? rule.breachAction.stageId : null,
+      type: rule.breachAction.type,
+    },
+    conditions: rule.conditions.map((c) => ({
+      fieldId: c.fieldId,
+      id: c.id,
+      logic: c.logic,
+      value: conditionNeedsValue(c.logic) ? c.value.trim() : '',
+    })),
+    enabled: rule.enabled,
+    entryIds: [...rule.entryIds],
+    entryStrategy: rule.entryStrategy,
+    id: rule.id,
+    initiator: rule.initiator,
+    matchAll: rule.matchAll,
+    name: rule.name.trim(),
+    notifyUserIds: [...rule.notifyUserIds],
+    priority: rule.priority,
+    reminderMinutes: rule.reminderMinutes,
+    stopAfterMatch: rule.stopAfterMatch,
+  })),
+  fallbackEntryId: settings.fallbackEntryId ?? null,
+  fieldMapping: { ...emptyFieldMapping(), ...settings.fieldMapping },
+  responseStageId: settings.responseStageId ?? null,
 })
 
 export const validateSlaSettings = (
@@ -208,6 +540,16 @@ export const validateSlaSettings = (
   if (settings.mode === 'advanced') {
     if (!settings.slaMasterId)
       add('_config', 'slaMasterId', 'Select an SLA Master')
+    else if (!hasMasterEntry(settings) && hasLegacyAdvanced(settings)) {
+      if (scope === 'workflow') validateAdvanced(settings, add, validStageIds)
+    } else if (!settings.masterEntries?.length)
+      add('_config', 'entryId', 'Add at least one SLA entry')
+    else
+      settings.masterEntries.forEach((row) => {
+        if (!row.entryId) add(row.id, 'entryId', 'Choose an SLA entry')
+        if (!row.notify && !row.escalate)
+          add(row.id, 'action', 'Tick Notify, Escalate or both')
+      })
     return errors
   }
 
@@ -220,20 +562,29 @@ export const validateSlaSettings = (
       add(rule.id, 'duration', 'Enter a duration greater than 0')
     if (!DURATION_UNIT_IDS.has(rule.durationUnit))
       add(rule.id, 'durationUnit', 'Select a unit')
-    // Matches WorkflowSlaSettingsValidator: a rule must notify or escalate.
-    const notifies =
-      (rule.notifyUserIds.length > 0 || rule.initiator) &&
-      (rule.channels.email || rule.channels.sms)
-    if (!notifies && !rule.escalateTo?.type)
+    // Matches WorkflowSlaSettingsValidator: a rule must notify or escalate, and
+    // whichever is ticked must be complete.
+    const notifyOn = isNotifyOn(rule)
+    if (!notifyOn && !rule.escalateTo?.type)
       add(
         rule.id,
         'action',
-        'Choose who to notify (with Email or SMS) or an escalation',
+        scope === 'block'
+          ? 'Tick Send Notification, Enable Escalation or both'
+          : 'Tick Send Notification',
       )
+    if (notifyOn) {
+      if (rule.notifyUserIds.length === 0 && !rule.initiator)
+        add(rule.id, 'notifyUserIds', 'Choose who to notify')
+      if (!rule.channels.email && !rule.channels.sms)
+        add(rule.id, 'channels', 'Choose Email, SMS or both')
+    }
     if (scope !== 'block') return
     const esc = rule.escalateTo
     if (esc?.type === 'user' && !esc.userId)
       add(rule.id, 'escalateTo', 'Select a user to escalate to')
+    if (esc?.type === 'group' && !esc.groupId)
+      add(rule.id, 'escalateTo', 'Select a group to escalate to')
     if (esc?.type === 'stage') {
       if (!esc.stageId) add(rule.id, 'escalateTo', 'Select a stage')
       else if (validStageIds && !validStageIds.includes(esc.stageId))
@@ -241,6 +592,55 @@ export const validateSlaSettings = (
     }
   })
   return errors
+}
+
+/** Matches WorkflowSlaSettingsValidator.ValidateAdvanced. */
+const validateAdvanced = (
+  settings: SlaSettings,
+  add: (key: string, field: string, message: string) => void,
+  validStageIds?: string[],
+) => {
+  const rules = settings.advancedRules ?? []
+  const mapping = settings.fieldMapping ?? emptyFieldMapping()
+  if (rules.length === 0 && !settings.fallbackEntryId) return
+  if (!mapping.resolutionDuration || !mapping.resolutionUnit)
+    add('_config', 'mapping', 'Map the Resolution time and Resolution type')
+  if (settings.responseStageId) {
+    if (!mapping.responseDuration || !mapping.responseUnit)
+      add('_config', 'mapping', 'Map the Response time and Response type')
+    if (validStageIds && !validStageIds.includes(settings.responseStageId))
+      add(
+        '_config',
+        'responseStageId',
+        'This stage is no longer in the workflow',
+      )
+  }
+  const seen = new Set<string>()
+  rules.forEach((rule) => {
+    if (seen.has(rule.id)) add(rule.id, 'id', 'Duplicate rule id')
+    seen.add(rule.id)
+    if (!rule.name.trim()) add(rule.id, 'name', 'Name is required')
+    if (rule.entryIds.length === 0)
+      add(rule.id, 'entryIds', 'Select at least one SLA Master entry')
+    rule.conditions.forEach((c) => {
+      if (!c.fieldId)
+        add(rule.id, 'conditions', 'Select a field for each condition')
+      else if (!OPERATOR_IDS.has(c.logic))
+        add(rule.id, 'conditions', 'Select an operator')
+      else if (conditionNeedsValue(c.logic) && !c.value.trim())
+        add(rule.id, 'conditions', 'Enter a value for each condition')
+    })
+    if (rule.reminderMinutes !== null && rule.reminderMinutes < 0)
+      add(rule.id, 'reminderMinutes', 'Enter zero or more minutes')
+    const action = rule.breachAction
+    if (action.type === 'reassign' && !mapping.escalationUsers)
+      add(rule.id, 'breachAction', 'Map the Escalate field to reassign')
+    if (action.type === 'stage') {
+      if (!action.stageId) add(rule.id, 'breachAction', 'Select a stage')
+      else if (validStageIds && !validStageIds.includes(action.stageId))
+        add(rule.id, 'breachAction', 'This stage is no longer in the workflow')
+    }
+  })
 }
 
 export const hasSlaErrors = (errors: SlaValidationErrors) =>
@@ -280,14 +680,14 @@ export const getWorkflowSlaError = (
   nodes: { data: Record<string, any>; id: string }[],
   workflowSla: null | SlaSettings,
 ): null | { message: string; nodeId?: string } => {
-  const globalError = firstSlaError(
-    validateSlaSettings(workflowSla, 'workflow'),
-  )
-  if (globalError) return { message: `Workflow SLA: ${globalError}` }
-
   const stageIds = nodes
     .filter((n) => isSlaEscalationTarget(n.data))
     .map((n) => n.id)
+  const globalError = firstSlaError(
+    validateSlaSettings(workflowSla, 'workflow', stageIds),
+  )
+  if (globalError) return { message: `Workflow SLA: ${globalError}` }
+
   for (const node of nodes) {
     if (!node.data?.SlaSettings) continue
     const error = firstSlaError(

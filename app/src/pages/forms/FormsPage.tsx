@@ -32,6 +32,7 @@ import {
 } from '@/utils/filterUtils'
 import AiFormBuilder from './components/AiFormBuilder'
 import Table from './components/Table'
+import { isSlaForm } from './utils/slaForm'
 
 const isWorkflowForm = (item: any) =>
   String(item?._json?.settings?.general?.type || item?.type || '')
@@ -167,11 +168,11 @@ const FormsPage = () => {
 
     return filters.length > 0
       ? [
-        {
-          filters,
-          groupCondition: '',
-        },
-      ]
+          {
+            filters,
+            groupCondition: '',
+          },
+        ]
       : []
   }, [activeFilters])
 
@@ -196,7 +197,9 @@ const FormsPage = () => {
               onClick={() =>
                 navigate({
                   params: { formId: row.uid || row.id },
-                  to: '/form-builder/$formId',
+                  to: isSlaForm(row)
+                    ? '/forms/$formId/entries'
+                    : '/form-builder/$formId',
                 })
               }
             >
@@ -322,16 +325,18 @@ const FormsPage = () => {
                     />
                   }
                 >
-                  <MenuItem
-                    icon='lucide:edit'
-                    label={t`Edit`}
-                    onClick={() =>
-                      navigate({
-                        params: { formId: row.uid || row.id },
-                        to: '/form-builder/$formId',
-                      })
-                    }
-                  />
+                  {!isSlaForm(row) && (
+                    <MenuItem
+                      icon='lucide:edit'
+                      label={t`Edit`}
+                      onClick={() =>
+                        navigate({
+                          params: { formId: row.uid || row.id },
+                          to: '/form-builder/$formId',
+                        })
+                      }
+                    />
+                  )}
                   <MenuItem
                     icon='lucide:trash-2'
                     iconClass='text-red-11'
@@ -523,8 +528,8 @@ const FormsPage = () => {
 
   const deletingFormName = String(
     deletingForm?._json?.settings?.general?.name ||
-    deletingForm?.name ||
-    t`Untitled Form`,
+      deletingForm?.name ||
+      t`Untitled Form`,
   )
 
   if (showAiBuilder) {
@@ -661,7 +666,7 @@ const FormsPage = () => {
             setSearchState({ id: '', value: '' })
             setPage(1)
           }}
-          onSearchChange={() => { }}
+          onSearchChange={() => {}}
         />
         <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
           <Table
