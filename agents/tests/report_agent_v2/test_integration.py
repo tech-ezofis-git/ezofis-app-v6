@@ -821,6 +821,7 @@ async def test_sla_report_lists_each_sla_event(world):
             (3, "response", 10, 2, "ticket was already acted on", "2026-10-23"),
             (4, "resolution", 0, 0, None, "2026-10-24"),
             (5, "response", 10, 2, "SLA rule was removed", "2026-10-25"),
+            (6, "adv-response", 11, 2, "skipped: due 2026-10-26 10:00 UTC, more than 60 min ago", "2026-10-26"),
         ]
         for tid, scope, txid, st, outcome, due in rows:
             conn.execute("INSERT INTO workflow.sla_timers VALUES (%s,%s,%s,%s,%s,'r1',%s,%s,%s,'2026-10-20')",
@@ -832,7 +833,7 @@ async def test_sla_report_lists_each_sla_event(world):
             compiled = await compile_system_report(aconn, world.tenant_a, "workflow_sla_compliance", as_of=_date(2026, 10, 29), limit=50)
             _, out, _ = _shape(compiled.columns, await _run(aconn, compiled, 30000))
         by_due = {str(r["Due At"])[:10]: r for r in out}
-        assert len(out) == 5 and all(r["Request No"] == ref and r["Workflow"] == "Accounts Payable" for r in out)
+        assert len(out) == 6 and all(r["Request No"] == ref and r["Workflow"] == "Accounts Payable" for r in out)
         reassigned = by_due["2026-10-21"]
         assert reassigned["Result"] == "Breached" and reassigned["Escalated To"] == "shared@a.example.com"
         assert reassigned["Raised By"] == "owner@a.example.com" and reassigned["Stage"] == "Finance Approval"
@@ -843,6 +844,8 @@ async def test_sla_report_lists_each_sla_event(world):
         resolution = by_due["2026-10-24"]
         assert resolution["Result"] == "In Progress" and resolution["SLA"] == "Resolution" and not resolution["Stage"]
         assert by_due["2026-10-25"]["Result"] == "Cancelled"
+        late = by_due["2026-10-26"]  # the SLA job reached it too late: skipped, nobody notified
+        assert (late["Result"], late["SLA"], late["Stage"]) == ("Skipped (late)", "Response (Advanced)", "Manager Review")
         assert reassigned["instanceId"] == str(inst) and reassigned["workflowId"] == str(world.workflow_id)
     finally:
         with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:

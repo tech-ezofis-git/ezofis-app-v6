@@ -434,7 +434,7 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
 _SLA_COLS = (Col("Workflow"), Col("Request No"), Col("Raised By"), Col("SLA"), Col("Stage"),
              Col("Due At", "date", "value"),
              Col("Result", colors=(("Breached", "red"), ("Met", "green"), ("In Progress", "blue"),
-                                   ("Failed", "orange"), ("Cancelled", "gray"))),
+                                   ("Skipped (late)", "orange"), ("Failed", "orange"), ("Cancelled", "gray"))),
              Col("Escalated To"), Col("Notified"),
              Col("Notifications Sent", "number", "measure", True), Col("Notifications Failed", "number", "measure", True)
              ) + _REQUEST_LINKS
@@ -445,6 +445,8 @@ _SLA_COLS = (Col("Workflow"), Col("Request No"), Col("Raised By"), Col("SLA"), C
 _SLA_MET = ("ticket was already acted on%", "ticket is already resolved%")
 _SLA_REASSIGNED = r"reassigned to ([0-9A-Fa-f-]{36})"
 _SLA_MOVED = r"moved to stage ([^;]+)"
+# The timer skips a rule it reaches long after its due time (the SLA job was not running): nobody was notified.
+_SLA_SKIPPED = "skipped:%"
 
 
 async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
@@ -468,6 +470,18 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
         moved = (sql.SQL("(SELECT x.stage_name::text FROM {tx} x WHERE x.activity_id::text = substring(t.outcome from {re}) "
                          "AND x.stage_name IS NOT NULL LIMIT 1)").format(tx=tx, re=ctx.bind(_SLA_MOVED))
                  if {"activity_id", "stage_name"} <= tx_cols else sql.SQL("NULL::text"))
+        # Raised By: who started the request, else who created its form entry (a started_by user can be gone).
+        pf_cols = await _columns(ctx.conn, "workflow", f"process_form_{suffix}")
+        raisers = []
+        if has_users and "started_by" in cols:
+            raisers.append(_user_email(sql.SQL("i.started_by")))
+        if has_users and {"workflow_instance_id", "created_by"} <= pf_cols:
+            raisers.append(sql.SQL("(SELECT {e} FROM {pf} pf WHERE pf.workflow_instance_id = t.workflow_instance_id LIMIT 1)").format(
+                e=_user_email(sql.SQL("pf.created_by")), pf=_t("workflow", f"process_form_{suffix}")))
+        # A starter no longer in Users (user removed) reads "Unknown user", not an empty cell.
+        if "started_by" in cols:
+            raisers.append(sql.SQL("CASE WHEN i.started_by IS NOT NULL THEN 'Unknown user' END"))
+        raised = sql.SQL("COALESCE({})").format(sql.SQL(", ").join(raisers)) if raisers else sql.SQL("NULL::text")
         parts.append(sql.SQL(
             "SELECT {wf}::text AS wf, t.*, {ref} AS ref, {raised} AS raised, {stage} AS stage, {moved} AS moved_stage "
             "FROM workflow.sla_timers t LEFT JOIN {inst} i ON i.id = t.workflow_instance_id "
@@ -475,7 +489,7 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
             "AND t.created_at_utc >= {since} AND t.created_at_utc < {until}").format(
             wf=ctx.bind(name), inst=_t("workflow", table), stage=stage, moved=moved,
             ref=sql.SQL("i.reference_number::text") if "reference_number" in cols else sql.SQL("(t.workflow_instance_id)::text"),
-            raised=_user_email(sql.SQL("i.started_by")) if has_users and "started_by" in cols else sql.SQL("NULL::text"),
+            raised=raised,
             suffix=ctx.bind(suffix),
             since=ctx.bind(ctx.since), until=ctx.bind(ctx.until)))
     if not parts:
@@ -490,10 +504,13 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
                       if has_users else sql.SQL("substring(s.outcome from {})").format(ctx.bind(_SLA_REASSIGNED)))
     q = sql.SQL(
         """SELECT s.wf AS c0, s.ref AS c1, s.raised AS c2,
-                  CASE s.scope WHEN 'response' THEN 'Response' WHEN 'resolution' THEN 'Resolution' ELSE s.scope END AS c3,
-                  CASE WHEN s.scope = 'response' THEN s.stage END AS c4, s.due_at_utc AS c5,
+                  CASE s.scope WHEN 'response' THEN 'Response' WHEN 'resolution' THEN 'Resolution'
+                       WHEN 'adv-response' THEN 'Response (Advanced)' WHEN 'adv-resolution' THEN 'Resolution (Advanced)'
+                       ELSE s.scope END AS c3,
+                  CASE WHEN s.scope LIKE '%%response' THEN s.stage END AS c4, s.due_at_utc AS c5,
                   CASE s.status WHEN 1 THEN 'Breached' WHEN 0 THEN 'In Progress' WHEN 3 THEN 'Failed'
-                       ELSE CASE WHEN s.outcome LIKE {met1} OR s.outcome LIKE {met2} THEN 'Met' ELSE 'Cancelled' END END AS c6,
+                       ELSE CASE WHEN s.outcome LIKE {met1} OR s.outcome LIKE {met2} THEN 'Met'
+                                 WHEN s.outcome LIKE {skipped} THEN 'Skipped (late)' ELSE 'Cancelled' END END AS c6,
                   CASE WHEN s.status = 1 THEN COALESCE(
                        {escalated_user},
                        'Stage: ' || COALESCE(s.moved_stage, substring(s.outcome from {moved_re}))) END AS c7,
@@ -501,7 +518,8 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
                   (s.workflow_instance_id)::text AS c11, (s.workflow_id)::text AS c12
            FROM ({u}) s
            ORDER BY s.due_at_utc DESC, s.wf, s.ref LIMIT {limit}"""
-    ).format(met1=ctx.bind(_SLA_MET[0]), met2=ctx.bind(_SLA_MET[1]), escalated_user=escalated_user,
+    ).format(met1=ctx.bind(_SLA_MET[0]), met2=ctx.bind(_SLA_MET[1]), skipped=ctx.bind(_SLA_SKIPPED),
+             escalated_user=escalated_user,
              moved_re=ctx.bind(_SLA_MOVED), notified=notified, sent=sent, failed=failed,
              u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
     return q, []
