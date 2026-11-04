@@ -851,6 +851,10 @@ async def test_sla_report_lists_each_sla_event(world):
         late = by_due["2026-10-26"]  # the SLA job reached it too late: skipped, nobody notified
         assert (late["Result"], late["SLA"], late["Stage"]) == ("Skipped (late)", "Response (Advanced)", "Manager Review")
         assert reassigned["instanceId"] == str(inst) and reassigned["workflowId"] == str(world.workflow_id)
+        # Detail columns: key filters first, the request's own state, and how late a breach is.
+        assert list(out[0])[:5] == ["Workflow", "Request No", "SLA", "Result", "Stage"]
+        assert reassigned["Raised On"] and reassigned["Request Status"]
+        assert float(reassigned["Overdue By (Hrs)"]) > 0 and by_due["2026-10-23"]["Overdue By (Hrs)"] is None
     finally:
         with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
             for t in ("sla_timers", "sla_notification_outbox", "transaction_b05ed64d"):

@@ -530,11 +530,16 @@ async def _pending_workflow_requests(ctx: _Ctx) -> tuple[sql.Composable, list[st
 
 
 # One row per SLA event: a request's response SLA at a stage, or its resolution SLA, for one rule.
-_SLA_COLS = (Col("Workflow"), Col("Request No"), Col("Raised By"), Col("SLA"), Col("Stage"),
-             Col("Due At", "date", "value"),
+# SLA, Result and Stage come first: with Workflow they are the inline filters (short value lists).
+_SLA_COLS = (Col("Workflow"), Col("Request No"), Col("SLA"),
              Col("Result", colors=(("Breached", "red"), ("Met", "green"), ("In Progress", "blue"),
                                    ("Skipped (late)", "orange"), ("Failed", "orange"), ("Cancelled", "gray"))),
-             Col("Escalated To"), Col("Notified"),
+             Col("Stage", color_default="purple"), Col("Raised By"), Col("Raised On", "date", "value"),
+             Col("Due At", "date", "value"), Col("Breached On", "date", "value"), Col("Handled On", "date", "value"),
+             Col("Overdue By (Hrs)", "number", "value"),
+             Col("Request Status", colors=(("Running", "blue"), ("Pending", "orange"), ("Paused", "gray"),
+                                           ("Completed", "green"), ("Failed", "red"), ("Cancelled", "gray"))),
+             Col("Pending With"), Col("Escalated To"), Col("Notified"),
              Col("Notifications Sent", "number", "measure", True), Col("Notifications Failed", "number", "measure", True)
              ) + _REQUEST_LINKS
 
@@ -557,7 +562,9 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
             "transaction_id"} <= timer_cols:
         return _empty(_SLA_COLS), ["No workflow SLA has run yet (no SLA timers)."]
     has_users = {"Id", "Email"} <= await _columns(ctx.conn, "users", "Users")
+    has_groups = {"Id", "Name"} <= await _columns(ctx.conn, "users", "Groups")
     has_outbox = {"timer_id", "status", "address"} <= await _columns(ctx.conn, "workflow", "sla_notification_outbox")
+    breached_on = sql.SQL("s.processed_at_utc") if "processed_at_utc" in timer_cols else sql.SQL("NULL::timestamptz")
 
     parts = []
     for name, table, cols in await _workflow_tables(ctx, "workflow_instances_", {"id"}):
@@ -581,14 +588,39 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
         if "started_by" in cols:
             raisers.append(sql.SQL("CASE WHEN i.started_by IS NOT NULL THEN 'Unknown user' END"))
         raised = sql.SQL("COALESCE({})").format(sql.SQL(", ").join(raisers)) if raisers else sql.SQL("NULL::text")
+
+        # Handled On: a response SLA's step was acted on (its transaction closed); a resolution SLA's request completed.
+        acted_at = sql.SQL("COALESCE(x.modified_at, x.created_at)") if "modified_at" in tx_cols else sql.SQL("x.created_at")
+        step_done = (sql.SQL("(SELECT {a} FROM {tx} x WHERE x.id = t.transaction_id AND x.action_status <> 0 LIMIT 1)").format(
+            a=acted_at, tx=tx) if {"id", "action_status", "created_at"} <= tx_cols else sql.SQL("NULL::timestamptz"))
+        completed = sql.SQL("i.completed_at_utc") if "completed_at_utc" in cols else sql.SQL("NULL::timestamptz")
+        handled = sql.SQL("(CASE WHEN t.scope LIKE '%%response' THEN {step} ELSE {done} END)").format(step=step_done, done=completed)
+        # Pending With: who has the request now (its open steps' users / groups), while it is still open.
+        assignee = []
+        if has_users and "activity_user_id" in tx_cols:
+            assignee.append(_user_email(sql.SQL("x.activity_user_id")))
+        if has_groups and "activity_group_id" in tx_cols:
+            assignee.append(sql.SQL(
+                "(SELECT g.\"Name\" FROM users.\"Groups\" g WHERE (g.\"Id\")::text = NULLIF(btrim((x.activity_group_id)::text), '') "
+                "LIMIT 1)"))
+        not_end = (sql.SQL(" AND upper(btrim(COALESCE(x.stage_type::text, ''))) <> 'END'") if "stage_type" in tx_cols
+                   else sql.SQL(""))
+        pending_with = (sql.SQL(
+            "(SELECT string_agg(DISTINCT w, ', ') FROM (SELECT COALESCE({who}) AS w FROM {tx} x "
+            "WHERE (x.workflow_instance_id)::text = (t.workflow_instance_id)::text AND x.action_status = 0{ne}) a "
+            "WHERE w IS NOT NULL)").format(who=sql.SQL(", ").join(assignee), tx=tx, ne=not_end)
+            if assignee and {"workflow_instance_id", "action_status"} <= tx_cols else sql.SQL("NULL::text"))
+        req_status = _status_label(sql.SQL("i.status")) if "status" in cols else sql.SQL("NULL::text")
+        raised_on = sql.SQL("i.created_at_utc") if "created_at_utc" in cols else sql.SQL("NULL::timestamptz")
         parts.append(sql.SQL(
-            "SELECT {wf}::text AS wf, t.*, {ref} AS ref, {raised} AS raised, {stage} AS stage, {moved} AS moved_stage "
+            "SELECT {wf}::text AS wf, t.*, {ref} AS ref, {raised} AS raised, {stage} AS stage, {moved} AS moved_stage, "
+            "{raised_on} AS raised_on, {handled} AS handled_on, {req_status} AS req_status, {pending_with} AS pending_with "
             "FROM workflow.sla_timers t LEFT JOIN {inst} i ON i.id = t.workflow_instance_id "
             "WHERE left(replace((t.workflow_id)::text, '-', ''), 8) = {suffix} "
             "AND t.created_at_utc >= {since} AND t.created_at_utc < {until}").format(
             wf=ctx.bind(name), inst=_t("workflow", table), stage=stage, moved=moved,
             ref=sql.SQL("i.reference_number::text") if "reference_number" in cols else sql.SQL("(t.workflow_instance_id)::text"),
-            raised=raised,
+            raised=raised, raised_on=raised_on, handled=handled, req_status=req_status, pending_with=pending_with,
             suffix=ctx.bind(suffix),
             since=ctx.bind(ctx.since), until=ctx.bind(ctx.until)))
     if not parts:
@@ -602,23 +634,29 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
     escalated_user = (_user_email(sql.SQL("substring(s.outcome from {})").format(ctx.bind(_SLA_REASSIGNED)))
                       if has_users else sql.SQL("substring(s.outcome from {})").format(ctx.bind(_SLA_REASSIGNED)))
     q = sql.SQL(
-        """SELECT s.wf AS c0, s.ref AS c1, s.raised AS c2,
+        """SELECT s.wf AS c0, s.ref AS c1,
                   CASE s.scope WHEN 'response' THEN 'Response' WHEN 'resolution' THEN 'Resolution'
                        WHEN 'adv-response' THEN 'Response (Advanced)' WHEN 'adv-resolution' THEN 'Resolution (Advanced)'
-                       ELSE s.scope END AS c3,
-                  CASE WHEN s.scope LIKE '%%response' THEN s.stage END AS c4, s.due_at_utc AS c5,
+                       ELSE s.scope END AS c2,
                   CASE s.status WHEN 1 THEN 'Breached' WHEN 0 THEN 'In Progress' WHEN 3 THEN 'Failed'
                        ELSE CASE WHEN s.outcome LIKE {met1} OR s.outcome LIKE {met2} THEN 'Met'
-                                 WHEN s.outcome LIKE {skipped} THEN 'Skipped (late)' ELSE 'Cancelled' END END AS c6,
+                                 WHEN s.outcome LIKE {skipped} THEN 'Skipped (late)' ELSE 'Cancelled' END END AS c3,
+                  CASE WHEN s.scope LIKE '%%response' THEN s.stage END AS c4, s.raised AS c5, s.raised_on AS c6,
+                  s.due_at_utc AS c7, CASE WHEN s.status = 1 THEN {breached_on} END AS c8, s.handled_on AS c9,
+                  -- Overdue By: how late a breach is, until it was handled or until now while still open.
+                  CASE WHEN s.status = 1 THEN round((extract(epoch FROM (COALESCE(s.handled_on, now()) - s.due_at_utc)) / 3600)::numeric, 1)
+                       END AS c10,
+                  s.req_status AS c11,
+                  CASE WHEN s.req_status IN ('Pending', 'Running', 'Paused') THEN s.pending_with END AS c12,
                   CASE WHEN s.status = 1 THEN COALESCE(
                        {escalated_user},
-                       'Stage: ' || COALESCE(s.moved_stage, substring(s.outcome from {moved_re}))) END AS c7,
-                  {notified} AS c8, {sent} AS c9, {failed} AS c10,
-                  (s.workflow_instance_id)::text AS c11, (s.workflow_id)::text AS c12
+                       'Stage: ' || COALESCE(s.moved_stage, substring(s.outcome from {moved_re}))) END AS c13,
+                  {notified} AS c14, {sent} AS c15, {failed} AS c16,
+                  (s.workflow_instance_id)::text AS c17, (s.workflow_id)::text AS c18
            FROM ({u}) s
            ORDER BY s.due_at_utc DESC, s.wf, s.ref LIMIT {limit}"""
     ).format(met1=ctx.bind(_SLA_MET[0]), met2=ctx.bind(_SLA_MET[1]), skipped=ctx.bind(_SLA_SKIPPED),
-             escalated_user=escalated_user,
+             escalated_user=escalated_user, breached_on=breached_on,
              moved_re=ctx.bind(_SLA_MOVED), notified=notified, sent=sent, failed=failed,
              u=sql.SQL(" UNION ALL ").join(parts), limit=sql.Literal(ctx.limit))
     return q, []
