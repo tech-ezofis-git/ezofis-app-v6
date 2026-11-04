@@ -20,6 +20,7 @@ import {
   fillsFromElsewhere,
   getColumnSizeClass,
   getDependentChildFieldIds,
+  hasNonDividerField,
   isFieldFilled,
   isFieldHidden,
   isFieldReadOnly,
@@ -560,7 +561,9 @@ const WorkflowFormRenderer = ({
       value: resolvePanelValue(panel, panelIndex),
       visibleFields: getVisiblePanelFields(panel),
     }))
-    .filter(({ visibleFields }) => visibleFields.length > 0)
+    // A section whose fields are all hidden except dividers has nothing to
+    // show — hide the whole section instead of leaving bare divider lines.
+    .filter(({ visibleFields }) => hasNonDividerField(visibleFields))
 
   // SINGLE: index into visiblePanels. Clamped because rules can hide a
   // section while the user is on it.

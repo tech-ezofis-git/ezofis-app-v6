@@ -1940,6 +1940,14 @@ export const selectOptionStoredValue = (
 // (purely presentational blocks).
 export const PRESENTATIONAL_TYPES = new Set(['HEADING', 'LABEL', 'DIVIDER'])
 
+// True when a section's visible fields include anything other than dividers.
+// A section left with only dividers (everything else hidden) has nothing to
+// show and should not be rendered.
+export const hasNonDividerField = (visibleFields: any[]): boolean =>
+  (visibleFields || []).some(
+    (field) => resolveRuntimeFieldType(field) !== 'DIVIDER',
+  )
+
 // Field types this MVP renderer knows how to map to an existing base input.
 // Anything outside this set falls back to a "not yet supported" placeholder
 // rather than silently dropping the field.
