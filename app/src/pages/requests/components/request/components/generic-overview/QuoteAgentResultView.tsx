@@ -29,15 +29,16 @@ import requestStore from '@/pages/requests/stores/useRequestStore'
 import { REQUEST_ATTACHMENTS_CHANGED_EVENT } from '@/pages/requests/utils/requestEvents'
 import cn from '@/utils/cn'
 import {
-  buildBillingSave,
+  buildMasterSave,
+  type ClientDetail,
+  clientDetailForField,
+  type ClientFormValues,
   type ClientMasterRow,
   fetchClientMaster,
-  isBillingField,
   isCompanyField,
-  isEmailField,
   isMasterTagLabel,
   matchClient,
-  saveBillingToMaster,
+  saveToMaster,
 } from './clientMaster'
 import { editableValueClass, onEditableValueKeyDown } from './editableValue'
 import {
@@ -99,6 +100,7 @@ import {
   resolveQuoteFieldVariant,
   resolveRowQuoteVariant,
   stripQuoteVariantLabel,
+  resolveAgentFreight,
   resolveVariantScalarFromResult,
   effectiveDynamicColumns,
   extractQuoteVariantEmptyMeta,
@@ -651,9 +653,13 @@ const QuoteAgentResultView = ({
 
   // A variant only carries the fields that differ from Quote 1, so no freight
   // of its own means Quote 1's freight applies.
+  const resolveMainFreight = () =>
+    resolveTotalEntryValue('main', 'freight') ||
+    resolveAgentFreight(result, resolveTotalEntryValue('main', 'tax'))
   const resolveFreightForVariant = (variantId: QuoteVariantId) =>
-    resolveTotalEntryValue(variantId, 'freight') ||
-    (variantId === 'main' ? 0 : resolveTotalEntryValue('main', 'freight'))
+    variantId === 'main'
+      ? resolveMainFreight()
+      : resolveTotalEntryValue(variantId, 'freight') || resolveMainFreight()
 
   const resolveDiscountForVariant = (variantId: QuoteVariantId) =>
     resolveTotalEntryValue(variantId, 'discount')
@@ -1433,34 +1439,46 @@ const QuoteAgentResultView = ({
   const canViewField = (field: any | null) =>
     canViewAgentFormField(field, hiddenFieldIds)
 
-  // Only Bill To is shared with RFQ Master: leaving an edited Bill To saves it there.
-  const billingField = formFields.find(isBillingField) || null
+  // Bill To, Contact, Phone and Email are shared with RFQ Master: leaving one
+  // after really changing it saves it there.
   const companyField = formFields.find(isCompanyField) || null
-  const emailField = formFields.find(isEmailField) || null
+  const fieldForDetail = (detail: ClientDetail) =>
+    formFields.find((field) => clientDetailForField(field) === detail) || null
   const { data: clientMaster, refetch: refetchClientMaster } = useQuery({
-    enabled: canEditField(billingField),
+    enabled: formFields.some(
+      (field) => clientDetailForField(field) && canEditField(field),
+    ),
     queryFn: fetchClientMaster,
     queryKey: ['ftlClientMaster'],
     staleTime: 5 * 60 * 1000,
   })
   const readFormValue = (field: any | null) =>
     field ? formModel?.[getFieldId(field)] : ''
-  const masterClient: ClientMasterRow | null = matchClient(
-    clientMaster?.clients || [],
-    readFormValue(emailField),
-    readFormValue(companyField),
-  )
+  const readClientValues = (): ClientFormValues => ({
+    billing: readFormValue(fieldForDetail('billing')),
+    company: readFormValue(companyField),
+    contact: readFormValue(fieldForDetail('contact')),
+    email: readFormValue(fieldForDetail('email')),
+    phone: readFormValue(fieldForDetail('phone')),
+  })
 
-  const saveBillToMaster = async () => {
+  // Captured when a field opens: clicking in and out must save nothing, and the
+  // row must stay the same while its email is being edited.
+  const openedDetailRef = useRef<{
+    client: ClientMasterRow | null
+    detail: ClientDetail
+    id: string
+    value: string
+  } | null>(null)
+
+  const saveDetailToMaster = async (
+    client: ClientMasterRow | null,
+    detail: ClientDetail,
+  ) => {
     if (!clientMaster) return
-    const save = buildBillingSave(
-      masterClient,
-      readFormValue(billingField),
-      readFormValue(companyField),
-      readFormValue(emailField),
-    )
+    const save = buildMasterSave(client, detail, readClientValues())
     if (!save) return
-    const { error } = await saveBillingToMaster(clientMaster.masterFormId, save)
+    const { error } = await saveToMaster(clientMaster.masterFormId, save)
     showToast(
       error
         ? {
@@ -1473,15 +1491,34 @@ const QuoteAgentResultView = ({
   }
 
   const changeActiveEdit = (nextId: string | null) => {
-    const leftId = activeEditId
+    const opened = openedDetailRef.current
     setActiveEditId(nextId)
+    if (nextId && opened?.id === nextId) return
     if (
-      billingField &&
-      leftId === getFieldId(billingField) &&
-      nextId !== leftId
+      opened &&
+      String(readFormValue(fieldForDetail(opened.detail)) ?? '').trim() !==
+        opened.value
     ) {
-      void saveBillToMaster()
+      void saveDetailToMaster(opened.client, opened.detail)
     }
+    const nextField = nextId
+      ? formFields.find((field) => getFieldId(field) === nextId)
+      : null
+    const detail = nextField ? clientDetailForField(nextField) : null
+    const values = readClientValues()
+    openedDetailRef.current =
+      nextId && detail
+        ? {
+            client: matchClient(
+              clientMaster?.clients || [],
+              values.email,
+              values.company,
+            ),
+            detail,
+            id: nextId,
+            value: String(values[detail] ?? '').trim(),
+          }
+        : null
   }
 
   const resolveDisplayValue = (

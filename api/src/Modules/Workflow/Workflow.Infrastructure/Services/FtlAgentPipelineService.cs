@@ -2741,7 +2741,7 @@ LIMIT 1;
         return null;
     }
 
-    private static Dictionary<string, string> MergeQuoteFormData(
+    internal static Dictionary<string, string> MergeQuoteFormData(
         string? existingJson,
         IReadOnlyDictionary<string, string> incoming,
         IReadOnlySet<string>? replaceKeys = null)
@@ -2776,7 +2776,12 @@ LIMIT 1;
             }
 
             if (merged.TryGetValue(key, out var current) && !IsEmptyFormValue(current))
+            {
+                // A form's default 0 must not block the agent's value, such as its freight.
+                if (IsZeroFormValue(current) && !IsEmptyFormValue(value))
+                    merged[key] = value;
                 continue;
+            }
 
             merged[key] = value;
         }
@@ -2801,7 +2806,7 @@ LIMIT 1;
                 var raw = prop.Value.ValueKind == JsonValueKind.String
                     ? prop.Value.GetString()
                     : prop.Value.GetRawText();
-                if (!IsEmptyFormValue(raw))
+                if (!IsEmptyFormValue(raw) && !IsZeroFormValue(raw))
                     keys.Add(prop.Name);
             }
         }
@@ -2828,6 +2833,9 @@ LIMIT 1;
             .Where(pair => !protectedValues.Contains(pair.Value))
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
     }
+
+    private static bool IsZeroFormValue(string? value) =>
+        decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var number) && number == 0;
 
     private static bool IsEmptyFormValue(string? value)
     {
