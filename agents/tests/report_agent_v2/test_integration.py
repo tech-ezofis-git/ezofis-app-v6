@@ -812,9 +812,11 @@ async def test_sla_report_lists_each_sla_event(world):
                                  "ORDER BY reference_number LIMIT 1").fetchone()
         conn.execute("ALTER TABLE workflow.workflow_instances_b05ed64d ADD COLUMN IF NOT EXISTS started_by uuid")
         conn.execute("UPDATE workflow.workflow_instances_b05ed64d SET started_by = %s WHERE id = %s", (world.owner, inst))
-        conn.execute("CREATE TABLE workflow.transaction_b05ed64d (id int, stage_name text, activity_id text)")
-        conn.execute("INSERT INTO workflow.transaction_b05ed64d VALUES (10, 'Finance Approval', 'act-1'), "
-                     "(11, 'Manager Review', 'act-2')")
+        conn.execute("""CREATE TABLE workflow.transaction_b05ed64d (id int, stage_name text, activity_id text,
+                        workflow_instance_id uuid, action_status int, created_at timestamptz)""")
+        conn.execute("INSERT INTO workflow.transaction_b05ed64d VALUES "
+                     "(10, 'Finance Approval', 'act-1', %s, 0, now()), "         # the request is waiting here now
+                     "(11, 'Manager Review', 'act-2', NULL, 1, now() - interval '1 day')", (inst,))
         conn.execute("""CREATE TABLE workflow.sla_timers (id bigint PRIMARY KEY, workflow_id uuid, workflow_instance_id uuid,
                         scope varchar(16), transaction_id int, rule_id text, status smallint, outcome text,
                         due_at_utc timestamptz, created_at_utc timestamptz)""")
@@ -846,7 +848,8 @@ async def test_sla_report_lists_each_sla_event(world):
         assert by_due["2026-10-22"]["Escalated To"] == "Stage: Manager Review"
         assert by_due["2026-10-23"]["Result"] == "Met" and not by_due["2026-10-23"]["Escalated To"]
         resolution = by_due["2026-10-24"]
-        assert resolution["Result"] == "In Progress" and resolution["SLA"] == "Resolution" and not resolution["Stage"]
+        # A resolution SLA covers the whole request: its Stage is where the request is now.
+        assert (resolution["Result"], resolution["SLA"], resolution["Stage"]) == ("In Progress", "Resolution", "Finance Approval")
         assert by_due["2026-10-25"]["Result"] == "Cancelled"
         late = by_due["2026-10-26"]  # the SLA job reached it too late: skipped, nobody notified
         assert (late["Result"], late["SLA"], late["Stage"]) == ("Skipped (late)", "Response (Advanced)", "Manager Review")
