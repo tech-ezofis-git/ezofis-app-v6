@@ -477,6 +477,44 @@ export const runReportAiReport = async (
   }
 }
 
+export interface UserLoginActivity {
+  email: string
+  events: {
+    at: string | null
+    category: string | null
+    event: string | null
+    ip: string | null
+    severity: string | null
+    type: string | null
+  }[]
+  logins: {
+    at: string | null
+    channel: string | null
+    device: string | null
+    ip: string | null
+  }[]
+  since: string
+  until: string
+}
+
+/**
+ * One user's logins and security events behind a row of the User Login and
+ * Security Activity default report (Admin only).
+ */
+export const getReportUserActivity = async (
+  reportId: string,
+  email: string,
+) => {
+  const { data } = await axiosV6({
+    headers: getTenantHeaders(),
+    method: 'GET',
+    params: { email },
+    skipCancellation: true,
+    url: `${reportAgentBase()}/reports/${encodeURIComponent(reportId)}/user-activity`,
+  })
+  return data as UserLoginActivity
+}
+
 export const getReportAiReport = async (id: string) => {
   try {
     const { data } = await axiosV6({
