@@ -1045,19 +1045,23 @@ public sealed class FormEntryService : IFormEntryService
     }
 
     /// <summary>
-    /// Case-insensitive match (lower + btrim on both sides, ILIKE-equivalent).
-    /// Also compares JSON lookup <c>name</c>/<c>value</c>/<c>label</c>/<c>id</c>
-    /// when either side is stored as an object string.
+    /// Case-insensitive match (lower + btrim on both sides, ILIKE-equivalent), with any run of
+    /// whitespace (newline, tab, NBSP) treated as one space. Also compares JSON lookup
+    /// <c>name</c>/<c>value</c>/<c>label</c>/<c>id</c> when either side is stored as an object
+    /// string, and plain decimals by value (<c>1500</c> = <c>1500.00</c>; <c>007</c> stays text).
     /// </summary>
     internal static string ScalarEqualsSql(string quotedColumn, string paramName)
     {
         var left = NormalizedScalarSql($"{quotedColumn}::text");
         var right = NormalizedScalarSql($"{paramName}::text");
-        return $"({left} = {right} OR {left} ILIKE {right})";
+        return $"({left} = {right} OR {left} ILIKE {right} OR {PlainNumberSql(left)} = {PlainNumberSql(right)})";
     }
 
     internal static string NormalizedScalarSql(string textExpr) =>
-        $"lower(btrim(COALESCE(dbo.try_json_scalar({textExpr}), {textExpr}, '')))";
+        $@"lower(btrim(regexp_replace(COALESCE(dbo.try_json_scalar({textExpr}), {textExpr}, ''), '[[:space:] ​]+', ' ', 'g')))";
+
+    private static string PlainNumberSql(string normalizedExpr) =>
+        $@"(CASE WHEN {normalizedExpr} ~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?$' THEN ({normalizedExpr})::numeric END)";
 
     private static void AddFilterParameters(
         NpgsqlCommand cmd,
