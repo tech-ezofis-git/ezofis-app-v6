@@ -210,7 +210,10 @@ const getWorkflows = async () => {
   return response
 }
 
-const getWorkflowById = async (workflowId: string) => {
+const getWorkflowById = async (
+  workflowId: string,
+  { skipCancellation }: { skipCancellation?: boolean } = {},
+) => {
   const response: { data: V6WorkflowDetail | null; error: string } = {
     data: null,
     error: '',
@@ -219,6 +222,7 @@ const getWorkflowById = async (workflowId: string) => {
     const { data, status } = await axiosV6({
       headers: getTenantHeaders(),
       method: 'GET',
+      skipCancellation,
       url: `/workflows/${workflowId}`,
     })
     if (status !== 200) throw new Error('invalid status code')

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockSubWorkflowBackend } from './api/mock/mockStore'
+import { toMainProcess, toSubProcessRow } from './api/subWorkflowApi'
 import {
   readInitiatorSettings,
   writeConnectorSettings,
@@ -8,6 +9,7 @@ import {
 import {
   canInitiateSubWorkflow,
   getInitiatorSubWorkflowId,
+  hasSubWorkflowSetup,
 } from './utils/permissions'
 import {
   applySubWorkflowPrefill,
@@ -18,6 +20,54 @@ import { getSubProcessStatus } from './utils/status'
 const workflowWithStart = (settings: any, extra: any = {}) => ({
   flowJson: JSON.stringify({ blocks: [{ id: 's', type: 'START', settings }] }),
   ...extra,
+})
+
+// Shapes returned by WorkflowSubProcessController (api/).
+describe('live API mappers', () => {
+  it('maps a child row', () => {
+    expect(
+      toSubProcessRow({
+        duration: 90,
+        flowStatus: 1,
+        lastAction: 'Force Close',
+        raisedAt: '2026-10-31T10:00:00Z',
+        requestNo: 'EXP-2026-100',
+        stage: 'Manager',
+        subProcessId: 'child-guid',
+        subWorkflowId: 'workflow-guid',
+        subWorkflowName: 'Expense',
+      }),
+    ).toEqual({
+      duration: 90,
+      flowStatus: 1,
+      lastAction: 'Force Close',
+      processId: 'child-guid',
+      raisedAt: '2026-10-31T10:00:00Z',
+      raisedBy: undefined,
+      requestNo: 'EXP-2026-100',
+      stage: 'Manager',
+      subWorkflowId: 'workflow-guid',
+      subWorkflowName: 'Expense',
+    })
+  })
+
+  it('maps a parent row', () => {
+    expect(
+      toMainProcess({
+        flowStatus: 0,
+        processId: 'parent-guid',
+        requestNo: 'EXP-2026-101',
+        workflowId: 'workflow-guid',
+        workflowName: 'Expense',
+      }),
+    ).toEqual({
+      flowStatus: 0,
+      processId: 'parent-guid',
+      requestNo: 'EXP-2026-101',
+      workflowId: 'workflow-guid',
+      workflowName: 'Expense',
+    })
+  })
 })
 
 describe('getSubProcessStatus', () => {
@@ -299,6 +349,54 @@ describe('initiator permissions on V6 definitions', () => {
         session,
       ),
     ).toBe(true)
+  })
+})
+
+describe('hasSubWorkflowSetup', () => {
+  const withBlocks = (...blocks: any[]) => ({
+    workflowJson: JSON.stringify({ blocks }),
+  })
+
+  it('is true for an initiator on any block', () => {
+    expect(
+      hasSubWorkflowSetup(
+        withBlocks(
+          { settings: {}, type: 'START' },
+          {
+            settings: { subWorkflowId: 'wf-42', workflowInitiator: true },
+            type: 'INTERNAL_ACTOR',
+          },
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it('is true for a connector with a target', () => {
+    expect(
+      hasSubWorkflowSetup(
+        withBlocks({
+          settings: { subWorkflowId: 'wf-42' },
+          type: 'WORKFLOW_CONNECTOR',
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it('is false when nothing is set up', () => {
+    expect(hasSubWorkflowSetup(undefined)).toBe(false)
+    expect(hasSubWorkflowSetup(withBlocks())).toBe(false)
+    expect(
+      hasSubWorkflowSetup(
+        withBlocks(
+          {
+            settings: { subWorkflowId: 0, workflowInitiator: true },
+            type: 'INTERNAL_ACTOR',
+          },
+          { settings: { subWorkflowId: '' }, type: 'WORKFLOW_CONNECTOR' },
+          { settings: { subWorkflowId: 'wf-42' }, type: 'INTERNAL_ACTOR' },
+        ),
+      ),
+    ).toBe(false)
   })
 })
 
