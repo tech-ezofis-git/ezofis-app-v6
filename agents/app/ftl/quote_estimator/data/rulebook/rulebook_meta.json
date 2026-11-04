@@ -1,0 +1,12 @@
+{
+  "workbook": "FTL AI Estimating Knowledge Base",
+  "version": "1.1",
+  "date": "2026-10-16",
+  "source_hierarchy": [
+    "Current written FTL rule / estimator override",
+    "inFlow live item record / live selling price",
+    "Current manufacturer technical catalogue / controlled survey / playbook",
+    "Customer email / specification / schedule / drawings",
+    "Historical quote / email (training evidence only)"
+  ]
+}

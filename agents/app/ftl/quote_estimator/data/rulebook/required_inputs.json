@@ -17,11 +17,11 @@
   },
   {
     "family": "Project",
-    "field": "Base vs alternate scope",
+    "field": "Quote classification / alternate trigger",
     "stage": "Estimate",
     "mandatory": "Yes",
-    "validation_allowed_values": "Spec/email",
-    "agent_behaviour": "Human review if unclear"
+    "validation_allowed_values": "Quote 1 base; Quote 2 approved FTL recommendation; Quote 3 valid alternate/complete only",
+    "agent_behaviour": "No legitimate third option -> NO VALID THIRD OPTION"
   },
   {
     "family": "Opening Schedule",
@@ -117,15 +117,15 @@
     "stage": "Order",
     "mandatory": "Conditional",
     "validation_allowed_values": "Retained doors/locks; survey pages 7/8",
-    "agent_behaviour": "Form definitions missing"
+    "agent_behaviour": "Controlled 2026 SGV2 survey/playbook supplied; HOLD only if required fields/photos remain missing"
   },
   {
     "family": "Detector",
     "field": "Voltage/current/wiring confirmation",
     "stage": "Order",
-    "mandatory": "Yes",
-    "validation_allowed_values": "Formula datasheet + SUPRA IPD",
-    "agent_behaviour": "Resolve AC/DC conflict"
+    "mandatory": "Conditional",
+    "validation_allowed_values": "FZU-1442US01: 18-30 VDC, NPN normally-closed output; non-standard integration only",
+    "agent_behaviour": "Standard SGV2 use follows approved detector rule; custom interface -> review"
   },
   {
     "family": "Governor",
@@ -273,19 +273,19 @@
   },
   {
     "family": "Commercial",
-    "field": "Customer price/discount profile",
+    "field": "Manual discount / special-price approval",
     "stage": "Estimate",
-    "mandatory": "Yes",
-    "validation_allowed_values": "Versioned approval",
-    "agent_behaviour": "No historical inference"
+    "mandatory": "Conditional",
+    "validation_allowed_values": "Written/recorded estimator approval only",
+    "agent_behaviour": "No automatic or historical discount inference"
   },
   {
     "family": "Commercial",
     "field": "Freight class/value",
     "stage": "Estimate",
     "mandatory": "Yes",
-    "validation_allowed_values": "Approved matrix or manual",
-    "agent_behaviour": "No default matrix currently"
+    "validation_allowed_values": "Single SGV2: GTA $375; approx. <=150 km outside downtown Toronto $450; otherwise manual/project review",
+    "agent_behaviour": "Requires ship-to location and shipment classification"
   },
   {
     "family": "Commercial",
@@ -294,5 +294,101 @@
     "mandatory": "Yes",
     "validation_allowed_values": "Customer record",
     "agent_behaviour": "Do not invent"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Project/enquiry ID",
+    "stage": "Survey",
+    "mandatory": "Yes",
+    "validation_allowed_values": "Must match original mailbox/RFQ project",
+    "agent_behaviour": "Never create disconnected survey project"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Car ID + entrance (Front/Rear)",
+    "stage": "Survey",
+    "mandatory": "Yes",
+    "validation_allowed_values": "One record per entrance",
+    "agent_behaviour": "Front/rear remain separate"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Door configuration",
+    "stage": "Survey",
+    "mandatory": "Yes",
+    "validation_allowed_values": "1S / 2T / 2C",
+    "agent_behaviour": "Unknown blocks operator selection"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Clear opening / clear height",
+    "stage": "Survey",
+    "mandatory": "Yes",
+    "validation_allowed_values": "Measured values + units",
+    "agent_behaviour": "Height required for new car doors and order release"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Hall-view hand / coupler position",
+    "stage": "Survey",
+    "mandatory": "Yes",
+    "validation_allowed_values": "Use controlled survey/playbook diagrams",
+    "agent_behaviour": "Do not infer from motor location or inside-car view"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Existing lock / roller interface",
+    "stage": "Survey",
+    "mandatory": "Yes",
+    "validation_allowed_values": "OEM/model/photos where applicable",
+    "agent_behaviour": "Drives clutch selection"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Panel decision",
+    "stage": "Survey",
+    "mandatory": "Yes",
+    "validation_allowed_values": "Retain existing / supply new + finish",
+    "agent_behaviour": "Drives adaptor vs universal door branch"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Top-of-door bolt pattern",
+    "stage": "Survey",
+    "mandatory": "Conditional",
+    "validation_allowed_values": "Required for retained existing car doors",
+    "agent_behaviour": "Targeted re-request if missing"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "A-F and S measurements",
+    "stage": "Survey",
+    "mandatory": "Conditional",
+    "validation_allowed_values": "Use controlled survey pages for applicable adaptor/custom work",
+    "agent_behaviour": "Do not invent measurements"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Controller / interface",
+    "stage": "Survey",
+    "mandatory": "Conditional",
+    "validation_allowed_values": "Model/interface as applicable",
+    "agent_behaviour": "Custom/non-standard integration -> review"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Photos + measurement evidence",
+    "stage": "Survey",
+    "mandatory": "Yes",
+    "validation_allowed_values": "Hall view, car top/front, panel top, clutch/locks, measured endpoints",
+    "agent_behaviour": "Evidence attached to same project"
+  },
+  {
+    "family": "Survey Integration",
+    "field": "Field notes / mechanic contact",
+    "stage": "Survey",
+    "mandatory": "Yes",
+    "validation_allowed_values": "Job/unit/symptom/conditions as applicable",
+    "agent_behaviour": "Use targeted follow-up, not full re-survey"
   }
 ]
