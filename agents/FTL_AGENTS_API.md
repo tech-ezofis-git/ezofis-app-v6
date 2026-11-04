@@ -41,6 +41,12 @@ Written FTL rules in `ftl_overrides.json` replace matching rows in the rulebook.
 - **Quote 2:** the matching universal car door replaces the adaptor.
 - **On hold:** if the named maker has no stocked adaptor, or the operator's type and width have none, no adaptor is priced and the quote is held.
 
+Other rules from the v1.1 rulebook:
+
+- **Qualifier:** items the customer's email marks "not required from FTL" move to `Excluded items`. Roller guides use the customer's number of full sets × 4. If the spec asks for detection on every car door, one detector per car door is added.
+- **Both agents:** read the "Number of Elevators" clause and openings table as the car count, and list email attachments they could not read.
+- **Estimator:** the $0 line reads `SGV2 Car Door Restriction Function - Included`. OL100 governors and car safeties are held for review.
+
 ## End-to-end flow
 
 | Step | Call | Send | Get back |
