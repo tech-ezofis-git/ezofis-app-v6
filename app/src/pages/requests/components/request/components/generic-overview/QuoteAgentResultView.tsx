@@ -14,6 +14,7 @@ import Button from '@/components/base/button/Button'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
+import { useQuery } from '@tanstack/react-query'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
@@ -27,6 +28,18 @@ import {
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { REQUEST_ATTACHMENTS_CHANGED_EVENT } from '@/pages/requests/utils/requestEvents'
 import cn from '@/utils/cn'
+import {
+  buildMasterSave,
+  type ClientDetail,
+  clientDetailForField,
+  type ClientFormValues,
+  type ClientMasterRow,
+  fetchClientMaster,
+  isCompanyField,
+  isMasterTagLabel,
+  matchClient,
+  saveToMaster,
+} from './clientMaster'
 import { editableValueClass, onEditableValueKeyDown } from './editableValue'
 import {
   canEditAgentFormField,
@@ -87,6 +100,7 @@ import {
   resolveQuoteFieldVariant,
   resolveRowQuoteVariant,
   stripQuoteVariantLabel,
+  resolveAgentFreight,
   resolveVariantScalarFromResult,
   effectiveDynamicColumns,
   extractQuoteVariantEmptyMeta,
@@ -637,8 +651,15 @@ const QuoteAgentResultView = ({
     return 0
   }
 
+  // A variant only carries the fields that differ from Quote 1, so no freight
+  // of its own means Quote 1's freight applies.
+  const resolveMainFreight = () =>
+    resolveTotalEntryValue('main', 'freight') ||
+    resolveAgentFreight(result, resolveTotalEntryValue('main', 'tax'))
   const resolveFreightForVariant = (variantId: QuoteVariantId) =>
-    resolveTotalEntryValue(variantId, 'freight')
+    variantId === 'main'
+      ? resolveMainFreight()
+      : resolveTotalEntryValue(variantId, 'freight') || resolveMainFreight()
 
   const resolveDiscountForVariant = (variantId: QuoteVariantId) =>
     resolveTotalEntryValue(variantId, 'discount')
@@ -1294,9 +1315,7 @@ const QuoteAgentResultView = ({
       activeColumns,
       activeDiscount,
     )
-    // Prefer API Total for the active tab when present (sample quote_result shape).
-    const apiTotal = resolveTotalEntryValue(activeVariantId, 'total')
-    const apiHst = resolveTotalEntryValue(activeVariantId, 'tax')
+    // HST and Total come from the lines: a saved Total can omit freight or repeat Quote 1's total.
     const apiSubtotal = resolveTotalEntryValue(activeVariantId, 'subtotal')
     // Prefer computed line-discount $ over the quote-level Discount field (often 0).
     const apiDiscount = resolveTotalEntryValue(activeVariantId, 'discount')
@@ -1304,9 +1323,7 @@ const QuoteAgentResultView = ({
       ...computed,
       discount: computed.discount || apiDiscount || 0,
       freight: activeFreight,
-      hst: apiHst || computed.hst,
       subtotal: apiSubtotal || computed.subtotal,
-      total: apiTotal || computed.total,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resolveTotalEntryValue uses viewModel/formModel
   }, [
@@ -1373,9 +1390,22 @@ const QuoteAgentResultView = ({
           current == null ||
           (typeof current === 'string' && current.trim() === '')
         const value = shown[kind]
-        if (isBlank && Number.isFinite(value)) data[id] = value
+        // A saved Total can be wrong, so the screen's total always wins for it.
+        if ((isBlank || kind === 'total') && Number.isFinite(value)) {
+          data[id] = value
+        }
       },
     )
+
+    // A form with no Freight field still has to send the screen's freight to the PDF.
+    if (
+      activeVariantTotals.freight > 0 &&
+      !formFields.some((item) =>
+        compactControl(getFieldHeading(item)).includes('freight'),
+      )
+    ) {
+      data.Freight = activeVariantTotals.freight
+    }
 
     return data
   }
@@ -1408,6 +1438,88 @@ const QuoteAgentResultView = ({
 
   const canViewField = (field: any | null) =>
     canViewAgentFormField(field, hiddenFieldIds)
+
+  // Bill To, Contact, Phone and Email are shared with RFQ Master: leaving one
+  // after really changing it saves it there.
+  const companyField = formFields.find(isCompanyField) || null
+  const fieldForDetail = (detail: ClientDetail) =>
+    formFields.find((field) => clientDetailForField(field) === detail) || null
+  const { data: clientMaster, refetch: refetchClientMaster } = useQuery({
+    enabled: formFields.some(
+      (field) => clientDetailForField(field) && canEditField(field),
+    ),
+    queryFn: fetchClientMaster,
+    queryKey: ['ftlClientMaster'],
+    staleTime: 5 * 60 * 1000,
+  })
+  const readFormValue = (field: any | null) =>
+    field ? formModel?.[getFieldId(field)] : ''
+  const readClientValues = (): ClientFormValues => ({
+    billing: readFormValue(fieldForDetail('billing')),
+    company: readFormValue(companyField),
+    contact: readFormValue(fieldForDetail('contact')),
+    email: readFormValue(fieldForDetail('email')),
+    phone: readFormValue(fieldForDetail('phone')),
+  })
+
+  // Captured when a field opens: clicking in and out must save nothing, and the
+  // row must stay the same while its email is being edited.
+  const openedDetailRef = useRef<{
+    client: ClientMasterRow | null
+    detail: ClientDetail
+    id: string
+    value: string
+  } | null>(null)
+
+  const saveDetailToMaster = async (
+    client: ClientMasterRow | null,
+    detail: ClientDetail,
+  ) => {
+    if (!clientMaster) return
+    const save = buildMasterSave(client, detail, readClientValues())
+    if (!save) return
+    const { error } = await saveToMaster(clientMaster.masterFormId, save)
+    showToast(
+      error
+        ? {
+            message: t`Could not update RFQ Master: ${error}`,
+            variant: 'error',
+          }
+        : { message: t`RFQ Master updated`, variant: 'success' },
+    )
+    if (!error) void refetchClientMaster()
+  }
+
+  const changeActiveEdit = (nextId: string | null) => {
+    const opened = openedDetailRef.current
+    setActiveEditId(nextId)
+    if (nextId && opened?.id === nextId) return
+    if (
+      opened &&
+      String(readFormValue(fieldForDetail(opened.detail)) ?? '').trim() !==
+        opened.value
+    ) {
+      void saveDetailToMaster(opened.client, opened.detail)
+    }
+    const nextField = nextId
+      ? formFields.find((field) => getFieldId(field) === nextId)
+      : null
+    const detail = nextField ? clientDetailForField(nextField) : null
+    const values = readClientValues()
+    openedDetailRef.current =
+      nextId && detail
+        ? {
+            client: matchClient(
+              clientMaster?.clients || [],
+              values.email,
+              values.company,
+            ),
+            detail,
+            id: nextId,
+            value: String(values[detail] ?? '').trim(),
+          }
+        : null
+  }
 
   const resolveDisplayValue = (
     field: any | null,
@@ -1631,24 +1743,12 @@ const QuoteAgentResultView = ({
           columns,
           variant.discount,
         )
-        const mainTotalField = findScalarField('main', 'total')
-        const mainTotal = mainTotalField
-          ? Number(formModel?.[getFieldId(mainTotalField)])
-          : NaN
-        // Quote 2/3 formulas add Quote 1's subtotal, so a stored total can
-        // equal Quote 1 while the tab is showing this quote's lines.
-        const shownTotal =
-          variant.id !== 'main' &&
-          variant.total > 0 &&
-          !sameStoredNumber(variant.total, mainTotal)
-            ? variant.total
-            : totals.total
         const shown: Record<string, number> = {
           discount: totals.discount,
           freight: variantFreight,
           subtotal: totals.subtotal,
           tax: totals.hst,
-          total: shownTotal,
+          total: totals.total,
         }
         ;(['subtotal', 'discount', 'freight', 'tax', 'total'] as const).forEach(
           (kind) => {
@@ -2385,6 +2485,10 @@ const QuoteAgentResultView = ({
       const variant = resolveQuoteFieldVariant(label)
       if (variant !== 'main' && /^(alt|opt)/i.test(label.trim())) return false
       const compact = label.toLowerCase().replace(/[\s_-]+/g, '')
+      // The result key too: these rows are linked to the real address fields.
+      if (isMasterTagLabel(label) || isMasterTagLabel(entry.resultKey)) {
+        return false
+      }
       if (
         compact.includes('discount') ||
         compact.includes('subtotal') ||
@@ -2431,7 +2535,7 @@ const QuoteAgentResultView = ({
           editor={renderScalarEditor(entry, resolved.raw, true)}
           fieldId={entry.field ? getFieldId(entry.field) : entry.resultKey}
           label={label}
-          onActivate={setActiveEditId}
+          onActivate={changeActiveEdit}
         >
           <TruncatedExpandText
             className='w-full'

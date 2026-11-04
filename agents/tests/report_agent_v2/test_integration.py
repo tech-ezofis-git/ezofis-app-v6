@@ -471,8 +471,12 @@ async def test_pending_default_report_shows_creator_email(world, make_client):
     ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
     r = await client.get(f"/api/report-agent-v2/reports/{ids['pending_workflow_requests']}/execute", headers=admin)
     body = r.json()
-    assert [c["label"] for c in body["columns"]] == ["Workflow", "Request No", "Status", "Stage", "Raised By", "Pending With",
-                                                     "Created At", "Modified At", "Days Pending"]
+    assert [c["label"] for c in body["columns"]] == [
+        "Workflow", "Request No", "Status", "Stage", "Priority", "Raised By", "Raised On",
+        "Pending With", "Pending Since", "With User For", "Last Acted On", "Last Acted Stage", "First Actioner",
+        "Response Due", "Response Time (Hrs)", "Response Status", "Resolution Due", "Resolution Time (Hrs)",
+        "Resolution Status", "Escalated", "Days Pending", "Open For", "Month"]
+    assert all(row["Open For"] and row["Month"] for row in body["rows"])
     assert body["rows"] and all(row["Raised By"] == "owner@a.example.com" for row in body["rows"])
     # Status and Stage carry the template's built-in pills.
     spec = (await client.get(f"/api/report-agent-v2/definitions/{ids['pending_workflow_requests']}", headers=admin)).json()["reportSpec"]
@@ -792,4 +796,162 @@ async def test_admin_list_installs_missing_default_reports(world, make_client):
     assert again["total"] == len(TEMPLATES) - 1
     with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
         conn.execute("""UPDATE reporting."ReportAiDefinitions" SET "IsDeleted" = false WHERE "SessionId" = 'default:ai_credit_consumption'""")
+
+
+async def test_sla_report_lists_each_sla_event(world):
+    """One row per SLA timer: request, raised by, stage, result, escalated to (user email or stage name) and
+    who was notified (workflow.sla_notification_outbox)."""
+    from datetime import date as _date
+
+    from app.report_agent_v2.domain.executor import run_compiled as _run, shape_result as _shape
+    from app.report_agent_v2.domain.system_reports import compile_system_report
+
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        inst, ref = conn.execute("SELECT id, reference_number FROM workflow.workflow_instances_b05ed64d "
+                                 "ORDER BY reference_number LIMIT 1").fetchone()
+        conn.execute("ALTER TABLE workflow.workflow_instances_b05ed64d ADD COLUMN IF NOT EXISTS started_by uuid")
+        conn.execute("UPDATE workflow.workflow_instances_b05ed64d SET started_by = %s WHERE id = %s", (world.owner, inst))
+        conn.execute("""CREATE TABLE workflow.transaction_b05ed64d (id int, stage_name text, activity_id text,
+                        workflow_instance_id uuid, action_status int, created_at timestamptz)""")
+        conn.execute("INSERT INTO workflow.transaction_b05ed64d VALUES "
+                     "(10, 'Finance Approval', 'act-1', %s, 0, now()), "         # the request is waiting here now
+                     "(11, 'Manager Review', 'act-2', NULL, 1, now() - interval '1 day')", (inst,))
+        conn.execute("""CREATE TABLE workflow.sla_timers (id bigint PRIMARY KEY, workflow_id uuid, workflow_instance_id uuid,
+                        scope varchar(16), transaction_id int, rule_id text, status smallint, outcome text,
+                        due_at_utc timestamptz, created_at_utc timestamptz)""")
+        conn.execute("CREATE TABLE workflow.sla_notification_outbox (id bigint PRIMARY KEY, timer_id bigint, status smallint, address text)")
+        rows = [  # (id, scope, transaction, status, outcome, due)
+            (1, "response", 10, 1, f"queued 1 email(s); reassigned to {world.shared}", "2026-10-21"),
+            (2, "response", 10, 1, "queued 1 email(s); moved to stage act-2", "2026-10-22"),
+            (3, "response", 10, 2, "ticket was already acted on", "2026-10-23"),
+            (4, "resolution", 0, 0, None, "2026-10-24"),
+            (5, "response", 10, 2, "SLA rule was removed", "2026-10-25"),
+            (6, "adv-response", 11, 2, "skipped: due 2026-10-26 10:00 UTC, more than 60 min ago", "2026-10-26"),
+        ]
+        for tid, scope, txid, st, outcome, due in rows:
+            conn.execute("INSERT INTO workflow.sla_timers VALUES (%s,%s,%s,%s,%s,'r1',%s,%s,%s,'2026-10-20')",
+                         (tid, world.workflow_id, inst, scope, txid, st, outcome, due))
+        conn.execute("INSERT INTO workflow.sla_notification_outbox VALUES "
+                     "(1,1,1,'owner@a.example.com'), (2,1,2,'shared@a.example.com'), (3,2,1,'owner@a.example.com')")
+    try:
+        async with await psycopg.AsyncConnection.connect(npgsql_to_conninfo(await _tenant_cs(world)).replace("password=x", f"password={dict(p.split('=', 1) for p in TEST_PG.split()).get('password', 'x')}"), autocommit=True) as aconn:
+            compiled = await compile_system_report(aconn, world.tenant_a, "workflow_sla_compliance", as_of=_date(2026, 10, 29), limit=50)
+            _, out, _ = _shape(compiled.columns, await _run(aconn, compiled, 30000))
+        by_due = {str(r["Due At"])[:10]: r for r in out}
+        assert len(out) == 6 and all(r["Request No"] == ref and r["Workflow"] == "Accounts Payable" for r in out)
+        reassigned = by_due["2026-10-21"]
+        assert reassigned["Result"] == "Breached" and reassigned["Escalated To"] == "shared@a.example.com"
+        assert reassigned["Raised By"] == "owner@a.example.com" and reassigned["Stage"] == "Finance Approval"
+        assert reassigned["Notified"] == "owner@a.example.com, shared@a.example.com"
+        assert (reassigned["Notifications Sent"], reassigned["Notifications Failed"]) == (1, 1)
+        assert by_due["2026-10-22"]["Escalated To"] == "Stage: Manager Review"
+        assert by_due["2026-10-23"]["Result"] == "Met" and not by_due["2026-10-23"]["Escalated To"]
+        resolution = by_due["2026-10-24"]
+        # A resolution SLA covers the whole request: its Stage is where the request is now.
+        assert (resolution["Result"], resolution["SLA"], resolution["Stage"]) == ("In Progress", "Resolution", "Finance Approval")
+        assert by_due["2026-10-25"]["Result"] == "Cancelled"
+        late = by_due["2026-10-26"]  # the SLA job reached it too late: skipped, nobody notified
+        assert (late["Result"], late["SLA"], late["Stage"]) == ("Skipped (late)", "Response (Advanced)", "Manager Review")
+        assert reassigned["instanceId"] == str(inst) and reassigned["workflowId"] == str(world.workflow_id)
+        # Detail columns: key filters first, the request's own state, and how late a breach is.
+        assert list(out[0])[:5] == ["Workflow", "Request No", "SLA", "Result", "Stage"]
+        assert reassigned["Raised On"] and reassigned["Request Status"]
+        assert float(reassigned["Overdue By (Hrs)"]) > 0 and by_due["2026-10-23"]["Overdue By (Hrs)"] is None
+    finally:
+        with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+            for t in ("sla_timers", "sla_notification_outbox", "transaction_b05ed64d"):
+                conn.execute(f"DROP TABLE IF EXISTS workflow.{t}")
+            conn.execute("ALTER TABLE workflow.workflow_instances_b05ed64d DROP COLUMN IF EXISTS started_by")
+
+
+async def test_pending_report_sla_and_timing_columns(world):
+    """Response SLA = the open step's timers, resolution = the request's; hours left are signed; the open
+    step gives Pending Since / With User For; the last completed step gives Last Acted Stage."""
+    from datetime import date as _date
+
+    from app.report_agent_v2.domain.executor import run_compiled as _run, shape_result as _shape
+    from app.report_agent_v2.domain.system_reports import compile_system_report
+
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        inst = conn.execute("SELECT id FROM workflow.workflow_instances_b05ed64d WHERE status IN (0, 1, 2) "
+                            "ORDER BY reference_number LIMIT 1").fetchone()[0]
+        conn.execute("""CREATE TABLE workflow.transaction_b05ed64d (id int, workflow_instance_id uuid, stage_name text,
+                        stage_type text, action_status int, activity_user_id uuid, created_at timestamptz,
+                        modified_at timestamptz, is_deleted boolean)""")
+        conn.execute("INSERT INTO workflow.transaction_b05ed64d VALUES "
+                     "(1, %s, 'Submit', 'START', 1, %s, now() - interval '3 days', now() - interval '3 days', false), "
+                     "(2, %s, 'Finance Approval', 'INTERNAL_ACTOR', 0, %s, now() - interval '2 days 5 hours', NULL, false)",
+                     (inst, world.owner, inst, world.shared))
+        conn.execute("""CREATE TABLE workflow.sla_timers (id bigint PRIMARY KEY, workflow_instance_id uuid, scope varchar(16),
+                        transaction_id int, status smallint, outcome text, due_at_utc timestamptz)""")
+        conn.execute("INSERT INTO workflow.sla_timers VALUES "
+                     "(1, %s, 'response', 2, 1, 'queued 1 email(s); reassigned to x', now() - interval '10 hours'), "
+                     "(2, %s, 'resolution', 0, 0, NULL, now() + interval '20 hours')", (inst, inst))
+    try:
+        async with await psycopg.AsyncConnection.connect(npgsql_to_conninfo(await _tenant_cs(world)).replace("password=x", f"password={dict(p.split('=', 1) for p in TEST_PG.split()).get('password', 'x')}"), autocommit=True) as aconn:
+            compiled = await compile_system_report(aconn, world.tenant_a, "pending_workflow_requests", as_of=_date.today(), limit=50)
+            _, out, _ = _shape(compiled.columns, await _run(aconn, compiled, 30000))
+        row = next(r for r in out if r["instanceId"] == str(inst))
+        assert row["Pending With"] == "shared@a.example.com" and row["With User For"] == "2 Days 5 Hours"
+        assert row["Last Acted Stage"] == "Submit" and row["First Actioner"] == "shared@a.example.com"
+        assert (row["Response Status"], float(row["Response Time (Hrs)"])) == ("Breached", -10)
+        assert (row["Resolution Status"], float(row["Resolution Time (Hrs)"])) == ("Within SLA", 20)
+        assert row["Escalated"] == "Yes" and row["Priority"] is None
+        other = next(r for r in out if r["instanceId"] != str(inst))
+        assert other["Response Status"] is None and other["Escalated"] is None  # no SLA on that request
+    finally:
+        with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+            conn.execute("DROP TABLE IF EXISTS workflow.transaction_b05ed64d")
+            conn.execute("DROP TABLE IF EXISTS workflow.sla_timers")
+
+
+async def test_user_activity_lists_one_users_logins_and_events(world, make_client):
+    """The User Login and Security Activity drill-down: one user's logins (newest first, channel, IP,
+    device) and the security events the report counts; Admin only, and only for that report."""
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+    from datetime import timezone as _tz
+
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    now = _dt.now(_tz.utc)
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        conn.execute("CREATE SCHEMA IF NOT EXISTS auth")
+        conn.execute("CREATE SCHEMA IF NOT EXISTS activitylog")
+        conn.execute("""CREATE TABLE auth."LoginHistory" ("Id" uuid, "TenantId" uuid, "Email" text, "LoggedFrom" text,
+                        "IpAddress" text, "UserAgent" text, "CreatedAtUtc" timestamptz)""")
+        conn.execute("""CREATE TABLE activitylog."EventLogs" ("Id" uuid, "TenantId" uuid, "UserEmail" text, "EventTitle" text,
+                        "EventType" text, "Category" text, "Severity" text, "IpAddress" text, "CreatedAtUtc" timestamptz)""")
+        chrome = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+        for at, frm, ip, ua in [(now - _td(hours=1), "WEB", "10.0.0.1", chrome), (now - _td(days=2), "MOBILE", "10.0.0.2", "EZOFIS/1.4"),
+                                (now - _td(days=40), "WEB", "10.0.0.3", chrome)]:  # outside the 30-day window
+            conn.execute('INSERT INTO auth."LoginHistory" VALUES (%s,%s,%s,%s,%s,%s,%s)',
+                         (uuid.uuid4(), world.tenant_a, "Owner@A.example.com", frm, ip, ua, at))
+        conn.execute('INSERT INTO auth."LoginHistory" VALUES (%s,%s,%s,%s,%s,%s,%s)',
+                     (uuid.uuid4(), world.tenant_a, "shared@a.example.com", "WEB", "10.9.9.9", chrome, now))
+        for title, etype, cat, sev in [("Password changed", "Password Changed", "Security", "Info"),
+                                       ("Role updated", "Permission Changed", "Admin", "Info"),
+                                       ("Report viewed", "Viewed", "Report", "Info")]:  # not a counted event
+            conn.execute('INSERT INTO activitylog."EventLogs" VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                         (uuid.uuid4(), world.tenant_a, "owner@a.example.com", title, etype, cat, sev, "10.0.0.1", now))
+    try:
+        client = await make_client()
+        admin = _h(world, world.admin, role="Admin")
+        ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
+        url = f"/api/report-agent-v2/reports/{ids['user_login_security']}/user-activity"
+        body = (await client.get(url, params={"email": "owner@a.example.com"}, headers=admin)).json()
+        assert [(x["channel"], x["ip"], x["device"]) for x in body["logins"]] == [
+            ("Web", "10.0.0.1", "Chrome on Windows"), ("Mobile", "10.0.0.2", "EZOFIS/1.4")]
+        assert sorted(e["event"] for e in body["events"]) == ["Password changed", "Role updated"]
+        # Admin only, and only behind the login report.
+        user = await client.get(url, params={"email": "owner@a.example.com"}, headers=_h(world, world.owner))
+        assert user.status_code == 403
+        other = await client.get(f"/api/report-agent-v2/reports/{ids['ai_credit_consumption']}/user-activity",
+                                 params={"email": "owner@a.example.com"}, headers=admin)
+        assert other.status_code == 404
+    finally:
+        with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+            conn.execute('DROP TABLE IF EXISTS auth."LoginHistory"')
+            conn.execute('DROP TABLE IF EXISTS activitylog."EventLogs"')
 

@@ -17,6 +17,7 @@ from app.ftl.page_text import (
 from app.ftl.qualifier import extract, runs_store, skill_store
 from app.ftl.qualifier import agent as qualifier_agent
 from app.ftl.qualifier.output_format import to_public
+from app.ftl.quote_estimator.extract import apply_unread_attachments
 from app.ftl.job_progress import FtlJobProgressReporter
 
 logger = logging.getLogger("orchestrator.ftl_qualifier_agent")
@@ -117,12 +118,16 @@ class FtlQualifierAgent:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "pdf"
         email_meta: Dict[str, Any] = {}
         survey_pdfs: List[bytes] = []
+        eml_attachments: List[dict] = []
+        spec_filename = ""
         if ext == "eml":
             parsed = extract.parse_eml_bytes(file_bytes)
             email_meta = {k: v for k, v in parsed.items() if k != "attachments"}
             attachments = parsed.get("attachments") or []
+            eml_attachments = attachments
             spec_attachment = prefer_spec_attachment(attachments)
             if spec_attachment:
+                spec_filename = spec_attachment.get("filename") or ""
                 full_text = await self._text_from_attachment(
                     spec_attachment.get("filename") or "",
                     spec_attachment["bytes"],
@@ -147,6 +152,8 @@ class FtlQualifierAgent:
         candidate = extract.build_candidate_text(full_text, email_meta=email_meta or None)
         rendered = extract.render_candidate_text_for_model(candidate, email_meta=email_meta or None)
         rendered = extract.apply_survey_form_from_pdfs(rendered, survey_pdfs)
+        if eml_attachments:
+            rendered = apply_unread_attachments(rendered, eml_attachments, spec_filename)
         return rendered, email_meta, ext
 
     async def qualify(

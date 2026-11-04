@@ -38,17 +38,15 @@ def _quote(**overrides):
 def test_email_match_overlays_bill_and_ship():
     out = overlay_master_addresses(_quote(), [ATTA, MARCH])
     assert out["billing_address"] == ATTA["Billing_Address"]
-    assert out["shipping_address"] == ATTA["Shipping_Address"]
     assert out["rfq_master_match"] == "RFQ Master"
     assert out["billing_address_from_master"] is True
-    assert out["shipping_address_from_master"] is True
+    assert out["shipping_address_from_master"] is False
 
 
 def test_company_match_when_email_missing():
     quote = _quote(email="", customer_name="March Elevator")
     out = overlay_master_addresses(quote, [ATTA, MARCH])
     assert out["billing_address"] == MARCH["Billing_Address"]
-    assert out["shipping_address"] == MARCH["Shipping_Address"]
 
 
 def test_domain_match():
@@ -66,7 +64,6 @@ def test_fetched_address_match():
     )
     out = overlay_master_addresses(quote, [ATTA, MARCH])
     assert out["billing_address"] == MARCH["Billing_Address"]
-    assert out["shipping_address"] == MARCH["Shipping_Address"]
 
 
 def test_no_master_row_keeps_eml_addresses():
@@ -126,7 +123,7 @@ async def test_apply_with_supplied_rows():
     out = await apply_rfq_master_addresses(_quote(), rows=[ATTA])
     assert out["billing_address"] == ATTA["Billing_Address"]
     assert out["billing_address_from_master"] is True
-    assert out["shipping_address_from_master"] is True
+    assert out["shipping_address_from_master"] is False
 
 
 def _empty_quote():
@@ -143,9 +140,8 @@ def test_empty_quote_uses_candidate_email():
     candidate = "From: Julie House <jhouse@attaelevators.com>\nNeed a quote for door operators."
     out = overlay_master_addresses(_empty_quote(), [ATTA, MARCH], candidate)
     assert out["billing_address"] == ATTA["Billing_Address"]
-    assert out["shipping_address"] == ATTA["Shipping_Address"]
     assert out["billing_address_from_master"] is True
-    assert out["shipping_address_from_master"] is True
+    assert out["shipping_address_from_master"] is False
 
 
 def test_title_case_empty_quote_still_overlays():
@@ -159,7 +155,6 @@ def test_title_case_empty_quote_still_overlays():
     out = overlay_master_addresses(quote, [ATTA], "Contact: jhouse@attaelevators.com")
     assert out["billing_address"] == ATTA["Billing_Address"]
     assert out["Billing Address"] == ATTA["Billing_Address"]
-    assert out["shipping_address"] == ATTA["Shipping_Address"]
     assert out["billing_address_from_master"] is True
 
 
@@ -173,7 +168,6 @@ def test_email_meta_forwarded_sender_when_quote_blank():
         _empty_quote(), [ATTA, MARCH], "HIEGHT", email_meta=meta
     )
     assert out["billing_address"] == ATTA["Billing_Address"]
-    assert out["shipping_address"] == ATTA["Shipping_Address"]
     assert out["billing_address_from_master"] is True
 
 
@@ -184,7 +178,6 @@ def test_company_line_in_body_when_quote_blank():
         "Company Name: ATTA Elevators\nKeyword fragment: HIEGHT",
     )
     assert out["billing_address"] == ATTA["Billing_Address"]
-    assert out["shipping_address"] == ATTA["Shipping_Address"]
 
 
 def test_company_name_in_signature_when_quote_blank():
@@ -209,7 +202,6 @@ def test_json_payload_row_overlays_addresses():
     }
     out = overlay_master_addresses(_quote(), [row])
     assert out["billing_address"] == ATTA["Billing_Address"]
-    assert out["shipping_address"] == ATTA["Shipping_Address"]
     assert out["billing_address_from_master"] is True
 
 
@@ -221,5 +213,39 @@ async def test_apply_empty_quote_with_candidate_email():
         rows=[ATTA, MARCH],
     )
     assert out["billing_address"] == ATTA["Billing_Address"]
-    assert out["shipping_address"] == ATTA["Shipping_Address"]
     assert out["billing_address_from_master"] is True
+
+
+def test_ship_to_never_comes_from_the_master():
+    out = overlay_master_addresses(_quote(shipping_address="9 Job Site Road"), [ATTA])
+    assert out["billing_address"] == ATTA["Billing_Address"]
+    assert out["shipping_address"] == "9 Job Site Road"
+    assert out["shipping_address_from_master"] is False
+
+
+def test_placeholder_in_the_master_is_not_copied():
+    row = {**ATTA, "Billing_Address": "(jobsite from Project — e.g. 1 Main St)"}
+    out = overlay_master_addresses(_quote(billing_address="As written"), [row])
+    assert out["billing_address"] == "As written"
+    assert out["billing_address_from_master"] is False
+
+
+def test_clean_lookup_with_no_client_is_marked_for_storing():
+    quote = _quote(customer_name="New Lifts Inc", email="n@new-lifts.example.com", billing_address="9 New Road", shipping_address="")
+    out = overlay_master_addresses(quote, [ATTA], lookup_ok=True)
+    assert out["rfq_master_no_match"] is True
+
+
+def test_failed_lookup_is_not_marked_for_storing():
+    quote = _quote(customer_name="New Lifts Inc", email="n@new-lifts.example.com")
+    assert "rfq_master_no_match" not in overlay_master_addresses(quote, [])
+
+
+def test_tied_clients_are_not_marked_for_storing():
+    twin = {**MARCH, "Company_Name": "ATTA Elevators", "Email": "other@example.com"}
+    quote = _quote(email="", billing_address="", shipping_address="")
+    assert "rfq_master_no_match" not in overlay_master_addresses(quote, [ATTA, twin], lookup_ok=True)
+
+
+def test_matched_client_is_not_marked_for_storing():
+    assert "rfq_master_no_match" not in overlay_master_addresses(_quote(), [ATTA], lookup_ok=True)

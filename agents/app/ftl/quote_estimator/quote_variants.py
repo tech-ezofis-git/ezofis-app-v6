@@ -138,11 +138,12 @@ _GAL_CONVERSION_RE = re.compile(
 
 
 def _universal_door_branch_applies(q: Dict[str, Any], candidate_text: str) -> Tuple[bool, str]:
-    """DOOR-005 / QUOTE-002: when the landing locks are converted to GAL, new Wittur universal car
-    doors are FTL's preferred, easier-install solution and are labelled FTL RECOMMENDED — unless
-    they are already spec-required (DOOR-004: a spec that skins / replaces the doors puts them in
-    Quote 1 itself) or the RFQ prices them only as an alternate (that is Quote 3's job, QUOTE-003).
-    Never fires on a contradictory car-door statement (UNCLEAR): that is a hold, not a recommendation."""
+    """DOOR-005 / QUOTE-002 (amended by F. Lewis, 2026-10-21): wherever Quote 1 carries panel adaptors for the
+    existing doors — retained, stated, or FTL's DOOR-006 default — Quote 2 offers the new Wittur universal car door
+    matched to the operator's type and width instead. (The older GAL-landing-lock trigger still applies when the
+    adaptors were not priced.) Never when the doors are already spec-required (DOOR-004: a spec that skins / replaces
+    the doors puts them in Quote 1 itself), when the RFQ prices them only as an alternate (Quote 3's job, QUOTE-003),
+    or on a contradictory car-door statement (UNCLEAR: that is a hold, not a recommendation)."""
     cats = {it.get("category") for it in _lines(q)}
     if "door_operator" not in cats or "car_door_panel" in cats:
         return False, ""
@@ -151,15 +152,22 @@ def _universal_door_branch_applies(q: Dict[str, Any], candidate_text: str) -> Tu
         return False, ""
     if decision == "unclear" and qc.car_door_decision(candidate_text)["base_replace"]:
         return False, ""
+    if "panel_adaptor" in cats:
+        return True, (
+            "Quote 1 carries panel adaptors for the existing car doors; FTL's alternative is the new Wittur universal car door matched "
+            "to each operator's type and width — the easier-install solution (DOOR-005)"
+        )
     if _GAL_CONVERSION_RE.search(candidate_text or ""):
         return True, "the landing locks are being converted to GAL, where new universal car doors are FTL's preferred, easier-install solution (DOOR-005)"
     return False, ""
 
 
 def _swap_adaptors_for_universal_doors(q: Dict[str, Any], why: str, rule_label: str) -> Tuple[Dict[str, Any], List[str]]:
+    """Replace the panel adaptor line(s) with the universal car door matched to each operator's type and width. Each new
+    door line sits directly below its operator, where the adaptor was."""
     q = copy.deepcopy(q)
     groups = _operator_groups(q)
-    added: List[Dict[str, Any]] = []
+    doors: Dict[Tuple[str, str], Dict[str, Any]] = {}
     skipped: List[str] = []
     for (dtype, width), qty in groups.items():
         row = rules_engine.universal_panel_row(dtype, width)
@@ -167,20 +175,34 @@ def _swap_adaptors_for_universal_doors(q: Dict[str, Any], why: str, rule_label: 
             skipped.append(f"{dtype} {width} in (no stocked universal door at 84 in)")
             continue
         panels = qty * (1 if dtype == "1S" else 2)
-        added.append(
-            _new_line(
-                row,
-                "car_door_panel",
-                panels,
-                row.get("description") or row["ftl_product_code"],
-                f"ℹ {rule_label}: {why}. Height 84 in (standard) and finish #4 brushed are assumed — confirm clear height and finish "
-                "(DOOR-004). Replaces the OEM panel adaptor line(s).",
-            )
+        doors[(dtype, width)] = _new_line(
+            row,
+            "car_door_panel",
+            panels,
+            row.get("description") or row["ftl_product_code"],
+            f"ℹ {rule_label}: {why}. Height 84 in (standard) and finish #4 brushed are assumed — confirm clear height and finish "
+            "(DOOR-004). Replaces the OEM panel adaptor line(s).",
         )
-    if not added:
+    if not doors:
         return q, skipped
-    q["line_items"] = [it for it in _lines(q) if it.get("category") != "panel_adaptor"] + added
-    q["held_items"] = [h for h in (q.get("held_items") or []) if h.get("item") != "Car door panel adaptor"]
+    out: List[Dict[str, Any]] = []
+    placed: set = set()
+    for it in _lines(q):
+        if it.get("category") == "panel_adaptor":
+            continue
+        out.append(it)
+        if it.get("category") == "door_operator":
+            m = _OP_RE.search(str(it.get("product_code") or ""))
+            key = (m.group(1).upper(), m.group(2)) if m else None
+            if key in doors and key not in placed:
+                out.append(doors[key])
+                placed.add(key)
+    out.extend(d for k, d in doors.items() if k not in placed)
+    q["line_items"] = out
+    q["held_items"] = [
+        h for h in (q.get("held_items") or [])
+        if h.get("item") not in ("Car door panel adaptor", qc.DEFAULT_ADAPTOR_HOLD_ITEM)
+    ]
     return q, skipped
 
 

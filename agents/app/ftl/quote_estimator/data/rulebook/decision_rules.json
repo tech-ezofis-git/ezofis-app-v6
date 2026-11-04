@@ -31,13 +31,13 @@
   },
   {
     "rule_id": "CORE-004",
-    "category": "Core Control",
-    "trigger_spec_says": "One enquiry",
-    "agent_action": "Create one primary quote; duplicate only for an alternate configuration",
+    "category": "Quote Architecture",
+    "trigger_spec_says": "One qualified enquiry",
+    "agent_action": "Generate up to three linked controlled outputs: Quote 1 SPEC/BASE COMPLIANT; Quote 2 FTL RECOMMENDED only where an approved FTL rule supports an upgrade; Quote 3 legitimate ALTERNATE/COMPLETE solution only when supported. If no legitimate third option, return NO VALID THIRD OPTION.",
     "rule_status": "Required",
-    "required_inputs": "Base-vs-alternate classification",
-    "human_review_if": "Unclear commercial choice",
-    "authority": "Seth/FTL workflow"
+    "required_inputs": "Qualified base scope + approved alternate trigger",
+    "human_review_if": "Any quote option changes scope without a rule/source",
+    "authority": "Latest FTL rule 2026-10-16"
   },
   {
     "rule_id": "CORE-005",
@@ -45,7 +45,7 @@
     "trigger_spec_says": "Historical quote/manual language",
     "agent_action": "Treat as evidence, not permission to add scope or copy price",
     "rule_status": "Required",
-    "required_inputs": "Current master/customer profile",
+    "required_inputs": "Current approved master + live inFlow + manual estimator override if applicable",
     "human_review_if": "Source conflicts",
     "authority": "FTL training rule"
   },
@@ -146,7 +146,7 @@
     "agent_action": "Require bolt pattern, car/landing OEM, lock details/photos, and A-F plus S measurements",
     "rule_status": "Required",
     "required_inputs": "Page 7 for 1S/2C; page 8 for 2T",
-    "human_review_if": "Survey page definitions unavailable",
+    "human_review_if": "Any required A-F/S measurement, diagram, photo or opening fact is missing",
     "authority": "FTL explicit rule"
   },
   {
@@ -203,11 +203,11 @@
     "rule_id": "BUNDLE-002",
     "category": "Door Bundle",
     "trigger_spec_says": "One project",
-    "agent_action": "Quote one programming tool unless customer profile/estimator override says customer already has one or tool is waived",
+    "agent_action": "Quote one SGV2 programming tool when required unless the customer confirms it already owns one or estimator manually waives it. Never auto-discount/free it.",
     "rule_status": "Conditional",
-    "required_inputs": "Customer profile",
-    "human_review_if": "Tool price conflict",
-    "authority": "FTL training examples"
+    "required_inputs": "Project/tool ownership status",
+    "human_review_if": "Manual waiver/free tool requested",
+    "authority": "Latest FTL rule + live inFlow"
   },
   {
     "rule_id": "PANEL-001",
@@ -233,21 +233,21 @@
     "rule_id": "DET-001",
     "category": "Detector",
     "trigger_spec_says": "SGV2 package",
-    "agent_action": "Use Formula VisionPlus 3D only",
+    "agent_action": "Use Formula VisionPlus 3D FZU-1442US01 / inFlow product FS_VISIONPLUS_3D_CAR_DOOR_DET only.",
     "rule_status": "FTL standard",
-    "required_inputs": "Opening count",
-    "human_review_if": "Electrical data unresolved",
-    "authority": "FTL explicit rule"
+    "required_inputs": "Confirmed SGV2 opening count",
+    "human_review_if": "Non-standard interface/controller integration",
+    "authority": "Formula FZU-1442US01 + FTL rule"
   },
   {
     "rule_id": "DET-002",
     "category": "Detector",
     "trigger_spec_says": "SGV2 package",
-    "agent_action": "Do not automatically add separate detector power supply",
+    "agent_action": "Do not automatically add a separate Formula power supply. VisionPlus basic connectivity is 18-30 VDC with NPN normally-closed output; use separate power supply only when approved integration requires it.",
     "rule_status": "Required",
-    "required_inputs": "SUPRA board application",
-    "human_review_if": "Detector exceeds +24 VDC/150 mA or non-SGV2",
-    "authority": "SUPRA V2 manual sheet 10"
+    "required_inputs": "Controller/interface compatibility",
+    "human_review_if": "Non-standard supply/interface",
+    "authority": "Formula FZU-1442US01"
   },
   {
     "rule_id": "GOV-001",
@@ -273,21 +273,21 @@
     "rule_id": "GOV-003",
     "category": "Governor",
     "trigger_spec_says": "Any OL governor",
-    "agent_action": "Add one pit swingarm/tension assembly",
+    "agent_action": "Add one separate FTL tension/swingarm line per governor. The line represents the approved weight/sheave/tension components, filler weights and fixings for the selected configuration.",
     "rule_status": "Required companion",
-    "required_inputs": "Governor quantity",
-    "human_review_if": "Exact OL100 tension configuration",
-    "authority": "FTL explicit rule"
+    "required_inputs": "Governor quantity + selected tension configuration",
+    "human_review_if": "Exact tension SKU/BOM not normalized",
+    "authority": "Latest JR/Francine rule"
   },
   {
     "rule_id": "GOV-004",
     "category": "Governor",
     "trigger_spec_says": "OL100 selected",
-    "agent_action": "Add $2,950 OL100 pit tension line",
-    "rule_status": "Required companion",
-    "required_inputs": "OL100 selection",
-    "human_review_if": "SKU/vertical-vs-swingarm unresolved",
-    "authority": "FTL explicit rule"
+    "agent_action": "Use live inFlow OL100 governor record for price snapshot, but HOLD automatic final release until the separate-line FTL tension rule is reconciled with the inFlow OL100 description that already states vertical tension/filler weights/fixings.",
+    "rule_status": "Review",
+    "required_inputs": "OL100 application + exact tension BOM/SKU",
+    "human_review_if": "Always until I-006 closed",
+    "authority": "Latest FTL rule + inFlow"
   },
   {
     "rule_id": "GOV-005",
@@ -382,52 +382,52 @@
   {
     "rule_id": "SAFE-004",
     "category": "Safety Gear",
-    "trigger_spec_says": "Standard car safety",
-    "agent_action": "Quote in pairs only after engineering confirmation",
+    "trigger_spec_says": "Approved safety model selected",
+    "agent_action": "Quote the approved safety as a synchronized set/pair and include the synchronization + linkage package with every FTL safety order. Same commercial-price basis does not make SGB/CSGB models interchangeable.",
     "rule_status": "Required",
-    "required_inputs": "Pair quantity",
-    "human_review_if": "Housing/SYNC scope unclear",
-    "authority": "Safety order form"
+    "required_inputs": "Full safety engineering inputs + exact approved SKU",
+    "human_review_if": "Price master or exact SKU not normalized",
+    "authority": "Latest JR/Francine rule"
   },
   {
     "rule_id": "COMM-001",
     "category": "Commercial",
     "trigger_spec_says": "Pricing",
-    "agent_action": "Use current approved price master plus exact customer pricing profile",
+    "agent_action": "Retrieve the current exact item price from live inFlow. Workbook/catalogue/historical prices are reference only.",
     "rule_status": "Required",
-    "required_inputs": "Price version + customer",
-    "human_review_if": "Conflict or missing profile",
-    "authority": "FTL policy"
+    "required_inputs": "Exact inFlow SKU/product record",
+    "human_review_if": "No exact inFlow record",
+    "authority": "FTL pricing control"
   },
   {
     "rule_id": "COMM-002",
     "category": "Commercial",
-    "trigger_spec_says": "Discount/incentive",
-    "agent_action": "Do not infer from historical quotes; apply only approved customer or project rule",
-    "rule_status": "Required",
-    "required_inputs": "Approval/profile",
-    "human_review_if": "None",
-    "authority": "Element training example"
+    "trigger_spec_says": "Any discount / special price",
+    "agent_action": "Never apply automatically. All discounts and special pricing require manual FTL estimator approval.",
+    "rule_status": "Manual",
+    "required_inputs": "Estimator approval",
+    "human_review_if": "Always if any discount is requested",
+    "authority": "Latest JR/Francine rule"
   },
   {
     "rule_id": "COMM-003",
     "category": "Commercial",
-    "trigger_spec_says": "Bundle incentive",
-    "agent_action": "Flag eligibility; do not apply discretionary 'up to' discount automatically",
+    "trigger_spec_says": "Bundle / volume / major-project opportunity",
+    "agent_action": "Flag for manual project-pricing review only. Do not apply catalogue bundle percentages automatically.",
     "rule_status": "Review",
-    "required_inputs": "Qualifying product lines",
-    "human_review_if": "No written approval",
-    "authority": "2026 Price List p.5"
+    "required_inputs": "Project scope + estimator approval",
+    "human_review_if": "Any autonomous discount calculation",
+    "authority": "Latest JR/Francine rule"
   },
   {
     "rule_id": "COMM-004",
     "category": "Commercial",
-    "trigger_spec_says": "Freight",
-    "agent_action": "Use an approved freight matrix or estimator-entered value",
-    "rule_status": "Review",
-    "required_inputs": "Shipment size/location",
-    "human_review_if": "Matrix absent",
-    "authority": "Conflict I-009"
+    "trigger_spec_says": "Freight - single SGV2 package",
+    "agent_action": "Use $375 within GTA; $450 for locations approximately up to 150 km outside downtown Toronto; beyond that or for larger/multi-unit packages use manual/project freight review.",
+    "rule_status": "Required",
+    "required_inputs": "Ship-to location + shipment class",
+    "human_review_if": "Distance/scope outside controlled single-package rule",
+    "authority": "Latest JR/Francine rule"
   },
   {
     "rule_id": "COMM-005",
@@ -473,10 +473,170 @@
     "rule_id": "OUT-004",
     "category": "Audit",
     "trigger_spec_says": "Every line",
-    "agent_action": "Tag origin as SPEC, FTL_RULE, CUSTOMER_PROFILE or ESTIMATOR_OVERRIDE",
+    "agent_action": "Tag origin as SPEC, FTL_RULE, CUSTOMER_RECORD or ESTIMATOR_OVERRIDE",
     "rule_status": "Required",
     "required_inputs": "Line provenance",
     "human_review_if": "Missing origin",
     "authority": "Recommended implementation control"
+  },
+  {
+    "rule_id": "COMM-006",
+    "category": "Commercial",
+    "trigger_spec_says": "Any priced quote line",
+    "agent_action": "Retrieve the current price from inFlow at quote generation and again before release",
+    "rule_status": "Required",
+    "required_inputs": "Exact inFlow SKU/product record + approved manual override if applicable",
+    "human_review_if": "Price unavailable or changed",
+    "authority": "FTL approved control"
+  },
+  {
+    "rule_id": "COMM-007",
+    "category": "Commercial",
+    "trigger_spec_says": "Workbook/reference price exists",
+    "agent_action": "Treat it as a snapshot for testing only; never lock it as the live commercial price",
+    "rule_status": "Required",
+    "required_inputs": "inFlow verification",
+    "human_review_if": "Any workbook/inFlow difference",
+    "authority": "FTL approved control"
+  },
+  {
+    "rule_id": "QUAL-001",
+    "category": "Qualification",
+    "trigger_spec_says": "Initial enquiry review",
+    "agent_action": "Record the initial result as QUALIFIED, DISQUALIFIED or HUMAN REVIEW before downstream sales action",
+    "rule_status": "Required",
+    "required_inputs": "Original enquiry only",
+    "human_review_if": "Evidence is incomplete",
+    "authority": "FTL approved control"
+  },
+  {
+    "rule_id": "QUAL-002",
+    "category": "Qualification",
+    "trigger_spec_says": "A quote exists after initial DISQUALIFIED result",
+    "agent_action": "Keep the initial label; record HUMAN OVERRIDE and the reason separately",
+    "rule_status": "Required",
+    "required_inputs": "Approver + override reason + estimate number",
+    "human_review_if": "Missing approval/reason",
+    "authority": "FTL approved control"
+  },
+  {
+    "rule_id": "QUAL-003",
+    "category": "Training",
+    "trigger_spec_says": "Manual override or later quote",
+    "agent_action": "Do not use the downstream quote as a positive qualifier example",
+    "rule_status": "Block",
+    "required_inputs": "Initial decision + outcome",
+    "human_review_if": "Labels are merged",
+    "authority": "FTL approved control"
+  },
+  {
+    "rule_id": "PAIR-001",
+    "category": "Training Data",
+    "trigger_spec_says": "RFQ/quote pair",
+    "agent_action": "Release as training evidence only when project, customer, estimate number and attachments reconcile",
+    "rule_status": "Block",
+    "required_inputs": "Matched RFQ + issued estimate",
+    "human_review_if": "Duplicate or mismatched identifiers",
+    "authority": "FTL approved control"
+  },
+  {
+    "rule_id": "SERV-001",
+    "category": "Customer Service",
+    "trigger_spec_says": "Customer-facing communication",
+    "agent_action": "Client first: lead with respect and care, work hard, treat everyone with respect, and preserve a positive practical service tone.",
+    "rule_status": "Principle",
+    "required_inputs": "None",
+    "human_review_if": "Never overrides technical/safety/code/pricing/scope controls",
+    "authority": "JR/Francine service principle"
+  },
+  {
+    "rule_id": "QUOTE-001",
+    "category": "Quote Architecture",
+    "trigger_spec_says": "Quote 1",
+    "agent_action": "SPEC / BASE COMPLIANT: answer exactly what the customer asked for; confirmed scope only; separate alternates stay out.",
+    "rule_status": "Required",
+    "required_inputs": "Qualified scope",
+    "human_review_if": "Missing scope",
+    "authority": "Latest FTL rule"
+  },
+  {
+    "rule_id": "QUOTE-002",
+    "category": "Quote Architecture",
+    "trigger_spec_says": "Quote 2",
+    "agent_action": "FTL RECOMMENDED: start from Quote 1 and change only branches authorized by an approved FTL upgrade/modernization rule.",
+    "rule_status": "Conditional",
+    "required_inputs": "Approved recommendation rule",
+    "human_review_if": "Upgrade has no controlled FTL rule",
+    "authority": "Latest FTL rule"
+  },
+  {
+    "rule_id": "QUOTE-003",
+    "category": "Quote Architecture",
+    "trigger_spec_says": "Quote 3",
+    "agent_action": "ALTERNATE / COMPLETE SOLUTION: use only a consultant/customer alternate or a legitimate broader approved FTL configuration. Never fill a third quote for the sake of having three.",
+    "rule_status": "Conditional",
+    "required_inputs": "Valid alternate source/rule",
+    "human_review_if": "No legitimate third option -> NO VALID THIRD OPTION",
+    "authority": "Latest FTL rule"
+  },
+  {
+    "rule_id": "QUOTE-004",
+    "category": "Quote Architecture",
+    "trigger_spec_says": "All quote variants",
+    "agent_action": "Keep Quote 1/2/3 linked to the same project and show added/removed lines, quantity/configuration changes, price delta, reason and review flags.",
+    "rule_status": "Required",
+    "required_inputs": "Shared project ID + version",
+    "human_review_if": "Variants drift to different project scope",
+    "authority": "Latest FTL rule"
+  },
+  {
+    "rule_id": "SURV-001",
+    "category": "Survey Integration",
+    "trigger_spec_says": "Agent finds missing field data",
+    "agent_action": "Generate a targeted site-survey request containing only unresolved fields; do not ask field staff to recollect confirmed data.",
+    "rule_status": "Required",
+    "required_inputs": "Qualification output + missing-field list",
+    "human_review_if": "Request is generic/duplicate",
+    "authority": "Latest FTL rule"
+  },
+  {
+    "rule_id": "SURV-002",
+    "category": "Survey Integration",
+    "trigger_spec_says": "SGV2 survey",
+    "agent_action": "Maintain one controlled survey record per entrance; front and rear are separate records.",
+    "rule_status": "Required",
+    "required_inputs": "Car ID + entrance ID",
+    "human_review_if": "Front/rear collapsed",
+    "authority": "FTL playbooks + survey"
+  },
+  {
+    "rule_id": "SURV-003",
+    "category": "Survey Integration",
+    "trigger_spec_says": "Survey completed",
+    "agent_action": "SEND TO ESTIMATING: attach structured fields/photos to the same enquiry and rerun qualification before product selection/release.",
+    "rule_status": "Required",
+    "required_inputs": "Project/enquiry ID + survey record",
+    "human_review_if": "Survey creates a disconnected new project",
+    "authority": "Latest FTL rule"
+  },
+  {
+    "rule_id": "SURV-004",
+    "category": "Survey Integration",
+    "trigger_spec_says": "Survey still missing one or more critical items",
+    "agent_action": "Keep affected selection on HOLD and send a targeted re-request such as Car 3 Rear - need complete top-of-door bolt pattern.",
+    "rule_status": "Block",
+    "required_inputs": "Missing field + affected entrance",
+    "human_review_if": "Agent guesses or requests full resurvey unnecessarily",
+    "authority": "Latest FTL rule"
+  },
+  {
+    "rule_id": "TEST-001",
+    "category": "Live Testing",
+    "trigger_spec_says": "Mailbox live test",
+    "agent_action": "Begin with known-answer RFQs, compare agent scope/selection to issued FTL quote, categorize every failure and fix the underlying rule before unseen live RFQs.",
+    "rule_status": "Required",
+    "required_inputs": "Controlled regression set",
+    "human_review_if": "Agent tested only on unseen live work",
+    "authority": "Latest FTL/Seth implementation rule"
   }
 ]

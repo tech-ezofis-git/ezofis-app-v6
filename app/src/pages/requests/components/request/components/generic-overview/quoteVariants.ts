@@ -260,6 +260,30 @@ export const resolveVariantScalarFromResult = (
   return null
 }
 
+/**
+ * The agent's freight, while it still applies: the form has no freight of its
+ * own but still holds the agent's HST, which was charged on that freight. A user
+ * who sets freight to 0 also recalculates HST, so their 0 stays.
+ */
+export const resolveAgentFreight = (
+  result: Record<string, any> | null | undefined,
+  savedHst: number,
+): number => {
+  if (!result || typeof result !== 'object') return 0
+  let freight = 0
+  let agentHst = 0
+  Object.entries(result).forEach(([key, value]) => {
+    const compact = compactKey(key)
+    const num = Number(value)
+    if (!Number.isFinite(num)) return
+    if (compact === 'freight' || compact === 'freightestimate') {
+      freight = Math.max(freight, num)
+    }
+    if (compact === 'hst') agentHst = num
+  })
+  return freight > 0 && Math.abs(agentHst - savedHst) < 0.01 ? freight : 0
+}
+
 const buildVariant = (
   id: QuoteVariantId,
   rows: Record<string, any>[],
@@ -284,16 +308,8 @@ const buildVariant = (
     quoteDiscount,
   )
   const hasRows = normalized.length > 0
-  const apiTotal =
-    extras?.total != null && Number.isFinite(Number(extras.total))
-      ? Number(extras.total)
-      : null
-  // Prefer a real API/form total; ignore 0 so copied rows still show recomputed $.
-  const total = hasRows
-    ? apiTotal != null && apiTotal > 0
-      ? apiTotal
-      : totals.total
-    : 0
+  // Worked out from the lines: a saved Total can omit freight or repeat Quote 1's total.
+  const total = hasRows ? totals.total : 0
   return {
     columns,
     description: meta.description,
@@ -350,7 +366,8 @@ export const extractQuoteVariants = (args: {
     if (Number.isFinite(Number(fromForm))) return Number(fromForm)
     const fromResult = resolveVariantScalarFromResult(result, id, 'freight')
     if (fromResult != null) return fromResult
-    return id === 'main' ? defaultFreight : 0
+    // A variant only carries the fields that differ from Quote 1.
+    return defaultFreight
   }
 
   const discountFor = (id: QuoteVariantId) => {

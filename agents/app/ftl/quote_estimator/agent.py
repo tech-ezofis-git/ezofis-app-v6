@@ -173,7 +173,7 @@ _SUBMIT_QUOTE_TOOL = {
                         "required": ["product_code", "description", "category", "qty", "unit_price"],
                     },
                 },
-                "freight_estimate": {"type": "number", "description": "0 if there's no reasonable basis for an estimate — note that in freight_note."},
+                "freight_estimate": {"type": "number", "description": "Always 0 — freight is set afterwards by FTL's controlled freight rule (v1.1 COMM-004); never copy a freight figure from a past quote."},
                 "freight_note": {"type": "string", "description": "e.g. 'Lead times / freight confirmed at order.' if freight_estimate is 0."},
                 "payment_terms": {
                     "type": "string",
@@ -1116,6 +1116,13 @@ def _reconcile_against_product_master(quote: Dict[str, Any]) -> Dict[str, Any]:
     return quote
 
 
+_SAFETY_INPUTS_NEEDED = (
+    "Fmax (car + capacity + compensation), nominal and tripping speed, guide-rail size AND condition "
+    "(machined/oiled or dry) and type, governor pull-through force and rope location, simplex/duplex "
+    "and housing/SYNC scope, plus the application (SAFE-002 / SAFE-003)."
+)
+
+
 def _enforce_safety_gear_block(quote: Dict[str, Any]) -> Dict[str, Any]:
     """RT-014 / I-008 / I-016 (FTL Stage 2 rulebook, received Sept 2026): safety gear must NEVER be
     auto-priced. The product master's own CSGB03-SYNC row is marked HOLD, "Never auto-add;
@@ -1143,13 +1150,25 @@ def _enforce_safety_gear_block(quote: Dict[str, Any]) -> Dict[str, Any]:
         f"{it.get('description') or it.get('product_code')} (qty {it.get('qty')})" for it in safety_items
     )
     quote["assumptions"] = list(quote.get("assumptions") or []) + [
-        f"\U0001F6D1 BLOCK — removed from the estimate, never auto-priced: {descs}. "
+        f"\U0001F6D1 HOLD - TECHNICAL REVIEW REQUIRED — removed from the estimate, never auto-priced: {descs}. "
+        "Safety family (SGB01/02/03 or CSGB) is selected by engineering; when approved, FTL quotes the safeties "
+        "as a synchronized set with the synchronization + linkage package included. Needed: "
+        + _SAFETY_INPUTS_NEEDED
+        + " "
         + rules_engine.cite_trigger("RT-014")
         + " "
         + rules_engine.cite_conflict("I-008")
         + " "
         + rules_engine.cite_conflict("I-016")
     ]
+    quote_controls.add_held_item(
+        quote,
+        item="Car safeties",
+        reason="HOLD - TECHNICAL REVIEW REQUIRED: the safety family is selected by engineering from the full "
+        "technical inputs and FTL has not yet normalized the safety price master / inFlow records (I-008).",
+        rules=["RT-014", "SAFE-001", "SAFE-002", "SAFE-003", "SAFE-004", "I-008", "I-016"],
+        needed=_SAFETY_INPUTS_NEEDED,
+    )
     return quote
 
 
@@ -1222,7 +1241,12 @@ def _enforce_wrg_gating(quote: Dict[str, Any], candidate_text: str) -> Dict[str,
 
     has_car = any(not _WRG_CWT_DESC_RE.search(str(it.get("description") or "")) for it in roller_items)
     has_cwt = any(_WRG_CWT_DESC_RE.search(str(it.get("description") or "")) for it in roller_items)
-    if has_car and has_cwt:
+    if has_car and has_cwt and scope_rules.roller_guides_car_and_cwt_called_out(candidate_text):
+        assumptions.append(
+            "ℹ The spec/customer explicitly calls for both car AND counterweight roller guides, so both "
+            "sets are quoted (T-006 satisfied)."
+        )
+    elif has_car and has_cwt:
         assumptions.append(
             "⚠ REVIEW — this estimate has both a car-guide-shaped and a counterweight-guide-"
             "shaped roller_guide line. Confirm the spec explicitly calls for both car AND CWT guide "
@@ -1272,7 +1296,7 @@ def _enforce_governor_tension_companions(quote: Dict[str, Any]) -> Dict[str, Any
     for it in line_items:
         if it.get("category") != "governor":
             continue
-        code = str(it.get("product_code") or "")
+        code = rules_engine.canonical_code(str(it.get("product_code") or ""))
         if code in known_companion_codes:
             continue
         m = _GOVERNOR_SIZE_RE.search(code)
@@ -1305,11 +1329,15 @@ def _enforce_governor_tension_companions(quote: Dict[str, Any]) -> Dict[str, Any
             )
             continue
         companion_code = companion_row["ftl_product_code"]
-        existing = [it for it in working_items if it.get("product_code") == companion_code]
+        existing = [
+            it for it in working_items if rules_engine.canonical_code(str(it.get("product_code") or "")) == companion_code
+        ]
         existing_qty = sum(float(it.get("qty") or 0) for it in existing)
         if existing and existing_qty == expected_qty and all(it.get("category") == "governor" for it in existing):
             continue
-        working_items = [it for it in working_items if it.get("product_code") != companion_code]
+        working_items = [
+            it for it in working_items if rules_engine.canonical_code(str(it.get("product_code") or "")) != companion_code
+        ]
         working_items.append(
             {
                 "product_code": companion_code,
@@ -1318,6 +1346,7 @@ def _enforce_governor_tension_companions(quote: Dict[str, Any]) -> Dict[str, Any
                 "qty": expected_qty,
                 "unit_price": companion_row.get("price_cad") or 0,
                 "needs_engineering_review": True,
+                "hold": size == "100",
                 "note": (
                     f"⚠ AUTO-ADDED/CORRECTED — mandatory REQUIRED COMPANION per the FTL "
                     f"governor tension rule: every OL{size} governor needs exactly one of these "
@@ -1336,6 +1365,18 @@ def _enforce_governor_tension_companions(quote: Dict[str, Any]) -> Dict[str, Any
                 + rules_engine.cite_conflict("I-006")
                 + " "
                 + rules_engine.cite_conflict("I-007")
+            )
+            quote_controls.add_held_item(
+                quote,
+                item="OL100 governor + separate tension line",
+                reason=(
+                    "HOLD automatic release (GOV-004 / RT-010 / I-006): FTL requires a separate tension line for "
+                    "every OL governor, but inFlow's OL100 record already says it includes the vertical tension "
+                    "weight and fixings, and no canonical inFlow SKU exists for the separate OL100 tension line yet. "
+                    "Not double-priced automatically."
+                ),
+                rules=["GOV-004", "GOV-007", "RT-010", "I-006", "I-007", "I-017"],
+                needed="Estimator resolves the exact OL100 tension BOM / SKU and hand (LH/RH).",
             )
 
     quote["assumptions"] = assumptions
@@ -1663,6 +1704,10 @@ def _sanitize_quote(quote: Dict[str, Any]) -> Dict[str, Any]:
             and item.get("category") in _WHITELIST_CHECKED_CATEGORIES
             and code not in whitelist
             and code not in _WHITELIST_KNOWN_EXTRAS
+            # Product Master codes are real by definition — e.g. FS_VISIONPLUS_3D_CAR_DOOR_DET, FTL's own
+            # detector code, is deliberately NOT in the pricelist (I-002) and was wrongly flagged.
+            and code not in rules_engine.all_known_codes()
+            and rules_engine.product_master_row(code) is None
             # Governors are a real, confirmed exception to "the code must appear verbatim": the
             # pricelist's own PRODUCT NAME column has no hand suffix (e.g. "WG_OL35_GOVERNOR_RC"),
             # but real FTL invoices append one anyway (e.g. "WG_OL35_GOVERNOR_RC_LH", confirmed on
@@ -2540,9 +2585,15 @@ _RESTRICTOR_CANONICAL_CODE = "SGV2_CAR_DOOR_RESTRICTOR"
 _RESTRICTOR_CODE_RE = re.compile(r"restrictor", re.IGNORECASE)
 
 
+_RESTRICTOR_DESCRIPTION = "SGV2 Car Door Restriction Function - Included"
+
+
 def _enforce_door_restrictor_bundling(quote: Dict[str, Any]) -> Dict[str, Any]:
-    """Every SGV2 door operator MOD kit includes one car door restrictor at $0, quantity matching
-    the door operators. Adds the line when it is missing, and corrects quantity or a near-miss code."""
+    """FTL v1.1 (I-015, BUNDLE-001): every SGV2 opening shows ONE customer-facing $0.00 value line,
+    "SGV2 Car Door Restriction Function - Included" — not loose inventory / BOM hardware. Exactly one
+    line at the canonical code, quantity equal to the door operators: added if missing, corrected if
+    wrong, code-normalized if misspelled. The $0 comes from a subtotal override, the single permitted
+    exception to the no-automatic-discount rule."""
     line_items = quote.get("line_items") or []
     op_qty = sum(float(it.get("qty") or 0) for it in line_items if it.get("category") == "door_operator")
     if op_qty <= 0:
@@ -2553,6 +2604,8 @@ def _enforce_door_restrictor_bundling(quote: Dict[str, Any]) -> Dict[str, Any]:
         len(existing) == 1
         and existing[0].get("product_code") == _RESTRICTOR_CANONICAL_CODE
         and float(existing[0].get("qty") or 0) == op_qty
+        and existing[0].get("description") == _RESTRICTOR_DESCRIPTION
+        and existing[0].get("subtotal_override") == 0
     )
     if already_correct:
         return quote
@@ -2562,16 +2615,15 @@ def _enforce_door_restrictor_bundling(quote: Dict[str, Any]) -> Dict[str, Any]:
     working_items.append(
         {
             "product_code": _RESTRICTOR_CANONICAL_CODE,
-            "description": "Car door restrictor (bundled with SGV2 door operator MOD kit)",
+            "description": _RESTRICTOR_DESCRIPTION,
             "category": "other",
             "qty": op_qty,
             "unit_price": 0,
             "subtotal_override": 0,
             "needs_engineering_review": False,
             "note": (
-                "ℹ AUTO-ADDED/CORRECTED — every SGV2 door operator on this estimate bundles a "
-                "car door restrictor at no extra charge (qty set to match the door_operator qty); "
-                "not a separately priced Product Master SKU."
+                "ℹ Customer-facing value line, one per SGV2 opening ($0.00) — not a loose inventory/BOM "
+                "component (I-015, BUNDLE-001)."
             ),
         }
     )
@@ -2703,8 +2755,13 @@ def _enforce_car_door_panel_presence(quote: Dict[str, Any]) -> Dict[str, Any]:
         panel_rows = {(p["door_type"], p["width"]): p for p in car_door_panel_prices()}
     except Exception:
         panel_rows = {}
-    canonical_codes = {row["code"] for row in panel_rows.values()}
+    # Both spellings count as recognised: the legacy price-list string and the Product Master code
+    # that _canonicalize_product_codes rewrites it to.
+    canonical_codes = {row["code"] for row in panel_rows.values()} | {
+        rules_engine.canonical_code(row["code"]) for row in panel_rows.values()
+    }
     code_to_type_width = {row["code"]: key for key, row in panel_rows.items()}
+    code_to_type_width.update({rules_engine.canonical_code(row["code"]): key for key, row in panel_rows.items()})
 
     if panel_idxs:
         if has_adaptor or not panel_rows:
@@ -3220,6 +3277,8 @@ def _finalize_quote(quote: Dict[str, Any], candidate_text: str) -> Dict[str, Any
     quote = _check_governor_count(quote, candidate_text)
     quote = _check_governor_variant_differentiation(quote, candidate_text)
     # --- FTL Stage 2 rulebook enforcement (received Sep 2026) — see rules_engine.py ---
+    # Again here: the steps above can ADD lines from the pricelist index, which still carries old spellings.
+    quote = _canonicalize_product_codes(quote)
     quote = _reconcile_against_product_master(quote)
     quote = _enforce_two_speed_door_type(quote, candidate_text)
     quote = _enforce_line_item_qty_matches_car_count(quote, candidate_text)
