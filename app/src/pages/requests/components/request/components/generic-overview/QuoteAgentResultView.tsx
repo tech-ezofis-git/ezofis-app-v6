@@ -637,8 +637,11 @@ const QuoteAgentResultView = ({
     return 0
   }
 
+  // A variant only carries the fields that differ from Quote 1, so no freight
+  // of its own means Quote 1's freight applies.
   const resolveFreightForVariant = (variantId: QuoteVariantId) =>
-    resolveTotalEntryValue(variantId, 'freight')
+    resolveTotalEntryValue(variantId, 'freight') ||
+    (variantId === 'main' ? 0 : resolveTotalEntryValue('main', 'freight'))
 
   const resolveDiscountForVariant = (variantId: QuoteVariantId) =>
     resolveTotalEntryValue(variantId, 'discount')
@@ -1294,9 +1297,7 @@ const QuoteAgentResultView = ({
       activeColumns,
       activeDiscount,
     )
-    // Prefer API Total for the active tab when present (sample quote_result shape).
-    const apiTotal = resolveTotalEntryValue(activeVariantId, 'total')
-    const apiHst = resolveTotalEntryValue(activeVariantId, 'tax')
+    // HST and Total come from the lines: a saved Total can omit freight or repeat Quote 1's total.
     const apiSubtotal = resolveTotalEntryValue(activeVariantId, 'subtotal')
     // Prefer computed line-discount $ over the quote-level Discount field (often 0).
     const apiDiscount = resolveTotalEntryValue(activeVariantId, 'discount')
@@ -1304,9 +1305,7 @@ const QuoteAgentResultView = ({
       ...computed,
       discount: computed.discount || apiDiscount || 0,
       freight: activeFreight,
-      hst: apiHst || computed.hst,
       subtotal: apiSubtotal || computed.subtotal,
-      total: apiTotal || computed.total,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resolveTotalEntryValue uses viewModel/formModel
   }, [
@@ -1373,7 +1372,10 @@ const QuoteAgentResultView = ({
           current == null ||
           (typeof current === 'string' && current.trim() === '')
         const value = shown[kind]
-        if (isBlank && Number.isFinite(value)) data[id] = value
+        // A saved Total can be wrong, so the screen's total always wins for it.
+        if ((isBlank || kind === 'total') && Number.isFinite(value)) {
+          data[id] = value
+        }
       },
     )
 
@@ -1631,24 +1633,12 @@ const QuoteAgentResultView = ({
           columns,
           variant.discount,
         )
-        const mainTotalField = findScalarField('main', 'total')
-        const mainTotal = mainTotalField
-          ? Number(formModel?.[getFieldId(mainTotalField)])
-          : NaN
-        // Quote 2/3 formulas add Quote 1's subtotal, so a stored total can
-        // equal Quote 1 while the tab is showing this quote's lines.
-        const shownTotal =
-          variant.id !== 'main' &&
-          variant.total > 0 &&
-          !sameStoredNumber(variant.total, mainTotal)
-            ? variant.total
-            : totals.total
         const shown: Record<string, number> = {
           discount: totals.discount,
           freight: variantFreight,
           subtotal: totals.subtotal,
           tax: totals.hst,
-          total: shownTotal,
+          total: totals.total,
         }
         ;(['subtotal', 'discount', 'freight', 'tax', 'total'] as const).forEach(
           (kind) => {

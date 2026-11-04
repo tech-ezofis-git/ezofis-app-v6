@@ -284,16 +284,8 @@ const buildVariant = (
     quoteDiscount,
   )
   const hasRows = normalized.length > 0
-  const apiTotal =
-    extras?.total != null && Number.isFinite(Number(extras.total))
-      ? Number(extras.total)
-      : null
-  // Prefer a real API/form total; ignore 0 so copied rows still show recomputed $.
-  const total = hasRows
-    ? apiTotal != null && apiTotal > 0
-      ? apiTotal
-      : totals.total
-    : 0
+  // Worked out from the lines: a saved Total can omit freight or repeat Quote 1's total.
+  const total = hasRows ? totals.total : 0
   return {
     columns,
     description: meta.description,
@@ -350,7 +342,8 @@ export const extractQuoteVariants = (args: {
     if (Number.isFinite(Number(fromForm))) return Number(fromForm)
     const fromResult = resolveVariantScalarFromResult(result, id, 'freight')
     if (fromResult != null) return fromResult
-    return id === 'main' ? defaultFreight : 0
+    // A variant only carries the fields that differ from Quote 1.
+    return defaultFreight
   }
 
   const discountFor = (id: QuoteVariantId) => {
