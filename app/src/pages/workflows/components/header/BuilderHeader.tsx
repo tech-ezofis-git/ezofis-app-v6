@@ -10,6 +10,7 @@ import showToast from '@/components/base/toast/showToast'
 import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import useWorkflowStore from '../../stores/useWorkflowStore'
+import { validateBusinessHours } from '../../utils/businessHours'
 import { validateDataSync } from '../../utils/dataIntegrationMapping'
 import { exportWorkflow } from '../../utils/exportWorkflow'
 import { getNodeToolType, NODE_TOOL_TYPE } from '../../utils/nodeToolTypes'
@@ -75,6 +76,20 @@ const BuilderHeader = () => {
       showToast({
         message: syncErrors[0],
         toastTitle: 'Data Integration',
+        variant: 'default',
+      })
+      return
+    }
+
+    // Business hours (workflow settings) must be a valid schedule.
+    const hoursError = Object.values(
+      validateBusinessHours(state.businessHours),
+    )[0]
+    if (hoursError) {
+      state.openSettings()
+      showToast({
+        message: `Business Hours: ${hoursError}`,
+        toastTitle: 'SLA',
         variant: 'default',
       })
       return

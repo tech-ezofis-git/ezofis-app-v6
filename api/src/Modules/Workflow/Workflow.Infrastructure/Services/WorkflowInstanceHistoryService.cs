@@ -1,5 +1,6 @@
 using Npgsql;
 using SaaSApp.Workflow.Application.Contracts;
+using SaaSApp.Workflow.Application.Workflows;
 using SaaSApp.Workflow.Domain.Enums;
 
 namespace SaaSApp.Workflow.Infrastructure.Services;
@@ -98,7 +99,13 @@ public sealed class WorkflowInstanceHistoryService : IWorkflowInstanceHistorySer
         string title;
         string? description;
 
-        if (string.Equals(tx.StageType, EndStageType, StringComparison.OrdinalIgnoreCase))
+        if (WorkflowStepTransitionHelper.IsReinitiateReview(tx.Review))
+        {
+            action = "submit";
+            title = "Re-initiated";
+            description = "Request sent back through the workflow";
+        }
+        else if (string.Equals(tx.StageType, EndStageType, StringComparison.OrdinalIgnoreCase))
         {
             action = "complete";
             title = "Completed";
@@ -211,6 +218,9 @@ public sealed class WorkflowInstanceHistoryService : IWorkflowInstanceHistorySer
 
     private static string ResolveMilestone(TransactionHistoryRow tx, string action, int sequence)
     {
+        if (WorkflowStepTransitionHelper.IsReinitiateReview(tx.Review))
+            return "reinitiated";
+
         if (string.Equals(tx.StageType, EndStageType, StringComparison.OrdinalIgnoreCase) || action == "complete")
             return "completed";
 

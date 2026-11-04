@@ -2,6 +2,13 @@ import { queryOptions } from '@tanstack/react-query'
 import type { Question } from '@/pages/form-builder/store/formStore'
 import formApi from './form'
 
+interface FormListRow {
+  id: string
+  name?: string
+  publishOption?: string
+  type?: string
+}
+
 export const formQueries = {
   all: () => ['forms'] as const,
   detail: (id: string) => [...formQueries.all(), 'detail', id] as const,
@@ -176,6 +183,42 @@ export const getPublishedFormsByType = (
     },
   })
 }
+
+/**
+ * Published forms of type SLA. Filtered here because POST /form/all does not
+ * filter by type: it returns every form whatever type is asked for.
+ */
+export const getSlaFormsQueryOptions = () =>
+  queryOptions({
+    queryKey: [...formQueries.all(), 'sla-forms'] as const,
+    queryFn: async () => {
+      const { data, error } = await formApi.getForms({
+        currentPage: 1,
+        filterBy: [],
+        groupBy: '',
+        hasSecurity: false,
+        itemsPerPage: 500,
+        mode: 'BROWSE',
+        sortBy: { criteria: '', order: 'DESC' },
+      })
+      if (error) throw new Error(error)
+
+      const groups: { value?: FormListRow[] }[] = data?.data ?? []
+      return groups
+        .flatMap((group) => group.value ?? [])
+        .filter(
+          (form) =>
+            String(form.type ?? '').toUpperCase() === 'SLA' &&
+            String(form.publishOption ?? '').toUpperCase() === 'PUBLISHED',
+        )
+        .map((form) => ({
+          formId: form.id,
+          id: form.id,
+          name: form.name || 'Untitled Form',
+          uid: form.id,
+        }))
+    },
+  })
 
 export const getWorkflowFormsQueryOptions = () =>
   getPublishedFormsByType('WORKFLOW')

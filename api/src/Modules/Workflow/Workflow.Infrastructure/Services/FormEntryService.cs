@@ -336,6 +336,26 @@ public sealed class FormEntryService : IFormEntryService
             : new FormEntryGetResult(FormEntryGetStatus.Found, entries);
     }
 
+    public async Task<IReadOnlyList<FormFieldLabel>> GetFieldLabelsAsync(
+        string formId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(formId))
+            return [];
+
+        var normalizedFormId = FormIdNaming.NormalizeFormId(formId);
+        var connectionString = _tenantContext.ConnectionString
+            ?? throw new InvalidOperationException("Tenant connection string not resolved.");
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        var wFormIdValue = await ResolveWFormIdParameterAsync(normalizedFormId);
+        var controls = await LoadFormControlsAsync(connection, wFormIdValue, cancellationToken);
+        return controls
+            .Select(c => new FormFieldLabel(c.JsonId, c.Name, c.Type, c.ColumnName))
+            .ToList();
+    }
+
     public async Task<FormEntryAllResult> ListEntriesAsync(
         string formId,
         FormEntryAllRequest request,

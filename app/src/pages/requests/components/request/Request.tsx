@@ -32,6 +32,7 @@ import {
   getFieldKeyByLabel,
 } from '@/pages/requests/components/columns/useDynamicColumns'
 import { invalidateRequestLists } from '@/pages/requests/hooks/useAllWorkflowsInbox'
+import { canReinitiateFromBlock } from '@/pages/workflows/utils/reprocess'
 import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
@@ -77,6 +78,7 @@ import {
   type WorkflowStageStep,
 } from '../../utils/workflow.utils'
 import InitiateSubWorkflowButton from '../sub-workflow/InitiateSubWorkflowButton'
+import ReinitiateRequestButton from './components/ReinitiateRequestButton'
 import ParentRequestLink from '../sub-workflow/ParentRequestLink'
 import SubWorkflowRequest from '../sub-workflow/SubWorkflowRequest'
 import {
@@ -1160,6 +1162,8 @@ const normalizeAssigneeEmail = (value: unknown) => {
   return (angled?.[1] || raw).trim()
 }
 
+const REINITIATE_ACTION = 'Re-initiate'
+
 const Request = ({
   hideActions,
   isFourthItem,
@@ -2162,6 +2166,15 @@ const Request = ({
     )
     return String(block?.type || '').toUpperCase() === 'END'
   }, [currentActivityId, workflowGraph])
+  // Only on the End block the request finished on, when its setting is on.
+  const canReinitiate = useMemo(() => {
+    if (hideActions || !currentActivityId) return false
+    return canReinitiateFromBlock(
+      (workflowGraph.blocks || []).find(
+        (b: any) => String(b?.id) === String(currentActivityId),
+      ),
+    )
+  }, [currentActivityId, hideActions, workflowGraph])
 
   // Workflow Initiator on the current step: "Initiate - <child>" opens the
   // child's new-request form in place of this request and links the result.
@@ -2863,6 +2876,50 @@ const Request = ({
     }
   }
 
+  // No form data moves here, and the form is read-only on a finished request,
+  // so there is nothing for validateBeforeAction to check or the user to fix.
+  const handleReinitiate = async () => {
+    const instanceId =
+      selectedItem?.workflowInstanceId || request?.workflowInstanceId
+    if (!instanceId || !currentActivityId) return
+
+    setActiveAction(REINITIATE_ACTION)
+    setSubmitting(true)
+    try {
+      const response = await workflowsApiV6.reinitiate(
+        instanceId,
+        String(currentActivityId),
+      )
+      if (response.error) {
+        showToast({
+          message: t`Failed to re-initiate request: ${response.error}`,
+          variant: 'error',
+        })
+        return
+      }
+
+      showToast({
+        message: t`Request ${resolvedRequestNo} re-initiated successfully`,
+        variant: 'success',
+      })
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({
+        queryKey: [
+          'request-detail',
+          resolvedWorkflowId,
+          selectedItem?.processId,
+          selectedItem?.transactionId,
+        ],
+      })
+      invalidateRequestLists(queryClient)
+      workflowRefresh()
+      closeRequest()
+    } finally {
+      setSubmitting(false)
+      setActiveAction(null)
+    }
+  }
+
   const handleVerifier = async (action: string) => {
     setActiveAction(action)
     if (action === 'Forward' && !(window as any)._selectedForwardUserId) {
@@ -3448,12 +3505,23 @@ const Request = ({
               : selectedItem?.commentsCount || 0
           }
           extraActions={
-            subWorkflow.canInitiate ? (
-              <InitiateSubWorkflowButton
-                childName={subWorkflow.childName}
-                disabled={submitting}
-                onClick={() => setIsInitiatingSubWorkflow(true)}
-              />
+            canReinitiate || subWorkflow.canInitiate ? (
+              <>
+                {canReinitiate && (
+                  <ReinitiateRequestButton
+                    disabled={submitting}
+                    loading={submitting && activeAction === REINITIATE_ACTION}
+                    onClick={handleReinitiate}
+                  />
+                )}
+                {subWorkflow.canInitiate && (
+                  <InitiateSubWorkflowButton
+                    childName={subWorkflow.childName}
+                    disabled={submitting}
+                    onClick={() => setIsInitiatingSubWorkflow(true)}
+                  />
+                )}
+              </>
             ) : null
           }
           lastActionAt={

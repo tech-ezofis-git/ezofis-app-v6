@@ -445,7 +445,7 @@ export interface Question {
             masterFormId?: string
             parentFieldId?: string
             placeholder?: string
-            predefinedType?: 'FOLDER' | 'USER'
+            predefinedType?: 'FOLDER' | 'GROUP' | 'USER'
             prefixLabel?: string
             qrValue?: boolean
             separateOptionsUsing?: 'COMMA' | 'NEWLINE'
