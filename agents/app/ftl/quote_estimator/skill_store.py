@@ -35,6 +35,17 @@ and programming tool (11). Never take a quantity, door type, size or finish from
 never invent a quantity when an answer is missing, and if the section says the form is NOT FILLED IN price no door
 package at all. Whatever is blank or says OTHER / Custom is a flagged question, not something to fill in.
 
+## Default panel adaptor and the universal door (FTL written rule, F. Lewis, 2026-10-21)
+Quote 1 is the customer's specification, and every SGV2 operator on it is paired with a car-door panel adaptor on the line
+directly below it: line 1 the operator, line 2 its adaptor. When the RFQ or survey does not name the existing car-door OEM or
+hand, the adaptor DEFAULTS to GAL (the most common), the operator's door type (1S / 2T / 2C) and width, and the operator's
+hand (LH when unknown) — for example a 1S 42 in LH operator takes SGV2(1S)_PANEL_ADAPTOR_GAL42_LH (FTL's shorthand
+SGV2(1S)_DP_GAL_42_LH). Do not hold the estimate for it and do not leave it out; the system marks it DEFAULT and keeps the
+quote at REVIEW. Use the OEM the RFQ names when it is GAL, MAC or DOVER. Quote the universal car door in Quote 1 only when
+the specification itself replaces / skins the doors; the universal door that matches the operator (for example
+1S_T1_UNIVERSAL_CAR_DOOR_PANEL - 42 X 84) is otherwise offered on Quote 2, which the system builds — never put both an
+adaptor and a universal door on the same opening.
+
 ## Non-goals
 - Do not decide whether FTL should pursue this RFQ — assume it's already qualified. Your job
   starts after that decision, not before it.
@@ -290,7 +301,7 @@ one — this has happened repeatedly across real test runs, always the same way:
 product_code was short, hyphenated (or bare), and had NO underscore, because it came from the TYPE,
 O.E.M., or DESCRIPTION column instead of PRODUCT NAME. Every real correct product code in this
 pricelist has an underscore in it: `SGV2_DOOR_OP_2C42_L`, `SGV2_CLUTCH_G.M.D._L`,
-`WRG_MOTION_GEAR150`, `WG_OL35_GOVERNOR_RC`, `OL35_TENSION_SHEAVE_SWINGARM`, `WS_CSGB_CAR_SAFETIES`,
+`WRG_MOTION_GEAR150`, `WG_OL35_GOVERNOR_RC`, `WG_OL35_TENSION_SHEAVE_SWINGARM`, `WS_CSGB_CAR_SAFETIES`,
 `VISIONPLUS_3D_DETECTOR`, `SGV2_DOOR_TOOLS`. None of the wrong-column values ever have one:
 - `ALL` — that's the O.E.M. column, meaning "fits all OEMs," not a code.
 - `OL35-RC`, `OL35-MT`, `OL35-RE`, `OL35-PIT-IDLER`, `CSGB03-SYNC`, `RG80`...`RG300`, `2T`, `2C`,
@@ -298,7 +309,7 @@ pricelist has an underscore in it: `SGV2_DOOR_OP_2C42_L`, `SGV2_CLUTCH_G.M.D._L`
   though they look plausible. A real governor line's TYPE is `OL35-RC` but its product_code must be
   `WG_OL35_GOVERNOR_RC`; a real safety line's TYPE is `CSGB03-SYNC` but its product_code must be
   `WS_CSGB_CAR_SAFETIES`; a real tension-sheave line's TYPE is `OL35-PIT-IDLER` but its product_code
-  must be `OL35_TENSION_SHEAVE_SWINGARM` — verified against real invoices for exactly these items.
+  must be `WG_OL35_TENSION_SHEAVE_SWINGARM` — verified against real invoices for exactly these items.
 - `FZU-1442US01` — that's an OEM/manufacturer reference number embedded in the DESCRIPTION column
   text (e.g. "FZU-1442US01 -3D_LIGHT_CURTAIN"), not FTL's own product code, which is the separate
   PRODUCT NAME column value `VISIONPLUS_3D_DETECTOR`.
@@ -577,7 +588,7 @@ almost every RFQ FTL receives, not a sign the information is missing.
                 "most expensive and is also NOT the default — only pick it when the spec "
                 "specifically calls for encoder-based feedback. Ambiguous/unstated governor type "
                 "→ OL35-RC, flagged with needs_engineering_review. The swingarm tension weight/"
-                "sheave assembly (OL35-PIT-IDLER / OL35_TENSION_SHEAVE_SWINGARM) is NOT a default "
+                "sheave assembly (OL35-PIT-IDLER / WG_OL35_TENSION_SHEAVE_SWINGARM) is NOT a default "
                 "add-on for every governor line — CORRECTION: an earlier version of this note said "
                 "to add it 'when the governor spec calls for it,' which was read far too liberally "
                 "in practice. A real, client-confirmed quote (EST-261132) explicitly named this "

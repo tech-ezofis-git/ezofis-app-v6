@@ -111,8 +111,13 @@ def test_82_lorne_replay():
     ]
     assert [(i["qty"], i["unit_price"]) for i in _by_cat(out, "door_tools")] == [(1, 698.5)]
     assert not _by_cat(out, "car_door_panel") and out["car_door_decision"]["decision"] == "retain"
-    assert not _by_cat(out, "panel_adaptor") and any(
-        h["item"] == "Car door panel adaptor" and "NOT SELECTED" in h["reason"] for h in out["held_items"]
+    adaptors = _by_cat(out, "panel_adaptor")
+    assert [(i["product_code"], i["qty"]) for i in adaptors] == [("SGV2(1S)_PANEL_ADAPTOR_GAL42_LH", 1)]
+    assert "DEFAULT adaptor" in adaptors[0]["note"]
+    assert [i["category"] for i in out["line_items"]][:2] == ["door_operator", "panel_adaptor"]
+    assert any(
+        h["item"] == qc.DEFAULT_ADAPTOR_HOLD_ITEM and h["level"] == "REVIEW" and "NOT SELECTED" in h["reason"]
+        for h in out["held_items"]
     )
     assert ops[0]["origin"] == "SPEC" and "survey config #1" in ops[0]["note"]
     items = {h["item"] for h in out["held_items"]}
@@ -123,9 +128,15 @@ def test_82_lorne_replay():
         "Project address mismatch",
     } <= items
     assert out["freight_estimate"] == 0 and out["freight_basis"]["mode"] == "manual" and "Freight" in items
-    assert out["release_status"].startswith("HOLD")
+    assert out["release_status"].startswith("REVIEW")
     variants = qv.derive_variants(out, text)
-    assert [v["status"] for v in variants] == [qv.STATUS_NO_RECOMMENDED, qv.STATUS_NO_THIRD]
+    assert [v["status"] for v in variants] == [qv.STATUS_GENERATED, qv.STATUS_NO_THIRD]
+    quote_2 = variants[0]["result"]["line_items"]
+    assert [(i["product_code"], i["qty"]) for i in quote_2 if i["category"] == "car_door_panel"] == [
+        ("1S_T1_UNIVERSAL_CAR_DOOR_PANEL - 42 X 84", 1)
+    ]
+    assert not any(i["category"] == "panel_adaptor" for i in quote_2)
+    assert sum(1 for i in quote_2 if i["category"] == "door_protective_device") == 1
     again = agent.postprocess_quote(copy.deepcopy(out), text)
     assert [(i["product_code"], i["qty"]) for i in again["line_items"]] == [
         (i["product_code"], i["qty"]) for i in out["line_items"]
