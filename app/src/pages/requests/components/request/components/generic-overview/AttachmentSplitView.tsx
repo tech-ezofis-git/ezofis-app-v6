@@ -8,6 +8,7 @@ import folderApi from '@/pages/folders/api/folderApi'
 import { getFileExtension } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
 import {
+  applyDateFieldDefaults,
   applyFilenamePreFill,
   getMissingIndexingFields,
   type RepositoryFieldSchema,
@@ -55,7 +56,10 @@ const seedIndexingValues = (
       metadata?.[field.sqlColumnName] || metadata?.[field.name] || '',
     ).trim()
   }
-  return applyFilenamePreFill(next, folderFields, fileName)
+  return applyDateFieldDefaults(
+    applyFilenamePreFill(next, folderFields, fileName),
+    folderFields,
+  )
 }
 
 // Full-screen document workspace for a generic request's attachments: file
