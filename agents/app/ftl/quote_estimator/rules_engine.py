@@ -36,6 +36,16 @@ def _load(name: str) -> List[Dict[str, Any]]:
         return json.load(f)
 
 
+def _load_optional(name: str, default: Any) -> Any:
+    """Tables FTL added in workbook v1.1 (Pricing Control, 3 Quote Logic, inFlow snapshot, version
+    metadata). Optional so an older copy of the rulebook still loads."""
+    path = os.path.join(DATA_DIR, name)
+    if not os.path.exists(path):
+        return default
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 PRODUCT_MASTER: List[Dict[str, Any]] = _load("product_master.json")
 DECISION_RULES: List[Dict[str, Any]] = _load("decision_rules.json")
 REQUIRED_INPUTS: List[Dict[str, Any]] = _load("required_inputs.json")
@@ -44,6 +54,10 @@ REVIEW_TRIGGERS: List[Dict[str, Any]] = _load("review_triggers.json")
 CONFLICTS: List[Dict[str, Any]] = _load("conflicts.json")
 TRAINING_EXAMPLES: List[Dict[str, Any]] = _load("training_examples.json")
 SOURCE_REGISTER: List[Dict[str, Any]] = _load("source_register.json")
+PRICING_CONTROL: List[Dict[str, Any]] = _load_optional("pricing_control.json", [])
+QUOTE_LOGIC: List[Dict[str, Any]] = _load_optional("quote_logic.json", [])
+INFLOW_SNAPSHOT: Dict[str, Any] = _load_optional("inflow_snapshot.json", {})
+RULEBOOK_META: Dict[str, Any] = _load_optional("rulebook_meta.json", {})
 
 # Price book overlay — FTL's Contractor Price Book (.docx) layered on the Stage 2 Product Master.
 # product_master.json goes stale when FTL publishes a new price list; the overlay is generated from
@@ -72,7 +86,20 @@ def rulebook_status() -> Dict[str, int]:
         "training_examples": len(TRAINING_EXAMPLES),
         "source_register": len(SOURCE_REGISTER),
         "price_book_rows": len(PRICE_BOOK.get("rows") or []),
+        "pricing_control": len(PRICING_CONTROL),
+        "quote_logic": len(QUOTE_LOGIC),
+        "inflow_items": len(INFLOW_SNAPSHOT.get("items") or []),
     }
+
+
+def rulebook_version() -> str:
+    """e.g. 'v1.1 (2026-10-16)' — stamped on every quote so a reviewer can see which rulebook
+    revision produced it."""
+    version = RULEBOOK_META.get("version")
+    date = RULEBOOK_META.get("date")
+    if version and date:
+        return f"v{version} ({date})"
+    return f"v{version}" if version else "unversioned"
 
 
 _ALIAS_TO_CANONICAL: Dict[str, str] = {}
@@ -153,6 +180,84 @@ def _apply_price_book() -> None:
 
 _apply_price_book()
 
+# inFlow layer — FTL v1.1 (2026-10-16): live inFlow pricing is the commercial authority; workbook and
+# price-book prices are snapshots. inflow_snapshot.json is a dated copy of the inFlow product list, so
+# it sits ABOVE both the Product Master and the price book. A product with no exact inFlow record keeps
+# its price-book / Product Master price and is labelled as such (price_source).
+INFLOW_SOURCE_LABEL = f"inFlow snapshot {INFLOW_SNAPSHOT.get('snapshot_date') or 'undated'}"
+PRICE_BOOK_SOURCE_LABEL = f"FTL Contractor Price Book {PRICE_BOOK.get('revision') or ''}".strip()
+MASTER_SOURCE_LABEL = f"Stage 2 Product Master {rulebook_version()}"
+
+_INFLOW_BY_NAME: Dict[str, Dict[str, Any]] = {
+    (item.get("product_name") or "").strip(): item
+    for item in (INFLOW_SNAPSHOT.get("items") or [])
+    if item.get("product_name")
+}
+# Product Master codes whose inFlow ProductName is spelled differently and not given in the sheet.
+_INFLOW_NAME_FALLBACKS = {
+    "WRG_MOTION_GEAR80": "WRG80_CAR",
+    "WRG_MOTION_GEAR100": "WRG100_CAR",
+    "WRG_MOTION_GEAR125": "WRG125_CAR",
+    "WRG_MOTION_GEAR150": "WRG150_CAR",
+    "WRG_MOTION_GEAR200": "WRG200_CAR",
+    "WRG_MOTION_GEAR300": "WRG300_CAR",
+    # inFlow records the remote-control / remote+encoder OL35 as _LH; the unhanded Product Master
+    # row prices identically (hand stays unconfirmed — I-007 — this is a PRICE lookup only).
+    "WG_OL35_GOVERNOR_RC": "WG_OL35_GOVERNOR_RC_LH",
+    "WG_OL35_GOVERNOR_RE": "WG_OL35_GOVERNOR_RE_LH",
+}
+
+
+def inflow_item_for(code: str, row: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    """The inFlow snapshot record for a Product Master code, or None. Exact-name matching only (plus
+    the documented fallbacks above) — never fuzzy."""
+    if not code:
+        return None
+    candidates = [code]
+    if row:
+        if row.get("inflow_product_name"):
+            candidates.insert(0, str(row["inflow_product_name"]).strip())
+        candidates.extend(row.get("aliases") or [])
+    if code in _INFLOW_NAME_FALLBACKS:
+        candidates.append(_INFLOW_NAME_FALLBACKS[code])
+    for candidate in candidates:
+        hit = _INFLOW_BY_NAME.get(str(candidate).strip())
+        if hit:
+            return hit
+    return None
+
+
+def _apply_inflow_snapshot() -> None:
+    if not _INFLOW_BY_NAME:
+        return
+    for i, product in enumerate(PRODUCT_MASTER):
+        item = inflow_item_for(product.get("ftl_product_code"), product)
+        new = dict(product)
+        if item and item.get("price_cad") is not None and item.get("active", True):
+            old_price = product.get("price_cad")
+            if old_price is not None and abs(float(old_price) - float(item["price_cad"])) > 0.005:
+                new["price_before_inflow_cad"] = old_price
+            new["price_cad"] = float(item["price_cad"])
+            new["price_source"] = INFLOW_SOURCE_LABEL
+            new["price_source_kind"] = "inflow"
+            new["inflow_sku"] = item.get("sku") or product.get("inflow_sku")
+            new["inflow_product_name"] = item.get("product_name")
+            new["inflow_item_type"] = item.get("item_type")
+        else:
+            is_book = (product.get("source") or "").startswith("FTL Contractor Price Book")
+            new["price_source"] = PRICE_BOOK_SOURCE_LABEL if is_book else MASTER_SOURCE_LABEL
+            new["price_source_kind"] = "price_book" if is_book else "master"
+        PRODUCT_MASTER[i] = new
+
+
+_apply_inflow_snapshot()
+
+
+def price_source_for(code: str) -> Optional[str]:
+    row = product_master_row(code)
+    return row.get("price_source") if row else None
+
+
 _CONFLICTS_BY_ID: Dict[str, Dict[str, Any]] = {c["issue_id"]: c for c in CONFLICTS if c.get("issue_id")}
 _TRIGGERS_BY_ID: Dict[str, Dict[str, Any]] = {t["trigger_id"]: t for t in REVIEW_TRIGGERS if t.get("trigger_id")}
 _RULES_BY_ID: Dict[str, Dict[str, Any]] = {r["rule_id"]: r for r in DECISION_RULES if r.get("rule_id")}
@@ -161,9 +266,27 @@ _PRODUCT_BY_CODE: Dict[str, Dict[str, Any]] = {
 }
 
 
+# Codes FTL renamed or merged in workbook v1.1. Exact-match only, like the price-book aliases.
+_ALIAS_TO_CANONICAL.update(
+    {
+        "OL35_TENSION_SHEAVE_SWINGARM": "WG_OL35_TENSION_SHEAVE_SWINGARM",
+        "WG_OL100_GOVERNOR_RE_LH/RH": "WG_OL100_GOVERNOR_RE_LH",
+    }
+)
+
+
 def canonical_code(code: str) -> str:
-    """Current price-book code when `code` is an old spelling the price book renamed; otherwise unchanged."""
-    return _ALIAS_TO_CANONICAL.get(code, code)
+    """Current code when `code` is an old spelling the price book or workbook v1.1 renamed. A universal
+    car door panel given by its long legacy price-list string becomes its Product Master code.
+    Otherwise `code` unchanged. Exact-match only — never fuzzy."""
+    hit = _ALIAS_TO_CANONICAL.get(code)
+    if hit:
+        return hit
+    if isinstance(code, str) and "UNIVERSAL_CAR_DOOR" in code:
+        row = universal_panel_row_from_text(code)
+        if row:
+            return row["ftl_product_code"]
+    return code
 
 
 def all_known_codes() -> set:
@@ -219,14 +342,20 @@ def product_master_row(code: str) -> Optional[Dict[str, Any]]:
 
 
 def governor_tension_companion(size: str) -> Optional[Dict[str, Any]]:
-    """size: '35' or '100'. Returns the REQUIRED COMPANION product-master row for that governor
-    family (OL35_TENSION_SHEAVE_SWINGARM / TBD_OL100_TENSION_ASSEMBLY) — the mandatory tension
-    assembly every OL governor requires per the Aug 2026 JR/Francine controlling rule (S-029),
-    regardless of what any survey/reuse option elsewhere says."""
+    """size: '35' or '100'. Returns the tension/swingarm product-master row for that governor
+    family (WG_OL35_TENSION_SHEAVE_SWINGARM / TBD_OL100_TENSION_ASSEMBLY) — the separate tension
+    line every OL governor requires (GOV-003, Aug 2026 JR/Francine rule, reaffirmed in v1.1).
+    OL35's row is a REQUIRED COMPANION; OL100's is HOLD in v1.1 (I-006: no canonical inFlow SKU
+    yet) — it is still returned so the estimate carries the line, flagged for review rather than
+    silently dropped."""
     for p in PRODUCT_MASTER:
-        if p.get("family") != "Governors" or p.get("automation_status") != "REQUIRED COMPANION":
+        if p.get("family") != "Governors":
             continue
         code = (p.get("ftl_product_code") or "").upper()
+        if "TENSION" not in code and "SWINGARM" not in code:
+            continue
+        if p.get("automation_status") not in ("REQUIRED COMPANION", "HOLD"):
+            continue
         if size == "35" and "OL35" in code:
             return p
         if size == "100" and "OL100" in code:
@@ -263,14 +392,6 @@ def detector_power_supply_row() -> Optional[Dict[str, Any]]:
 
 def universal_door_panel_rows() -> List[Dict[str, Any]]:
     return [p for p in PRODUCT_MASTER if "Universal Car Door" in (p.get("type") or "")]
-
-
-INFLOW_SOURCE_LABEL = "inFlow live selling price (rulebook snapshot)"
-MASTER_SOURCE_LABEL = "Stage 2 Product Master"
-
-
-def rulebook_version() -> str:
-    return str((PRICE_BOOK.get("version") if isinstance(PRICE_BOOK, dict) else None) or "1.0")
 
 
 def universal_panel_row(door_type: str, width: Any) -> Optional[Dict[str, Any]]:

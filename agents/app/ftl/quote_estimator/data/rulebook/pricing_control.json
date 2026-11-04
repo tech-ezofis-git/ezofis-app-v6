@@ -1,0 +1,58 @@
+[
+  {
+    "control": "Live price source",
+    "required_rule": "Live inFlow item record",
+    "agent_behaviour": "Retrieve exact current price; do not copy a historical quote or workbook snapshot",
+    "release_gate": "Exact active inFlow product/SKU verified",
+    "owner": "Estimator",
+    "status": "REQUIRED"
+  },
+  {
+    "control": "Workbook price",
+    "required_rule": "Reference snapshot only",
+    "agent_behaviour": "May support regression testing; never treated as locked price",
+    "release_gate": "Compare against inFlow",
+    "owner": "Knowledge-base owner",
+    "status": "VERIFY"
+  },
+  {
+    "control": "Catalogue coverage",
+    "required_rule": "Approved Stage 2 subset only",
+    "agent_behaviour": "Do not assume all FTL products are included",
+    "release_gate": "Exact approved row exists",
+    "owner": "Product owner",
+    "status": "CONTROLLED"
+  },
+  {
+    "control": "Price conflict",
+    "required_rule": "inFlow overrides workbook snapshot",
+    "agent_behaviour": "Flag difference and use approved live value",
+    "release_gate": "Conflict documented",
+    "owner": "Estimator",
+    "status": "REVIEW"
+  },
+  {
+    "control": "Customer discount",
+    "required_rule": "Manual estimator approval only",
+    "agent_behaviour": "Never infer or apply a discount automatically from customer history, prior quotes, or catalogue bundle percentages",
+    "release_gate": "Approval recorded",
+    "owner": "Estimator",
+    "status": "MANUAL"
+  },
+  {
+    "control": "Missing price/SKU",
+    "required_rule": "No automatic quote line",
+    "agent_behaviour": "Block and request review",
+    "release_gate": "Resolved before release",
+    "owner": "Estimator",
+    "status": "HOLD"
+  },
+  {
+    "control": "Freight - single SGV2",
+    "required_rule": "GTA $375; approx. <=150 km outside downtown Toronto $450; beyond/larger projects manual",
+    "agent_behaviour": "Apply only when shipment class/location meet the controlled rule",
+    "release_gate": "Ship-to + shipment class confirmed",
+    "owner": "Estimator",
+    "status": "CONTROLLED"
+  }
+]

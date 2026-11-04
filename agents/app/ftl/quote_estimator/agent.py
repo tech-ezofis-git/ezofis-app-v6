@@ -1272,7 +1272,7 @@ def _enforce_governor_tension_companions(quote: Dict[str, Any]) -> Dict[str, Any
     for it in line_items:
         if it.get("category") != "governor":
             continue
-        code = str(it.get("product_code") or "")
+        code = rules_engine.canonical_code(str(it.get("product_code") or ""))
         if code in known_companion_codes:
             continue
         m = _GOVERNOR_SIZE_RE.search(code)
@@ -1305,11 +1305,15 @@ def _enforce_governor_tension_companions(quote: Dict[str, Any]) -> Dict[str, Any
             )
             continue
         companion_code = companion_row["ftl_product_code"]
-        existing = [it for it in working_items if it.get("product_code") == companion_code]
+        existing = [
+            it for it in working_items if rules_engine.canonical_code(str(it.get("product_code") or "")) == companion_code
+        ]
         existing_qty = sum(float(it.get("qty") or 0) for it in existing)
         if existing and existing_qty == expected_qty and all(it.get("category") == "governor" for it in existing):
             continue
-        working_items = [it for it in working_items if it.get("product_code") != companion_code]
+        working_items = [
+            it for it in working_items if rules_engine.canonical_code(str(it.get("product_code") or "")) != companion_code
+        ]
         working_items.append(
             {
                 "product_code": companion_code,
@@ -2703,8 +2707,13 @@ def _enforce_car_door_panel_presence(quote: Dict[str, Any]) -> Dict[str, Any]:
         panel_rows = {(p["door_type"], p["width"]): p for p in car_door_panel_prices()}
     except Exception:
         panel_rows = {}
-    canonical_codes = {row["code"] for row in panel_rows.values()}
+    # Both spellings count as recognised: the legacy price-list string and the Product Master code
+    # that _canonicalize_product_codes rewrites it to.
+    canonical_codes = {row["code"] for row in panel_rows.values()} | {
+        rules_engine.canonical_code(row["code"]) for row in panel_rows.values()
+    }
     code_to_type_width = {row["code"]: key for key, row in panel_rows.items()}
+    code_to_type_width.update({rules_engine.canonical_code(row["code"]): key for key, row in panel_rows.items()})
 
     if panel_idxs:
         if has_adaptor or not panel_rows:
