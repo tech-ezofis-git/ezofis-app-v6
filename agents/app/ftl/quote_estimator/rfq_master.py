@@ -3,9 +3,11 @@
 The estimator often only has a signature fragment or a jobsite street. After the
 quote is built from the EML, we look up ``dbo.ezfb_7737f3f4_items`` (form name
 "RFQ Master") by email, company name, or the fetched address. A matching row
-overlays the two address fields. No row — or an empty master address — keeps the
-EML values. Contact, phone and email belong to a person, so they only fill blanks,
-and only from an exact email or company match.
+overlays Billing Address. Shipping Address is job-specific, so it always stays as
+the RFQ states it. No row — or an empty master address — keeps the EML value, and a
+clean lookup that finds nobody marks the quote so the API can add the client. Contact,
+phone and email belong to a person, so they only fill blanks, and only from an exact
+email or company match.
 """
 
 from __future__ import annotations
@@ -100,6 +102,7 @@ PHONE_ALIASES = (
     "Telephone",
 )
 # Everyone on these shares a domain, so a domain match says nothing about the client.
+_PLACEHOLDER_RE = re.compile(r"\b(e\.g\.|tbd|n/?a|unknown|not stated|jobsite from)\b", re.I)
 _FREE_MAIL_DOMAINS = frozenset(
     {
         "gmail.com",
@@ -380,9 +383,21 @@ def pick_master_row(
     candidate_text: str = "",
     email_meta: Optional[dict[str, Any]] = None,
 ) -> Optional[dict[str, Any]]:
+    best, tied = _rank_master_rows(rows, quote, candidate_text, email_meta)
+    # Two different clients match equally well: choosing one could bill the wrong client.
+    return None if tied else best
+
+
+def _rank_master_rows(
+    rows: list[dict[str, Any]],
+    quote: dict[str, Any],
+    candidate_text: str = "",
+    email_meta: Optional[dict[str, Any]] = None,
+) -> tuple[Optional[dict[str, Any]], bool]:
+    """(best row, whether a different client scored the same)."""
     keys = lookup_keys(quote, candidate_text, email_meta)
     if not (keys["emails"] or keys["company"] or keys["billing"] or keys["shipping"] or keys["text"]):
-        return None
+        return None, False
     best: Optional[dict[str, Any]] = None
     best_score = 0
     tied = False
@@ -395,8 +410,7 @@ def pick_master_row(
             best, best_score, tied = flat, score, False
         elif score == best_score and score > 0 and _client_details(flat) != _client_details(best or {}):
             tied = True
-    # Two different clients match equally well: choosing one could bill the wrong client.
-    return best if best_score > 0 and not tied else None
+    return (best if best_score > 0 else None), tied
 
 
 def _client_details(row: dict[str, Any]) -> tuple[str, ...]:
@@ -449,31 +463,30 @@ def overlay_master_addresses(
     rows: list[dict[str, Any]],
     candidate_text: str = "",
     email_meta: Optional[dict[str, Any]] = None,
+    *,
+    lookup_ok: bool = False,
 ) -> dict[str, Any]:
-    """Write Billing/Shipping from a matched RFQ Master row; otherwise keep EML values."""
+    """Write Billing Address from a matched RFQ Master row; otherwise keep the EML value."""
     out = dict(quote)
-    row = pick_master_row(rows, out, candidate_text, email_meta)
-    if not row:
+    row, tied = _rank_master_rows(rows, out, candidate_text, email_meta)
+    if not row or tied:
+        if lookup_ok and not tied:
+            out["rfq_master_no_match"] = True
         return _with_address_source_tags(out)
     keys = lookup_keys(out, candidate_text, email_meta)
     contact_filled = _is_exact_match(row, keys) and _fill_blank_contact_details(out, row)
     billing = master_field(row, BILLING_ALIASES)
-    shipping = master_field(row, SHIPPING_ALIASES)
-    billing_from_master = bool(billing)
-    shipping_from_master = bool(shipping)
+    # A placeholder saved in the master must never reach a quote.
+    billing_from_master = bool(billing) and not _PLACEHOLDER_RE.search(billing)
     if billing_from_master:
         out["billing_address"] = billing
         if "Billing Address" in out:
             out["Billing Address"] = billing
-    if shipping_from_master:
-        out["shipping_address"] = shipping
-        if "Shipping Address" in out:
-            out["Shipping Address"] = shipping
-    if billing_from_master or shipping_from_master or contact_filled:
+    if billing_from_master or contact_filled:
         notes = list(out.get("assumptions") or [])
         filled_notes = []
-        if billing_from_master or shipping_from_master:
-            filled_notes.append("ℹ Billing / Shipping Address filled from RFQ Master.")
+        if billing_from_master:
+            filled_notes.append("ℹ Billing Address filled from RFQ Master.")
         if contact_filled:
             filled_notes.append("ℹ Missing contact details filled from RFQ Master.")
         notes.extend(note for note in filled_notes if note not in notes)
@@ -482,7 +495,6 @@ def overlay_master_addresses(
     return _with_address_source_tags(
         out,
         billing_from_master=billing_from_master,
-        shipping_from_master=shipping_from_master,
     )
 
 
@@ -648,7 +660,7 @@ async def apply_rfq_master_addresses(
     catalog_store: Any = None,
     rows: Optional[list[dict[str, Any]]] = None,
 ) -> dict[str, Any]:
-    """Overlay RFQ Master bill/ship onto quote_result. Keep EML values when unmatched."""
+    """Overlay RFQ Master Bill To onto quote_result. Keep the EML value when unmatched."""
     if not isinstance(quote, dict):
         return quote
     try:
@@ -661,10 +673,12 @@ async def apply_rfq_master_addresses(
             )
             if db is None:
                 return overlay_master_addresses(quote, [], candidate_text, email_meta)
+            if await _locate_table(db) is None:
+                return overlay_master_addresses(quote, [], candidate_text, email_meta)
             master_rows = await fetch_rfq_master_rows(
                 db, quote, candidate_text, email_meta
             )
-        return overlay_master_addresses(quote, master_rows, candidate_text, email_meta)
+        return overlay_master_addresses(quote, master_rows, candidate_text, email_meta, lookup_ok=True)
     except Exception as exc:
         logger.warning(
             "ftl_rfq_master_lookup_failed",
