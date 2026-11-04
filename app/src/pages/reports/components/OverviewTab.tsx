@@ -1,7 +1,14 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { animate, motion, useReducedMotion } from 'motion/react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import type { ReportSpec } from '@/api/v6/reportAgent'
 import type { Row } from '@/components/base/data-table/types'
 import type {
@@ -158,6 +165,25 @@ const toTableRow = (row: Record<string, string>, index: number) => ({
 const toLocalDay = (value: string) => {
   const date = parseUtcDate(value)
   return date ? dayjs(date).format('YYYY-MM-DD') : value
+}
+
+/** Counts up from 0 to `value` when shown (the pop-up's total). */
+const CountUp = ({ value }: { value: number }) => {
+  const reduceMotion = useReducedMotion()
+  const [shown, setShown] = useState(reduceMotion ? value : 0)
+  useEffect(() => {
+    if (reduceMotion) {
+      setShown(value)
+      return
+    }
+    const controls = animate(0, value, {
+      duration: 0.8,
+      ease: 'easeOut',
+      onUpdate: (latest) => setShown(latest),
+    })
+    return () => controls.stop()
+  }, [value, reduceMotion])
+  return <>{formatTotal(Math.round(shown))}</>
 }
 
 const OverviewTab = ({ report, toolbarActions }: Props) => {
@@ -753,6 +779,8 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
   const totalsInToolbar = isDefaultReport && columnTotals.length === 1
   // The toolbar total opens its split (e.g. Credits by Agent) in a pop-up.
   const [showBreakdown, setShowBreakdown] = useState(false)
+  // The pop-up's animations are skipped for users who ask for reduced motion.
+  const reduceMotion = useReducedMotion()
   const canShowBreakdown = Boolean(
     totalsInToolbar && totalsBreakdown && totalsBreakdown.items.length > 0,
   )
@@ -945,7 +973,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                         <p className='mt-0.5 text-13 text-gray-11'>
                           {t`Total ${totalsBreakdown.measure}`}{' '}
                           <span className='font-semibold text-gray-13'>
-                            {formatTotal(columnTotals[0]?.total ?? 0)}
+                            <CountUp value={columnTotals[0]?.total ?? 0} />
                           </span>
                         </p>
                       </div>
@@ -959,11 +987,24 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                       />
                     </div>
                     <ul className='ez-scrollbar mt-4 flex max-h-96 flex-col gap-3 overflow-y-auto pr-1'>
-                      {totalsBreakdown.items.map(({ name, total }) => {
+                      {totalsBreakdown.items.map(({ name, total }, index) => {
                         const grand = columnTotals[0]?.total || 0
                         const share = grand > 0 ? (total / grand) * 100 : 0
+                        // Rows slide in one after another; each bar then grows to its share.
+                        const delay = 0.05 * index
                         return (
-                          <li key={name}>
+                          <motion.li
+                            animate={{ opacity: 1, y: 0 }}
+                            key={name}
+                            initial={
+                              reduceMotion ? false : { opacity: 0, y: 8 }
+                            }
+                            transition={{
+                              delay,
+                              duration: 0.25,
+                              ease: 'easeOut',
+                            }}
+                          >
                             <div className='flex items-center justify-between gap-3 text-13'>
                               <span className='truncate text-gray-12'>
                                 {name}
@@ -976,12 +1017,18 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                               </span>
                             </div>
                             <div className='mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-3'>
-                              <div
+                              <motion.div
+                                animate={{ width: `${Math.max(share, 2)}%` }}
                                 className='h-full rounded-full bg-primary-9'
-                                style={{ width: `${Math.max(share, 2)}%` }}
+                                initial={reduceMotion ? false : { width: 0 }}
+                                transition={{
+                                  delay: delay + 0.15,
+                                  duration: 0.6,
+                                  ease: 'easeOut',
+                                }}
                               />
                             </div>
-                          </li>
+                          </motion.li>
                         )
                       })}
                     </ul>
