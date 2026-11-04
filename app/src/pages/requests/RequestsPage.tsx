@@ -371,6 +371,15 @@ const RequestsPage = () => {
   useEffect(() => {
     if (pendingDeepLink || pendingOpenNewRequest) setShowAllWorkflows(false)
   }, [pendingDeepLink, pendingOpenNewRequest])
+  // Sidebar Workflows icon: always land on the All Workflows inbox.
+  const allWorkflowsSignal = requestStore((s) => s.allWorkflowsSignal)
+  const lastAllWorkflowsSignal = useRef(allWorkflowsSignal)
+  useEffect(() => {
+    if (allWorkflowsSignal === lastAllWorkflowsSignal.current) return
+    lastAllWorkflowsSignal.current = allWorkflowsSignal
+    setShowAllWorkflows(true)
+    setAllWorkflowsChosen(true)
+  }, [allWorkflowsSignal])
   // The topbar title shows the workflow whose list is on screen.
   const listWorkflowName = showAllWorkflows
     ? null
