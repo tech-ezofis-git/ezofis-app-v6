@@ -47,7 +47,7 @@ Other rules from the v1.1 rulebook:
 - **Both agents:** read the "Number of Elevators" clause and openings table as the car count, and list email attachments they could not read.
 - **Estimator:** the $0 line reads `SGV2 Car Door Restriction Function - Included`. OL100 governors and car safeties are held for review.
 
-**Client details (RFQ Master):** only Bill To is shared with RFQ Master. It comes from a matched row; otherwise it comes from the quote, and the API adds the client to RFQ Master when the lookup found nobody. Leaving an edited Bill To on the Agent tab updates that client's row, or adds one. Ship To always comes from the RFQ. Contact, phone and email fill only blank fields, and only on an exact email or company match. If two different clients match equally well, nothing is filled or added. An email written inside the contact name moves to `Email`.
+**Client details (RFQ Master):** Bill To comes from a matched row; otherwise it comes from the quote, and the API adds the client to RFQ Master when the lookup found nobody. Leaving an edited Bill To, Contact, Phone or Email on the Agent tab updates that client's row, or adds one; clicking in and out saves nothing. Company Name and Ship To never change the master, and Ship To always comes from the RFQ. Contact, phone and email fill only blank fields, and only on an exact email or company match. If two different clients match equally well, nothing is filled or added. An email written inside the contact name moves to `Email`.
 
 ## End-to-end flow
 
