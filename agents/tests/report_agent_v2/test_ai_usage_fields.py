@@ -117,12 +117,10 @@ async def test_grouped_prompts_become_one_row_per_request(monkeypatch):
     assert not spec.group_by and not spec.measures
     assert [col.label for col in spec.columns] == ["Request No", "Supplier", "Stage", *AI_DEFAULT_LABELS]
     assert [o.ref for o in spec.order_by] == ["supplier"]  # same supplier rows stay together
-    assert spec.totals
     compiled = compile_spec(spec, c, max_rows=100)
     text = compiled.query.as_string(None)
     assert "GROUP BY" not in text and "STRING_AGG" not in text
-    totals = {col.ref for col in compiled.columns if col.total}
-    assert totals == {"sys.ai_duration", "sys.ai_tokens", "sys.ai_cost", "sys.ai_credits", "sys.ai_runs"}
+    assert not any(col.total for col in compiled.columns)  # no AI Totals row
     assert with_ticket_columns(spec, c) == spec  # idempotent
 
 
