@@ -1,5 +1,4 @@
 import { requestApi } from '@/api/requests/requests'
-import authUserStore from '@/stores/authUserStore'
 import type {
   Id,
   MainProcessDetails,
@@ -7,34 +6,6 @@ import type {
   SubWorkflowHistoryRow,
   SubWorkflowLink,
 } from '../types'
-import { type MockProcess, mockSubWorkflowBackend } from './mock/mockStore'
-
-// The V6 sub-workflow API is not ready yet, so the UI runs on the local mock
-// by default. Set VITE_SUB_WORKFLOW_API=live to call the real endpoints.
-export const isSubWorkflowMock = () =>
-  import.meta.env.VITE_SUB_WORKFLOW_API !== 'live'
-
-/**
- * Display data for a process taking part in a link. The live API derives
- * this server-side; the mock stores it so the Sub Process list can show it.
- */
-export const toLinkedProcessSummary = (process: {
-  processId: Id
-  requestNo?: string | null
-  stage?: string
-  workflowId: Id
-  workflowName?: string
-}): MockProcess => ({
-  flowStatus: 0,
-  lastAction: 'Submit',
-  processId: process.processId,
-  raisedAt: new Date().toISOString(),
-  raisedBy: authUserStore.getState().session?.email,
-  requestNo: process.requestNo || `#${process.processId}`,
-  stage: process.stage,
-  workflowId: process.workflowId,
-  workflowName: process.workflowName || '',
-})
 
 const asArray = (data: unknown): any[] => {
   const parsed = typeof data === 'string' ? safeParse(data) : data
@@ -51,8 +22,7 @@ const safeParse = (value: string) => {
   }
 }
 
-// Live response shapes are unconfirmed (SUBWORKFLOW_PLAN.md §4). These
-// mappers accept the V5 field names (incl. list rows' `subworkflowTransaction`
+// These mappers accept the V5 field names (incl. list rows' `subworkflowTransaction`
 // entries) and fall back gracefully.
 export const toSubProcessRow = (row: any): SubProcessRow => ({
   duration: row.duration ?? row.sublastActionDuration,
@@ -79,19 +49,12 @@ export const subWorkflowApi = {
   /** Registers the parent→child link after the child request is created. */
   linkSubProcess: async (
     link: Omit<SubWorkflowLink, 'review' | 'subProcessStatus'>,
-    mockData?: { child?: MockProcess; parent?: MockProcess },
   ): Promise<SubWorkflowLink> => {
     const payload: SubWorkflowLink = {
       ...link,
       review: '',
       subProcessStatus: 0,
     }
-    if (isSubWorkflowMock())
-      return mockSubWorkflowBackend.link(
-        payload,
-        mockData?.child,
-        mockData?.parent,
-      )
     await requestApi.addSubWorkflow(payload)
     return payload
   },
@@ -99,25 +62,20 @@ export const subWorkflowApi = {
   /**
    * Connector steps for a request's history, as `{ stage,
    * subWorkflowHistory }`. Live history rows carry `subWorkflowHistory`
-   * themselves (V5 processHistory), so only the mock answers here.
+   * themselves (V5 processHistory), so nothing extra is fetched here.
    */
   getHistory: async (
-    workflowId: Id,
-    processId: Id,
+    _workflowId: Id,
+    _processId: Id,
   ): Promise<
     { stage: string; subWorkflowHistory: SubWorkflowHistoryRow[] }[]
-  > => {
-    if (!isSubWorkflowMock()) return []
-    return mockSubWorkflowBackend.getHistory(workflowId, processId)
-  },
+  > => [],
 
   /** Parent of a child request, or null when the request is not a child. */
   getMainProcess: async (
     workflowId: Id,
     processId: Id,
   ): Promise<MainProcessDetails | null> => {
-    if (isSubWorkflowMock())
-      return mockSubWorkflowBackend.getMainProcess(workflowId, processId)
     const rows = asArray(
       await requestApi.getMainProcessDetails(workflowId, processId),
     )
@@ -131,8 +89,6 @@ export const subWorkflowApi = {
     workflowId: Id,
     processId: Id,
   ): Promise<SubProcessRow[]> => {
-    if (isSubWorkflowMock())
-      return mockSubWorkflowBackend.getSubProcesses(workflowId, processId)
     const data = await requestApi.getSubWorkflow(workflowId, processId)
     return asArray(data).map(toSubProcessRow)
   },
@@ -140,12 +96,9 @@ export const subWorkflowApi = {
   /**
    * Children of every request in a workflow, keyed by parent process id, for
    * the inbox list. Live list rows carry `subworkflowTransaction` (V5), so
-   * only the mock answers here.
+   * nothing extra is fetched here.
    */
   getSubProcessesForWorkflow: async (
-    workflowId: Id,
-  ): Promise<Record<string, SubProcessRow[]>> => {
-    if (!isSubWorkflowMock()) return {}
-    return mockSubWorkflowBackend.getSubProcessesForWorkflow(workflowId)
-  },
+    _workflowId: Id,
+  ): Promise<Record<string, SubProcessRow[]>> => ({}),
 }

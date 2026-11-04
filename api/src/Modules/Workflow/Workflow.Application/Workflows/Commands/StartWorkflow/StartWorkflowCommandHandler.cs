@@ -331,9 +331,19 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
             // First stage after Start is a condition or connector block: run it and move on now.
             // AP Agent workflows open the AP_AGENT step instead, so they never stop on one here.
             // A condition that moves on runs any connector after it itself (in move-next).
-            if (dedicatedApAgent == null
-                && await _conditionRouter.TryRouteAsync(instance.Id, cancellationToken: cancellationToken) == null)
-                await _connectorRunner.TryRunAsync(instance.Id, cancellationToken: cancellationToken);
+            if (dedicatedApAgent == null)
+            {
+                // Start fans out to several blocks (e.g. a Manual User and Workflow Connectors): the ticket
+                // waits on the real step, and the connectors start their connected workflows now.
+                var currentDefinitionStepId = instance.StepInstances
+                    .FirstOrDefault(s => s.Id == instance.CurrentStepInstanceId)?.WorkflowStepId;
+                if (orderedSteps.FirstOrDefault() is { } startDefinition)
+                    await _connectorRunner.StartFanOutAsync(
+                        instance.Id, startDefinition, review: null, currentDefinitionStepId, cancellationToken);
+
+                if (await _conditionRouter.TryRouteAsync(instance.Id, cancellationToken: cancellationToken) == null)
+                    await _connectorRunner.TryRunAsync(instance.Id, cancellationToken: cancellationToken);
+            }
 
             return new StartWorkflowCommandResult(
                 instance.Id,

@@ -1,4 +1,5 @@
 using SaaSApp.Workflow.Application.Workflows.Commands.MoveToNextStep;
+using SaaSApp.Workflow.Domain.Entities;
 
 namespace SaaSApp.Workflow.Application.Contracts;
 
@@ -18,5 +19,17 @@ public interface IWorkflowConnectorRunner
     Task<MoveToNextStepCommandResult?> TryRunAsync(
         Guid workflowInstanceId,
         int depth = 0,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fan-out: starts the connected workflow of every connector block that shares <paramref name="source"/>'s
+    /// edge label (e.g. Start -> A, B, C), except <paramref name="exceptStepId"/> (the step the ticket moved to).
+    /// The engine follows one edge per move, so the others would never run. Never throws.
+    /// </summary>
+    Task StartFanOutAsync(
+        Guid workflowInstanceId,
+        WorkflowStep source,
+        string? review,
+        Guid? exceptStepId,
         CancellationToken cancellationToken = default);
 }

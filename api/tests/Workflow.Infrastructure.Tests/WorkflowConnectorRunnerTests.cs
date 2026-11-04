@@ -44,6 +44,22 @@ public sealed class WorkflowConnectorRunnerTests
     }
 
     [Fact]
+    public async Task Fan_out_starts_a_child_for_every_connector_on_the_same_edge()
+    {
+        var setup = new Setup(siblingConnectors: 2);
+
+        var result = await setup.Runner().TryRunAsync(setup.Instance.Id);
+
+        Assert.NotNull(result);
+        Assert.Equal(3, setup.Started.Count);
+        Assert.Equal(3, setup.Links.Count);
+        var move = Assert.Single(setup.Moves);
+        Assert.Equal("conn-1", move.ActivityId);
+        Assert.Contains("Also", move.Comments);
+        Assert.Empty(setup.Comments);
+    }
+
+    [Fact]
     public async Task No_target_leaves_the_request_with_a_comment()
     {
         var setup = new Setup(workflowJson: """{"blocks":[{"id":"conn-1","settings":{}}]}""");
@@ -137,7 +153,7 @@ public sealed class WorkflowConnectorRunnerTests
 
     private sealed class Setup
     {
-        private readonly string _workflowJson;
+        private string _workflowJson;
         private readonly bool _canAccessChild;
         private readonly bool _parentIsSubProcess;
 
@@ -148,7 +164,8 @@ public sealed class WorkflowConnectorRunnerTests
             bool publishChild = true,
             bool childHasConnector = false,
             bool canAccessChild = true,
-            bool parentIsSubProcess = false)
+            bool parentIsSubProcess = false,
+            int siblingConnectors = 0)
         {
             _canAccessChild = canAccessChild;
             _parentIsSubProcess = parentIsSubProcess;
@@ -169,6 +186,28 @@ public sealed class WorkflowConnectorRunnerTests
             var step = WorkflowStep.Create(
                 Parent.Id, "Start purchase", StepType.Manual, 2, activityId: "conn-1", stageType: stageType, actionsJson: actionsJson);
             Parent.AddStep(step);
+            if (siblingConnectors > 0)
+            {
+                var edges = new List<string> { """{"Id":"s0","ProceedAction":"Submit","ToBlockId":"conn-1"}""" };
+                var blocks = new List<string>
+                {
+                    $$$"""{"id":"conn-1","type":"WORKFLOW_CONNECTOR","settings":{"subWorkflowId":"{{{Child.Id}}}"}}"""
+                };
+                for (var i = 2; i < siblingConnectors + 2; i++)
+                {
+                    Parent.AddStep(WorkflowStep.Create(
+                        Parent.Id, $"Connector {i}", StepType.Manual, i + 1, activityId: $"conn-{i}",
+                        stageType: "WORKFLOW_CONNECTOR", actionsJson: actionsJson));
+                    edges.Add($$"""{"Id":"s{{i}}","ProceedAction":"Submit","ToBlockId":"conn-{{i}}"}""");
+                    blocks.Add($$$"""{"id":"conn-{{{i}}}","type":"WORKFLOW_CONNECTOR","settings":{"subWorkflowId":"{{{Child.Id}}}"}}""");
+                }
+
+                Parent.AddStep(WorkflowStep.Create(
+                    Parent.Id, "Start", StepType.Manual, 1, activityId: "start", stageType: "START",
+                    actionsJson: "[" + string.Join(",", edges) + "]"));
+                _workflowJson = "{\"blocks\":[" + string.Join(",", blocks) + "]}";
+            }
+
             Parent.Publish();
 
             Instance = WorkflowInstance.Create(Guid.NewGuid(), Parent.Id, "Expense", 1, Guid.NewGuid());

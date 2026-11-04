@@ -1,8 +1,6 @@
 export * from './api/queries'
 export {
-  isSubWorkflowMock,
   subWorkflowApi,
-  toLinkedProcessSummary,
   toSubProcessRow,
 } from './api/subWorkflowApi'
 export { isSubWorkflowEnabled } from './featureFlag'
