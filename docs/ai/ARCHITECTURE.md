@@ -58,8 +58,7 @@ Request flow: nginx → controller → service or MediatR handler → EF Core / 
 This is a standalone React app. It calls the V6 API directly with a Bearer token and `X-Tenant-Id` (`mobile/src/api.js`, `wf.js`, `repo.js`). Details are in `mobile/CLAUDE.md`.
 
 ## External services
-
-Azure OpenAI, a self-hosted Qwen endpoint, Google Gemini (called from the browser), Microsoft Entra ID, Google OAuth, Auth0, Azure Blob Storage, Application Insights, Azure Key Vault, PostHog, Collabora/WOPI office viewer, SAP/HANA, QuickBooks, WatchFox (webhook), Jira gateway (`api/tools/jira-gateway`), and the legacy EZOFIS V5 API (`eztapi.ezofis.com`).
+Azure OpenAI, a self-hosted Qwen endpoint, Google Gemini (called from the browser), Microsoft Entra ID, Google OAuth, Auth0, Azure Blob Storage, Application Insights, Azure Key Vault, PostHog, Collabora/WOPI office viewer, SAP/HANA, QuickBooks, WatchFox (webhook), Jira gateway (`api/tools/jira-gateway`), and the legacy EZOFIS V5 API (`api.ezofis.com`, Classic site on `app.ezofis.com`).
 
 ### WatchFox email watches
 
