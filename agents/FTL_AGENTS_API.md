@@ -31,6 +31,22 @@ Inputs are case-insensitive, and the older key names still work: `Project`, `Pro
 
 Use a new `session_id` for each fresh test run so an earlier session doesn't mix into the result.
 
+## Rulebook and prices
+
+The estimator uses FTL rulebook v1.1 (`app/ftl/quote_estimator/data/rulebook/`). A product's price comes from the first of these that has it: the inFlow snapshot (`inflow_snapshot.json`), the Contractor Price Book (`price_book_overlay.json`), then the Product Master (`product_master.json`). Old product codes that FTL renamed are still accepted.
+
+Written FTL rules in `ftl_overrides.json` replace matching rows in the rulebook. Today that means **panel adaptors**:
+
+- **Quote 1:** each door operator has a panel adaptor on the line below it, unless the RFQ replaces the car doors. If the RFQ or survey doesn't name the car-door maker, the adaptor defaults to GAL with the operator's type, width and hand, and the quote stays at `REVIEW`.
+- **Quote 2:** the matching universal car door replaces the adaptor.
+- **On hold:** if the named maker has no stocked adaptor, or the operator's type and width have none, no adaptor is priced and the quote is held.
+
+Other rules from the v1.1 rulebook:
+
+- **Qualifier:** items the customer's email marks "not required from FTL" move to `Excluded items`. Roller guides use the customer's number of full sets × 4. If the spec asks for detection on every car door, one detector per car door is added.
+- **Both agents:** read the "Number of Elevators" clause and openings table as the car count, and list email attachments they could not read.
+- **Estimator:** the $0 line reads `SGV2 Car Door Restriction Function - Included`. OL100 governors and car safeties are held for review.
+
 ## End-to-end flow
 
 | Step | Call | Send | Get back |

@@ -130,6 +130,7 @@ def test_same_quote_every_run():
     assert sigs["A bare"] == sigs["B +panels"] == sigs["C +panels +detector"] == sigs["D tools only"] == sigs["E empty"]
     expected = {
         ("door_operator", "SGV2_DOOR_OP_2C42_L", 1),
+        ("panel_adaptor", "SGV2(2C)_PANEL_ADAPTOR_GAL42_LH", 1),
         ("clutch", "SGV2_CLUTCH_G.M.D._L", 1),
         ("other", "SGV2_CAR_DOOR_RESTRICTOR", 1),
         ("door_tools", "SGV2_DOOR_TOOLS", 1),
@@ -138,8 +139,8 @@ def test_same_quote_every_run():
         assert set(_sig(o)) == expected, (k, _sig(o))
     for k, o in outs.items():
         cats = {i["category"] for i in o["line_items"]}
-        assert not (cats & {"door_protective_device", "car_door_panel", "panel_adaptor"}), k
-        assert any("Car doors" in h["item"] for h in o["held_items"]), k
+        assert not (cats & {"door_protective_device", "car_door_panel"}), k
+        assert any(h["item"] == qc.DEFAULT_ADAPTOR_HOLD_ITEM and h["level"] == "REVIEW" for h in o["held_items"]), k
         assert any(h["item"] == "Attached files not read" and h["level"] == "HOLD" for h in o["held_items"]), k
         assert o["release_status"].startswith("HOLD"), k
     totals = {round(sum(i["qty"] * i["unit_price"] for i in o["line_items"]), 2) for o in outs.values()}

@@ -1,0 +1,30 @@
+[
+  {
+    "quote": "Quote 1 - SPEC / BASE COMPLIANT",
+    "purpose": "Answer exactly what the customer asked FTL to price.",
+    "what_it_may_change": "Only confirmed requested scope and controlled quantities/SKUs.",
+    "what_it_must_not_do": "No typical-MOD add-ons; no separate alternates; no guessed equipment.",
+    "output_when_not_applicable": "Always required for a qualified pricing enquiry."
+  },
+  {
+    "quote": "Quote 2 - FTL RECOMMENDED",
+    "purpose": "Show the FTL-preferred modernization solution where an approved FTL rule supports a better path.",
+    "what_it_may_change": "Only the controlled decision branch - e.g., approved universal-car-door recommendation.",
+    "what_it_must_not_do": "Do not invent upgrades simply to increase quote value.",
+    "output_when_not_applicable": "NO VALID RECOMMENDED VARIANT if no approved recommendation exists."
+  },
+  {
+    "quote": "Quote 3 - ALTERNATE / COMPLETE",
+    "purpose": "Show a real consultant/customer alternate or broader approved configuration.",
+    "what_it_may_change": "Only source-defined or approved FTL alternate scope.",
+    "what_it_must_not_do": "Do not fill a third quote for the sake of having three.",
+    "output_when_not_applicable": "NO VALID THIRD OPTION."
+  },
+  {
+    "quote": "Comparison",
+    "purpose": "Keep all variants under one project/enquiry.",
+    "what_it_may_change": "Show added/removed lines, quantity/configuration changes, price delta, reason, review flags.",
+    "what_it_must_not_do": "Do not let variants drift to different base scope.",
+    "output_when_not_applicable": "N/A"
+  }
+]

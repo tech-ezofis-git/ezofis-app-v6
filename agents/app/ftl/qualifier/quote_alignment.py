@@ -65,6 +65,20 @@ SOURCE_RFQ = "rfq"
 SOURCE_COMPANION = "estimator_companion"
 SOURCE_AUTO = "estimator_auto"
 
+# scope_rules' Estimator categories (what a "not required from FTL" email bullet removes) -> the
+# Qualifier's own category constants.
+_NOT_REQUIRED_CATEGORY_MAP = {
+    "door_operator": (DOOR_OPERATOR,),
+    "door_tools": (DOOR_TOOLS,),
+    "other": (RESTRICTOR,),
+    "panel_adaptor": (PANEL_ADAPTOR,),
+    "clutch": (CLUTCH,),
+    "door_protective_device": (DETECTOR,),
+    "car_door_panel": (CAR_DOOR_PANEL,),
+    "roller_guide": (ROLLER_GUIDE,),
+    "governor": (GOVERNOR, GOVERNOR_TENSION),
+}
+
 RESTRICTOR_CODE = "SGV2_CAR_DOOR_RESTRICTOR"
 TOOLS_CODE = "SGV2_DOOR_TOOLS"
 DETECTOR_CODE = "FS_VISIONPLUS_3D_CAR_DOOR_DET"
@@ -251,12 +265,27 @@ def align_with_estimator(decision: Dict[str, Any], candidate_text: str) -> Dict[
         excluded.append({"item": e.get("item", ""), "reason": reason})
         log.append(f"removed {e.get('item', '')!r}")
 
-    has_operator = any(e["estimator_category"] == DOOR_OPERATOR for e in items)
+    # Items the customer's own email says are "not required from FTL" — the Estimator never quotes them.
+    ftl_excluded: Dict[str, str] = {}
+    for bullet, est_cats in scope_rules.not_required_from_ftl(candidate_text):
+        for est_cat in est_cats:
+            for q_cat in _NOT_REQUIRED_CATEGORY_MAP.get(est_cat, ()):
+                ftl_excluded.setdefault(q_cat, bullet)
+    operator_listed = any(e["estimator_category"] == DOOR_OPERATOR for e in items)
+    has_operator = operator_listed and DOOR_OPERATOR not in ftl_excluded
     scope_excluded = scope_rules.scope_table_excluded_categories(candidate_text)
     has_scope_table = bool(scope_rules.scope_table_rows(candidate_text))
     kept: List[Dict[str, Any]] = []
     for e in items:
         cat = e["estimator_category"]
+
+        if cat in ftl_excluded:
+            drop(
+                e,
+                f"The customer's email says this is not required from FTL (\"{ftl_excluded[cat]}\"), so the "
+                "Estimator does not quote it.",
+            )
+            continue
 
         if cat == POWER_SUPPLY and has_operator:
             drop(
@@ -486,6 +515,30 @@ def align_with_estimator(decision: Dict[str, Any], candidate_text: str) -> Dict[
                     )
                 )
 
+    # --- Door detection asked for "on every car door" but not listed: one per CAR DOOR (landings are not car
+    # doors). The Estimator adds it even when the operator itself is not FTL's (customer refurbishes it).
+    if (
+        DETECTOR not in {i["estimator_category"] for i in items + added}
+        and DETECTOR not in ftl_excluded
+        and scope_rules.detector_in_scope(candidate_text)
+    ):
+        n_doors, basis = scope_rules.car_door_count(candidate_text)
+        if n_doors:
+            added.append(
+                _entry(
+                    "Formula 3D VisionPlus car door detector (one per car door)",
+                    DETECTOR,
+                    catalog_ref=DETECTOR_CODE,
+                    qty=n_doors,
+                    status="quote_review",
+                    source=SOURCE_AUTO,
+                    match="ambiguous",
+                    note="The spec calls for door detection on every car door (CEDES CabSafe or equivalent); the "
+                    "Estimator adds one Formula detector per car door, not per landing. Confirm the equivalent is "
+                    "acceptable." + (" Add one per rear door if any car has a rear entrance." if basis == "cars_only" else ""),
+                )
+            )
+
     # --- Governor: baseline when the scope table says New and none listed; tension companion per OL governor.
     gov_counts = scope_rules.computed_governor_counts(candidate_text)
     if (
@@ -572,20 +625,23 @@ def align_with_estimator(decision: Dict[str, Any], candidate_text: str) -> Dict[
     # --- Roller guides: spec calls for them, none listed, there are door operators => Estimator adds a default set.
     if (
         ROLLER_GUIDE not in cats
-        and DOOR_OPERATOR in cats
+        and ROLLER_GUIDE not in ftl_excluded
+        and (DOOR_OPERATOR in cats or operator_listed)
         and scope_rules.roller_guide_in_scope(candidate_text)
         and not scope_rules.roller_guide_invalid_application(candidate_text)
         and ROLLER_GUIDE not in scope_excluded
         and cars >= 1
     ):
+        guide_sets = scope_rules.explicit_guide_sets(candidate_text)
         for code, label in (("WRG_MOTION_GEAR150", "car"), ("WRG_MOTION_GEAR80", "counterweight")):
             if _row_exists(code):
+                n_sets = guide_sets["cwt" if label == "counterweight" else "car"]
                 added.append(
                     _entry(
                         f"WRG roller guides — {label} set (default frame size)",
                         ROLLER_GUIDE,
                         catalog_ref=code,
-                        qty=cars * 4,
+                        qty=(n_sets or cars) * 4,
                         status="quote_review",
                         source=SOURCE_AUTO,
                         match="ambiguous",
@@ -596,9 +652,13 @@ def align_with_estimator(decision: Dict[str, Any], candidate_text: str) -> Dict[
                 )
 
     # Listed roller guides: one 4-piece set per car (WRG-002) when the car count is stated.
+    guide_sets_listed = scope_rules.explicit_guide_sets(candidate_text)
     for e in items:
         if e["estimator_category"] == ROLLER_GUIDE and e.get("estimator_qty") is None and cars >= 1:
-            e["estimator_qty"] = cars * 4
+            text = " ".join(str(e.get(k) or "") for k in ("item", "category", "catalog_ref", "note")).lower()
+            is_cwt = "gear80" in text or "counterweight" in text or "cwt" in text
+            n_sets = guide_sets_listed["cwt" if is_cwt else "car"]
+            e["estimator_qty"] = (n_sets or cars) * 4  # the customer's own number of full sets, else one per car
 
     # Any matched entry the model filed under a code the price book doesn't know gets flagged (no guessing).
     for e in items:

@@ -13,7 +13,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -29,7 +35,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -45,7 +57,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -61,7 +79,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -77,7 +101,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -93,7 +123,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -109,7 +145,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -125,7 +167,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -141,7 +189,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -157,7 +211,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -173,7 +233,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -189,7 +255,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -205,7 +277,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -221,7 +299,13 @@
     "quantity_basis": "1 operator per confirmed car opening",
     "companion_selection_rule": "Separate clutch; detector; $0 value line; car door/adaptor logic",
     "source": "2026 Price List p.1",
-    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion"
+    "notes_issue": "Use Wittur hand; never copy GAL hand without conversion",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car ID + front/rear + opening type + clear width + controlled hall-view hand/coupler; survey/diagram if ambiguous"
   },
   {
     "family": "Door System",
@@ -232,12 +316,18 @@
     "hand": "ALL",
     "width_in": null,
     "uom": "per project",
-    "price_cad": 598.5,
-    "automation_status": "HOLD",
-    "quantity_basis": "1 per project unless customer profile says otherwise",
-    "companion_selection_rule": "Customer-specific waiver/discount only",
-    "source": "2026 Price List p.1",
-    "notes_issue": "I-001: approved quote feedback says $698.50; master price unresolved"
+    "price_cad": 698.5,
+    "automation_status": "CONDITIONAL",
+    "quantity_basis": "1 per project unless customer confirms it already owns one or estimator manually waives it",
+    "companion_selection_rule": "Never free/discount automatically; live inFlow price controls",
+    "source": "inFlow_ProductDetails.csv + current 2026 price book",
+    "notes_issue": "I-001 RESOLVED: $698.50 live inFlow/current price book",
+    "inflow_sku": "900050G01",
+    "inflow_product_name": "SGV2_DOOR_TOOLS",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Detector",
@@ -249,11 +339,17 @@
     "width_in": null,
     "uom": "each",
     "price_cad": 1295,
-    "automation_status": "REVIEW",
+    "automation_status": "ACTIVE",
     "quantity_basis": "1 detector per SGV2 opening",
-    "companion_selection_rule": "No separate power supply on SGV2 unless engineering directs",
-    "source": "FTL rule + EST-261132",
-    "notes_issue": "I-002/I-003: price list code differs; confirm DC/AC wording and current draw"
+    "companion_selection_rule": "1 per SGV2 opening; no separate power supply automatically",
+    "source": "inFlow_ProductDetails.csv + Formula Vision Plus FZU-1442US01 guide",
+    "notes_issue": "Canonical inFlow SKU FS_VISION_PLUS_FZU-1442; 18-30 VDC; NPN normally-closed output switched to ground",
+    "inflow_sku": "FS_VISION_PLUS_FZU-1442",
+    "inflow_product_name": "FS_VISIONPLUS_3D_CAR_DOOR_DET",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "1 per confirmed SGV2 opening; non-standard controller/interface requires review"
   },
   {
     "family": "Detector",
@@ -264,12 +360,18 @@
     "hand": "ALL",
     "width_in": null,
     "uom": "each",
-    "price_cad": 188.65,
+    "price_cad": 169.5,
     "automation_status": "DO NOT AUTO-ADD",
     "quantity_basis": "Not used automatically with SGV2",
     "companion_selection_rule": "Review only for non-SGV2 applications",
-    "source": "2026 Price List p.1",
-    "notes_issue": "SUPRA board provides +24 VDC at IPD, max 150 mA"
+    "source": "inFlow_ProductDetails.csv",
+    "notes_issue": "Only when approved technical integration specifically requires FPS-0274US01/non-standard supply interface",
+    "inflow_sku": "FS_POWERSUP_FZU-1442",
+    "inflow_product_name": "FS_VISIONPLUS_POWERSUPPLY",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "1 per confirmed SGV2 opening; non-standard controller/interface requires review"
   },
   {
     "family": "Door System",
@@ -285,7 +387,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905049A01-36-LH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_MAC36_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -301,7 +409,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905049A02-36-RH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_MAC36_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -317,7 +431,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905049A01-42-LH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_MAC42_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -333,7 +453,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905049A02-42-RH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_MAC42_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -349,7 +475,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905051A01-36-LH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_GAL36_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -365,7 +497,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905051A02-36-RH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_GAL36_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -381,7 +519,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905051A01-42-LH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_GAL42_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -397,7 +541,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905051A02-42-RH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_GAL42_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -413,7 +563,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905052A01-36-LH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_DOV36_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -429,7 +585,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905052A02-36-RH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_DOV36_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -445,7 +607,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905052A01-42-LH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_DOV42_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -461,7 +629,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905052A02-42-RH",
+    "inflow_product_name": "SGV2(1S)_PANEL_ADAPTOR_DOV42_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -477,7 +651,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905392A21-42-LH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_MAC42_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -493,7 +673,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905392A22-42-RH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_MAC42_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -509,7 +695,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905392A21-48-LH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_MAC48_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -525,7 +717,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905392A22-48-RH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_MAC48_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -541,7 +739,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905393A21-42-LH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_GAL42_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -557,7 +761,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905393A22-42-RH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_GAL42_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -573,7 +783,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905393A21-48-LH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_GAL48_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -589,7 +805,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905393A22-48-RH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_GAL48_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -605,7 +827,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905394A21-42-LH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_DOV42_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -621,7 +849,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905394A22-42-RH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_DOV42_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -637,7 +871,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905394A21-48-LH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_DOV48_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -653,7 +893,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.2",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905394A22-48-RH",
+    "inflow_product_name": "SGV2(2T)_PANEL_ADAPTOR_DOV48_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -669,7 +915,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905388A03-36-LH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC36_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -685,7 +937,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905388A03-36-RH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC36_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -701,7 +959,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905388A03-42-LH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC42_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -717,7 +981,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905388A03-42-RH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC42_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -733,7 +1003,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905388A03-48-LH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC48_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -749,7 +1025,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905388A03-48-RH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_MAC48_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -765,7 +1047,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905389A03-36-LH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL36_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -781,7 +1069,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905389A03-36-RH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL36_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -797,7 +1091,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905389A03-42-LH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL42_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -813,7 +1113,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905389A03-42-RH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL42_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -829,7 +1135,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905389A03-48-LH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL48_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -845,7 +1157,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905389A03-48-RH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_GAL48_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -861,7 +1179,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905390A03-36-LH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV36_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -877,7 +1201,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905390A03-36-RH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV36_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -893,7 +1223,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905390A03-42-LH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV42_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -909,7 +1245,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905390A03-42-RH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV42_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -925,7 +1267,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905390A03-48-LH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV48_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -941,7 +1289,13 @@
     "quantity_basis": "Only when existing car door is retained",
     "companion_selection_rule": "Require OEM/existing car-door lock plus top-of-door bolt pattern",
     "source": "2026 Price List p.3",
-    "notes_issue": "Custom/OTIS/other patterns require review"
+    "notes_issue": "Custom/OTIS/other patterns require review",
+    "inflow_sku": "0905390A03-48-RH",
+    "inflow_product_name": "SGV2(2C)_PANEL_ADAPTOR_DOV48_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "OEM + opening type + clear opening + hall-view hand/coupler + complete top-of-door bolt pattern; survey confirmation before release"
   },
   {
     "family": "Door System",
@@ -957,7 +1311,13 @@
     "quantity_basis": "1 clutch per SGV2 opening",
     "companion_selection_rule": "Select from existing/replacement landing-lock family; OTIS special rules apply",
     "source": "2026 Price List p.3",
-    "notes_issue": "Integrated interlock removes need for separate restrictor hardware"
+    "notes_issue": "Integrated interlock removes need for separate restrictor hardware",
+    "inflow_sku": "1023806A01-LH",
+    "inflow_product_name": "SGV2_CLUTCH_OTIS_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -973,7 +1333,13 @@
     "quantity_basis": "1 clutch per SGV2 opening",
     "companion_selection_rule": "Select from existing/replacement landing-lock family; OTIS special rules apply",
     "source": "2026 Price List p.3",
-    "notes_issue": "Integrated interlock removes need for separate restrictor hardware"
+    "notes_issue": "Integrated interlock removes need for separate restrictor hardware",
+    "inflow_sku": "1023806A02-RH",
+    "inflow_product_name": "SGV2_CLUTCH_OTIS_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -989,7 +1355,13 @@
     "quantity_basis": "1 clutch per SGV2 opening",
     "companion_selection_rule": "Select from existing/replacement landing-lock family; OTIS special rules apply",
     "source": "2026 Price List p.3",
-    "notes_issue": "Integrated interlock removes need for separate restrictor hardware"
+    "notes_issue": "Integrated interlock removes need for separate restrictor hardware",
+    "inflow_sku": "1031490A01-LH",
+    "inflow_product_name": "SGV2_CLUTCH_WEST_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1005,7 +1377,13 @@
     "quantity_basis": "1 clutch per SGV2 opening",
     "companion_selection_rule": "Select from existing/replacement landing-lock family; OTIS special rules apply",
     "source": "2026 Price List p.3",
-    "notes_issue": "Integrated interlock removes need for separate restrictor hardware"
+    "notes_issue": "Integrated interlock removes need for separate restrictor hardware",
+    "inflow_sku": "1031490A02-RH",
+    "inflow_product_name": "SGV2_CLUTCH_WEST_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1021,7 +1399,13 @@
     "quantity_basis": "1 clutch per SGV2 opening",
     "companion_selection_rule": "Select from existing/replacement landing-lock family; OTIS special rules apply",
     "source": "2026 Price List p.3",
-    "notes_issue": "Integrated interlock removes need for separate restrictor hardware"
+    "notes_issue": "Integrated interlock removes need for separate restrictor hardware",
+    "inflow_sku": "1031827A01-LH",
+    "inflow_product_name": "SGV2_CLUTCH_G.M.D._LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1037,7 +1421,13 @@
     "quantity_basis": "1 clutch per SGV2 opening",
     "companion_selection_rule": "Select from existing/replacement landing-lock family; OTIS special rules apply",
     "source": "2026 Price List p.3",
-    "notes_issue": "Integrated interlock removes need for separate restrictor hardware"
+    "notes_issue": "Integrated interlock removes need for separate restrictor hardware",
+    "inflow_sku": "1031827A02=RH",
+    "inflow_product_name": "SGV2_CLUTCH_G.M.D._RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1048,12 +1438,18 @@
     "hand": "ANY",
     "width_in": 36,
     "uom": "panel",
-    "price_cad": 1595,
-    "automation_status": "REVIEW",
-    "quantity_basis": "1 panel per opening",
+    "price_cad": 1730.4,
+    "automation_status": "CONDITIONAL",
+    "quantity_basis": "1 panel per confirmed 1S opening",
     "companion_selection_rule": "Default when spec calls for skinning or replacement; recommended when converting landing locks to GAL",
-    "source": "2026 Price List p.4 + FTL rule",
-    "notes_issue": "I-004/I-005: set-vs-panel pricing and 441-vs-304 material description must be normalized"
+    "source": "inFlow_ProductDetails.csv + FTL universal-car-door rule",
+    "notes_issue": "Live inFlow price snapshot. #4 stainless steel 441 brushed finish per current product description.",
+    "inflow_sku": "1S_UNI_36_X_84",
+    "inflow_product_name": "1S_UNIVERSAL_CAR_DOOR - 36 X 84",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1064,12 +1460,18 @@
     "hand": "ANY",
     "width_in": 42,
     "uom": "panel",
-    "price_cad": 1635,
-    "automation_status": "REVIEW",
-    "quantity_basis": "1 panel per opening",
+    "price_cad": 1797.6,
+    "automation_status": "CONDITIONAL",
+    "quantity_basis": "1 panel per confirmed 1S opening",
     "companion_selection_rule": "Default when spec calls for skinning or replacement; recommended when converting landing locks to GAL",
-    "source": "2026 Price List p.4 + FTL rule",
-    "notes_issue": "I-004/I-005: set-vs-panel pricing and 441-vs-304 material description must be normalized"
+    "source": "inFlow_ProductDetails.csv + FTL universal-car-door rule",
+    "notes_issue": "Live inFlow price snapshot. #4 stainless steel 441 brushed finish per current product description.",
+    "inflow_sku": "1PSO_UNI_42_X_48",
+    "inflow_product_name": "1S_UNIVERSAL_CAR_DOOR - 42 X 84",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1080,12 +1482,18 @@
     "hand": "ANY",
     "width_in": 48,
     "uom": "panel",
-    "price_cad": 1705,
-    "automation_status": "REVIEW",
-    "quantity_basis": "1 panel per opening",
+    "price_cad": 1943.2,
+    "automation_status": "CONDITIONAL",
+    "quantity_basis": "1 panel per confirmed 1S opening",
     "companion_selection_rule": "Default when spec calls for skinning or replacement; recommended when converting landing locks to GAL",
-    "source": "2026 Price List p.4 + FTL rule",
-    "notes_issue": "I-004/I-005: set-vs-panel pricing and 441-vs-304 material description must be normalized"
+    "source": "inFlow_ProductDetails.csv + FTL universal-car-door rule",
+    "notes_issue": "Live inFlow price snapshot. #4 stainless steel 441 brushed finish per current product description.",
+    "inflow_sku": "1PSO_UNI_48_X_84",
+    "inflow_product_name": "1S_UNIVERSAL_CAR_DOOR - 48 X 84",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1095,13 +1503,19 @@
     "description": "Universal 2T car door, 42 x 84 in, #4 brushed finish",
     "hand": "ANY",
     "width_in": 42,
-    "uom": "2-panel set",
-    "price_cad": 3450,
+    "uom": "VERIFY UOM",
+    "price_cad": 2077.6,
     "automation_status": "REVIEW",
-    "quantity_basis": "2 panels per opening",
+    "quantity_basis": "2 physical panels per confirmed 2C/2T opening",
     "companion_selection_rule": "Default when spec calls for skinning or replacement; recommended when converting landing locks to GAL",
-    "source": "2026 Price List p.4 + FTL rule",
-    "notes_issue": "I-004/I-005: set-vs-panel pricing and 441-vs-304 material description must be normalized"
+    "source": "inFlow_ProductDetails.csv + FTL universal-car-door rule",
+    "notes_issue": "I-004 OPEN: inFlow ProductName says 2-DOORS/SET while approved quote history uses panel quantities. Do not auto-price until UOM is normalized.",
+    "inflow_sku": "2PSO_UNI_42_X_84 - Deactivated",
+    "inflow_product_name": "2T_UNIVERSAL_CAR_DOOR - 42 X 84 (2-DOORS/SET)",
+    "inflow_item_type": "Non-stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1111,13 +1525,19 @@
     "description": "Universal 2T car door, 48 x 84 in, #4 brushed finish",
     "hand": "ANY",
     "width_in": 48,
-    "uom": "2-panel set",
-    "price_cad": 3470,
+    "uom": "VERIFY UOM",
+    "price_cad": 2161.6,
     "automation_status": "REVIEW",
-    "quantity_basis": "2 panels per opening",
+    "quantity_basis": "2 physical panels per confirmed 2C/2T opening",
     "companion_selection_rule": "Default when spec calls for skinning or replacement; recommended when converting landing locks to GAL",
-    "source": "2026 Price List p.4 + FTL rule",
-    "notes_issue": "I-004/I-005: set-vs-panel pricing and 441-vs-304 material description must be normalized"
+    "source": "inFlow_ProductDetails.csv + FTL universal-car-door rule",
+    "notes_issue": "I-004 OPEN: inFlow ProductName says 2-DOORS/SET while approved quote history uses panel quantities. Do not auto-price until UOM is normalized.",
+    "inflow_sku": "2PSO_UNI_48_X_84",
+    "inflow_product_name": "2T_UNIVERSAL_CAR_DOOR - 48 X 84 (2-DOORS/SET)",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1127,13 +1547,19 @@
     "description": "Universal 2C car door, 36 x 84 in, #4 brushed finish",
     "hand": "ANY",
     "width_in": 36,
-    "uom": "2-panel set",
-    "price_cad": 3130,
+    "uom": "VERIFY UOM",
+    "price_cad": 1640.8,
     "automation_status": "REVIEW",
-    "quantity_basis": "2 panels per opening",
+    "quantity_basis": "2 physical panels per confirmed 2C/2T opening",
     "companion_selection_rule": "Default when spec calls for skinning or replacement; recommended when converting landing locks to GAL",
-    "source": "2026 Price List p.4 + FTL rule",
-    "notes_issue": "I-004/I-005: set-vs-panel pricing and 441-vs-304 material description must be normalized"
+    "source": "inFlow_ProductDetails.csv + FTL universal-car-door rule",
+    "notes_issue": "I-004 OPEN: inFlow ProductName says 2-DOORS/SET while approved quote history uses panel quantities. Do not auto-price until UOM is normalized.",
+    "inflow_sku": "2PCO_UVI_ 36_X_84",
+    "inflow_product_name": "2C_UNIVERSAL_CAR_DOOR - 36 X 84 (2-DOORS/SET)",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1143,13 +1569,19 @@
     "description": "Universal 2C car door, 42 x 84 in, #4 brushed finish",
     "hand": "ANY",
     "width_in": 42,
-    "uom": "2-panel set",
-    "price_cad": 3180,
+    "uom": "VERIFY UOM",
+    "price_cad": 1705.2,
     "automation_status": "REVIEW",
-    "quantity_basis": "2 panels per opening",
+    "quantity_basis": "2 physical panels per confirmed 2C/2T opening",
     "companion_selection_rule": "Default when spec calls for skinning or replacement; recommended when converting landing locks to GAL",
-    "source": "2026 Price List p.4 + FTL rule",
-    "notes_issue": "I-004/I-005: set-vs-panel pricing and 441-vs-304 material description must be normalized"
+    "source": "inFlow_ProductDetails.csv + FTL universal-car-door rule",
+    "notes_issue": "I-004 OPEN: inFlow ProductName says 2-DOORS/SET while approved quote history uses panel quantities. Do not auto-price until UOM is normalized.",
+    "inflow_sku": "2PCO_UVI_42_X_84",
+    "inflow_product_name": "2C_UNIVERSAL_CAR_DOOR - 42 X 84 (2-DOORS/SET)",
+    "inflow_item_type": "Non-stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Door System",
@@ -1159,13 +1591,19 @@
     "description": "Universal 2C car door, 48 x 84 in, #4 brushed finish",
     "hand": "ANY",
     "width_in": 48,
-    "uom": "2-panel set",
-    "price_cad": 3280,
+    "uom": "VERIFY UOM",
+    "price_cad": 1947.6,
     "automation_status": "REVIEW",
-    "quantity_basis": "2 panels per opening",
+    "quantity_basis": "2 physical panels per confirmed 2C/2T opening",
     "companion_selection_rule": "Default when spec calls for skinning or replacement; recommended when converting landing locks to GAL",
-    "source": "2026 Price List p.4 + FTL rule",
-    "notes_issue": "I-004/I-005: set-vs-panel pricing and 441-vs-304 material description must be normalized"
+    "source": "inFlow_ProductDetails.csv + FTL universal-car-door rule",
+    "notes_issue": "I-004 OPEN: inFlow ProductName says 2-DOORS/SET while approved quote history uses panel quantities. Do not auto-price until UOM is normalized.",
+    "inflow_sku": "2PCO_UVI_48_X_84",
+    "inflow_product_name": "2C_UNIVERSAL_CAR_DOOR - 48 X 84 (2-DOORS/SET)",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Roller Guides",
@@ -1181,7 +1619,13 @@
     "quantity_basis": "4 pieces = one complete car or CWT set",
     "companion_selection_rule": "Quote only when scope calls; verify application, speed, rail and balance",
     "source": "2026 Price List p.4 + WRG Catalogue sheet 03",
-    "notes_issue": "CWT only; max 500 fpm; passenger elevators; dry rail; no roll-formed HT rail"
+    "notes_issue": "CWT only; max 500 fpm; passenger elevators; dry rail; no roll-formed HT rail",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car/CWT + speed + rail + mass/load + balance + rail condition; never select by rail alone"
   },
   {
     "family": "Roller Guides",
@@ -1197,7 +1641,13 @@
     "quantity_basis": "4 pieces = one complete car or CWT set",
     "companion_selection_rule": "Quote only when scope calls; verify application, speed, rail and balance",
     "source": "2026 Price List p.4 + WRG Catalogue sheet 03",
-    "notes_issue": "Car 350 fpm; CWT 800 fpm; passenger elevators; dry rail; no roll-formed HT rail"
+    "notes_issue": "Car 350 fpm; CWT 800 fpm; passenger elevators; dry rail; no roll-formed HT rail",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car/CWT + speed + rail + mass/load + balance + rail condition; never select by rail alone"
   },
   {
     "family": "Roller Guides",
@@ -1213,7 +1663,13 @@
     "quantity_basis": "4 pieces = one complete car or CWT set",
     "companion_selection_rule": "Quote only when scope calls; verify application, speed, rail and balance",
     "source": "2026 Price List p.4 + WRG Catalogue sheet 03",
-    "notes_issue": "Car 500 fpm; CWT 1400 fpm; passenger elevators; dry rail; no roll-formed HT rail"
+    "notes_issue": "Car 500 fpm; CWT 1400 fpm; passenger elevators; dry rail; no roll-formed HT rail",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car/CWT + speed + rail + mass/load + balance + rail condition; never select by rail alone"
   },
   {
     "family": "Roller Guides",
@@ -1229,7 +1685,13 @@
     "quantity_basis": "4 pieces = one complete car or CWT set",
     "companion_selection_rule": "Quote only when scope calls; verify application, speed, rail and balance",
     "source": "2026 Price List p.4 + WRG Catalogue sheet 03",
-    "notes_issue": "Car 800 fpm; CWT 1400 fpm; passenger elevators; dry rail; no roll-formed HT rail"
+    "notes_issue": "Car 800 fpm; CWT 1400 fpm; passenger elevators; dry rail; no roll-formed HT rail",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car/CWT + speed + rail + mass/load + balance + rail condition; never select by rail alone"
   },
   {
     "family": "Roller Guides",
@@ -1245,7 +1707,13 @@
     "quantity_basis": "4 pieces = one complete car or CWT set",
     "companion_selection_rule": "Quote only when scope calls; verify application, speed, rail and balance",
     "source": "2026 Price List p.4 + WRG Catalogue sheet 03",
-    "notes_issue": "Technical catalogue only; no approved FTL price; passenger elevators; dry rail; no roll-formed HT rail"
+    "notes_issue": "Technical catalogue only; no approved FTL price; passenger elevators; dry rail; no roll-formed HT rail",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car/CWT + speed + rail + mass/load + balance + rail condition; never select by rail alone"
   },
   {
     "family": "Roller Guides",
@@ -1261,7 +1729,13 @@
     "quantity_basis": "4 pieces = one complete car or CWT set",
     "companion_selection_rule": "Quote only when scope calls; verify application, speed, rail and balance",
     "source": "2026 Price List p.4 + WRG Catalogue sheet 03",
-    "notes_issue": "Car 1000 fpm; CWT 2000 fpm; passenger elevators; dry rail; no roll-formed HT rail"
+    "notes_issue": "Car 1000 fpm; CWT 2000 fpm; passenger elevators; dry rail; no roll-formed HT rail",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car/CWT + speed + rail + mass/load + balance + rail condition; never select by rail alone"
   },
   {
     "family": "Roller Guides",
@@ -1277,7 +1751,13 @@
     "quantity_basis": "4 pieces = one complete car or CWT set",
     "companion_selection_rule": "Quote only when scope calls; verify application, speed, rail and balance",
     "source": "2026 Price List p.4 + WRG Catalogue sheet 03",
-    "notes_issue": "Car only; max 2000 fpm; passenger elevators; dry rail; no roll-formed HT rail"
+    "notes_issue": "Car only; max 2000 fpm; passenger elevators; dry rail; no roll-formed HT rail",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Car/CWT + speed + rail + mass/load + balance + rail condition; never select by rail alone"
   },
   {
     "family": "Governors",
@@ -1293,7 +1773,13 @@
     "quantity_basis": "1 governor per confirmed application",
     "companion_selection_rule": "Always add one pit swingarm tension assembly",
     "source": "2026 Price List p.4",
-    "notes_issue": "Handed SKU suffix and full configuration require survey"
+    "notes_issue": "Handed SKU suffix and full configuration require survey",
+    "inflow_sku": "OL35-MT",
+    "inflow_product_name": "WG_OL35_GOVERNOR_MT",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Application + speed + rope/pulley + trip direction/hand + mounting; separate FTL tension line per governor"
   },
   {
     "family": "Governors",
@@ -1309,7 +1795,13 @@
     "quantity_basis": "1 governor per confirmed application",
     "companion_selection_rule": "Always add one pit swingarm tension assembly",
     "source": "2026 Price List p.4",
-    "notes_issue": "Handed SKU suffix and full configuration require survey"
+    "notes_issue": "Handed SKU suffix and full configuration require survey",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Application + speed + rope/pulley + trip direction/hand + mounting; separate FTL tension line per governor"
   },
   {
     "family": "Governors",
@@ -1325,39 +1817,57 @@
     "quantity_basis": "1 governor per confirmed application",
     "companion_selection_rule": "Always add one pit swingarm tension assembly",
     "source": "2026 Price List p.4",
-    "notes_issue": "Handed SKU suffix and full configuration require survey"
+    "notes_issue": "Handed SKU suffix and full configuration require survey",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Application + speed + rope/pulley + trip direction/hand + mounting; separate FTL tension line per governor"
   },
   {
     "family": "Governors",
     "type": "OL35 Pit Swingarm",
     "oem": "ALL",
-    "ftl_product_code": "OL35_TENSION_SHEAVE_SWINGARM",
+    "ftl_product_code": "WG_OL35_TENSION_SHEAVE_SWINGARM",
     "description": "Swingarm tension weight with sheave",
     "hand": "LH/RH",
     "width_in": null,
     "uom": "each",
-    "price_cad": 1649,
+    "price_cad": 1849,
     "automation_status": "REQUIRED COMPANION",
-    "quantity_basis": "1 per OL35 governor",
-    "companion_selection_rule": "Mandatory FTL rule even if survey offers reuse/none",
-    "source": "2026 Price List p.4 + FTL rule",
-    "notes_issue": "Select exact swingarm by pulley, rope, rail, AK distance, orientation and mounting"
+    "quantity_basis": "1 separate tension/swingarm line per OL35 governor",
+    "companion_selection_rule": "FTL rule: line includes applicable weight/sheave, filler weights and fixings as approved for selected configuration",
+    "source": "inFlow_ProductDetails.csv + latest JR/Francine rule",
+    "notes_issue": "Current inFlow SKU OLSWINGARM-TS. Old $1,649 snapshot superseded.",
+    "inflow_sku": "OLSWINGARM-TS",
+    "inflow_product_name": "WG_OL35_TENSION_SHEAVE_SWINGARM",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Application + speed + rope/pulley + trip direction/hand + mounting; separate FTL tension line per governor"
   },
   {
     "family": "Governors",
     "type": "OL100-RE",
     "oem": "ALL",
-    "ftl_product_code": "WG_OL100_GOVERNOR_RE_LH/RH",
-    "description": "OL100 remote-control governor",
-    "hand": "LH/RH",
+    "ftl_product_code": "WG_OL100_GOVERNOR_RE_LH",
+    "description": "OL100 remote + encoder governor - LH (current inFlow configuration)",
+    "hand": "LH",
     "width_in": null,
     "uom": "each",
-    "price_cad": 13200,
+    "price_cad": 14400,
     "automation_status": "REVIEW",
-    "quantity_basis": "1 per confirmed high-performance application",
-    "companion_selection_rule": "Always add OL100 pit tension assembly at $2,950",
-    "source": "EST-261132 + FTL rule",
-    "notes_issue": "I-006/I-007: not in price list; exact base configuration and hand codes unresolved"
+    "quantity_basis": "1 per confirmed OL100 application",
+    "companion_selection_rule": "FTL rule requires a separate tension line for every OL governor; current inFlow OL100 description already mentions vertical tension/filler weights/fixings - do not double-price automatically",
+    "source": "inFlow_ProductDetails.csv + latest JR/Francine rule",
+    "notes_issue": "I-006 OPEN: reconcile inFlow all-in wording against separate-line FTL rule before automatic release",
+    "inflow_sku": "OL100-NA_STATIC_SHAFT__LH",
+    "inflow_product_name": "WG_OL100_GOVERNOR_RE_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Application + speed + rope/pulley + trip direction/hand + mounting; separate FTL tension line per governor"
   },
   {
     "family": "Governors",
@@ -1369,27 +1879,39 @@
     "width_in": null,
     "uom": "each",
     "price_cad": 2950,
-    "automation_status": "REQUIRED COMPANION",
-    "quantity_basis": "1 per OL100 governor",
-    "companion_selection_rule": "Mandatory FTL rule",
-    "source": "FTL rule",
-    "notes_issue": "I-006: confirm swingarm vs vertical guided assembly, fillers/fixings and exact SKU"
+    "automation_status": "HOLD",
+    "quantity_basis": "1 separate tension line per OL100 governor per FTL rule",
+    "companion_selection_rule": "Required commercially, but no canonical inFlow SKU exists in supplied snapshot; estimator must resolve exact BOM and avoid double-counting with OL100 item description",
+    "source": "Latest JR/Francine rule + historical Stage 2 control",
+    "notes_issue": "I-006 OPEN: exact product/SKU/tension device required before autonomous pricing",
+    "inflow_sku": null,
+    "inflow_product_name": null,
+    "inflow_item_type": null,
+    "inflow_active": null,
+    "price_snapshot_date": null,
+    "release_gate": "Application + speed + rope/pulley + trip direction/hand + mounting; separate FTL tension line per governor"
   },
   {
     "family": "Safety Gear",
     "type": "CSGB03-SYNC",
     "oem": "ALL",
-    "ftl_product_code": "WS_CSGB_CAR_SAFETIES",
-    "description": "Unidirectional car safeties with synchronization",
+    "ftl_product_code": "CSGB03_CAR_SAFETIES",
+    "description": "Unidirectional CSGB03 car safety set with synchronization",
     "hand": "N/A",
     "width_in": null,
     "uom": "pair",
-    "price_cad": 4998.95,
-    "automation_status": "HOLD",
-    "quantity_basis": "1 pair per confirmed car application",
-    "companion_selection_rule": "Never auto-add; engineering selection required",
-    "source": "2026 Price List p.4",
-    "notes_issue": "I-008/I-016: CSGB vs SGB nomenclature, mass ranges, housing and included content unresolved"
+    "price_cad": 5591.6,
+    "automation_status": "REVIEW",
+    "quantity_basis": "1 safety set/pair per confirmed car application",
+    "companion_selection_rule": "FTL commercial rule: SGB01-03 and CSGB use same commercial-price basis; every order includes synchronization + linkage. Technical model still selected by application.",
+    "source": "inFlow_ProductDetails.csv + latest JR/Francine rule + Wittur safety technical table",
+    "notes_issue": "I-008 OPEN: master price normalization and exact SGB02/SGB03/CSGB01 product records still required",
+    "inflow_sku": "CSGB03CAR-SYNC",
+    "inflow_product_name": "CSGB03_CAR_SAFETIES",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Fmax + nominal/trip speed + rail size/condition + governor pull-through/rope location + simplex/duplex; engineering confirmation"
   },
   {
     "family": "Spare Parts",
@@ -1405,7 +1927,13 @@
     "quantity_basis": "Only against an identified replacement requirement",
     "companion_selection_rule": "Do not substitute into a new MOD package",
     "source": "2026 Price List p.6",
-    "notes_issue": "Confirm serial/version compatibility before release"
+    "notes_issue": "Confirm serial/version compatibility before release",
+    "inflow_sku": "1047486A01",
+    "inflow_product_name": "WITTUR_SELCOM_TRANSFORMER",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Spare Parts",
@@ -1421,7 +1949,13 @@
     "quantity_basis": "Only against an identified replacement requirement",
     "companion_selection_rule": "Do not substitute into a new MOD package",
     "source": "2026 Price List p.6",
-    "notes_issue": "Confirm serial/version compatibility before release"
+    "notes_issue": "Confirm serial/version compatibility before release",
+    "inflow_sku": "1047537A03-LH",
+    "inflow_product_name": "SUPRA_MOTOR_ASSY(DRV2) - LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Spare Parts",
@@ -1437,7 +1971,13 @@
     "quantity_basis": "Only against an identified replacement requirement",
     "companion_selection_rule": "Do not substitute into a new MOD package",
     "source": "2026 Price List p.6",
-    "notes_issue": "Confirm serial/version compatibility before release"
+    "notes_issue": "Confirm serial/version compatibility before release",
+    "inflow_sku": "1047537A04-RH",
+    "inflow_product_name": "SUPRA_MOTOR_ASSY(DRV2) - RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Spare Parts",
@@ -1453,7 +1993,13 @@
     "quantity_basis": "Only against an identified replacement requirement",
     "companion_selection_rule": "Do not substitute into a new MOD package",
     "source": "2026 Price List p.6",
-    "notes_issue": "Confirm serial/version compatibility before release"
+    "notes_issue": "Confirm serial/version compatibility before release",
+    "inflow_sku": "1093118A05",
+    "inflow_product_name": "MIDI_SUPRA(V2)_STD_CANBUS",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Spare Parts",
@@ -1469,7 +2015,13 @@
     "quantity_basis": "Only against an identified replacement requirement",
     "companion_selection_rule": "Do not substitute into a new MOD package",
     "source": "2026 Price List p.6",
-    "notes_issue": "Confirm serial/version compatibility before release"
+    "notes_issue": "Confirm serial/version compatibility before release",
+    "inflow_sku": "1039395A03",
+    "inflow_product_name": "SVG2_BRACKET_1S/2C",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Spare Parts",
@@ -1485,7 +2037,13 @@
     "quantity_basis": "Only against an identified replacement requirement",
     "companion_selection_rule": "Do not substitute into a new MOD package",
     "source": "2026 Price List p.6",
-    "notes_issue": "Confirm serial/version compatibility before release"
+    "notes_issue": "Confirm serial/version compatibility before release",
+    "inflow_sku": "1044055P01",
+    "inflow_product_name": "FLAT_SCREW_12X9_M8",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Spare Parts",
@@ -1501,7 +2059,13 @@
     "quantity_basis": "Only against an identified replacement requirement",
     "companion_selection_rule": "Do not substitute into a new MOD package",
     "source": "2026 Price List p.6",
-    "notes_issue": "Confirm serial/version compatibility before release"
+    "notes_issue": "Confirm serial/version compatibility before release",
+    "inflow_sku": "1044055P02",
+    "inflow_product_name": "FLAT_SCREW_20x17_M8",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Spare Parts",
@@ -1517,7 +2081,13 @@
     "quantity_basis": "Only against an identified replacement requirement",
     "companion_selection_rule": "Do not substitute into a new MOD package",
     "source": "2026 Price List p.6",
-    "notes_issue": "Confirm serial/version compatibility before release"
+    "notes_issue": "Confirm serial/version compatibility before release",
+    "inflow_sku": "W001041",
+    "inflow_product_name": "SOCKET_CAP_SCREW-M8x16-8.8",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
   },
   {
     "family": "Spare Parts",
@@ -1533,6 +2103,144 @@
     "quantity_basis": "Only against an identified replacement requirement",
     "companion_selection_rule": "Do not substitute into a new MOD package",
     "source": "2026 Price List p.6",
-    "notes_issue": "Confirm serial/version compatibility before release"
+    "notes_issue": "Confirm serial/version compatibility before release",
+    "inflow_sku": "W001280",
+    "inflow_product_name": "CONTACT_WASHER_8 - FST-ZINC",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Exact approved product identity and application; live inFlow price before release"
+  },
+  {
+    "family": "Door System",
+    "type": "Included Value Line",
+    "oem": "ALL",
+    "ftl_product_code": "SGV2_CAR_DOOR_RESTRICTOR",
+    "description": "SGV2 car door restriction function - Included",
+    "hand": "ALL",
+    "width_in": null,
+    "uom": "value line",
+    "price_cad": 0,
+    "automation_status": "REQUIRED COMPANION",
+    "quantity_basis": "1 per confirmed SGV2 opening",
+    "companion_selection_rule": "Customer-visible $0 value line only; not separate physical BOM hardware unless approved technical documentation requires it",
+    "source": "inFlow_ProductDetails.csv + latest FTL rule",
+    "notes_issue": "Resolved meaning: value statement, not automatic loose hardware",
+    "inflow_sku": "SGV2_UNI_CP_RESTRICTOR",
+    "inflow_product_name": "SGV2_CAR_DOOR_RESTRICTOR",
+    "inflow_item_type": "Service",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Safety: full engineering survey; Door bundle: confirmed opening; Governor: application/speed/rope/hand/mounting as applicable"
+  },
+  {
+    "family": "Safety Gear",
+    "type": "SGB01",
+    "oem": "ALL",
+    "ftl_product_code": "SGB01",
+    "description": "SGB01 safety gear set with housing and synchronization",
+    "hand": "N/A",
+    "width_in": null,
+    "uom": "set/pair",
+    "price_cad": 4998.95,
+    "automation_status": "REVIEW",
+    "quantity_basis": "1 set per confirmed car application",
+    "companion_selection_rule": "Same FTL commercial-price basis as SGB01-03/CSGB; include synchronization + linkage; engineering selects model",
+    "source": "inFlow_ProductDetails.csv + latest JR/Francine rule",
+    "notes_issue": "I-008: inFlow price conflicts with CSGB02/03 $5,591.60. No automatic price until FTL master normalization.",
+    "inflow_sku": "SGB01CAR-SYNC",
+    "inflow_product_name": "SGB01",
+    "inflow_item_type": "Non-stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Safety: full engineering survey; Door bundle: confirmed opening; Governor: application/speed/rope/hand/mounting as applicable"
+  },
+  {
+    "family": "Safety Gear",
+    "type": "CSGB02",
+    "oem": "ALL",
+    "ftl_product_code": "WS_CSGB02_CAR_SAFETIES",
+    "description": "CSGB02 unidirectional car safety set with housing and synchronization",
+    "hand": "N/A",
+    "width_in": null,
+    "uom": "set/pair",
+    "price_cad": 5591.6,
+    "automation_status": "REVIEW",
+    "quantity_basis": "1 set per confirmed car application",
+    "companion_selection_rule": "Same FTL commercial-price basis as SGB01-03/CSGB; include synchronization + linkage; engineering selects model",
+    "source": "inFlow_ProductDetails.csv + latest JR/Francine rule",
+    "notes_issue": "I-008: exact master equal-price normalization still required.",
+    "inflow_sku": "CSGB02CAR-SYNC",
+    "inflow_product_name": "WS_CSGB02_CAR_SAFETIES",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Safety: full engineering survey; Door bundle: confirmed opening; Governor: application/speed/rope/hand/mounting as applicable"
+  },
+  {
+    "family": "Governors",
+    "type": "OL35-RC",
+    "oem": "ALL",
+    "ftl_product_code": "WG_OL35_GOVERNOR_RC_LH",
+    "description": "REMOTE CONTROL GOVENOR (NO SET)",
+    "hand": "LH",
+    "width_in": null,
+    "uom": "each",
+    "price_cad": 2654.4,
+    "automation_status": "CONDITIONAL",
+    "quantity_basis": "1 governor per confirmed application",
+    "companion_selection_rule": "Add separate FTL tension/swingarm line; application/speed/rope/hand/mounting must be confirmed",
+    "source": "inFlow_ProductDetails.csv + FTL governor rules",
+    "notes_issue": "If inFlow description says tension included, FTL separate-line rule controls quote presentation; avoid physical/BOM double count pending normalization.",
+    "inflow_sku": "OL35-RC_LH",
+    "inflow_product_name": "WG_OL35_GOVERNOR_RC_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Safety: full engineering survey; Door bundle: confirmed opening; Governor: application/speed/rope/hand/mounting as applicable"
+  },
+  {
+    "family": "Governors",
+    "type": "OL35-RC",
+    "oem": "ALL",
+    "ftl_product_code": "WG_OL35_GOVERNOR_RC_RH",
+    "description": "REMOTE CONTROL GOVENOR (NO SET)",
+    "hand": "RH",
+    "width_in": null,
+    "uom": "each",
+    "price_cad": 2654.4,
+    "automation_status": "CONDITIONAL",
+    "quantity_basis": "1 governor per confirmed application",
+    "companion_selection_rule": "Add separate FTL tension/swingarm line; application/speed/rope/hand/mounting must be confirmed",
+    "source": "inFlow_ProductDetails.csv + FTL governor rules",
+    "notes_issue": "If inFlow description says tension included, FTL separate-line rule controls quote presentation; avoid physical/BOM double count pending normalization.",
+    "inflow_sku": "OL35_RC_RH",
+    "inflow_product_name": "WG_OL35_GOVERNOR_RC_RH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Safety: full engineering survey; Door bundle: confirmed opening; Governor: application/speed/rope/hand/mounting as applicable"
+  },
+  {
+    "family": "Governors",
+    "type": "OL35-RE",
+    "oem": "ALL",
+    "ftl_product_code": "WG_OL35_GOVERNOR_RE_LH",
+    "description": "REMOTE+ENCODER GOVENOR (CAR ONLY)  INCLUDES SWINGARM TENSION WEIGHT & FIXINGS",
+    "hand": "LH",
+    "width_in": null,
+    "uom": "each",
+    "price_cad": 3480.4,
+    "automation_status": "CONDITIONAL",
+    "quantity_basis": "1 governor per confirmed application",
+    "companion_selection_rule": "Add separate FTL tension/swingarm line; application/speed/rope/hand/mounting must be confirmed",
+    "source": "inFlow_ProductDetails.csv + FTL governor rules",
+    "notes_issue": "If inFlow description says tension included, FTL separate-line rule controls quote presentation; avoid physical/BOM double count pending normalization.",
+    "inflow_sku": "OL35-RE_LH",
+    "inflow_product_name": "WG_OL35_GOVERNOR_RE_LH",
+    "inflow_item_type": "Stocked product",
+    "inflow_active": "True",
+    "price_snapshot_date": "2026-10-16",
+    "release_gate": "Safety: full engineering survey; Door bundle: confirmed opening; Governor: application/speed/rope/hand/mounting as applicable"
   }
 ]

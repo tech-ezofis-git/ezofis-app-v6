@@ -54,5 +54,77 @@
     "expected_quote_logic": "No priced safety until completed survey and CSGB/SGB mapping approval",
     "must_not_do": "Mass and rail condition govern; rail alone is insufficient",
     "notes": "Pair quantity only after engineering confirmation"
+  },
+  {
+    "test_id": "T-008",
+    "scenario": "Capital Renewal / EST-261073",
+    "confirmed_scope": "Initial qualifier result: DISQUALIFIED; later estimate exists",
+    "expected_quote_logic": "Retain DISQUALIFIED at intake; record HUMAN OVERRIDE and EST-261073 as downstream outcome",
+    "must_not_do": "Do not relabel as qualified or use as positive qualifier training",
+    "notes": "Override reason and approver required"
+  },
+  {
+    "test_id": "T-009",
+    "scenario": "700 Bannermount / later 25 Pickering quotes",
+    "confirmed_scope": "Initial qualifier result: DISQUALIFIED; later quote activity exists",
+    "expected_quote_logic": "Keep initial classification separate from later manual sales action",
+    "must_not_do": "Do not merge project names or overwrite the intake label",
+    "notes": "Reconcile project identity before training use"
+  },
+  {
+    "test_id": "T-010",
+    "scenario": "2645 Battleford / EST-261057",
+    "confirmed_scope": "Two customer/project records reference the same estimate number",
+    "expected_quote_logic": "Place both records on HOLD pending source reconciliation",
+    "must_not_do": "Do not create two training pairs from one estimate number",
+    "notes": "Element and Trident records require confirmation"
+  },
+  {
+    "test_id": "T-011",
+    "scenario": "120 Bloor quote-number mismatch",
+    "confirmed_scope": "Existing records cite EST-261114 and new records cite EST-261110/261113",
+    "expected_quote_logic": "Place on HOLD until the correct RFQ-to-estimate mapping is confirmed",
+    "must_not_do": "Do not associate EST-261057 with 120 Bloor",
+    "notes": "EST-261057 belongs to the Battleford issue"
+  },
+  {
+    "test_id": "T-012",
+    "scenario": "Three-quote architecture",
+    "confirmed_scope": "Qualified enquiry with one base scope and one approved FTL upgrade",
+    "expected_quote_logic": "Quote 1 exactly spec; Quote 2 only approved recommendation; Quote 3 only if a legitimate alternate exists",
+    "must_not_do": "Do not invent a third option",
+    "notes": "Expect NO VALID THIRD OPTION when appropriate"
+  },
+  {
+    "test_id": "T-013",
+    "scenario": "Survey round-trip",
+    "confirmed_scope": "RFQ has most SGV2 data but Car 3 Rear top-of-door pattern missing",
+    "expected_quote_logic": "Generate targeted Car 3 Rear survey request; SEND TO ESTIMATING updates same project; rerun qualification",
+    "must_not_do": "Do not request full re-survey or create new project",
+    "notes": "One controlled record per entrance"
+  },
+  {
+    "test_id": "T-014",
+    "scenario": "Single SGV2 freight",
+    "confirmed_scope": "One SGV2 package with confirmed ship-to location",
+    "expected_quote_logic": "GTA -> $375; approx. <=150 km outside downtown Toronto -> $450; beyond -> manual review",
+    "must_not_do": "Do not copy historical $850/$975 freight",
+    "notes": "Commercial rule test"
+  },
+  {
+    "test_id": "T-015",
+    "scenario": "No automatic discount",
+    "confirmed_scope": "Historic quote shows discount/free tool but current enquiry has no manual approval",
+    "expected_quote_logic": "Use live inFlow price and charge tool if required",
+    "must_not_do": "Do not infer customer discount or bundle incentive",
+    "notes": "Manual estimator approval only"
+  },
+  {
+    "test_id": "T-016",
+    "scenario": "Safety selection",
+    "confirmed_scope": "Safety explicitly required and full technical inputs supplied",
+    "expected_quote_logic": "Engineering selects correct SGB/CSGB family; sync + linkage included; price remains review until master normalized",
+    "must_not_do": "Do not select by rail size alone or assume equal price means interchangeable",
+    "notes": "Technical/commercial separation test"
   }
 ]
