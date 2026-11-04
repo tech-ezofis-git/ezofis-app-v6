@@ -1,7 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { animate, motion, useReducedMotion } from 'motion/react'
+import { animate, motion } from 'motion/react'
 import {
   type ReactNode,
   useCallback,
@@ -169,20 +169,15 @@ const toLocalDay = (value: string) => {
 
 /** Counts up from 0 to `value` when shown (the pop-up's total). */
 const CountUp = ({ value }: { value: number }) => {
-  const reduceMotion = useReducedMotion()
-  const [shown, setShown] = useState(reduceMotion ? value : 0)
+  const [shown, setShown] = useState(0)
   useEffect(() => {
-    if (reduceMotion) {
-      setShown(value)
-      return
-    }
     const controls = animate(0, value, {
       duration: 0.8,
       ease: 'easeOut',
       onUpdate: (latest) => setShown(latest),
     })
     return () => controls.stop()
-  }, [value, reduceMotion])
+  }, [value])
   return <>{formatTotal(Math.round(shown))}</>
 }
 
@@ -779,8 +774,6 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
   const totalsInToolbar = isDefaultReport && columnTotals.length === 1
   // The toolbar total opens its split (e.g. Credits by Agent) in a pop-up.
   const [showBreakdown, setShowBreakdown] = useState(false)
-  // The pop-up's animations are skipped for users who ask for reduced motion.
-  const reduceMotion = useReducedMotion()
   const canShowBreakdown = Boolean(
     totalsInToolbar && totalsBreakdown && totalsBreakdown.items.length > 0,
   )
@@ -995,10 +988,8 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                         return (
                           <motion.li
                             animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 8 }}
                             key={name}
-                            initial={
-                              reduceMotion ? false : { opacity: 0, y: 8 }
-                            }
                             transition={{
                               delay,
                               duration: 0.25,
@@ -1020,7 +1011,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                               <motion.div
                                 animate={{ width: `${Math.max(share, 2)}%` }}
                                 className='h-full rounded-full bg-primary-9'
-                                initial={reduceMotion ? false : { width: 0 }}
+                                initial={{ width: 0 }}
                                 transition={{
                                   delay: delay + 0.15,
                                   duration: 0.6,
