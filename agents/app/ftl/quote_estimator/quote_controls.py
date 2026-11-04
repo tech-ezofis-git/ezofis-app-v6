@@ -541,6 +541,100 @@ def car_door_decision(candidate_text: str) -> Dict[str, Any]:
     }
 
 
+# Default panel adaptor (FTL, F. Lewis 2026-10-21 — data/rulebook/ftl_overrides.json: DOOR-006)
+DEFAULT_ADAPTOR_MARK = "DEFAULT adaptor"
+DEFAULT_ADAPTOR_HOLD_ITEM = "Car doors — default adaptor priced"
+_OP_CODE_RE = re.compile(r"SGV2_DOOR_OP_(1S|2C|2T)(\d+)_(L|R)H?$", re.IGNORECASE)
+_OEM_WORD_RE = re.compile(
+    r"\b(GAL|MAC|Dover|Otis|Schindler|Kone|Thyssen(?:krupp)?|Montgomery|Fujitec|Westinghouse|Armor|AMD)\b", re.IGNORECASE
+)
+_STOCKED_ADAPTOR_OEMS = {"GAL": "GAL", "MAC": "MAC", "DOVER": "DOVER"}
+
+
+def is_default_adaptor(it: Dict[str, Any]) -> bool:
+    return it.get("category") == "panel_adaptor" and DEFAULT_ADAPTOR_MARK in str(it.get("note") or "")
+
+
+def adaptor_oem_from_text(candidate_text: str) -> Tuple[Optional[str], List[str], str]:
+    """(oem, names_found, source sentence). `oem` is GAL / MAC / DOVER when the RFQ's car-door sentences name exactly
+    one stocked OEM; None with names_found == [] when the RFQ never names one (-> FTL default, GAL); None with names
+    when the OEM is not stocked or the statements conflict (-> held). Only sentences about the car / cab door or its
+    panel count, and never landing / hall / hoistway sentences (GAL *locks* are not the car door's OEM)."""
+    text = survey_form.strip_survey_template_text(candidate_text or "")
+    found: Dict[str, str] = {}
+    for raw in _CD_SENTENCE_SPLIT_RE.split(text):
+        sent = raw.strip()
+        if not sent or not (_CD_MENTION_RE.search(sent) or re.search(r"door\s+panels?", sent, re.IGNORECASE)):
+            continue
+        if re.search(r"landing|hall|hoistway", sent, re.IGNORECASE):
+            continue
+        for m in _OEM_WORD_RE.finditer(sent):
+            found.setdefault(m.group(1).upper(), sent[:160])
+    names = sorted(found)
+    if not names:
+        return None, [], ""
+    if len(names) == 1 and names[0] in _STOCKED_ADAPTOR_OEMS:
+        return _STOCKED_ADAPTOR_OEMS[names[0]], names, found[names[0]]
+    return None, names, found[names[0]]
+
+
+def add_default_adaptors(
+    quote: Dict[str, Any], items: List[Dict[str, Any]], candidate_text: str
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """One panel adaptor per operator line, inserted directly below it (line 1 operator, line 2 adaptor).
+    OEM = the one the RFQ names (when stocked) else the FTL default GAL; width and type = the operator's;
+    hand = the operator's. Returns (items, problems) — a problem is an operator whose type / width / OEM has no
+    stocked adaptor: that opening is held, never guessed."""
+    oem, names, sentence = adaptor_oem_from_text(candidate_text)
+    problems: List[str] = []
+    if names and not oem:
+        problems.append(
+            "the RFQ names the existing car-door OEM as " + ", ".join(names) + ", for which there is no single stocked adaptor"
+        )
+        return items, problems
+    use_oem = oem or rules_engine.DEFAULT_ADAPTOR_OEM
+    out: List[Dict[str, Any]] = []
+    for it in items:
+        out.append(it)
+        if it.get("category") != "door_operator":
+            continue
+        m = _OP_CODE_RE.search(str(it.get("product_code") or ""))
+        if not m:
+            problems.append(f"operator {it.get('product_code')}: type / width / hand cannot be read from the code")
+            continue
+        fam, width, hand = m.group(1).upper(), int(m.group(2)), m.group(3).upper()
+        row = rules_engine.panel_adaptor_row(fam, width, use_oem, hand)
+        if not row:
+            problems.append(f"no stocked {use_oem} adaptor for {fam} {width} in")
+            continue
+        side = "LH" if hand == "L" else "RH"
+        if oem:
+            note = (
+                f"✓ Panel adaptor for the existing {oem} car door named in the RFQ ('{sentence}'): type {fam}, width {width} in "
+                f"(the operator's), hand {side} (the operator's). Confirm the hand and the complete top-of-door bolt pattern at survey "
+                "(DOOR-006, DOOR-008)."
+            )
+        else:
+            note = (
+                f"⚠ {DEFAULT_ADAPTOR_MARK} per FTL (F. Lewis, 2026-10-21): the RFQ does not state the existing car-door OEM, so this is "
+                f"GAL (the most common), type {fam}, width {width} in (the operator's), hand {side} (the operator's; LH when unknown). "
+                "Confirm the OEM, hand and the complete top-of-door bolt pattern at survey (DOOR-006, DOOR-008)."
+            )
+        out.append(
+            {
+                "product_code": row["ftl_product_code"],
+                "description": row.get("description") or row["ftl_product_code"],
+                "category": "panel_adaptor",
+                "qty": _qty(it),
+                "unit_price": float(row.get("price_cad") or 0),
+                "needs_engineering_review": True,
+                "note": note,
+                "origin": "FTL_RULE",
+            }
+        )
+    return out, problems
+
+
 _PANEL_AUTO_ADDED_MARK = "AUTO-ADDED — every SGV2 door operator needs a matching car door panel"
 
 
@@ -590,33 +684,61 @@ def enforce_car_door_decision(quote: Dict[str, Any], candidate_text: str = "") -
                     it["needs_engineering_review"] = True
                     _append_note(it, f"⚠ REVIEW — {why}; a universal door line is not expected in the base scope.")
         if not adaptors:
-            add_held_item(
-                quote,
-                item="Car door panel adaptor",
-                reason=f"{why}. The adaptor SKU depends on the existing OEM, configuration, opening, hand and the complete top-of-door bolt pattern, none of which the RFQ gives.",
-                rules=["DOOR-006", "RT-004", "OTIS-001"],
-                needed="Existing OEM, configuration, opening, hand, complete top-of-door bolt pattern (survey).",
-            )
+            items, problems = add_default_adaptors(quote, items, candidate_text)
+            added = [it for it in items if it.get("category") == "panel_adaptor"]
+            if added and any(is_default_adaptor(it) for it in added):
+                add_held_item(
+                    quote,
+                    item=DEFAULT_ADAPTOR_HOLD_ITEM,
+                    reason=f"{why}, but the RFQ gives no car-door OEM or hand, so each operator carries FTL's default adaptor (GAL, the operator's width and hand).",
+                    rules=["DOOR-006", "DOOR-008"],
+                    needed="Existing OEM, hall-view hand and the complete top-of-door bolt pattern (survey) to confirm or replace the default adaptor.",
+                    level="REVIEW",
+                )
+            if problems:
+                add_held_item(
+                    quote,
+                    item="Car door panel adaptor",
+                    reason=f"{why}, but no adaptor can be chosen: " + "; ".join(problems) + ".",
+                    rules=["DOOR-006", "RT-004", "OTIS-001"],
+                    needed="Existing OEM, configuration, opening, hand, complete top-of-door bolt pattern (survey), or a custom quote.",
+                )
     else:  # unclear
-        if info.get("silent") and (panels or adaptors):
-            # The RFQ never mentions the car doors, so ANY panel / adaptor the model priced is a guess — and it
-            # guesses differently run to run. Remove it; the estimate carries a hold instead (never guess).
-            removed = ", ".join(sorted({str(it.get("product_code") or it.get("description") or "?") for it in panels + adaptors}))
-            items = [it for it in items if it not in panels and it not in adaptors]
-            _add_assumption(
-                quote,
-                f"\U0001F6D1 HOLD FOR REVIEW — car doors: the RFQ says nothing about the car doors, so the door line(s) the agent had "
-                f"guessed ({removed}) were removed rather than priced. " + rules_engine.cite_trigger("RT-004"),
-            )
+        if info.get("silent") and any(it.get("category") == "door_operator" for it in items):
+            # The RFQ never mentions the car doors. FTL's rule (F. Lewis 2026-10-21, DOOR-006): Quote 1 pairs each operator with
+            # the DEFAULT adaptor — and whatever panel / adaptor the model priced on its own is a guess that differs run to run,
+            # so it is replaced by that one deterministic default. The universal door is Quote 2's job (DOOR-005).
+            guesses = panels + [it for it in adaptors if not is_default_adaptor(it)]
+            if guesses:
+                removed = ", ".join(sorted({str(it.get("product_code") or it.get("description") or "?") for it in guesses}))
+                items = [it for it in items if it not in guesses]
+                _add_assumption(
+                    quote,
+                    f"ℹ Car doors: the RFQ says nothing about them, so the door line(s) the agent had guessed ({removed}) were replaced by "
+                    "FTL's default panel adaptor (DOOR-006); the new universal door is offered on Quote 2 (DOOR-005).",
+                )
+            if not any(is_default_adaptor(it) for it in items):
+                items, problems = add_default_adaptors(quote, items, candidate_text)
+                if any(is_default_adaptor(it) for it in items):
+                    add_held_item(
+                        quote,
+                        item=DEFAULT_ADAPTOR_HOLD_ITEM,
+                        reason="The RFQ does not say whether the car doors are retained or replaced, nor the OEM / hand, so each operator carries FTL's default adaptor (GAL, the operator's width and hand).",
+                        rules=["DOOR-006", "DOOR-008"],
+                        needed="Estimator confirms retain vs replace, the existing OEM, hall-view hand and the top-of-door bolt pattern.",
+                        level="REVIEW",
+                    )
+                if problems:
+                    add_held_item(
+                        quote,
+                        item="Car doors — new universal doors vs retained doors",
+                        reason="HOLD FOR REVIEW: the RFQ does not say whether the car doors are replaced / skinned or retained and no default adaptor is stocked: " + "; ".join(problems) + ".",
+                        rules=["DOOR-004", "DOOR-005", "DOOR-006"],
+                        needed="Estimator confirms: replace / skin (universal doors) or retain (OEM adaptor + bolt pattern).",
+                    )
+            panels = [it for it in items if it.get("category") == "car_door_panel"]
+            adaptors = [it for it in items if it.get("category") == "panel_adaptor"]
             auto_added = []
-            panels, adaptors = [], []
-            add_held_item(
-                quote,
-                item="Car doors — new universal doors vs retained doors",
-                reason="HOLD FOR REVIEW: the RFQ does not say whether the car doors are replaced / skinned or retained, so no door line is priced (CAR DOOR RULE).",
-                rules=["DOOR-004", "DOOR-005", "DOOR-006"],
-                needed="Estimator confirms: replace / skin (universal doors) or retain (OEM adaptor + bolt pattern).",
-            )
         if auto_added:
             items = [it for it in items if it not in auto_added]
             add_held_item(
@@ -631,7 +753,7 @@ def enforce_car_door_decision(quote: Dict[str, Any], candidate_text: str = "") -
                 "\U0001F6D1 HOLD FOR REVIEW — car doors: the RFQ does not say whether to replace / skin or retain them; the default "
                 "universal-door line was removed rather than guessed. " + rules_engine.cite_trigger("RT-004"),
             )
-        elif panels or adaptors:
+        elif (panels or adaptors) and not info.get("silent"):
             for it in panels + adaptors:
                 it["needs_engineering_review"] = True
                 _append_note(it, "⚠ REVIEW — the RFQ is unclear whether car doors are replaced or retained (CAR DOOR RULE).")
@@ -1033,9 +1155,34 @@ def enforce_survey_form(quote: Dict[str, Any], candidate_text: str = "") -> Dict
         panel_iface = str(c.get("cab_panel_interface") or "").strip().upper()
         if cab == "0":
             ad_row = None
-            if fam == "1S" and hand in ("L", "R") and width and panel_iface in _SURVEY_ADAPTOR_OEM:
-                ad_row = rules_engine.resolve_master_row(f"SGV2(1S)_PANEL_ADAPTOR_{_SURVEY_ADAPTOR_OEM[panel_iface]}{int(width)}_{hand}H")
-            if ad_row:
+            default_used = False
+            if fam in ("1S", "2C", "2T") and hand in ("L", "R") and width:
+                if panel_iface in _SURVEY_ADAPTOR_OEM:
+                    ad_row = rules_engine.panel_adaptor_row(fam, width, _SURVEY_ADAPTOR_OEM[panel_iface], hand)
+                elif not panel_iface:
+                    # 10b left blank: FTL's default adaptor (GAL, the operator's width and hand — DOOR-006, F. Lewis 2026-10-21)
+                    ad_row = rules_engine.panel_adaptor_row(fam, width, rules_engine.DEFAULT_ADAPTOR_OEM, hand)
+                    default_used = bool(ad_row)
+            if ad_row and default_used:
+                new_lines.append(
+                    _survey_line(
+                        ad_row,
+                        "panel_adaptor",
+                        qty,
+                        f"⚠ {DEFAULT_ADAPTOR_MARK} per FTL (F. Lewis, 2026-10-21): {tag} retains the existing cab door but 10b (cab door panel "
+                        "interface) is not selected, so this is GAL (the most common), the operator's width and hand. Confirm 10b and the bolt pattern (A-F, S).",
+                        "FTL_RULE",
+                    )
+                )
+                add_held_item(
+                    quote,
+                    item=DEFAULT_ADAPTOR_HOLD_ITEM,
+                    reason=f"Survey config #{n}: the existing cab door is retained but 10b cab door panel interface is NOT SELECTED, so FTL's default adaptor (GAL, the operator's width and hand) is priced.",
+                    rules=["DOOR-006", "DOOR-008"],
+                    needed="10b panel interface (AMD / MAC / DOVER / GAL / ARMOR) and the bolt pattern to confirm or replace the default adaptor.",
+                    level="REVIEW",
+                )
+            elif ad_row:
                 new_lines.append(_survey_line(ad_row, "panel_adaptor", qty, f"✓ From {tag}: existing cab door retained, panel interface {panel_iface}. Confirm the bolt pattern (A-F, S).", "SPEC"))
             else:
                 add_held_item(
@@ -1076,7 +1223,7 @@ def enforce_survey_form(quote: Dict[str, Any], candidate_text: str = "") -> Dict
     for it in items:
         if it.get("product_code") == "SGV2_CAR_DOOR_RESTRICTOR":
             it["qty"] = total_ops
-    items += new_lines
+    items = new_lines + items  # the door package leads the estimate: operator, its adaptor / door, clutch ...
     if re.search(r"vision\s*plus", det_type, re.IGNORECASE):
         d_row = rules_engine.detector_row()
         items = [it for it in items if it.get("category") != "door_protective_device"]
@@ -1279,8 +1426,49 @@ def enforce_unread_attachments(quote: Dict[str, Any], candidate_text: str = "") 
     return quote
 
 
+_ADAPTOR_KEY_RE = re.compile(r"^SGV2\((1S|2C|2T)\)_(?:PANEL_ADAPTOR|DP)_[A-Z]+?(\d+)_", re.IGNORECASE)
+_UNIVERSAL_KEY_RE = re.compile(r"^(1S|2C|2T)_.*UNIVERSAL_CAR_DOOR_PANEL\s*-\s*(\d+)\s*X", re.IGNORECASE)
+
+
+def order_panel_lines(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """FTL's layout (F. Lewis, 2026-10-21): line 1 the door operator, line 2 its panel adaptor (or, on Quote 2, its universal
+    car door). Moves each adaptor / universal-door line directly below the operator of the same type and width; every other
+    line keeps its place. A panel line with no matching operator is left where it is. Idempotent."""
+    ops: List[Tuple[int, Tuple[str, str]]] = []
+    for i, it in enumerate(items):
+        if it.get("category") == "door_operator":
+            code = str(it.get("product_code") or "")
+            m = _OP_CODE_RE.search(code) or re.search(r"SGV2_DOOR_OP_(1S|2C|2T)(\d+)", code, re.IGNORECASE)
+            if m:
+                ops.append((i, (m.group(1).upper(), m.group(2))))
+    queues: Dict[Tuple[str, str], List[int]] = {}
+    op_keys = {k for _i, k in ops}
+    for i, it in enumerate(items):
+        if it.get("category") not in ("panel_adaptor", "car_door_panel"):
+            continue
+        code = str(it.get("product_code") or "")
+        m = _ADAPTOR_KEY_RE.match(code) or _UNIVERSAL_KEY_RE.match(code)
+        if m and (m.group(1).upper(), m.group(2)) in op_keys:
+            queues.setdefault((m.group(1).upper(), m.group(2)), []).append(i)
+    if not queues:
+        return items
+    moved = {i for q in queues.values() for i in q}
+    out: List[Dict[str, Any]] = []
+    for i, it in enumerate(items):
+        if i in moved:
+            continue
+        out.append(it)
+        key = next((k for oi, k in ops if oi == i), None)
+        if key and queues.get(key):
+            out.append(items[queues[key].pop(0)])
+    for q in queues.values():  # more panel lines than operators of that type: keep them, after the last operator line
+        out.extend(items[i] for i in q)
+    return out
+
+
 def finalize_quote(quote: Dict[str, Any], candidate_text: str = "") -> Dict[str, Any]:
     quote = enforce_car_door_decision(quote, candidate_text)
+    quote["line_items"] = order_panel_lines(list(_lines(quote)))
     quote = reconcile_opening_counts(quote, candidate_text)
     quote = annotate_line_traceability(quote, candidate_text)
     quote["internal_notes"] = build_internal_notes(quote, candidate_text)
