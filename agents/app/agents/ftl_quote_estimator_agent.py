@@ -25,7 +25,7 @@ from app.ftl.quote_estimator import (
     agent as quote_agent,
 )
 from app.ftl.quote_estimator.quote_public import derive_quote_variants, public_quote_payload
-from app.ftl.quote_estimator.quote_select import form_data_for_quote_type
+from app.ftl.quote_estimator.quote_select import clean_contact_fields, form_data_for_quote_type
 from app.ftl.quote_estimator.rfq_master import apply_rfq_master_addresses, qualifier_lookup_text
 from app.ftl.quote_estimator.quote_pdf import generate_quote_pdf
 from app.ftl.quote_estimator.quote_template import compute_totals, render_quote_html
@@ -355,7 +355,7 @@ class FtlQuoteEstimatorAgent:
 
             quote_result, total_tokens = await asyncio.to_thread(_run)
             quote_result = await apply_rfq_master_addresses(
-                quote_result,
+                clean_contact_fields(quote_result),
                 candidate_text=lookup_text,
                 email_meta=email_meta or None,
                 tenant_id=tenant_id,
