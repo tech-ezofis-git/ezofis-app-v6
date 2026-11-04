@@ -99,6 +99,7 @@ import {
   resolveQuoteFieldVariant,
   resolveRowQuoteVariant,
   stripQuoteVariantLabel,
+  resolveAgentFreight,
   resolveVariantScalarFromResult,
   effectiveDynamicColumns,
   extractQuoteVariantEmptyMeta,
@@ -651,9 +652,13 @@ const QuoteAgentResultView = ({
 
   // A variant only carries the fields that differ from Quote 1, so no freight
   // of its own means Quote 1's freight applies.
+  const resolveMainFreight = () =>
+    resolveTotalEntryValue('main', 'freight') ||
+    resolveAgentFreight(result, resolveTotalEntryValue('main', 'tax'))
   const resolveFreightForVariant = (variantId: QuoteVariantId) =>
-    resolveTotalEntryValue(variantId, 'freight') ||
-    (variantId === 'main' ? 0 : resolveTotalEntryValue('main', 'freight'))
+    variantId === 'main'
+      ? resolveMainFreight()
+      : resolveTotalEntryValue(variantId, 'freight') || resolveMainFreight()
 
   const resolveDiscountForVariant = (variantId: QuoteVariantId) =>
     resolveTotalEntryValue(variantId, 'discount')
@@ -1472,13 +1477,21 @@ const QuoteAgentResultView = ({
     if (!error) void refetchClientMaster()
   }
 
+  // The value when Bill To was opened: clicking in and out must not save anything.
+  const billToOnOpenRef = useRef('')
   const changeActiveEdit = (nextId: string | null) => {
     const leftId = activeEditId
+    const billToId = billingField ? getFieldId(billingField) : ''
+    const billTo = String(readFormValue(billingField) ?? '').trim()
     setActiveEditId(nextId)
+    if (billToId && nextId === billToId && leftId !== billToId) {
+      billToOnOpenRef.current = billTo
+    }
     if (
-      billingField &&
-      leftId === getFieldId(billingField) &&
-      nextId !== leftId
+      billToId &&
+      leftId === billToId &&
+      nextId !== billToId &&
+      billTo !== billToOnOpenRef.current
     ) {
       void saveBillToMaster()
     }

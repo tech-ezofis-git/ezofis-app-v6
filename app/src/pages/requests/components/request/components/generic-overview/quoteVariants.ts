@@ -260,6 +260,30 @@ export const resolveVariantScalarFromResult = (
   return null
 }
 
+/**
+ * The agent's freight, while it still applies: the form has no freight of its
+ * own but still holds the agent's HST, which was charged on that freight. A user
+ * who sets freight to 0 also recalculates HST, so their 0 stays.
+ */
+export const resolveAgentFreight = (
+  result: Record<string, any> | null | undefined,
+  savedHst: number,
+): number => {
+  if (!result || typeof result !== 'object') return 0
+  let freight = 0
+  let agentHst = 0
+  Object.entries(result).forEach(([key, value]) => {
+    const compact = compactKey(key)
+    const num = Number(value)
+    if (!Number.isFinite(num)) return
+    if (compact === 'freight' || compact === 'freightestimate') {
+      freight = Math.max(freight, num)
+    }
+    if (compact === 'hst') agentHst = num
+  })
+  return freight > 0 && Math.abs(agentHst - savedHst) < 0.01 ? freight : 0
+}
+
 const buildVariant = (
   id: QuoteVariantId,
   rows: Record<string, any>[],
