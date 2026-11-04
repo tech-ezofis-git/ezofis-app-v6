@@ -58,6 +58,31 @@ PRICING_CONTROL: List[Dict[str, Any]] = _load_optional("pricing_control.json", [
 QUOTE_LOGIC: List[Dict[str, Any]] = _load_optional("quote_logic.json", [])
 INFLOW_SNAPSHOT: Dict[str, Any] = _load_optional("inflow_snapshot.json", {})
 RULEBOOK_META: Dict[str, Any] = _load_optional("rulebook_meta.json", {})
+FTL_OVERRIDES: Dict[str, Any] = _load_optional("ftl_overrides.json", {})
+
+
+def _upsert(rows: List[Dict[str, Any]], key: str, new_rows: Any) -> None:
+    """Merge hand-maintained FTL override rows over a generated table, matching on `key`."""
+    index = {r.get(key): i for i, r in enumerate(rows)}
+    for new_row in new_rows or []:
+        row_key = new_row.get(key)
+        if row_key in index:
+            rows[index[row_key]] = {**rows[index[row_key]], **new_row}
+        else:
+            rows.append(dict(new_row))
+            index[row_key] = len(rows) - 1
+
+
+# ftl_overrides.json = written FTL rules that sit ABOVE the generated v1.1 tables in the source
+# hierarchy. Applied before any lookup table below is built.
+_upsert(DECISION_RULES, "rule_id", FTL_OVERRIDES.get("decision_rules"))
+_upsert(REVIEW_TRIGGERS, "trigger_id", FTL_OVERRIDES.get("review_triggers"))
+_upsert(SOURCE_REGISTER, "source_id", FTL_OVERRIDES.get("source_register"))
+
+
+def overrides_applied() -> List[str]:
+    """Ids of the written FTL overrides layered over the generated rulebook."""
+    return [o.get("id") for o in FTL_OVERRIDES.get("overrides") or []]
 
 # Price book overlay — FTL's Contractor Price Book (.docx) layered on the Stage 2 Product Master.
 # product_master.json goes stale when FTL publishes a new price list; the overlay is generated from
@@ -392,6 +417,24 @@ def detector_power_supply_row() -> Optional[Dict[str, Any]]:
 
 def universal_door_panel_rows() -> List[Dict[str, Any]]:
     return [p for p in PRODUCT_MASTER if "Universal Car Door" in (p.get("type") or "")]
+
+
+_ADAPTOR_OEM_CODES = {"GAL": "GAL", "MAC": "MAC", "DOVER": "DOV", "DOV": "DOV"}
+DEFAULT_ADAPTOR_OEM = "GAL"  # FTL default (F. Lewis 2026-10-21): GAL because it's most common
+
+
+def panel_adaptor_row(door_type: str, width: Any, oem: str = DEFAULT_ADAPTOR_OEM, hand: str = "L") -> Optional[Dict[str, Any]]:
+    """The Product Master row for the OEM panel adaptor SGV2(<1S|2T|2C>)_DP_<OEM><width>_<LH|RH>, or None
+    when none is stocked (e.g. 1S 48 in, 2T 36 in, an OTIS adaptor). Exact code only — never a near match."""
+    try:
+        w = int(float(width))
+    except (TypeError, ValueError):
+        return None
+    code_oem = _ADAPTOR_OEM_CODES.get(str(oem or "").upper())
+    if not code_oem or str(door_type or "").upper() not in ("1S", "2T", "2C"):
+        return None
+    side = "LH" if str(hand or "L").upper().startswith("L") else "RH"
+    return product_master_row(f"SGV2({door_type.upper()})_DP_{code_oem}{w}_{side}")
 
 
 def universal_panel_row(door_type: str, width: Any) -> Optional[Dict[str, Any]]:
