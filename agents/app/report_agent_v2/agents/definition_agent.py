@@ -21,7 +21,7 @@ from app.control import agent_request_log
 from app.report_agent_v2.agents.planner import ReportPlanner
 from app.report_agent_v2.config import Settings
 from app.report_agent_v2.domain import source_catalog
-from app.report_agent_v2.domain.compiler import AI_TOTAL_REFS, CompiledQuery, SpecValidationError, compile_spec
+from app.report_agent_v2.domain.compiler import CompiledQuery, SpecValidationError, compile_spec
 from app.report_agent_v2.domain.executor import run_compiled
 from app.report_agent_v2.domain.source_catalog import SourceCatalog
 from app.report_agent_v2.domain.spec import OrderBy, OutputColumn, ReportSpec
@@ -112,8 +112,7 @@ def with_ticket_columns(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
     Every report is one row per request (workflow) or file (folder): a grouped / summary spec is
     turned into a list first (_as_list_report). Workflow reports get Request No first, then the
     report's own columns, then Stage / Created By / Action By / Created At / Modified At; every
-    report then gets all AI usage fields when the tenant has the AI usage log, with the AI numbers
-    totalled in the Totals row. Columns the report already shows are not repeated.
+    report then gets all AI usage fields when the tenant has the AI usage log. Columns the report already shows are not repeated.
     """
     if spec.group_by or spec.measures:
         spec = _as_list_report(spec, catalog)
@@ -125,11 +124,9 @@ def with_ticket_columns(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
         if ref is None or any(r in shown for r in refs):
             continue
         (lead if ref == "sys.request_no" else tail).append(OutputColumn(ref=ref, label=label))
-    columns = lead + list(spec.columns) + tail
-    totals = spec.totals or any(c.ref in AI_TOTAL_REFS for c in columns)
-    if columns == list(spec.columns) and totals == spec.totals:
+    if not lead and not tail:
         return spec
-    return spec.model_copy(update={"columns": columns, "totals": totals})
+    return spec.model_copy(update={"columns": lead + list(spec.columns) + tail})
 
 
 # Default columns that were dropped from the lists above. A saved report keeps them until it is

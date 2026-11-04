@@ -80,9 +80,6 @@ _AI_USAGE_SQL = {
     "ai_credits": "(al.credits_charged)::numeric",
     "ai_runs": "(al.runs)::numeric",
 }
-# AI number columns that get a report total (Totals row) on one-row-per-record reports.
-AI_TOTAL_REFS = frozenset({"sys.ai_duration", "sys.ai_tokens", "sys.ai_cost", "sys.ai_credits", "sys.ai_runs"})
-
 
 def _ident(*parts: str) -> sql.Composable:
     return sql.SQL(".").join(sql.Identifier(p) for p in parts)
@@ -635,7 +632,7 @@ class _Compiler:
             used_keys.add(key)
             total = s.totals and expr.dtype == "number" and (
                 (role == "measure" and measure_fn.get(col.ref) in ("sum", "count", "count_distinct"))
-                or (role == "value" and (col.ref in derived_ids or col.ref in AI_TOTAL_REFS))
+                or (role == "value" and col.ref in derived_ids)
             )
             columns.append(
                 ColumnMeta(
