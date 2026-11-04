@@ -843,12 +843,26 @@ export const useWorkflowForm = (
       panels,
       String(authUserStore.getState().session?.id || ''),
     )
+    // A mandatory repository field is reported under its own `__repo__` id as
+    // well as the id of the form field it maps to. When the start stage hides
+    // that form field (e.g. "Selected Supplier" on a later Sourcing stage),
+    // the repo entry must not block the submit either.
+    const stageHiddenRepoIds = new Set(
+      repoFieldDescriptors
+        .filter(
+          (d) => d.matchedFieldId && stageHidden.has(String(d.matchedFieldId)),
+        )
+        .map((d) => d.fieldId),
+    )
     const missingList = getMissingMandatoryFieldsList(
       repoFieldDescriptors,
       panels,
       formModel,
       { formRules, hasUploadedFile },
-    ).filter((m) => !stageHidden.has(String(m.id)))
+    ).filter(
+      (m) =>
+        !stageHidden.has(String(m.id)) && !stageHiddenRepoIds.has(String(m.id)),
+    )
     if (missingList.length > 0) {
       // A repo field and the form field it maps to share one label — count
       // them once.
