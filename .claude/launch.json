@@ -14,6 +14,12 @@
       "port": 3000
     },
     {
+      "name": "web-cloud",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd app && set VITE_V6_BASE_URL=https://cloud.ezofis.com/api&& set VITE_BASE_URL=https://cloud.ezofis.com/api&& npm run dev"],
+      "port": 3000
+    },
+    {
       "name": "connector-api",
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "cd .claude\\worktrees\\workflow-connector\\api\\src\\Api && dotnet run -- --urls http://localhost:5005"],
