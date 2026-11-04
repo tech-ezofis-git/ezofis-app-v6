@@ -17,6 +17,7 @@ import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Icon from '@/components/base/icon/Icon'
+import Modal from '@/components/base/Modal'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
@@ -750,6 +751,11 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
   // A default report with one total (AI Credit Consumption: Credits) shows it
   // in the toolbar instead of a Totals row.
   const totalsInToolbar = isDefaultReport && columnTotals.length === 1
+  // The toolbar total opens its split (e.g. Credits by Agent) in a pop-up.
+  const [showBreakdown, setShowBreakdown] = useState(false)
+  const canShowBreakdown = Boolean(
+    totalsInToolbar && totalsBreakdown && totalsBreakdown.items.length > 0,
+  )
 
   const paginatedRows = useMemo(() => {
     if (pageSize === 0) return filteredRows
@@ -890,9 +896,22 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               {totalsInToolbar &&
                 filteredRows.length > 0 &&
                 columnTotals.map(({ label, total }) => (
-                  <div
-                    className='inline-flex h-9 items-center gap-2 rounded-lg border border-primary-4 bg-gradient-to-r from-primary-1 to-primary-2 pr-3 pl-1.5 shadow-xs'
+                  <button
+                    disabled={!canShowBreakdown}
                     key={label}
+                    type='button'
+                    className={cn(
+                      'inline-flex h-9 items-center gap-2 rounded-lg border border-primary-4 bg-gradient-to-r from-primary-1 to-primary-2 pr-3 pl-1.5 shadow-xs',
+                      canShowBreakdown
+                        ? 'cursor-pointer transition-colors hover:border-primary-6 active:opacity-80'
+                        : 'cursor-default',
+                    )}
+                    title={
+                      canShowBreakdown && totalsBreakdown
+                        ? t`${totalsBreakdown.measure} by ${totalsBreakdown.by}`
+                        : undefined
+                    }
+                    onClick={() => setShowBreakdown(true)}
                   >
                     <span className='flex size-6 items-center justify-center rounded-md bg-primary-9 text-white'>
                       <Icon className='size-3.5' name='lucide:coins' />
@@ -903,8 +922,75 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                     <span className='text-15 font-bold text-primary-12'>
                       {formatTotal(total)}
                     </span>
-                  </div>
+                    {canShowBreakdown && (
+                      <Icon
+                        className='size-3.5 text-primary-10'
+                        name='lucide:chevron-down'
+                      />
+                    )}
+                  </button>
                 ))}
+              {canShowBreakdown && totalsBreakdown && (
+                <Modal
+                  opened={showBreakdown}
+                  width={440}
+                  onClose={() => setShowBreakdown(false)}
+                >
+                  <div className='p-5'>
+                    <div className='flex items-start gap-3'>
+                      <div className='flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-2 text-primary-11'>
+                        <Icon className='size-5' name='lucide:coins' />
+                      </div>
+                      <div className='min-w-0 flex-1'>
+                        <h3 className='text-15 font-semibold text-gray-13'>
+                          {t`${totalsBreakdown.measure} by ${totalsBreakdown.by}`}
+                        </h3>
+                        <p className='mt-0.5 text-13 text-gray-11'>
+                          {t`Total ${totalsBreakdown.measure}`}{' '}
+                          <span className='font-semibold text-gray-13'>
+                            {formatTotal(columnTotals[0]?.total ?? 0)}
+                          </span>
+                        </p>
+                      </div>
+                      <IconButton
+                        ariaLabel={t`Close`}
+                        color='gray'
+                        icon='lucide:x'
+                        size='sm'
+                        variant='ghost'
+                        onClick={() => setShowBreakdown(false)}
+                      />
+                    </div>
+                    <ul className='ez-scrollbar mt-4 flex max-h-96 flex-col gap-3 overflow-y-auto pr-1'>
+                      {totalsBreakdown.items.map(({ name, total }) => {
+                        const grand = columnTotals[0]?.total || 0
+                        const share = grand > 0 ? (total / grand) * 100 : 0
+                        return (
+                          <li key={name}>
+                            <div className='flex items-center justify-between gap-3 text-13'>
+                              <span className='truncate text-gray-12'>
+                                {name}
+                              </span>
+                              <span className='shrink-0 text-gray-11'>
+                                <span className='font-semibold text-gray-13'>
+                                  {formatTotal(total)}
+                                </span>{' '}
+                                ({share.toFixed(share >= 10 ? 0 : 1)}%)
+                              </span>
+                            </div>
+                            <div className='mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-3'>
+                              <div
+                                className='h-full rounded-full bg-primary-9'
+                                style={{ width: `${Math.max(share, 2)}%` }}
+                              />
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                </Modal>
+              )}
               {toolbarActions}
             </div>
           }
@@ -921,28 +1007,21 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
 
         {columnTotals.length > 0 &&
           filteredRows.length > 0 &&
-          (!totalsInToolbar ||
-            (totalsBreakdown && totalsBreakdown.items.length > 1)) && (
+          !totalsInToolbar && (
             // Label column + chips column, so both rows' chips start at the same edge.
             <div className='grid shrink-0 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
-              {!totalsInToolbar && (
-                <>
-                  <span className='text-12 text-gray-11'>{t`Totals:`}</span>
-                  <div className='flex flex-wrap items-center gap-2'>
-                    {columnTotals.map(({ label, total }) => (
-                      <span
-                        className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
-                        key={label}
-                      >
-                        {t`Total ${label}`}
-                        <span className='font-semibold'>
-                          {formatTotal(total)}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                </>
-              )}
+              <span className='text-12 text-gray-11'>{t`Totals:`}</span>
+              <div className='flex flex-wrap items-center gap-2'>
+                {columnTotals.map(({ label, total }) => (
+                  <span
+                    className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
+                    key={label}
+                  >
+                    {t`Total ${label}`}
+                    <span className='font-semibold'>{formatTotal(total)}</span>
+                  </span>
+                ))}
+              </div>
               {totalsBreakdown && totalsBreakdown.items.length > 1 && (
                 <>
                   <span className='text-12 text-gray-11'>

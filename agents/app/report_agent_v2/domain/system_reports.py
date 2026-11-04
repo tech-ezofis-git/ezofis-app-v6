@@ -540,7 +540,7 @@ _SLA_COLS = (Col("Workflow"), Col("Request No"), Col("SLA"),
              Col("Request Status", colors=(("Running", "blue"), ("Pending", "orange"), ("Paused", "gray"),
                                            ("Completed", "green"), ("Failed", "red"), ("Cancelled", "gray"))),
              Col("Pending With"), Col("Escalated To"), Col("Notified"),
-             Col("Notifications Sent", "number", "measure", True), Col("Notifications Failed", "number", "measure", True)
+             Col("Notifications Sent", "number", "measure"), Col("Notifications Failed", "number", "measure")
              ) + _REQUEST_LINKS
 
 # Outcomes the V6 SLA timer writes (WorkflowSlaTimerService). A cancelled timer met its SLA only when the
