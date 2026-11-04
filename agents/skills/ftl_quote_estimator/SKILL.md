@@ -11,6 +11,69 @@ attached specification), select the Wittur/FTL catalog items it calls for, deter
 price them against the current pricelist, and produce a structured Sales Estimate — the same shape
 FTL's own team issues as a customer-facing quote.
 
+## FTL rules v1.1 — binding (workbook + email of 2026-10-16)
+These rules come from FTL in writing and OVERRIDE anything later in these instructions or in the
+references that says otherwise. Source order when sources disagree: (1) current written FTL rule or
+estimator override, (2) live inFlow record, (3) manufacturer catalogue / controlled survey, (4) the
+customer's email / spec, (5) historical quotes (training evidence only — never a price, quantity,
+discount, freight or scope source). An unresolved conflict means STOP and flag it, never pick one.
+
+**Your output is QUOTE 1 only — the customer's spec.** Price exactly the confirmed requested scope.
+Do not add typical-MOD equipment, do not add an FTL upgrade, and keep anything the RFQ calls an
+"alternate" or "optional" OUT of the quote. Quote 2 (FTL recommended) and Quote 3 (alternate) are
+derived afterwards from approved FTL rules by the system — never build them yourself.
+
+1. **Scope first, price second. Never guess — flag.** If something needed to price or size an item is
+   not stated (OEM, hand, speed, door type, opening count, finish), leave the item out or flag it
+   for review and say exactly what is missing in `assumptions`. A flagged line is better than a
+   guessed one.
+2. **Openings are not cars.** Door operators, clutches, restriction lines and detectors follow the
+   front and rear ENTRANCES of each car; evaluate every entrance. Never infer the car count from
+   silence — if the car count or the entrance schedule is not stated, say so.
+3. **SKU control.** Use only approved FTL / inFlow products, copied exactly from the price book
+   search. Live inFlow pricing is the commercial authority — never carry a price from a historical
+   quote or from memory. A missing SKU or price means HOLD, not an estimate.
+4. **No automatic discounts.** No discount, rebate, free item, bundle price or "customer-specific
+   deal" is ever applied unless THIS RFQ or an explicit customer pricing record states it. No
+   negative lines. Estimators discount manually afterwards.
+5. **Every SGV2 operator needs a clutch with its car-door interlock** — one clutch per operator.
+6. **Car door rule.** The RFQ's own wording decides: new or skinned doors in the base scope ->
+   universal car doors (opening type + width x height + finish; 2C/2T = 2 panels per opening, price
+   shown is provisional and held); existing doors definitely retained -> the correct OEM panel
+   adaptor (needs OEM, configuration, hand and the complete top-of-door bolt pattern); replacement
+   only as an alternate -> Quote 1 keeps the existing doors. If the RFQ is silent, follow the default
+   panel adaptor section below; if it contradicts itself, do NOT pick a panel — flag it. Never add
+   both an adaptor and a universal door.
+7. **"SGV2 Car Door Restriction Function - Included"** — a customer-facing $0.00 line, one per SGV2
+   opening (product_code `SGV2_CAR_DOOR_RESTRICTOR`). It is a value line, not a BOM item.
+8. **Detector.** The standard detector is Formula VisionPlus FZU-1442US01 = inFlow
+   `FS_VISIONPLUS_3D_CAR_DOOR_DET`, one per opening, only when the spec calls for a 3D door-edge
+   detector (or the customer's email asks for it). Never add a separate detector power supply
+   automatically. If the customer says detection is not required from FTL, leave it out.
+9. **Programming tool.** `SGV2_DOOR_TOOLS`: one per PROJECT at its inFlow price. It is never free
+   automatically; waiving it is an estimator decision. If the RFQ says the customer already owns
+   one, omit the line and say so.
+10. **Governors.** Every OL governor needs its own separate tension line (OL35 ->
+    `WG_OL35_TENSION_SHEAVE_SWINGARM`; OL100 -> its own tension assembly, held for FTL). OL100 is held
+    for technical review. Governor type/hand/speed must come from the RFQ.
+11. **Car safeties (SGB01/02/03/CSGB):** same commercial price basis but different sync and linkage,
+    not technically interchangeable -> never auto-select or price; record as HOLD - TECHNICAL REVIEW
+    REQUIRED and list what is needed (speed, load, rail type, Fmax, linkage). No safety line in
+    `line_items`.
+12. **Roller guides (WRG):** a full set is 4 pieces; only when the spec explicitly calls for guide
+    replacement.
+13. **Freight is not yours to set.** Leave `freight_estimate` at 0: the system applies FTL's rule —
+    ONE SGV2 package ships for $375 in the GTA or $450 up to about 150 km outside Toronto; anything
+    else (several operators, governors, guides, unknown or distant ship-to) is manual review. Never
+    copy a freight figure from a past quote.
+14. **Customer information stated in the RFQ is never replaced by TBD.** Use the customer's own
+    company, contact, phone and addresses when present; leave a field blank only when the RFQ truly
+    does not state it.
+15. **Internal notes** (`assumptions`) must say what was confirmed from the RFQ, what is unknown, what
+    needs technical review, and what survey information is still needed.
+16. **Client-first.** The goal is a correct, defensible estimate the customer can act on and FTL can
+    stand behind — a held item with a clear reason is the right outcome when a fact is missing.
+
 ## Wittur survey form section — the customer's typed answers ARE the door-package spec
 When the RFQ includes a Wittur "SGV Car Door Modernization Order/Survey Form", the answers are typed into the PDF's
 form fields and appear under "## Wittur SGV survey form" with a SURVEY_FACTS_JSON line. Use ONLY those answers:
@@ -172,12 +235,9 @@ version of this rule said 1S doors always need a $0 bundled adaptor — that was
 real order (SO-261024) where the existing panels were apparently being retained (adapted), not
 replaced; it does not generalize to every 1S project. Two-quote real-world pattern to recognize: a
 customer offered "new car doors" (no adaptor, new panel line for every operator) versus "keep
-existing car doors" (adaptor line at $0 bundled with the operator, no new panel line) are two
+existing car doors" (adaptor line, no new panel line) are two
 different, mutually exclusive scope options for the same project — never mix both a new panel line
-AND an adaptor line for the same opening. If the RFQ doesn't clearly state whether panels are new
-or retained, default to a NEW universal car door panel (no adaptor) and flag
-`needs_engineering_review` — only add the $0 adaptor line instead if the spec/customer explicitly
-says the existing car doors/panels are being kept.
+AND an adaptor line for the same opening. If the RFQ doesn't say whether panels are new or retained, follow the default panel adaptor section; if it contradicts itself, do NOT pick a panel — flag the car-door decision for review (v1.1 rule 6, DOOR-004 / DOOR-006). Quote the universal door in Quote 1 only when new / skinned doors are in the base scope.
 
 **This per-panel halving convention applies ONLY to 2C and 2T doors (which have two door leaves and
 are sold as a "(2-DOOR/SET)" pricelist entry) — 1S (single-speed, side-opening) doors have exactly
@@ -286,18 +346,16 @@ one — this has happened repeatedly across real test runs, always the same way:
 product_code was short, hyphenated (or bare), and had NO underscore, because it came from the TYPE,
 O.E.M., or DESCRIPTION column instead of PRODUCT NAME. Every real correct product code in this
 pricelist has an underscore in it: `SGV2_DOOR_OP_2C42_L`, `SGV2_CLUTCH_G.M.D._L`,
-`WRG_MOTION_GEAR150`, `WG_OL35_GOVERNOR_RC`, `WG_OL35_TENSION_SHEAVE_SWINGARM`, `WS_CSGB_CAR_SAFETIES`,
-`VISIONPLUS_3D_DETECTOR`, `SGV2_DOOR_TOOLS`. None of the wrong-column values ever have one:
+`WRG_MOTION_GEAR150`, `WG_OL35_GOVERNOR_RC`, `WG_OL35_TENSION_SHEAVE_SWINGARM`, `FS_VISIONPLUS_3D_CAR_DOOR_DET`, `SGV2_DOOR_TOOLS`. None of the wrong-column values ever have one:
 - `ALL` — that's the O.E.M. column, meaning "fits all OEMs," not a code.
 - `OL35-RC`, `OL35-MT`, `OL35-RE`, `OL35-PIT-IDLER`, `CSGB03-SYNC`, `RG80`...`RG300`, `2T`, `2C`,
   `1S` — these are all TYPE column values (short catalog-family labels), not product codes, even
   though they look plausible. A real governor line's TYPE is `OL35-RC` but its product_code must be
-  `WG_OL35_GOVERNOR_RC`; a real safety line's TYPE is `CSGB03-SYNC` but its product_code must be
-  `WS_CSGB_CAR_SAFETIES`; a real tension-sheave line's TYPE is `OL35-PIT-IDLER` but its product_code
+  `WG_OL35_GOVERNOR_RC`; safety lines are never priced (v1.1 rule 11), so there is no safety product_code; a real tension-sheave line's TYPE is `OL35-PIT-IDLER` but its product_code
   must be `WG_OL35_TENSION_SHEAVE_SWINGARM` — verified against real invoices for exactly these items.
 - `FZU-1442US01` — that's an OEM/manufacturer reference number embedded in the DESCRIPTION column
   text (e.g. "FZU-1442US01 -3D_LIGHT_CURTAIN"), not FTL's own product code, which is the separate
-  PRODUCT NAME column value `VISIONPLUS_3D_DETECTOR`.
+  PRODUCT NAME column value `FS_VISIONPLUS_3D_CAR_DOOR_DET`.
 
 **Hand suffixes and adaptor codes — use exactly what search_pricelist returns today.** FTL's current price book (REV. 09.2026) writes the hand on door operators and clutches as `_L` / `_R` (e.g. `SGV2_DOOR_OP_1S42_L`, `SGV2_CLUTCH_OTIS_R`) and names panel adaptors `SGV2(1S)_PANEL_ADAPTOR_GAL42_LH`. Older invoices and earlier pricelists show `_LH` / `_RH` on operators and clutches and `_DP_` on adaptors for the same items; never copy those older spellings — copy the code from the search result.
 
@@ -406,16 +464,7 @@ nothing (the variant genuinely wasn't in that pricelist), and then second-guesse
 submitting only 3 units of the found variant instead of the correct 4 — treat "I can't find X" as a
 reason to flag X, never as a reason to reduce the quantity of a DIFFERENT, already-confirmed line.
 
-**Car safety quantity: qty = number of cars needing new safeties, NOT doubled.** A pricelist "SYNC"
-car safety row already IS one full car's worth of equipment — "sold as a synchronized set of 2"
-means 2 physical safety shoes/blocks working together as ONE car's safety system, not that a car
-needs "2 sets." A real test run misread spec language like "Type B flexible guide clamp safeties
-on the bottom of EACH car" (ordinary language for "every car gets this standard equipment," not a
-per-car doubling instruction) and submitted qty 4 for a 2-elevator project — doubling that line's
-cost by ~$10,000 versus the real accepted order for this exact project, which used qty 2 (one
-set per car). Only quote 2 sets for a single car — a genuine duplex configuration — when the spec
-explicitly says duplex, redundant, or names a specific "-D"-suffix duplex product; the word "each"
-describing which cars get safeties is not that signal.
+**Car safeties are never priced or quantified by this agent (v1.1 rule 11):** record HOLD - TECHNICAL REVIEW REQUIRED and list the survey inputs needed.
 
 **A short covering email from the customer does not override or narrow what the attached spec
 document states — the spec is the actual contract document, the email is just a cover note, and
@@ -431,53 +480,26 @@ regardless of whether the covering email happens to separately mention it — th
 one item is not evidence that other spec-stated items were dropped from scope. When genuinely
 unsure, include the item flagged `needs_engineering_review` rather than silently excluding it.
 
-## Step 4 — bundled items and standard quantities that don't follow the "one per car" default
-Some accessories are conventionally included at $0 subtotal when purchased alongside their parent
-kit in the same order — e.g. a panel adaptor or door-programming tool bundled with a door operator
-purchase, or a car door restrictor bundled with the operator MOD kit. When you're quoting the
-parent item in the same estimate, set the accessory's `subtotal_override` to 0 and note it as
-included; if you're quoting the accessory on its own (parent not part of this estimate), price it
-normally. **Whenever you quote a door operator (any SGV2_DOOR_OP_* line, any door type), also add a
-`SGV2_CAR_DOOR_RESTRICTOR` line at $0.00 subtotal, qty matching the door operator** — it's bundled
-with every real MOD kit purchase and isn't its own priced pricelist SKU, so search_pricelist won't
-find it. (An earlier version of this rule excluded 1S doors, reasoning from one real 1S order that
-had no restrictor line — but a real 1S spec was later found to explicitly call for a "Car
-Restrictor" as its own numbered new-equipment scope item, undermining that exclusion; since it's a
-$0 bundled line either way, the safer default is to always include it, flagged `needs_engineering_
-review` if you want a human to confirm the door-operator kit actually satisfies whatever specific
-restrictor product the spec names, e.g. "Unitec Uni-Lock or equivalent" — FTL's SGV2 kit may or may
-not be treated as meeting that "or equivalent" language.)
-
-**Not every accessory is one-per-car — check before multiplying by car count:**
-- `SGV2_DOOR_TOOLS` (the door-programming tool) is ONE PER PROJECT, not one per car, even on a
-  multi-car job — verified against two real quotes (a 6-car project still only billed qty 1). The
-  spec's own language ("provide on site one hand-held keypad programming unit") is itself the
-  signal: "one" here means one for the whole project's technician toolkit, not one per car.
-  **It is chargeable by default — do NOT set `subtotal_override` to 0 for this line just because a
-  door operator is also on the estimate.** An earlier version of this rule treated it as always
-  $0-bundled with a door operator purchase, based on one real Sales Order (SO-261024) that happened
-  to show it that way — but a separate, client-confirmed real quote (EST-261132, a project with 8
-  door operators) billed this exact line chargeable at full price ($698.50), proving it is NOT
-  bundled by default. Only zero it out when you have a specific, project-level reason to (e.g. the
-  RFQ or customer record states the customer already owns one, or that it's being supplied at no
-  charge for this order) — absent that, submit it at its real search_pricelist price with no
-  override ($698.50 in FTL's current price book), flagged `needs_engineering_review` so a human can confirm either way before release.
-- Never add a standalone "2D/3D power supply" line (`VISIONPLUS_POWERSUPPLY`) alongside a 3D door
-  detector line. Not "only if uncertain," not flagged-and-included-anyway — leave it out
-  completely, every time, regardless of how the detector requirement is worded. It is normally
-  already covered by the detector kit's own price, and no verified real quote has ever included
-  both as separate paid lines. If you're tempted to add it "just in case," that uncertainty belongs
-  in `assumptions` as a sentence (e.g. "power supply assumed bundled with the detector kit"), not as
-  a priced `line_items` entry — the same rule as bundled/hall-door items above: when truly unsure
-  whether an accessory is separately billed, the default is to exclude it, not to include it with a
-  review flag.
+## Step 4 — bundled items and standard quantities (FTL rulebook v1.1)
+- **Restriction function:** whenever you quote an SGV2 door operator, add ONE
+  `SGV2_CAR_DOOR_RESTRICTOR` line per operator at $0.00 with the description "SGV2 Car Door
+  Restriction Function - Included" (a customer-facing value line, not a BOM component).
+- **Programming tool:** `SGV2_DOOR_TOOLS` is ONE PER PROJECT, never one per car, charged at its inFlow
+  price ($698.50 on the 2026-10-16 snapshot). It is never zeroed automatically, never bundled by
+  assumption, and a past quote that showed it at $0 is not evidence. If the RFQ says the customer
+  already owns one, omit the line and note it; otherwise include it flagged for estimator
+  confirmation.
+- **Panel adaptors** are quoted at their price like any other line when existing doors are retained;
+  do not set `subtotal_override` to 0 on them.
+- **Detector power supply:** never add a standalone 2D/3D power supply line. VisionPlus connects at
+  18-30 VDC (NPN normally-closed output); a separate supply is added only when an approved
+  integration requires it — say so in `assumptions` instead.
+- **Not every accessory is one-per-car** — check the quantity basis before multiplying by car count.
 
 ## Step 5 — output
 Always call submit_quote with your full structured estimate: project name, customer/contact/
-billing/shipping info if the RFQ states them (leave blank/TBD if not — never invent a company
-address), every line item (product code, description, category, qty, unit price, optional
-subtotal_override, note), a freight estimate if you have a reasonable basis for one (otherwise 0
-with a note that it's TBD, confirmed at order — mirroring FTL's own real quotes), `payment_terms`
+billing/shipping info exactly as the RFQ states it (never replace stated customer information with TBD; leave a field blank only when the RFQ truly doesn't state it — never invent a company address), every line item (product code, description, category, qty, unit price, optional
+subtotal_override, note), `freight_estimate` left at 0 (freight is set by FTL's controlled rule after you submit — see v1.1 rule 13), `payment_terms`
 left BLANK unless the RFQ/customer record/quoting rules actually state specific terms for this deal
 (never default to a common phrasing like "50/50 Net 30" — a real confirmed failure inserted terms
 that don't appear anywhere on the real counterpart quote for that exact project), a remarks section

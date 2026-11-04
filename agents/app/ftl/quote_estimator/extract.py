@@ -754,7 +754,7 @@ def _find_device_count_summary(full_text: str) -> str:
     Elevator 2') — the most direct statement of how many cars/elevators this tender covers. This
     is the primary source for line-item quantities, so it's pulled out on its own rather than left
     to be found (or missed) inside a longer section."""
-    m = re.search(r"Number of Devices", full_text, re.IGNORECASE)
+    m = re.search(r"N(?:umber|o\.) of Devices", full_text, re.IGNORECASE)
     if not m:
         return ""
     start = max(0, m.start() - 120)
@@ -802,11 +802,31 @@ def _fallback_keyword_windows(full_text: str, total_word_budget: int = 4000) -> 
     return "\n\n---\n\n".join(out_parts)
 
 
+def _find_elevator_count_statement(full_text: str) -> str:
+    """Solucore ("U of T") template: the "Number of Elevators" clause ("Modernize 2 elevator(s) at
+    ...") plus the "Openings and Stops" table (per car: front openings, total front, rear openings,
+    total rear). The most direct statement of how many cars there are and whether any has a rear
+    door, so it is pulled out on its own. Returns '' for any spec that doesn't use this wording."""
+    parts: List[str] = []
+    m = re.search(r"Number of Elevators\s*\n\s*(?:\d+\.\s*)?(Modernize\s+\d+\s+elevator[^\n]*)", full_text, re.IGNORECASE)
+    if not m:
+        m = re.search(r"(?:^|\n)\s*(?:\d+\.\s*)?(Modernize\s+\d+\s+elevator[^\n]*)", full_text, re.IGNORECASE)
+    if not m:
+        return ""
+    parts.append(re.sub(r"\s+", " ", m.group(1)).strip())
+    t = re.search(r"Openings and Stops\s*\n(.{0,900}?)(?:\n\s*\d+\.\d+\.\s|\Z)", full_text[m.end():], re.IGNORECASE | re.DOTALL)
+    if t:
+        rows = [re.sub(r"[ \t]+", " ", line).strip() for line in t.group(1).splitlines() if line.strip()]
+        parts.extend(rows[:14])
+    return "\n".join(parts)
+
+
 def build_candidate_text(full_text: str) -> Dict[str, Any]:
     """The single entry point: run structure detection + targeted extraction (with a keyword-window
     fallback), and return everything the agent needs, already shrunk to a nano-model-friendly size."""
     equipment_manifest = _find_equipment_manifest(full_text)
     device_count_summary = _find_device_count_summary(full_text)
+    elevator_count_statement = _find_elevator_count_statement(full_text)
     subsections = _extract_by_headings(full_text)
     structure_signal = detect_structure_signal(full_text, subsection_hit_count=len(subsections))
 
@@ -846,6 +866,7 @@ def build_candidate_text(full_text: str) -> Dict[str, Any]:
         "structure_signal": structure_signal,
         "equipment_manifest": equipment_manifest,
         "device_count_summary": device_count_summary,
+        "elevator_count_statement": elevator_count_statement,
         "equipment_inventory_table": equipment_inventory_table,
         "equipment_scope_table": equipment_scope_table,
         "door_package_breakdown": door_package_breakdown,
@@ -854,6 +875,11 @@ def build_candidate_text(full_text: str) -> Dict[str, Any]:
         "used_fallback": used_fallback,
         "fallback_text": fallback_text,
     }
+
+
+# A forwarded RFQ spends its first ~1,000 characters on the forwarder's note and headers, so a low
+# cap cut the customer's own scope list. Keep the whole email, with a generous cap.
+EMAIL_BODY_CHAR_LIMIT = 12000
 
 
 def render_candidate_text_for_model(candidate: Dict[str, Any], email_meta: Optional[Dict[str, Any]] = None) -> str:
@@ -884,11 +910,22 @@ def render_candidate_text_for_model(candidate: Dict[str, Any], email_meta: Optio
         body = (email_meta.get("body_text") or "").strip()
         if body:
             lines.append("")
-            lines.append(body[:8000])
+            lines.append(body[:EMAIL_BODY_CHAR_LIMIT])
         lines.append("")
 
     lines.append(f"## Detected structure signal: {candidate['structure_signal']}")
     lines.append("")
+
+    if candidate.get("elevator_count_statement"):
+        lines.append(
+            "## Elevator count / door openings (from the spec) — AUTHORITATIVE for how many cars there "
+            "are. Governors, safeties and every per-car item are quoted for THIS many cars. The stops "
+            "listed are hoistway landings, not car doors: each car has one car door per entrance "
+            "(front, plus rear only where the table shows a rear opening), so car-door equipment "
+            "(operator, clutch, panel, detector) is per car, never per landing."
+        )
+        lines.append(candidate["elevator_count_statement"])
+        lines.append("")
 
     if candidate.get("device_count_summary"):
         lines.append("## Device count / schedule summary (from the spec) — use this for quantities")
