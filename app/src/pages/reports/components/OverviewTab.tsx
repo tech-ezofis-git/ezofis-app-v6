@@ -901,7 +901,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                     key={label}
                     type='button'
                     className={cn(
-                      'inline-flex h-9 items-center gap-2 rounded-lg border border-primary-4 bg-gradient-to-r from-primary-1 to-primary-2 pr-3 pl-1.5 shadow-xs',
+                      'inline-flex h-9 items-center gap-2 rounded-lg border border-primary-4 bg-gradient-to-r from-primary-1 to-primary-2 px-3 shadow-xs',
                       canShowBreakdown
                         ? 'cursor-pointer transition-colors hover:border-primary-6 active:opacity-80'
                         : 'cursor-default',
@@ -913,9 +913,6 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                     }
                     onClick={() => setShowBreakdown(true)}
                   >
-                    <span className='flex size-6 items-center justify-center rounded-md bg-primary-9 text-white'>
-                      <Icon className='size-3.5' name='lucide:coins' />
-                    </span>
                     <span className='text-12 font-medium text-primary-11'>
                       {t`Total ${label}`}
                     </span>
