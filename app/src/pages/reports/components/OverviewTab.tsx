@@ -913,10 +913,10 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                     }
                     onClick={() => setShowBreakdown(true)}
                   >
-                    <span className='text-13 font-bold text-primary-12'>
+                    <span className='text-13 font-bold text-primary-11'>
                       {t`Total ${label}`}
                     </span>
-                    <span className='text-15 font-bold text-primary-12'>
+                    <span className='text-15 font-bold text-primary-11'>
                       {formatTotal(total)}
                     </span>
                     {canShowBreakdown && (
