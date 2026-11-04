@@ -214,6 +214,29 @@ def _line_amount(row: Dict[str, Any]) -> Optional[float]:
     return None if qty is None or price is None else qty * price
 
 
+_CONTACT_NAMES = ("contact", "contactname")
+_EMAIL_IN_TEXT_RE = re.compile(r"[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}", re.IGNORECASE)
+_EMPTY_BRACKETS_RE = re.compile(r"\(\s*\)|<\s*>|\[\s*\]")
+
+
+def clean_contact_fields(data: Dict[str, Any]) -> Dict[str, Any]:
+    """A contact name must hold only the name: the model sometimes writes "Name (name@x.com)", which
+    overflows the PDF's contact box. The email moves to a blank Email field; a stated one is kept."""
+    out = dict(data)
+    for key in _keys_named(out, _CONTACT_NAMES):
+        text = out[key]
+        match = _EMAIL_IN_TEXT_RE.search(text) if isinstance(text, str) else None
+        if not match:
+            continue
+        name = _EMPTY_BRACKETS_RE.sub(" ", _EMAIL_IN_TEXT_RE.sub(" ", text))
+        out[key] = re.sub(r"\s+", " ", name).strip(" ,;:-–—|")
+        email_keys = _keys_named(out, ("email",)) or ["email" if key.islower() or "_" in key else "Email"]
+        if not any(str(out.get(email_key) or "").strip() for email_key in email_keys):
+            for email_key in email_keys:
+                out[email_key] = match.group(0)
+    return out
+
+
 _LINE_NAMES = ("lineitem", "lineitems")
 _FREIGHT_NAMES = ("freight", "freightestimate")
 _HST_NAMES = ("hst",)
@@ -285,7 +308,7 @@ def form_data_for_quote_type(
         order = order_number_for_quote(base, None, 1)
         if order:
             base["Order Number"] = order
-        return reconcile_quote_totals(base), 1
+        return clean_contact_fields(reconcile_quote_totals(base)), 1
     explicit = quote_2 if n == 2 else quote_3
     variant = _variant_from(form, explicit, n)
     if not variant and isinstance(quote_result, dict):
@@ -301,4 +324,4 @@ def form_data_for_quote_type(
     merged["Order Number"] = order
     has_own_lines = any(_compact(key) in _LINE_NAMES for key in overlay)
     has_own_hst = any(_compact(key) in _HST_NAMES for key in overlay)
-    return reconcile_quote_totals(merged, recalculate_hst=has_own_lines and not has_own_hst), n
+    return clean_contact_fields(reconcile_quote_totals(merged, recalculate_hst=has_own_lines and not has_own_hst)), n

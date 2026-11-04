@@ -14,6 +14,7 @@ import Button from '@/components/base/button/Button'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
+import { useQuery } from '@tanstack/react-query'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
@@ -27,6 +28,13 @@ import {
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { REQUEST_ATTACHMENTS_CHANGED_EVENT } from '@/pages/requests/utils/requestEvents'
 import cn from '@/utils/cn'
+import {
+  buildClientFieldPatch,
+  type ClientMasterRow,
+  fetchClientMaster,
+  isCompanyField,
+  matchClientByCompany,
+} from './clientMaster'
 import { editableValueClass, onEditableValueKeyDown } from './editableValue'
 import {
   canEditAgentFormField,
@@ -1411,6 +1419,32 @@ const QuoteAgentResultView = ({
   const canViewField = (field: any | null) =>
     canViewAgentFormField(field, hiddenFieldIds)
 
+  const companyField = formFields.find(isCompanyField) || null
+  const canPickClient = canEditField(companyField)
+  const { data: clients = [] } = useQuery({
+    enabled: canPickClient,
+    queryFn: fetchClientMaster,
+    queryKey: ['ftlClientMaster'],
+    staleTime: 5 * 60 * 1000,
+  })
+  const [pickedClientId, setPickedClientId] = useState<string | null>(null)
+  const pickedClient: ClientMasterRow | null =
+    clients.find((client) => client.id === pickedClientId) ||
+    matchClientByCompany(
+      clients,
+      companyField ? formModel?.[getFieldId(companyField)] : '',
+    )
+
+  // Choosing a client fills the header once; later edits to those fields stay.
+  const applyClient = (clientId: string) => {
+    const client = clients.find((item) => item.id === clientId)
+    if (!client) return
+    setPickedClientId(client.id)
+    buildClientFieldPatch(client, formFields).forEach(({ field, value }) => {
+      if (canEditField(field)) writeField(field, value)
+    })
+  }
+
   const resolveDisplayValue = (
     field: any | null,
     fallback: unknown,
@@ -2540,6 +2574,29 @@ const QuoteAgentResultView = ({
         </div>
       ) : (
         <div className='flex min-w-0 flex-col gap-3'>
+          {canPickClient && clients.length > 0 && (
+            <div className='flex min-w-0 items-center gap-1.5 text-left text-sm'>
+              <span className='shrink-0 whitespace-nowrap font-bold'>
+                {t`Client`}:
+              </span>
+              <InputSelect
+                className='w-full max-w-sm'
+                options={clients.map((client) => ({
+                  id: client.id,
+                  name: client.company,
+                }))}
+                value={
+                  pickedClient
+                    ? { id: pickedClient.id, name: pickedClient.company }
+                    : null
+                }
+                searchable
+                onChange={(option) => {
+                  if (option) applyClient(String(option.id))
+                }}
+              />
+            </div>
+          )}
           <div className='grid min-w-0 grid-cols-1 items-start gap-x-5 gap-y-2 text-left sm:grid-cols-2'>
             {headerEntries.map(renderHeaderField)}
           </div>

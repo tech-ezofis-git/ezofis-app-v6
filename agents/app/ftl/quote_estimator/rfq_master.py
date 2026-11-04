@@ -1,10 +1,11 @@
-"""Fill Billing Address / Shipping Address from the RFQ Master form.
+"""Fill client details from the RFQ Master form.
 
 The estimator often only has a signature fragment or a jobsite street. After the
 quote is built from the EML, we look up ``dbo.ezfb_7737f3f4_items`` (form name
 "RFQ Master") by email, company name, or the fetched address. A matching row
-overlays those two quote_result fields. No row — or an empty master address —
-keeps the EML values.
+overlays the two address fields. No row — or an empty master address — keeps the
+EML values. Contact, phone and email belong to a person, so they only fill blanks,
+and only from an exact email or company match.
 """
 
 from __future__ import annotations
@@ -80,6 +81,45 @@ SHIPPING_ALIASES = (
     "ShipTo",
     "Ship_Address",
     "Shipping",
+)
+
+
+CONTACT_ALIASES = (
+    "Contact_Name",
+    "Contact Name",
+    "Contact_Person",
+    "Contact Person",
+    "Contact",
+)
+PHONE_ALIASES = (
+    "Phone_Number",
+    "Phone Number",
+    "Contact_Phone",
+    "Contact Phone",
+    "Phone",
+    "Telephone",
+)
+# Everyone on these shares a domain, so a domain match says nothing about the client.
+_FREE_MAIL_DOMAINS = frozenset(
+    {
+        "gmail.com",
+        "googlemail.com",
+        "outlook.com",
+        "hotmail.com",
+        "live.com",
+        "msn.com",
+        "yahoo.com",
+        "yahoo.ca",
+        "icloud.com",
+        "me.com",
+        "aol.com",
+        "proton.me",
+        "protonmail.com",
+        "rogers.com",
+        "bell.net",
+        "shaw.ca",
+        "telus.net",
+    }
 )
 
 
@@ -284,7 +324,11 @@ def lookup_keys(
         company = named[0] if named else ""
     return {
         "emails": emails,
-        "domains": [email_domain(e) for e in emails if email_domain(e)],
+        "domains": [
+            email_domain(e)
+            for e in emails
+            if email_domain(e) and email_domain(e) not in _FREE_MAIL_DOMAINS
+        ],
         "company": company,
         "billing": _field(quote, "billing_address", "Billing Address"),
         "shipping": _field(quote, "shipping_address", "Shipping Address"),
@@ -341,14 +385,50 @@ def pick_master_row(
         return None
     best: Optional[dict[str, Any]] = None
     best_score = 0
+    tied = False
     for row in rows:
         if not isinstance(row, dict):
             continue
         flat = flatten_master_row(row)
         score = score_master_row(flat, keys)
         if score > best_score:
-            best, best_score = flat, score
-    return best if best_score > 0 else None
+            best, best_score, tied = flat, score, False
+        elif score == best_score and score > 0 and _client_details(flat) != _client_details(best or {}):
+            tied = True
+    # Two different clients match equally well: choosing one could bill the wrong client.
+    return best if best_score > 0 and not tied else None
+
+
+def _client_details(row: dict[str, Any]) -> tuple[str, ...]:
+    return tuple(
+        master_field(row, aliases).lower()
+        for aliases in (COMPANY_ALIASES, BILLING_ALIASES, SHIPPING_ALIASES, EMAIL_ALIASES)
+    )
+
+
+def _is_exact_match(row: dict[str, Any], keys: dict[str, Any]) -> bool:
+    row_email = master_field(row, EMAIL_ALIASES).lower()
+    if row_email and row_email in [e.lower() for e in (keys.get("emails") or [])]:
+        return True
+    company = normalize_company(master_field(row, COMPANY_ALIASES))
+    return bool(company) and company == normalize_company(keys.get("company") or "")
+
+
+def _fill_blank_contact_details(out: dict[str, Any], row: dict[str, Any]) -> bool:
+    filled = False
+    for aliases, names in (
+        (CONTACT_ALIASES, ("contact_name", "Contact")),
+        (PHONE_ALIASES, ("contact_phone", "Phone Number")),
+        (EMAIL_ALIASES, ("email", "Email")),
+    ):
+        value = master_field(row, aliases)
+        if not value or _field(out, *names):
+            continue
+        out[names[0]] = value
+        if names[1] in out:
+            out[names[1]] = value
+        filled = True
+    return filled
 
 
 def _with_address_source_tags(
@@ -375,6 +455,8 @@ def overlay_master_addresses(
     row = pick_master_row(rows, out, candidate_text, email_meta)
     if not row:
         return _with_address_source_tags(out)
+    keys = lookup_keys(out, candidate_text, email_meta)
+    contact_filled = _is_exact_match(row, keys) and _fill_blank_contact_details(out, row)
     billing = master_field(row, BILLING_ALIASES)
     shipping = master_field(row, SHIPPING_ALIASES)
     billing_from_master = bool(billing)
@@ -387,11 +469,14 @@ def overlay_master_addresses(
         out["shipping_address"] = shipping
         if "Shipping Address" in out:
             out["Shipping Address"] = shipping
-    if billing_from_master or shipping_from_master:
+    if billing_from_master or shipping_from_master or contact_filled:
         notes = list(out.get("assumptions") or [])
-        note = "ℹ Billing / Shipping Address filled from RFQ Master."
-        if note not in notes:
-            notes.append(note)
+        filled_notes = []
+        if billing_from_master or shipping_from_master:
+            filled_notes.append("ℹ Billing / Shipping Address filled from RFQ Master.")
+        if contact_filled:
+            filled_notes.append("ℹ Missing contact details filled from RFQ Master.")
+        notes.extend(note for note in filled_notes if note not in notes)
         out["assumptions"] = notes
         out["rfq_master_match"] = RFQ_MASTER_FORM_NAME
     return _with_address_source_tags(
