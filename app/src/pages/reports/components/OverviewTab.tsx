@@ -1,7 +1,14 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { animate, motion } from 'motion/react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import type { ReportSpec } from '@/api/v6/reportAgent'
 import type { Row } from '@/components/base/data-table/types'
 import type {
@@ -17,6 +24,7 @@ import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Icon from '@/components/base/icon/Icon'
+import Modal from '@/components/base/Modal'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
@@ -53,6 +61,7 @@ import JsonValueTable, {
   parseJsonValue,
 } from './JsonValueTable'
 import StatusPill from './StatusPill'
+import UserActivityModal from './UserActivityModal'
 
 interface OverviewColumn {
   id: string
@@ -95,15 +104,24 @@ const normalizeName = (value: string | undefined) =>
   (value ?? '').toLowerCase().replace(/[\s_\-.#]/g, '')
 
 // Columns a report's totals are split by (normalized names).
-const BREAKDOWN_COLUMN_NAMES = ['skill', 'activity', 'activitytype']
+// Filters shown inline (one row); the rest are added from the "+" picker.
+const MAX_INLINE_FILTERS = 4
+// A column with more distinct values than this isn't a quick filter.
+const MAX_INLINE_FILTER_OPTIONS = 25
+
+const BREAKDOWN_COLUMN_NAMES = ['agent', 'skill', 'activity', 'activitytype']
 
 const toNumber = (value: unknown) => {
   const num = Number(String(value ?? '').replace(/[^0-9.-]/g, ''))
   return Number.isFinite(num) ? num : 0
 }
 
+// Small totals (AI cost in USD, e.g. 0.000223) keep their digits instead of
+// rounding to 0.
 const formatTotal = (value: number) =>
-  value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+  value.toLocaleString(undefined, {
+    maximumFractionDigits: value !== 0 && Math.abs(value) < 1 ? 6 : 2,
+  })
 
 // View, download and print only; editing and workflow actions stay on the
 // Folders page.
@@ -130,6 +148,10 @@ const isRequestNumberColumn = (col: OverviewColumn) =>
   normalizeName(col.id) === 'id' ||
   /^(req|request)(no|num|number)$/.test(normalizeName(col.label))
 
+/** A default report's Source column: a request's workflow or a repository file's folder. */
+const isSourceColumn = (col: OverviewColumn) =>
+  normalizeName(col.label) === 'source'
+
 // DataTable rows need their own `id`/`name`, which would overwrite report
 // columns keyed `id` (Req No) or `name`; those cells read an alias instead.
 const RESERVED_ROW_KEYS = new Set(['id', 'name'])
@@ -150,6 +172,20 @@ const toLocalDay = (value: string) => {
   return date ? dayjs(date).format('YYYY-MM-DD') : value
 }
 
+/** Counts up from 0 to `value` when shown (the pop-up's total). */
+const CountUp = ({ value }: { value: number }) => {
+  const [shown, setShown] = useState(0)
+  useEffect(() => {
+    const controls = animate(0, value, {
+      duration: 0.8,
+      ease: 'easeOut',
+      onUpdate: (latest) => setShown(latest),
+    })
+    return () => controls.stop()
+  }, [value])
+  return <>{formatTotal(Math.round(shown))}</>
+}
+
 const OverviewTab = ({ report, toolbarActions }: Props) => {
   const { t } = useLingui()
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
@@ -158,6 +194,13 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
 
   const isAgentReport = Boolean(report.agentConfig)
   const isFolderReport = report.sourceType === 'Folder'
+  const isDefaultReport = report.domain === DEFAULT_REPORT_DOMAIN
+  // User Login and Security Activity: a user's row opens their logins / events.
+  const isLoginReport =
+    isDefaultReport &&
+    (report.agentConfig?.reportSpec as unknown as ReportSpec | undefined)
+      ?.agentSpec?.template === 'user_login_security'
+  const [activityEmail, setActivityEmail] = useState<string | null>(null)
   const legacyQuery = useReportBuilderDataQuery(
     isAgentReport ? null : report.id,
   )
@@ -170,8 +213,11 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
   const runError = (isAgentReport ? agentQuery.error : legacyQuery.error)
     ?.message
 
+  // Agent reports: Refresh also brings the saved report's default columns up to date.
   const refresh = () =>
-    void (isAgentReport ? agentQuery.refetch() : legacyQuery.refetch())
+    void (isAgentReport
+      ? agentQuery.refreshWithDefaults()
+      : legacyQuery.refetch())
 
   // Highlights sent on the run response win over the ones saved with the report.
   const fieldSettings = useMemo(
@@ -407,7 +453,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                   }
                 >
                   {(row[key] as string) || '-'}
-                </button>
+                </button>,
               )
             }
             if (
@@ -432,7 +478,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                       name='lucide:loader-2'
                     />
                   )}
-                </button>
+                </button>,
               )
             }
             const json = parseJsonValue(row[key])
@@ -452,6 +498,33 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
               )
             }
             const value = row[key] as string
+            if (isLoginReport && normalizeName(col.label) === 'user' && value) {
+              return (
+                <button
+                  className='cursor-pointer truncate font-medium text-primary-10 underline-offset-2 transition-colors hover:text-primary-11 hover:underline active:opacity-70'
+                  type='button'
+                  onClick={() => setActivityEmail(String(value))}
+                >
+                  {value}
+                </button>
+              )
+            }
+            // Source names a workflow (request rows) or a folder (repository
+            // files: OCR, intelligent upload, AI summary); the icon tells which.
+            if (isDefaultReport && isSourceColumn(col)) {
+              const isFile = Boolean(row[FILE_REPOSITORY_ID_KEY])
+              if (isFile || row[WORKFLOW_ID_KEY]) {
+                return (
+                  <span className='inline-flex min-w-0 items-center gap-1.5'>
+                    <Icon
+                      className='size-3.5 shrink-0 text-gray-9'
+                      name={isFile ? 'lucide:folder' : 'lucide:workflow'}
+                    />
+                    <span className='truncate'>{value || '-'}</span>
+                  </span>
+                )
+              }
+            }
             if (isDate && value) return formatReportDate(value)
             return value ?? '-'
           },
@@ -464,6 +537,8 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
       openRequest,
       requestOverview.loadingInstanceId,
       isFolderReport,
+      isDefaultReport,
+      isLoginReport,
     ],
   )
 
@@ -550,10 +625,33 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     })
   }, [previewColumns, columnTypes, sourceRows, valueForColumn, t])
 
-  // Manual reports have no default/other split, so all their filters stay inline.
+  // One row of inline filters: the first few columns with a short list of
+  // values (Workflow, Status, Stage...). Columns with near-unique values
+  // (Request No), dates and numbers go behind the "+" picker with the rest.
+  // Manual reports have no default/other split, so any column may be inline.
+  const inlineFilterIds = useMemo(() => {
+    const candidates = allFilterDefinitions.filter(
+      (def) =>
+        def.options.length > 0 &&
+        (!defaultColumnKeys || defaultColumnKeys.has(def.id)),
+    )
+    const isShortList = (def: FilterDefinition) =>
+      !isDateColumnType(def.dataType) &&
+      !isNumberColumnType(def.dataType) &&
+      def.options.length <= MAX_INLINE_FILTER_OPTIONS
+    return new Set(
+      [
+        ...candidates.filter(isShortList),
+        ...candidates.filter((def) => !isShortList(def)),
+      ]
+        .slice(0, MAX_INLINE_FILTERS)
+        .map((def) => def.id),
+    )
+  }, [allFilterDefinitions, defaultColumnKeys])
+
   const isInlineFilter = useCallback(
-    (id: string) => !defaultColumnKeys || defaultColumnKeys.has(id),
-    [defaultColumnKeys],
+    (id: string) => inlineFilterIds.has(id),
+    [inlineFilterIds],
   )
 
   const filterDefinitions = useMemo(
@@ -697,6 +795,15 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     }
   }, [columnTotals, previewColumns, filteredRows])
 
+  // A default report with one total (AI Credit Consumption: Credits) shows it
+  // in the toolbar instead of a Totals row.
+  const totalsInToolbar = isDefaultReport && columnTotals.length === 1
+  // The toolbar total opens its split (e.g. Credits by Agent) in a pop-up.
+  const [showBreakdown, setShowBreakdown] = useState(false)
+  const canShowBreakdown = Boolean(
+    totalsInToolbar && totalsBreakdown && totalsBreakdown.items.length > 0,
+  )
+
   const paginatedRows = useMemo(() => {
     if (pageSize === 0) return filteredRows
     const start = (page - 1) * pageSize
@@ -833,6 +940,118 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
                 fileName={report.name || 'report'}
                 table={renderTable as any}
               />
+              {totalsInToolbar &&
+                filteredRows.length > 0 &&
+                columnTotals.map(({ label, total }) => (
+                  <button
+                    disabled={!canShowBreakdown}
+                    key={label}
+                    type='button'
+                    className={cn(
+                      'inline-flex h-9 items-center gap-2 rounded-lg border border-primary-4 bg-gradient-to-r from-primary-1 to-primary-2 px-3 shadow-xs',
+                      canShowBreakdown
+                        ? 'cursor-pointer transition-colors hover:border-primary-6 active:opacity-80'
+                        : 'cursor-default',
+                    )}
+                    title={
+                      canShowBreakdown && totalsBreakdown
+                        ? t`${totalsBreakdown.measure} by ${totalsBreakdown.by}`
+                        : undefined
+                    }
+                    onClick={() => setShowBreakdown(true)}
+                  >
+                    <span className='text-13 font-bold text-primary-11'>
+                      {t`Total ${label}`}
+                    </span>
+                    <span className='text-15 font-bold text-primary-11'>
+                      {formatTotal(total)}
+                    </span>
+                    {canShowBreakdown && (
+                      <Icon
+                        className='size-3.5 text-primary-10'
+                        name='lucide:chevron-down'
+                      />
+                    )}
+                  </button>
+                ))}
+              {canShowBreakdown && totalsBreakdown && (
+                <Modal
+                  opened={showBreakdown}
+                  width={440}
+                  onClose={() => setShowBreakdown(false)}
+                >
+                  <div className='p-5'>
+                    <div className='flex items-start gap-3'>
+                      <div className='flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-2 text-primary-11'>
+                        <Icon className='size-5' name='lucide:coins' />
+                      </div>
+                      <div className='min-w-0 flex-1'>
+                        <h3 className='text-15 font-semibold text-gray-13'>
+                          {t`${totalsBreakdown.measure} by ${totalsBreakdown.by}`}
+                        </h3>
+                        <p className='mt-0.5 text-13 text-gray-11'>
+                          {t`Total ${totalsBreakdown.measure}`}{' '}
+                          <span className='font-semibold text-gray-13'>
+                            <CountUp value={columnTotals[0]?.total ?? 0} />
+                          </span>
+                        </p>
+                      </div>
+                      <IconButton
+                        ariaLabel={t`Close`}
+                        color='gray'
+                        icon='lucide:x'
+                        size='sm'
+                        variant='ghost'
+                        onClick={() => setShowBreakdown(false)}
+                      />
+                    </div>
+                    <ul className='ez-scrollbar mt-4 flex max-h-96 flex-col gap-3 overflow-y-auto pr-1'>
+                      {totalsBreakdown.items.map(({ name, total }, index) => {
+                        const grand = columnTotals[0]?.total || 0
+                        const share = grand > 0 ? (total / grand) * 100 : 0
+                        // Rows slide in one after another; each bar then grows to its share.
+                        const delay = 0.05 * index
+                        return (
+                          <motion.li
+                            animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 8 }}
+                            key={name}
+                            transition={{
+                              delay,
+                              duration: 0.25,
+                              ease: 'easeOut',
+                            }}
+                          >
+                            <div className='flex items-center justify-between gap-3 text-13'>
+                              <span className='truncate text-gray-12'>
+                                {name}
+                              </span>
+                              <span className='shrink-0 text-gray-11'>
+                                <span className='font-semibold text-gray-13'>
+                                  {formatTotal(total)}
+                                </span>{' '}
+                                ({share.toFixed(share >= 10 ? 0 : 1)}%)
+                              </span>
+                            </div>
+                            <div className='mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-3'>
+                              <motion.div
+                                animate={{ width: `${Math.max(share, 2)}%` }}
+                                className='h-full rounded-full bg-primary-9'
+                                initial={{ width: 0 }}
+                                transition={{
+                                  delay: delay + 0.15,
+                                  duration: 0.6,
+                                  ease: 'easeOut',
+                                }}
+                              />
+                            </div>
+                          </motion.li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                </Modal>
+              )}
               {toolbarActions}
             </div>
           }
@@ -847,42 +1066,60 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
           }}
         />
 
-        {columnTotals.length > 0 && filteredRows.length > 0 && (
-          // Label column + chips column, so both rows' chips start at the same edge.
-          <div className='grid shrink-0 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
-            <span className='text-12 text-gray-11'>{t`Totals:`}</span>
-            <div className='flex flex-wrap items-center gap-2'>
-              {columnTotals.map(({ label, total }) => (
-                <span
-                  key={label}
-                  className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
-                >
-                  {t`Total ${label}`}
-                  <span className='font-semibold'>{formatTotal(total)}</span>
-                </span>
-              ))}
-            </div>
-            {totalsBreakdown && totalsBreakdown.items.length > 1 && (
-              <>
-                <span className='text-12 text-gray-11'>
-                  {t`${totalsBreakdown.measure} by ${totalsBreakdown.by}:`}
-                </span>
-                <div className='flex flex-wrap items-center gap-2 text-12 text-gray-11'>
-                  {totalsBreakdown.items.map(({ name, total }) => (
-                    <span
-                      key={name}
-                      className='inline-flex items-center gap-1 rounded-full border border-gray-4 px-2.5 py-0.5'
-                    >
-                      {name}
-                      <span className='font-semibold text-gray-13'>
-                        {formatTotal(total)}
+        {columnTotals.length > 0 &&
+          filteredRows.length > 0 &&
+          (!totalsInToolbar ||
+            (totalsBreakdown && totalsBreakdown.items.length > 1)) && (
+            // Label column + chips column, so both rows' chips start at the same edge.
+            <div className='grid shrink-0 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border-default)] bg-surface p-2.5 shadow-xs'>
+              {/* A toolbar total (Total Credits) is not repeated here. */}
+              {!totalsInToolbar && (
+                <>
+                  <span className='text-12 text-gray-11'>{t`Totals:`}</span>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    {columnTotals.map(({ label, total }) => (
+                      <span
+                        className='inline-flex items-center gap-1.5 rounded-full bg-primary-1 px-3 py-1 text-13 text-primary-11'
+                        key={label}
+                      >
+                        {t`Total ${label}`}
+                        <span className='font-semibold'>
+                          {formatTotal(total)}
+                        </span>
                       </span>
-                    </span>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {totalsBreakdown && totalsBreakdown.items.length > 1 && (
+                <>
+                  <span className='text-12 text-gray-11'>
+                    {t`${totalsBreakdown.measure} by ${totalsBreakdown.by}:`}
+                  </span>
+                  <div className='flex flex-wrap items-center gap-2 text-12 text-gray-11'>
+                    {totalsBreakdown.items.map(({ name, total }) => (
+                      <span
+                        className='inline-flex items-center gap-1 rounded-full border border-gray-4 px-2.5 py-0.5'
+                        key={name}
+                      >
+                        {name}
+                        <span className='font-semibold text-gray-13'>
+                          {formatTotal(total)}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+        {isLoginReport && (
+          <UserActivityModal
+            email={activityEmail}
+            reportId={report.id}
+            onClose={() => setActivityEmail(null)}
+          />
         )}
 
         <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>

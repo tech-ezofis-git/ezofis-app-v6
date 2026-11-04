@@ -50,6 +50,8 @@ export interface ReportAgentRunResult {
   page?: number
   pageSize?: number
   reportType?: string
+  /** A Refresh saved the report's updated default columns as a new version. */
+  specSaved?: boolean
   title?: string
   totalCount?: number
   warnings?: string[]
@@ -117,8 +119,12 @@ export interface ReportAiRecord extends ReportAiListItem {
 }
 
 export interface ReportAiRunRequest {
+  /** A report saved by the old AI builder: run by the V6 API, not Report Agent v2. */
+  legacy?: boolean
   page?: number
   pageSize?: number
+  /** Refresh button: bring the saved report's default columns up to date first (no LLM). */
+  refreshDefaults?: boolean
   /** Send the edited prompt/spec so the run uses UI changes. */
   reportPrompt?: string
   reportSpec?: Record<string, unknown>
@@ -255,9 +261,10 @@ const sourceFromSpec = (spec: Record<string, unknown> | undefined) => {
 }
 
 interface V2RunPayload {
-  columns?: { key: string; calc?: string; label?: string }[]
+  columns?: { calc?: string; key: string; label?: string }[]
   rowCount?: number
   rows?: Record<string, unknown>[]
+  specSaved?: boolean
   truncated?: boolean
   warnings?: string[]
 }
@@ -303,6 +310,10 @@ interface V2Definition {
   warnings?: string[]
   workflowName?: string | null
 }
+
+/** True for a report saved by the old AI builder (its spec has no Report Agent v2 part). */
+export const isLegacyReportSpec = (spec: unknown) =>
+  kindOfSpec(spec as ReportSpec | undefined) === 'legacy'
 
 const kindOfSpec = (spec: ReportSpec | undefined): ReportAiKind =>
   spec?.agentSpec?.kind === 'system'
@@ -415,17 +426,47 @@ export const runReportAiReport = async (
       }
     }
     if (!id) return { data: null, error: REPORT_RUN_ERROR_MESSAGE }
+    if (body.legacy) {
+      // Old AI builder reports still run on the V6 API, which returns the
+      // same columns/rows shape.
+      const { data } = await axiosV6({
+        data: { page: body.page ?? 1, pageSize: body.pageSize ?? 500 },
+        method: 'POST',
+        skipCancellation: true,
+        url: `/report-ai-builder/${encodeURIComponent(id)}/run`,
+      })
+      const result = data as
+        | (V2RunPayload & { title?: string; totalCount?: number })
+        | null
+      if (!result) return { data: null, error: REPORT_RUN_ERROR_MESSAGE }
+      return {
+        data: {
+          ...toRunResult({ ...result, rowCount: result.totalCount }),
+          id,
+          title: result.title,
+        },
+        error: '',
+      }
+    }
     const { data } = await axiosV6({
       headers: getTenantHeaders(),
       method: 'GET',
-      params: body.pageSize ? { limit: body.pageSize } : undefined,
+      params: {
+        ...(body.pageSize ? { limit: body.pageSize } : {}),
+        ...(body.refreshDefaults ? { refreshDefaults: true } : {}),
+      },
       skipCancellation: true,
       url: `${reportAgentBase()}/reports/${encodeURIComponent(id)}/execute`,
     })
     const result = data as (V2RunPayload & { name?: string }) | null
     if (!result) return { data: null, error: REPORT_RUN_ERROR_MESSAGE }
     return {
-      data: { ...toRunResult(result), id, title: result.name },
+      data: {
+        ...toRunResult(result),
+        id,
+        specSaved: Boolean(result.specSaved),
+        title: result.name,
+      },
       error: '',
     }
   } catch (error: unknown) {
@@ -434,6 +475,44 @@ export const runReportAiReport = async (
       error: runErrorFrom(error),
     }
   }
+}
+
+export interface UserLoginActivity {
+  email: string
+  events: {
+    at: string | null
+    category: string | null
+    event: string | null
+    ip: string | null
+    severity: string | null
+    type: string | null
+  }[]
+  logins: {
+    at: string | null
+    channel: string | null
+    device: string | null
+    ip: string | null
+  }[]
+  since: string
+  until: string
+}
+
+/**
+ * One user's logins and security events behind a row of the User Login and
+ * Security Activity default report (Admin only).
+ */
+export const getReportUserActivity = async (
+  reportId: string,
+  email: string,
+) => {
+  const { data } = await axiosV6({
+    headers: getTenantHeaders(),
+    method: 'GET',
+    params: { email },
+    skipCancellation: true,
+    url: `${reportAgentBase()}/reports/${encodeURIComponent(reportId)}/user-activity`,
+  })
+  return data as UserLoginActivity
 }
 
 export const getReportAiReport = async (id: string) => {
@@ -544,7 +623,8 @@ export const listReportAiReports = async () => {
     const { data } = await axiosV6({
       headers: getTenantHeaders(),
       method: 'GET',
-      params: { pageSize: 500 },
+      // `all`: reports saved by the old AI builder too (run on the V6 API).
+      params: { kind: 'all', pageSize: 500 },
       skipCancellation: true,
       url: `${reportAgentBase()}/reports`,
     })

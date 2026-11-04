@@ -178,7 +178,8 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
                     request.Attachment?.ContentType,
                     request.FormDataFields,
                     request.FormLineItemsJson,
-                    request.StagedFiles),
+                    request.StagedFiles,
+                    request.ExtraAttachments),
                 cancellationToken);
 
             _logger.LogInformation(

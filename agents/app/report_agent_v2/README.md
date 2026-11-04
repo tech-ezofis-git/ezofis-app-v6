@@ -117,7 +117,11 @@ Before switching it on in an environment (in this order):
    LLM call.
 6. **Switch on**: set `REPORT_AGENT_V2_ENABLED=true` (keep the signing key unset) and restart the
    agents container. Check the startup log for "Report Agent v2 not mounted" messages.
-7. **Default reports**: a tenant admin calls `POST /api/report-agent-v2/defaults/install` once per tenant.
+7. **Default reports**: nothing to do. The first time a tenant Admin opens the Reports list, the default
+   reports the tenant has never had are created, owned by that admin (new tenants, and templates added later).
+   A default deleted on purpose is not recreated. `POST /api/report-agent-v2/defaults/install` still works.
+   New tenants get the reporting tables at sign-up (`ReportSchemaSql.Ensure`, which now includes
+   `ReportAgentSpecs` / `ReportAgentRuns`); existing tenants still need step 3 once.
 
 ## Model
 

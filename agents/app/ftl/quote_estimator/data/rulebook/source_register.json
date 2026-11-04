@@ -201,5 +201,61 @@
     "role": "FTL controlling rule",
     "primary_use": "Universal car door, Formula 3D, OL tension policy",
     "control_note": "Highest-priority commercial instruction in this release"
+  },
+  {
+    "source_id": "S-030",
+    "file_source": "inFlow_ProductDetails.csv",
+    "role": "Live commercial/product master snapshot",
+    "primary_use": "Exact ProductName, inFlow SKU, current default selling price, active/item type",
+    "control_note": "Live inFlow remains release authority; CSV is dated snapshot"
+  },
+  {
+    "source_id": "S-031",
+    "file_source": "Formula Vision Plus FZU-1442US01 Product Guide & Installation Instructions",
+    "role": "Manufacturer technical",
+    "primary_use": "18-30 VDC connectivity, NPN NC output, TX/RX wiring, 2D/3D/self-test",
+    "control_note": "Primary detector technical source"
+  },
+  {
+    "source_id": "S-032",
+    "file_source": "2026 SGV-2 MOD Door Operator Survey.pdf",
+    "role": "Controlled survey",
+    "primary_use": "Opening/configuration, clutch interface, panel interface, Formula selection, A-F/S survey pages",
+    "control_note": "Use diagrams; North American/Wittur handing terminology can be ambiguous"
+  },
+  {
+    "source_id": "S-033",
+    "file_source": "FTL SGV2 Pre-Shipment Selection & Release Playbook - 1S/1SSO",
+    "role": "FTL controlled operations",
+    "primary_use": "1S hall-view identity, field evidence, HOLD/release gates",
+    "control_note": "Hand proven from hall; one record per entrance"
+  },
+  {
+    "source_id": "S-034",
+    "file_source": "FTL SGV2 Pre-Shipment Selection & Release Playbook - 2C/1SCO",
+    "role": "FTL controlled operations",
+    "primary_use": "2C coupler-position identity, field evidence, HOLD/release gates",
+    "control_note": "Record coupler variant; center opening does not settle lock position"
+  },
+  {
+    "source_id": "S-035",
+    "file_source": "FTL SGV2 Pre-Shipment Selection & Release Playbook - 2T/2SSO",
+    "role": "FTL controlled operations",
+    "primary_use": "2T fast/slow panel identity, handed bracket requirement, field evidence",
+    "control_note": "Operator and bracket hand must match"
+  },
+  {
+    "source_id": "S-036",
+    "file_source": "FTL Wittur Products 2026 Catalogue & Price List - Rev. 09.2026",
+    "role": "Commercial catalogue reference",
+    "primary_use": "Published catalogue subset and product-selection checkpoints",
+    "control_note": "Reference only when live inFlow differs; no automatic bundle discount"
+  },
+  {
+    "source_id": "S-037",
+    "file_source": "JR/Francine rules - 2026-10-13 to 2026-10-16",
+    "role": "FTL controlling rule",
+    "primary_use": "3-quote architecture; safety sync/link; OL tension line; freight; no auto discounts; survey workflow; client-service principles",
+    "control_note": "Highest-priority FTL operating instruction in Version 1.1"
   }
 ]

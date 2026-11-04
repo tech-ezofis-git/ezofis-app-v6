@@ -17,13 +17,14 @@ from psycopg import AsyncConnection
 from psycopg import Error as PgError
 from pydantic import ValidationError
 
+from app.control import agent_request_log
 from app.report_agent_v2.agents.planner import ReportPlanner
 from app.report_agent_v2.config import Settings
 from app.report_agent_v2.domain import source_catalog
 from app.report_agent_v2.domain.compiler import CompiledQuery, SpecValidationError, compile_spec
 from app.report_agent_v2.domain.executor import run_compiled
 from app.report_agent_v2.domain.source_catalog import SourceCatalog
-from app.report_agent_v2.domain.spec import OutputColumn, ReportSpec
+from app.report_agent_v2.domain.spec import OrderBy, OutputColumn, ReportSpec
 from app.report_agent_v2.errors import BadRequestError, UnprocessableError
 from app.report_agent_v2.logging_setup import log_fields
 from app.report_agent_v2.security.principal import TenantContext
@@ -70,19 +71,55 @@ TICKET_COLUMNS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("sys.modified_at",), "Modified At"),
 )
 
+# Always shown last on every report (workflow tickets and folder files) when the tenant has the
+# AI usage log: one value per ticket/file on list reports (source_catalog.AI_USAGE_FIELDS).
+AI_DEFAULT_COLUMNS: tuple[tuple[tuple[str, ...], str], ...] = tuple(
+    ((fid,), label) for fid, label, _dtype, _system in source_catalog.AI_USAGE_FIELDS
+)
+
+
+def _as_list_report(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
+    """Turn a grouped / summary spec into one row per request (or file).
+
+    The grouped-by fields become ordinary columns (first, in their order) and the rows are sorted
+    by them, so the same supplier / status sit together; measures (counts, per-group sums) and
+    the filters / sorts on them are dropped. This keeps Request No clickable and Stage a single
+    value on every report.
+    """
+    measure_ids = {m.id for m in spec.measures}
+    derived_labels = {d.id: d.label for d in spec.derived}
+    kept = [c for c in spec.columns if c.ref not in measure_ids]
+    shown = {c.ref for c in kept}
+    lead = []
+    for ref in spec.group_by:
+        if ref in shown:
+            continue
+        label = derived_labels.get(ref) or (catalog.fields[ref].label if ref in catalog.fields else ref)
+        lead.append(OutputColumn(ref=ref, label=label))
+        shown.add(ref)
+    order_by = [o for o in spec.order_by if o.ref not in measure_ids]
+    sorted_refs = {o.ref for o in order_by}
+    order_by = [OrderBy(ref=ref) for ref in spec.group_by if ref not in sorted_refs] + order_by
+    return spec.model_copy(update={
+        "group_by": [], "measures": [], "columns": lead + kept, "order_by": order_by,
+        "filters": [f for f in spec.filters if f.ref not in measure_ids],
+    })
+
 
 def with_ticket_columns(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
-    """Add Request No / Stage / Created By / Action By / Created At / Modified At to a list report.
+    """Add the default columns to a report, whatever the prompt asked for.
 
-    Only for workflow reports with one row per request (no groupBy / measures): grouped totals
-    have no single ticket per row. Columns the report already shows are not repeated; Request No
-    goes first, the rest after the report's own columns.
+    Every report is one row per request (workflow) or file (folder): a grouped / summary spec is
+    turned into a list first (_as_list_report). Workflow reports get Request No first, then the
+    report's own columns, then Stage / Created By / Action By / Created At / Modified At; every
+    report then gets all AI usage fields when the tenant has the AI usage log. Columns the report already shows are not repeated.
     """
-    if catalog.source_type != "Workflow" or spec.group_by or spec.measures:
-        return spec
+    if spec.group_by or spec.measures:
+        spec = _as_list_report(spec, catalog)
+    defaults = (TICKET_COLUMNS if catalog.source_type == "Workflow" else ()) + AI_DEFAULT_COLUMNS
     shown = {c.ref for c in spec.columns}
     lead, tail = [], []
-    for refs, label in TICKET_COLUMNS:
+    for refs, label in defaults:
         ref = next((r for r in refs if r in catalog.fields), None)
         if ref is None or any(r in shown for r in refs):
             continue
@@ -90,6 +127,27 @@ def with_ticket_columns(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
     if not lead and not tail:
         return spec
     return spec.model_copy(update={"columns": lead + list(spec.columns) + tail})
+
+
+# Default columns that were dropped from the lists above. A saved report keeps them until it is
+# refreshed (refresh_default_columns), then they are removed. Add a ref here when retiring one.
+RETIRED_DEFAULT_REFS: frozenset[str] = frozenset()
+
+
+def refresh_default_columns(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
+    """Bring a saved report's default columns up to date (the Refresh button), with no LLM call.
+
+    Retired defaults are removed and current defaults added; the report's own columns, filters,
+    grouping and sort stay as saved.
+    """
+    if RETIRED_DEFAULT_REFS:
+        retired = {m.id for m in spec.measures if m.of in RETIRED_DEFAULT_REFS} | set(RETIRED_DEFAULT_REFS)
+        spec = spec.model_copy(update={
+            "columns": [c for c in spec.columns if c.ref not in retired],
+            "measures": [m for m in spec.measures if m.id not in retired],
+            "order_by": [o for o in spec.order_by if o.ref not in retired],
+        })
+    return with_ticket_columns(spec, catalog)
 
 
 def _pydantic_feedback(exc: ValidationError) -> list[str]:
@@ -102,6 +160,22 @@ class ReportDefinitionAgent:
         self._settings = settings
 
     async def generate(
+        self, conn: AsyncConnection, ctx: TenantContext, source: SourceRef, prompt: str, name: str | None
+    ) -> GeneratedDefinition:
+        # Logged as one ai.agent_request_logs row with no ticket/file link (app/control/agent_request_log.py).
+        run, token = agent_request_log.start(
+            "report-agent", agent_name="report_agent", tenant_id=ctx.tenant_id, user_id=ctx.user_id
+        )
+        status, error_type = "Success", None
+        try:
+            return await self._generate(conn, ctx, source, prompt, name)
+        except Exception as exc:
+            status, error_type = agent_request_log.status_for_exception(exc)
+            raise
+        finally:
+            agent_request_log.finish(run, token, status=status, error_type=error_type)
+
+    async def _generate(
         self, conn: AsyncConnection, ctx: TenantContext, source: SourceRef, prompt: str, name: str | None
     ) -> GeneratedDefinition:
         catalog = await load_catalog(conn, ctx, source)

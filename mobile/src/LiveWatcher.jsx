@@ -1,5 +1,5 @@
 // Background auto-refresh for signed-in users.
-// Polls the all-workflows inbox (every 45 s while the app is open, every 2 min while it is in the background,
+// Reads the server notifications (GET /api/notifications) for what to announce, and polls the all-workflows inbox (every 45 s while the app is open, every 2 min while it is in the background,
 // immediately when the app comes back or the network returns). When new requests arrive it adds them to the
 // in-app notification list, posts a phone notification (when the app is not on screen), updates the inbox badge
 // and refreshes the screen — only on Home / Inbox / Notifications, so forms and open tickets are never reset.
@@ -8,6 +8,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from './store.jsx';
 import { wfApi } from './wf.js';
 import { phoneNotify, onNotificationTap } from './notify.js';
+import { bgSeen, bgCheckNow, bgAvailable } from './background.js';
+import { onPushTap } from './push.js';
+import { toItem } from './notifications.js';
+import { App as CapApp } from '@capacitor/app';
 
 const testMs = (() => { try { return Number(localStorage.getItem('ezofis.pollMs')) || 0; } catch (e) { return 0; } })();
 const FG_MS = testMs || 45000, BG_MS = testMs || 120000;
@@ -16,9 +20,14 @@ export const autoRefreshOn = () => { try { return localStorage.getItem(AUTO) !==
 export const setAutoRefresh = (on) => { try { localStorage.setItem(AUTO, on ? 'on' : 'off'); } catch (e) { /* ignore */ } window.dispatchEvent(new Event('ezofis-autorefresh')); };
 const refreshable = (p) => p === '/app/home' || p === '/app/inbox' || p === '/app/notifications';
 const keyOf = (r) => `${r.workflowInstanceId}|${r.transactionId || r.activityId || ''}`;
+// Is the user looking at the app? Android's in-app WebView doesn't always set document.hidden when the app goes to the
+// background, so the Capacitor app state decides on the phone.
+let appActive = true;
+try { CapApp.addListener('appStateChange', (st) => { appActive = !!(st && st.isActive); }); } catch (e) { /* web: document.hidden only */ }
+const away = () => document.hidden || !appActive;
 
 export default function LiveWatcher() {
-  const { live, session, bumpLive, addNotif, setInboxCount, showToast } = useStore();
+  const { live, session, bumpLive, refreshNotifs, setInboxCount, showToast } = useStore();
   const loc = useLocation();
   const nav = useNavigate();
   const snap = useRef(null);
@@ -31,39 +40,50 @@ export default function LiveWatcher() {
     if (busy.current || !navigator.onLine || !autoRefreshOn()) return;
     busy.current = true;
     try {
+      // inbox: the badge and the lists on screen
       const d = await wfApi.allInbox(10);
       const rows = (d.workflows || []).flatMap((g) => g.items || []);
       const total = d.totalCount || 0;
       const keys = new Set(rows.map(keyOf));
       const prev = snap.current;
-      snap.current = { keys, total };
+      snap.current = { ...(prev || {}), keys, total };
       setInboxCount(total);
-      if (!prev) return;
-      const fresh = rows.filter((r) => !prev.keys.has(keyOf(r)));
-      if (!fresh.length && total === prev.total) return;
-      fresh.slice(0, 5).forEach((r) => addNotif({
-        type: 'wf', tone: 'p', title: `New request · ${r.referenceNumber || r.name}`,
-        body: `${r.name}${r.stage ? ' · ' + r.stage : ''}`, to: '/app/inbox/' + encodeURIComponent(r.workflowId + '~' + r.workflowInstanceId),
-      }));
-      if (fresh.length) {
-        const one = fresh[0];
-        const title = fresh.length === 1 ? `New request · ${one.referenceNumber || one.name}` : `${fresh.length} new requests`;
-        const body = fresh.length === 1 ? `${one.name}${one.stage ? ' · ' + one.stage : ''} is waiting for you` : `${total} waiting in your EZOFIS inbox`;
-        if (document.hidden) phoneNotify(title, body, { route: '/app/inbox' + (fresh.length === 1 ? '/' + encodeURIComponent(one.workflowId + '~' + one.workflowInstanceId) : ''), tag: 'ezofis-inbox' });
-        else showToast(fresh.length === 1 ? `New request ${one.referenceNumber || ''} arrived` : `${fresh.length} new requests arrived`);
+      const inboxChanged = !prev || total !== prev.total || rows.some((r) => !prev.keys.has(keyOf(r)));
+      // notifications (GET /api/notifications, the web's bell list): what the user is told about
+      const list = await refreshNotifs();
+      if (list) {
+        const unread = list.filter((n) => !n.isRead);
+        const ids = new Set(unread.map((n) => String(n.id)));
+        const before = prev && prev.notifIds;
+        snap.current.notifIds = ids;
+        // While the user is away on the phone, the background check posts the phone notification (the path the
+        // Settings test proves) and keeps its own "seen" list; notifications count as seen only when the app was on screen.
+        if (away() && bgAvailable()) bgCheckNow('app, you were away');
+        else {
+          bgSeen([...ids]);
+          const fresh = before ? unread.filter((n) => !before.has(String(n.id))) : [];
+          if (fresh.length) {
+            const one = fresh[0];
+            const title = fresh.length === 1 ? one.title || one.message || 'New notification' : `${fresh.length} new notifications`;
+            const body = fresh.length === 1 ? ((one.data && one.data.workflowName) || 'EZOFIS') : `${unread.length} unread in EZOFIS`;
+            const item = toItem(one);
+            if (away()) phoneNotify(title, body, { route: fresh.length === 1 ? item.to : '/app/notifications', tag: 'ezofis-inbox' });
+            else showToast(fresh.length === 1 ? title : `${fresh.length} new notifications`);
+          }
+        }
       }
-      if (refreshable(path.current)) bumpLive(); else stale.current = true;
+      if (inboxChanged && prev) { if (refreshable(path.current)) bumpLive(); else stale.current = true; }
     } catch (e) {
       /* a failed poll is retried on the next tick; a 401 already signs the user out */
     } finally { busy.current = false; }
-  }, [addNotif, bumpLive, setInboxCount, showToast]);
+  }, [refreshNotifs, bumpLive, setInboxCount, showToast]);
 
   // start / restart with the session
   useEffect(() => {
     snap.current = null; stale.current = false;
     if (!live) return undefined;
     let timer = null, off = false;
-    const loop = () => { if (off) return; timer = setTimeout(async () => { await check(); loop(); }, document.hidden ? BG_MS : FG_MS); };
+    const loop = () => { if (off) return; timer = setTimeout(async () => { await check(); loop(); }, away() ? BG_MS : FG_MS); };
     const now = () => { clearTimeout(timer); check().then(loop); };
     const onVis = () => { if (!document.hidden) now(); };
     check().then(loop);
@@ -81,6 +101,7 @@ export default function LiveWatcher() {
 
   // tapping a phone notification (release build) opens the request
   useEffect(() => { let un = () => {}; onNotificationTap((r) => nav(r)).then((f) => { un = f; }); return () => un(); }, [nav]);
+  useEffect(() => { let un = () => {}; onPushTap((r) => nav(r)).then((f) => { un = f; }); return () => un(); }, [nav]);
 
   return null;
 }

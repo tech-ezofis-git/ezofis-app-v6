@@ -37,6 +37,7 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
     private readonly IWorkflowApAgentMoveNextService _moveNextSupport;
     private readonly IMediator _mediator;
     private readonly IFormJsonStorageService _formJsonStorage;
+    private readonly IFormEntryService _formEntries;
     private readonly IConfiguration _configuration;
     private readonly IOptions<ApAgentOptions> _apAgentOptions;
     private readonly AgentsChatOptions _agentsChat;
@@ -58,6 +59,7 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         IWorkflowApAgentMoveNextService moveNextSupport,
         IMediator mediator,
         IFormJsonStorageService formJsonStorage,
+        IFormEntryService formEntries,
         IConfiguration configuration,
         IOptions<ApAgentOptions> apAgentOptions,
         IOptions<AgentsChatOptions> agentsChat,
@@ -74,6 +76,7 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         _moveNextSupport = moveNextSupport;
         _mediator = mediator;
         _formJsonStorage = formJsonStorage;
+        _formEntries = formEntries;
         _configuration = configuration;
         _apAgentOptions = apAgentOptions;
         _agentsChat = agentsChat.Value;
@@ -168,6 +171,9 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         // NULL wFormControl.columnName (form save only provisions on publish).
         // Create the physical columns + backfill columnName before move-next writes.
         await EnsureEzfbColumnsForMappedFieldsAsync(formId, mapped, cancellationToken);
+
+        if (isQuote)
+            await TryStoreNewRfqMasterClientAsync(fields, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(formId)
             && formEntryId is { } entryId && entryId != Guid.Empty
@@ -438,6 +444,8 @@ public sealed class FtlAgentPipelineService : IFtlAgentPipelineService
         };
 
         await EnsureEzfbColumnsForMappedFieldsAsync(formId, mapped, cancellationToken);
+
+        await TryStoreNewRfqMasterClientAsync(fields, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(formId)
             && formEntryId is { } entryId && entryId != Guid.Empty
@@ -2733,7 +2741,7 @@ LIMIT 1;
         return null;
     }
 
-    private static Dictionary<string, string> MergeQuoteFormData(
+    internal static Dictionary<string, string> MergeQuoteFormData(
         string? existingJson,
         IReadOnlyDictionary<string, string> incoming,
         IReadOnlySet<string>? replaceKeys = null)
@@ -2768,7 +2776,12 @@ LIMIT 1;
             }
 
             if (merged.TryGetValue(key, out var current) && !IsEmptyFormValue(current))
+            {
+                // A form's default 0 must not block the agent's value, such as its freight.
+                if (IsZeroFormValue(current) && !IsEmptyFormValue(value))
+                    merged[key] = value;
                 continue;
+            }
 
             merged[key] = value;
         }
@@ -2793,7 +2806,7 @@ LIMIT 1;
                 var raw = prop.Value.ValueKind == JsonValueKind.String
                     ? prop.Value.GetString()
                     : prop.Value.GetRawText();
-                if (!IsEmptyFormValue(raw))
+                if (!IsEmptyFormValue(raw) && !IsZeroFormValue(raw))
                     keys.Add(prop.Name);
             }
         }
@@ -2820,6 +2833,9 @@ LIMIT 1;
             .Where(pair => !protectedValues.Contains(pair.Value))
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
     }
+
+    private static bool IsZeroFormValue(string? value) =>
+        decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var number) && number == 0;
 
     private static bool IsEmptyFormValue(string? value)
     {
@@ -3037,6 +3053,55 @@ LIMIT 1;
     /// <summary>
     /// Quote save uses only quote_result. Matched items from qualifier/payload are ignored.
     /// </summary>
+    /// <summary>
+    /// Adds a client the quote agent could not find to RFQ Master. Never fails the agent step:
+    /// the quote is already saved, and the row can be added later by editing Bill To.
+    /// </summary>
+    private async Task TryStoreNewRfqMasterClientAsync(
+        IReadOnlyDictionary<string, string> quoteFields,
+        CancellationToken cancellationToken)
+    {
+        var fields = FtlRfqMasterClient.BuildNewClientFields(quoteFields);
+        if (fields is null)
+            return;
+
+        try
+        {
+            var masterFormId = await FindRfqMasterFormIdAsync(cancellationToken);
+            if (masterFormId is null)
+                return;
+
+            var result = await _formEntries.UpsertEntryAsync(
+                masterFormId,
+                Guid.Empty,
+                new SaaSApp.Workflow.Application.Forms.FormEntryUpsertRequest { Fields = fields.ToDictionary(f => f.Key, f => JsonSerializer.SerializeToElement(f.Value)) },
+                cancellationToken);
+            _logger.LogInformation("RFQ Master new client result: {Status}.", result.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not add the new client to RFQ Master.");
+        }
+    }
+
+    private async Task<string?> FindRfqMasterFormIdAsync(CancellationToken cancellationToken)
+    {
+        var tenantCs = _connectionProvider.ConnectionString;
+        if (string.IsNullOrWhiteSpace(tenantCs))
+            return null;
+
+        const string sql = """
+            SELECT id::text
+            FROM dbo."wForm"
+            WHERE lower(btrim(name)) = 'rfq master' AND "isDeleted" = false
+            LIMIT 1
+            """;
+        await using var connection = new NpgsqlConnection(tenantCs);
+        await connection.OpenAsync(cancellationToken);
+        await using var cmd = new NpgsqlCommand(sql, connection);
+        return await cmd.ExecuteScalarAsync(cancellationToken) as string;
+    }
+
     private static Dictionary<string, string> ExtractQuoteFormFields(string json)
     {
         var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

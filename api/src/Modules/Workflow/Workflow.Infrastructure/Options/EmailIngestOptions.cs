@@ -21,4 +21,10 @@ public sealed class EmailIngestOptions
 
     /// <summary>How often Hangfire may scan all tenants to discover new mailboxes (minutes).</summary>
     public int TenantDiscoveryMinutes { get; set; } = 30;
+
+    /// <summary>
+    /// Base of the per-workflow email webhook. Each workflow gets <c>{base}/{tenantId}/{workflowId}</c>.
+    /// WatchFox posts there, and so can a client's own tool with the workflow's webhook key.
+    /// </summary>
+    public string WorkflowWebhookUrl { get; set; } = "https://cloud.ezofis.com/api/email-ingest/webhook";
 }

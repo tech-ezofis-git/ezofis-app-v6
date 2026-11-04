@@ -11,7 +11,8 @@ import { apiErrorMessage } from '../api.js';
 import { fmtDate, ago, isTechnicalKey, isTechnicalLabel, MAX_FILE_MB } from '../wf.js';
 import FileViewer from './FileViewer.jsx';
 import { Skeleton, ErrorNote, Cnt } from './LiveWorkflow.jsx';
-import { repoApi, docApi, PHASE, stagePhase, trackedJobs, trackJob, updateJob, forgetJob, markJobFile, toFields, extOf, sizeOf, tooLarge, isPdf } from '../repo.js';
+import { repoApi, docApi, PHASE, stagePhase, trackedJobs, trackJob, updateJob, forgetJob, markJobFile, extOf, sizeOf, tooLarge, isPdf, draftRepos, trackDraftRepo, repoPermissions } from '../repo.js';
+import MetaForm, { useSchema, valuesFromItem, valuesFromOcr, toStageFields, toPatch, validate } from './MetaForm.jsx';
 import { ShareSheet, SignRequestSheet, SignStatus, ToSignCard, usePendingSigns, SmartUpload, SharedWithMe } from './DocActions.jsx';
 
 const PAGE = 30;
@@ -26,11 +27,11 @@ export function getRepos(force) {
   return repoList;
 }
 function useRepos(tick) {
-  const { session } = useStore();
+  const { session, setFolderCount } = useStore();
   const [state, setState] = useState({ list: null, error: '' });
   useEffect(() => {
     let off = false;
-    getRepos(tick > 0).then((list) => { if (!off) setState({ list, error: '' }); }).catch((e) => { if (!off) setState({ list: [], error: apiErrorMessage(e, 'your folders') }); });
+    getRepos(tick > 0).then((list) => { if (!off) { setState({ list, error: '' }); setFolderCount(list.length); } }).catch((e) => { if (!off) setState({ list: [], error: apiErrorMessage(e, 'your folders') }); });
     return () => { off = true; };
   }, [tick, session && session.tenantId]);
   return state;
@@ -102,10 +103,10 @@ export function LiveFolders() {
   const [viewing, setViewing] = useState(null);
   useEffect(() => { let off = false; docApi.sharedWithMe().then((l) => { if (!off) setShared(l); }).catch(() => { if (!off) setShared([]); }); return () => { off = true; }; }, [tick]);
   const [q, setQ] = useState('');
-  const shown = (list || []).filter((r) => !q.trim() || (r.name + ' ' + (r.description || '')).toLowerCase().includes(q.trim().toLowerCase()));
+  const shown = (list || []).filter((r) => !q.trim() || r.name.toLowerCase().includes(q.trim().toLowerCase()));
   return (
     <div className="screen">
-      <TopBar title="Folders" sub={list ? `${list.length} folder${list.length === 1 ? '' : 's'}` : ''} back={false} right={<IconBtn name="refresh" label="Refresh folders" onClick={() => setTick((x) => x + 1)} />} />
+      <TopBar title="Folders" sub={list ? `${list.length} folder${list.length === 1 ? '' : 's'}` : ''} back right={<IconBtn name="refresh" label="Refresh folders" onClick={() => setTick((x) => x + 1)} />} />
       <div className="content wide" style={{ paddingBottom: 110 }}>
         <ToSignCard list={toSign} onOpen={() => nav('/app/sign')} />
         <UploadsBanner jobs={jobs} onOpen={() => nav('/app/upload')} />
@@ -117,9 +118,8 @@ export function LiveFolders() {
             <button key={r.id} type="button" className={'repo-card ' + TONES[i % 4]} onClick={() => nav('/app/folders/r/' + r.id)}>
               <span className="repo-ic"><Icon name="folder" size={22} /></span>
               <span className="grow">
-                <span className="repo-n">{r.name}</span>
-                {r.description ? <span className="repo-d">{r.description}</span> : null}
-                <span className="repo-m">{(r.fileCount || 0).toLocaleString()} file{r.fileCount === 1 ? '' : 's'}{r.storageProviderName ? ' · ' + r.storageProviderName : ''}</span>
+                <span className="repo-n" title={r.name}>{r.name}</span>
+                <span className="repo-m">{(r.fileCount || 0).toLocaleString()} file{r.fileCount === 1 ? '' : 's'}</span>
               </span>
               <Icon name="chevR" size={18} color="#A39DB5" />
             </button>
@@ -130,7 +130,7 @@ export function LiveFolders() {
         <SharedWithMe list={shared} onOpen={(s) => setViewing({ fileName: s.fileName, repositoryId: s.sourceRepositoryId, itemId: s.sourceItemId, shareToken: s.shareToken })} />
       </div>
       {viewing ? <FileViewer file={viewing} onClose={() => setViewing(null)} /> : null}
-      <button type="button" className="fab" aria-label="Upload documents" onClick={() => nav('/app/upload')} style={{ position: 'fixed', right: 20, bottom: 'calc(var(--sab) + 100px)', margin: 0 }}><Icon name="upload" size={28} stroke={2.4} /></button>
+      {list && list.length ? <button type="button" className="fab" aria-label="Upload documents" onClick={() => nav('/app/upload')} style={{ position: 'fixed', right: 20, bottom: 'calc(var(--sab) + 100px)', margin: 0 }}><Icon name="upload" size={28} stroke={2.4} /></button> : null}
     </div>
   );
 }
@@ -157,20 +157,82 @@ function FileRow({ r, onOpen }) {
   );
 }
 
-function FilesList({ repoId, filters, search, reload, onOpen, emptyText }) {
+// ---------- filters (like the web browser): field values (facets), document date range, sort ----------
+const SORTS = [['documentDate:desc', 'Newest first'], ['documentDate:asc', 'Oldest first'], ['fileName:asc', 'Name A–Z'], ['fileName:desc', 'Name Z–A']];
+export const NO_FILTER = { filters: {}, dateFrom: '', dateTo: '', sort: 'documentDate:desc' };
+const SYSTEM_FILTER = /^(ocr|summary|tenant|repositoryid|storage|filepath|workflowinstanceid|aistatus|id$)/i;
+const activeCount = (f) => Object.values(f.filters).filter((v) => v && v.length).length + (f.dateFrom || f.dateTo ? 1 : 0) + (f.sort !== NO_FILTER.sort ? 1 : 0);
+
+function FilterSheet({ repoId, open, scope, value, onApply, onClose }) {
+  const [fields, setFields] = useState(null);
+  const [draft, setDraft] = useState(value);
+  const [vals, setVals] = useState({});
+  const [openField, setOpenField] = useState(null);
+  useEffect(() => { if (open) { setDraft(value); setOpenField(null); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!open || fields) return;
+    repoApi.filterFields(repoId).then((l) => setFields(l.filter((f) => f.sqlColumnName && !SYSTEM_FILTER.test(f.sqlColumnName) && !/date/i.test(f.dataType || '') && !(scope && scope[f.sqlColumnName])))).catch(() => setFields([]));
+  }, [open, repoId, fields, scope]);
+  const loadVals = (f) => { if (vals[f.sqlColumnName]) return; setVals((v) => ({ ...v, [f.sqlColumnName]: null })); repoApi.facetsIn(repoId, f.sqlColumnName, scope).then((l) => setVals((v) => ({ ...v, [f.sqlColumnName]: l }))).catch(() => setVals((v) => ({ ...v, [f.sqlColumnName]: [] }))); };
+  const toggle = (col, val) => setDraft((d) => { const cur = d.filters[col] || []; const next = cur.includes(val) ? cur.filter((x) => x !== val) : [...cur, val]; return { ...d, filters: { ...d.filters, [col]: next } }; });
+  return (
+    <Sheet open={open} onClose={onClose} title="Filter files">
+      <div className="flt">
+        <div className="flt-sec"><b>Sort by</b><div className="chips wrap">{SORTS.map(([k, l]) => <button key={k} type="button" className={'chip' + (draft.sort === k ? ' on' : '')} onClick={() => setDraft({ ...draft, sort: k })}>{l}</button>)}</div></div>
+        <div className="flt-sec"><b>Document date</b>
+          <div className="flt-dates"><label><span>From</span><input type="date" className="input" value={draft.dateFrom} onChange={(e) => setDraft({ ...draft, dateFrom: e.target.value })} aria-label="Date from" /></label><label><span>To</span><input type="date" className="input" value={draft.dateTo} onChange={(e) => setDraft({ ...draft, dateTo: e.target.value })} aria-label="Date to" /></label></div>
+        </div>
+        {fields === null ? <div className="muted" style={{ display: 'flex', gap: 10, alignItems: 'center' }}><span className="spinner" />Loading filters…</div> : null}
+        {(fields || []).map((f) => {
+          const sel = draft.filters[f.sqlColumnName] || [];
+          const isOpen = openField === f.sqlColumnName;
+          const list = vals[f.sqlColumnName];
+          return (
+            <div key={f.sqlColumnName} className="flt-field">
+              <button type="button" className="flt-h" aria-expanded={isOpen} onClick={() => { setOpenField(isOpen ? null : f.sqlColumnName); if (!isOpen) loadVals(f); }}>
+                <span className="grow"><b>{f.name}</b>{sel.length ? <small>{sel.join(', ')}</small> : <small>Any</small>}</span>{sel.length ? <span className="cnt">{sel.length}</span> : null}<Icon name="chevD" size={16} stroke={2.4} style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }} />
+              </button>
+              {isOpen ? (list === null || list === undefined ? <div className="muted" style={{ fontSize: 13, padding: '6px 2px' }}><span className="spinner tiny" /> Loading values…</div>
+                : list.length ? <div className="chips wrap">{list.map((v) => <button key={v.value} type="button" className={'chip' + (sel.includes(v.value) ? ' on' : '')} aria-pressed={sel.includes(v.value)} onClick={() => toggle(f.sqlColumnName, v.value)}>{v.value}{v.count != null ? <span className="chip-n">{v.count}</span> : null}</button>)}</div>
+                  : <div className="muted" style={{ fontSize: 13, padding: '6px 2px' }}>No values here.</div>) : null}
+            </div>
+          );
+        })}
+      </div>
+      <div className="grid2"><button type="button" className="btn outline-grey" onClick={() => setDraft(NO_FILTER)}>Clear all</button><button type="button" className="btn primary" onClick={() => { onApply(draft); onClose(); }}>Show files</button></div>
+    </Sheet>
+  );
+}
+
+function FilterBar({ value, onOpen, onChange }) {
+  const n = activeCount(value);
+  const tags = [...Object.entries(value.filters).flatMap(([col, vs]) => (vs || []).map((v) => ({ k: col + '=' + v, label: v, off: () => onChange({ ...value, filters: { ...value.filters, [col]: vs.filter((x) => x !== v) } }) }))),
+    ...(value.dateFrom || value.dateTo ? [{ k: 'date', label: `${value.dateFrom ? fmtDate(value.dateFrom) : '…'} – ${value.dateTo ? fmtDate(value.dateTo) : '…'}`, off: () => onChange({ ...value, dateFrom: '', dateTo: '' }) }] : []),
+    ...(value.sort !== NO_FILTER.sort ? [{ k: 'sort', label: (SORTS.find((s) => s[0] === value.sort) || [])[1], off: () => onChange({ ...value, sort: NO_FILTER.sort }) }] : [])];
+  return (
+    <div className="flt-bar">
+      <button type="button" className={'chip' + (n ? ' on' : '')} onClick={onOpen}><Icon name="filter" size={14} stroke={2.4} />Filter{n ? <span className="chip-n">{n}</span> : null}</button>
+      {tags.map((t) => <span key={t.k} className="flt-tag">{t.label}<button type="button" aria-label={'Remove ' + t.label} onClick={t.off}><Icon name="close" size={12} stroke={2.6} /></button></span>)}
+    </div>
+  );
+}
+
+function FilesList({ repoId, filters, search, reload, onOpen, emptyText, opts = NO_FILTER }) {
   const [state, setState] = useState({ loading: true, error: '', rows: [], total: 0, page: 1, more: false });
-  const fkey = JSON.stringify(filters || {});
+  const fkey = JSON.stringify({ ...(filters || {}), ...Object.fromEntries(Object.entries(opts.filters).filter(([, v]) => v && v.length)) });
+  const okey = [opts.dateFrom, opts.dateTo, opts.sort].join('|');
   const load = useCallback(async (page = 1) => {
     if (page === 1) setState((s) => ({ ...s, loading: true, error: '' }));
     try {
-      const d = await repoApi.query(repoId, { filters: JSON.parse(fkey), search, page, pageSize: PAGE });
+      const [sortBy, sortOrder] = okey.split('|')[2].split(':');
+      const d = await repoApi.query(repoId, { filters: JSON.parse(fkey), search, page, pageSize: PAGE, dateFrom: okey.split('|')[0], dateTo: okey.split('|')[1], sortBy, sortOrder });
       setState((s) => {
         const rows = page === 1 ? d.rows : [...s.rows, ...d.rows];
         const total = d.total >= 0 ? d.total : rows.length;
         return { loading: false, error: '', rows, total, page, more: d.total >= 0 ? rows.length < d.total : d.rows.length === PAGE };
       });
     } catch (e) { setState((s) => ({ ...s, loading: false, error: apiErrorMessage(e, 'the files') })); }
-  }, [repoId, fkey, search]);
+  }, [repoId, fkey, okey, search]);
   useEffect(() => { load(1); }, [load, reload]);
   return (
     <>
@@ -179,7 +241,7 @@ function FilesList({ repoId, filters, search, reload, onOpen, emptyText }) {
         <>
           {state.rows.length ? <div className="sec-label">{search ? 'Matching files' : 'Files'} · {state.total.toLocaleString()}</div> : null}
           <div className="files-list">{state.rows.map((r) => <FileRow key={r.id} r={r} onOpen={onOpen} />)}</div>
-          {!state.rows.length && !state.error ? <div className="empty"><Icon name="file" size={40} color="#CFC8DC" />{search ? `No files match “${search}”.` : emptyText || 'No files here yet.'}</div> : null}
+          {!state.rows.length && !state.error ? <div className="empty"><Icon name="file" size={40} color="#CFC8DC" />{search ? `No files match “${search}”.` : activeCount(opts) ? 'No files match these filters.' : emptyText || 'No files here yet.'}</div> : null}
           {state.more ? <button type="button" className="btn neutral small load-more" onClick={() => load(state.page + 1)}>Load more ({state.rows.length} of {state.total})</button> : null}
         </>
       )}
@@ -188,22 +250,29 @@ function FilesList({ repoId, filters, search, reload, onOpen, emptyText }) {
 }
 
 // Edit details / delete for an archived file (PATCH metadata, DELETE item), shown inside the file viewer.
-function ItemActions({ repoId, item, refresh, onChanged, onDeleted }) {
+// Actions follow the user's folder-security permissions (editMetadata, delete, sendForSignature); hidden until known.
+function ItemActions({ repoId, item, perms, refresh, onChanged, onDeleted }) {
   const { showToast } = useStore();
+  const schema = useSchema(repoId);
   const [edit, setEdit] = useState(null);
+  const [errs, setErrs] = useState({});
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [share, setShare] = useState(false);
   const [sign, setSign] = useState(false);
   const [signTick, setSignTick] = useState(0);
   const pdf = isPdf(item.fileName, item.fileType);
-  const editable = Object.entries(item.fields || {}).filter(([k, v]) => !isTechnicalKey(k) && (v == null || typeof v !== 'object') && !/^(DocumentDate|CreatedAtUtc|ModifiedAtUtc)$/i.test(k));
-  const open = () => setEdit(Object.fromEntries(editable.map(([k, v]) => [k, v == null ? '' : String(v)])));
+  const before = useMemo(() => (schema ? valuesFromItem(schema, item.fields || {}) : {}), [schema, item]);
+  const canEdit = perms && perms.editMetadata && schema && schema.some((f) => !f.readOnly);
+  const open = () => { setErrs({}); setEdit(before); };
   const save = async () => {
-    const changed = Object.fromEntries(Object.entries(edit).filter(([k, v]) => String((item.fields || {})[k] ?? '') !== v));
+    const e = validate(schema, edit);
+    setErrs(e);
+    if (Object.keys(e).length) { showToast(`${Object.keys(e).length} required detail${Object.keys(e).length > 1 ? 's are' : ' is'} missing`, { tone: 'bad' }); return; }
+    const changed = toPatch(schema, edit, before);
     if (!Object.keys(changed).length) { setEdit(null); return; }
     setBusy(true);
-    try { await repoApi.updateMetadata(repoId, item.id, changed); showToast('Details saved'); setEdit(null); refresh(); onChanged(); } catch (e) { showToast(apiErrorMessage(e, 'these details'), { tone: 'bad' }); } finally { setBusy(false); }
+    try { await repoApi.updateMetadata(repoId, item.id, changed); showToast('Details saved'); setEdit(null); refresh(); onChanged(); } catch (x) { showToast(x && x.status === 403 ? "You don't have permission to edit details here." : apiErrorMessage(x, 'these details'), { tone: 'bad' }); } finally { setBusy(false); }
   };
   const del = async () => {
     setBusy(true);
@@ -213,17 +282,14 @@ function ItemActions({ repoId, item, refresh, onChanged, onDeleted }) {
     <>
     <div className="fv-actions">
       <button type="button" className="btn primary small" onClick={() => setShare(true)}><Icon name="share" size={16} />Share</button>
-      <button type="button" className={'btn neutral small' + (pdf ? '' : ' dim')} onClick={() => (pdf ? setSign(true) : showToast('Only PDF documents can be sent for signature.', { tone: 'bad' }))}><Icon name="edit" size={16} />Request signature</button>
-      {editable.length ? <button type="button" className="btn neutral small" onClick={open}><Icon name="doc" size={16} />Edit details</button> : null}
-      <button type="button" className="btn neutral small danger-t" onClick={() => setConfirm(true)}><Icon name="close" size={16} />Delete</button>
+      {perms && perms.sendForSignature ? <button type="button" className={'btn neutral small' + (pdf ? '' : ' dim')} onClick={() => (pdf ? setSign(true) : showToast('Only PDF documents can be sent for signature.', { tone: 'bad' }))}><Icon name="edit" size={16} />Request signature</button> : null}
+      {canEdit ? <button type="button" className="btn neutral small" onClick={open}><Icon name="doc" size={16} />Edit details</button> : null}
+      {perms && perms.delete ? <button type="button" className="btn neutral small danger-t" onClick={() => setConfirm(true)}><Icon name="close" size={16} />Delete</button> : null}
       <ShareSheet open={share} onClose={() => setShare(false)} repoId={repoId} item={item} />
       <SignRequestSheet open={sign} onClose={() => setSign(false)} repoId={repoId} item={item} onSent={() => setSignTick((x) => x + 1)} />
       <Sheet open={!!edit} onClose={() => !busy && setEdit(null)} title="Edit details">
-        <div className="edit-list">
-          {edit ? editable.map(([k]) => (
-            <div key={k} className="field"><label htmlFor={'md-' + k}>{k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')}</label><input id={'md-' + k} className="input strong" value={edit[k]} onChange={(e) => setEdit({ ...edit, [k]: e.target.value })} /></div>
-          )) : null}
-        </div>
+        <p className="muted" style={{ margin: 0, fontSize: 12 }}><span className="req">*</span> required</p>
+        <div className="edit-list">{edit ? <MetaForm repoId={repoId} schema={schema} values={edit} base={before} errors={errs} idPrefix="md" onChange={(v, name) => { setEdit(v); setErrs((x) => ({ ...x, [name]: '' })); }} /> : null}</div>
         <div className="grid2"><button type="button" className="btn outline-grey" disabled={busy} onClick={() => setEdit(null)}>Cancel</button><button type="button" className="btn primary" disabled={busy} onClick={save}>{busy ? <><span className="spinner" />Saving…</> : 'Save'}</button></div>
       </Sheet>
       <Sheet open={confirm} onClose={() => !busy && setConfirm(false)} title={`Delete ${item.fileName || 'this file'}?`}>
@@ -236,34 +302,48 @@ function ItemActions({ repoId, item, refresh, onChanged, onDeleted }) {
   );
 }
 
-function StagedList({ repoId, reload, onOpen }) {
-  const [state, setState] = useState({ loading: true, rows: [], error: '' });
+// Drafts: files this device uploaded (bulk or intelligent) that are staged but not exported yet — kept until exported or deleted.
+export function useDrafts(tick, extraRepoIds = []) {
+  const { session } = useStore();
+  const [state, setState] = useState({ loading: true, groups: [] });
+  const ids = [...new Set([...extraRepoIds.filter(Boolean), ...draftRepos(session && session.tenantId)])].join(',');
   useEffect(() => {
     let off = false;
-    setState((s) => ({ ...s, loading: true, error: '' }));
-    repoApi.staged(repoId).then((d) => { if (!off) setState({ loading: false, rows: d.rows, error: '' }); }).catch((e) => { if (!off) setState({ loading: false, rows: [], error: apiErrorMessage(e, 'files to review') }); });
+    if (!ids) { setState({ loading: false, groups: [] }); return undefined; }
+    setState((s) => ({ ...s, loading: !s.groups.length }));
+    Promise.all(ids.split(',').map((id) => repoApi.staged(id).then((d) => ({ repoId: id, rows: d.rows })).catch(() => ({ repoId: id, rows: [] })))).then((g) => { if (!off) setState({ loading: false, groups: g.filter((x) => x.rows.length) }); });
     return () => { off = true; };
-  }, [repoId, reload]);
-  if (state.loading) return <Skeleton n={3} h={72} />;
+  }, [ids, tick]);
+  return state;
+}
+
+export function DraftsList({ drafts, repos, onOpen }) {
+  const n = drafts.groups.reduce((s, g) => s + g.rows.length, 0);
+  if (!n) return null;
   return (
-    <>
-      {state.error ? <ErrorNote text={state.error} /> : null}
-      {state.rows.length ? <p className="muted" style={{ margin: 0, fontSize: 13 }}>Uploaded files wait here until you check the AI-extracted details and export them to the folder.</p> : null}
-      <div className="files-list">
-        {state.rows.map((r) => {
-          const ph = PHASE[stagePhase(r.stageStatus || r.status)];
-          const n = (r.fields || []).filter((f) => f.value).length;
-          return (
-            <button key={r.fileId || r.id} type="button" className="file-row" onClick={() => onOpen(r)} aria-label={'Review ' + r.name}>
-              <FileThumb ext={extOf(r.name)} />
-              <span className="grow"><span className="fr-n">{r.name}</span><span className={'fr-s ph-' + ph.tone}>{ph.busy ? <span className="spinner tiny" /> : null}{ph.label}{n ? ` · ${n} field${n > 1 ? 's' : ''} found` : ''}</span><span className="fr-m">{[sizeOf(r.size), r.createdAt ? ago(r.createdAt) : ''].filter(Boolean).join(' · ')}</span></span>
-              <Icon name="chevR" size={18} color="#A39DB5" />
-            </button>
-          );
-        })}
-      </div>
-      {!state.rows.length && !state.error ? <div className="empty"><Icon name="checkCircle" size={40} color="#CFC8DC" />Nothing waiting for review in this folder.</div> : null}
-    </>
+    <section className="drafts">
+      <div className="row-between" style={{ alignItems: 'center' }}><h2 className="sec-title" style={{ margin: 0 }}>Drafts · {n}</h2><span className="muted" style={{ fontSize: 12 }}>Not exported yet</span></div>
+      <p className="muted" style={{ margin: 0, fontSize: 13 }}>Files you uploaded wait here until you check their details and export them to the folder.</p>
+      {drafts.groups.map((g) => {
+        const repo = (repos || []).find((r) => r.id === g.repoId);
+        return (
+          <div key={g.repoId} className="files-list">
+            <div className="sec-label" style={{ margin: '4px 0 0' }}><Icon name="folder" size={12} /> {repo ? repo.name : 'Folder'}</div>
+            {g.rows.map((r) => {
+              const ph = PHASE[stagePhase(r.stageStatus || r.status)];
+              const nf = (r.fields || []).filter((f) => f.value).length;
+              return (
+                <button key={r.fileId || r.id} type="button" className="file-row" onClick={() => onOpen(g.repoId, r)} aria-label={'Review ' + r.name}>
+                  <FileThumb ext={extOf(r.name)} />
+                  <span className="grow"><span className="fr-n">{r.name}</span><span className={'fr-s ph-' + ph.tone}>{ph.busy ? <span className="spinner tiny" /> : null}{ph.label}{nf ? ` · ${nf} detail${nf > 1 ? 's' : ''} found` : ''}</span><span className="fr-m">{[sizeOf(r.size), r.createdAt ? 'uploaded ' + ago(r.createdAt) : ''].filter(Boolean).join(' · ')}</span></span>
+                  <Icon name="chevR" size={18} color="#A39DB5" />
+                </button>
+              );
+            })}
+          </div>
+        );
+      })}
+    </section>
   );
 }
 
@@ -282,6 +362,9 @@ function RepoScreen() {
   const [q, setQ] = useState(null);
   const search = useDebounced((q || '').trim());
   const [pathsOpen, setPathsOpen] = useState(false);
+  const [flt, setFlt] = useState(NO_FILTER);
+  const [fltOpen, setFltOpen] = useState(false);
+  useEffect(() => { setFlt(NO_FILTER); }, [params.get('tab'), params.get('path')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let off = false;
@@ -315,26 +398,31 @@ function RepoScreen() {
     const page = Math.floor(groups.length / 50) + 1;
     try { const d = await repoApi.children(repoId, { pathId, parentFilters, search, page, pageSize: 50 }); setMoreGroups((m) => [...m, ...d.groups.rows]); } catch (e) { /* the list stays as it is */ }
   };
-  const openGroup = (g) => goPath([...path, { f: level.groupField, n: level.groupFieldName || level.groupField, v: g.name }], !!level.isLeafLevel);
   const paths = (structure && structure.browsePaths) || [];
   const curPath = paths.find((p) => p.id === pathId) || paths[0];
+  // The server lists folder levels from browse/structure (the file-name level is left out); once every level is picked,
+  // browse/children answers isLeafLevel with no groups — so picking a group at the last level lists its files.
+  const depth = (curPath && curPath.fieldOrder && curPath.fieldOrder.length) || ((structure && structure.folderFields) || []).length;
+  const openGroup = (g) => { const p = [...path, { f: level.groupField, n: level.groupFieldName || level.groupField, v: g.name }]; goPath(p, p.length >= depth); };
+  const atLeaf = showFiles || (!level.loading && !level.error && level.isLeafLevel && !((level.groups && level.groups.rows) || []).length && path.length > 0);
 
-  const [stagedN, setStagedN] = useState(null);
-  useEffect(() => { let off = false; repoApi.staged(repoId).then((d) => { if (!off) setStagedN(d.rows.length); }).catch(() => { if (!off) setStagedN(null); }); return () => { off = true; }; }, [repoId, reload]);
+  const { me, session } = useStore();
+  const [perms, setPerms] = useState(null);
+  useEffect(() => { let off = false; repoPermissions(repoId, me, session).then((p) => { if (!off) setPerms(p); }).catch(() => { if (!off) setPerms({}); }); return () => { off = true; }; }, [repoId, me, session]);
 
-  const tabs = [...(hasTree ? [['folders', 'Folders']] : []), ['files', 'All files'], ['review', 'To review']];
+  const tabs = [...(hasTree ? [['folders', 'Folders']] : []), ['files', 'All files']];
   const open = (r) => setViewing({ fileName: r.fileName, repositoryId: repoId, itemId: r.id, uploadedBy: r.createdBy });
 
   return (
     <div className="screen">
-      <TopBar title={(repo && repo.name) || 'Folder'} sub={repo ? `${(repo.fileCount || 0).toLocaleString()} files` : ''} back="/app/folders" right={<span style={{ display: 'flex' }}>{tab !== 'review' ? <IconBtn name="search" label={tab === 'folders' && !showFiles ? 'Search folders' : 'Search files'} onClick={() => setQ(q === null ? '' : null)} /> : null}<IconBtn name="refresh" label="Refresh" onClick={() => setReload((x) => x + 1)} /></span>} />
+      <TopBar title={(repo && repo.name) || 'Folder'} sub={repo ? `${(repo.fileCount || 0).toLocaleString()} files` : ''} back="/app/folders" right={<span style={{ display: 'flex' }}><IconBtn name="search" label={tab === 'folders' && !atLeaf ? 'Search folders' : 'Search files'} onClick={() => setQ(q === null ? '' : null)} /><IconBtn name="refresh" label="Refresh" onClick={() => setReload((x) => x + 1)} /></span>} />
       <div className="repo-head">
-        {structure === undefined ? <div className="skel" style={{ height: 48, borderRadius: 999 }} aria-hidden="true" /> : (
+        {structure === undefined ? <div className="skel" style={{ height: 48, borderRadius: 999 }} aria-hidden="true" /> : tabs.length > 1 ? (
           <div className="seg" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }} role="tablist" aria-label="Folder views">
-            {tabs.map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => { setQ(null); setQs({ tab: k, path: '', files: '' }, false); }}><span>{l}</span>{k === 'review' && stagedN ? <Cnt n={stagedN} /> : null}</button>)}
+            {tabs.map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => { setQ(null); setQs({ tab: k, path: '', files: '' }, false); }}><span>{l}</span></button>)}
           </div>
-        )}
-        {q !== null ? <input className="input" autoFocus placeholder={tab === 'folders' && !showFiles ? `Search ${level.groupFieldName || 'folders'}` : 'Search file name or details'} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search" /> : null}
+        ) : null}
+        {q !== null ? <input className="input" autoFocus placeholder={tab === 'folders' && !atLeaf ? `Search ${level.groupFieldName || 'folders'}` : 'Search file name or details'} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search" /> : null}
       </div>
       <div className="content wide" style={{ paddingBottom: 110 }}>
         {tab === 'folders' && hasTree ? (
@@ -346,7 +434,7 @@ function RepoScreen() {
               ))}
             </div>
             {!path.length && paths.length > 1 ? <button type="button" className="chip path-chip" onClick={() => setPathsOpen(true)}><Icon name="list" size={14} /><span className="crumb-v">Organized by {curPath ? curPath.label : ''}</span><Icon name="chevD" size={14} stroke={2.6} /></button> : null}
-            {showFiles ? <FilesList repoId={repoId} filters={parentFilters} search={search} reload={reload} onOpen={open} emptyText="This folder is empty." /> : (
+            {atLeaf ? <><FilterBar value={flt} onOpen={() => setFltOpen(true)} onChange={setFlt} /><FilesList repoId={repoId} filters={parentFilters} opts={flt} search={search} reload={reload} onOpen={open} emptyText="This folder is empty." /></> : (
               <>
                 {level.error ? <ErrorNote text={level.error} onRetry={() => setReload((x) => x + 1)} /> : null}
                 {level.loading ? <Skeleton n={5} h={60} /> : (
@@ -369,13 +457,13 @@ function RepoScreen() {
             )}
           </>
         ) : null}
-        {tab === 'files' ? <FilesList repoId={repoId} filters={{}} search={search} reload={reload} onOpen={open} emptyText="No files in this folder yet. Upload some to get started." /> : null}
-        {tab === 'review' ? <StagedList repoId={repoId} reload={reload} onOpen={(r) => nav(`/app/review?repo=${repoId}&id=${r.fileId || r.id}`)} /> : null}
+        {tab === 'files' ? <><FilterBar value={flt} onOpen={() => setFltOpen(true)} onChange={setFlt} /><FilesList repoId={repoId} filters={{}} opts={flt} search={search} reload={reload} onOpen={open} emptyText="No files in this folder yet. Upload some to get started." /></> : null}
+        <FilterSheet key={tab + JSON.stringify(parentFilters)} repoId={repoId} open={fltOpen} scope={tab === 'files' ? {} : parentFilters} value={flt} onApply={setFlt} onClose={() => setFltOpen(false)} />
       </div>
-      <button type="button" className="fab" aria-label={'Upload to ' + ((repo && repo.name) || 'this folder')} onClick={() => nav('/app/upload?repo=' + repoId)} style={{ position: 'fixed', right: 20, bottom: 'calc(var(--sab) + 28px)', margin: 0 }}><Icon name="upload" size={28} stroke={2.4} /></button>
+      {perms && perms.upload ? <button type="button" className="fab" aria-label={'Upload to ' + ((repo && repo.name) || 'this folder')} onClick={() => nav('/app/upload?repo=' + repoId)} style={{ position: 'fixed', right: 20, bottom: 'calc(var(--sab) + 28px)', margin: 0 }}><Icon name="upload" size={28} stroke={2.4} /></button> : null}
       {viewing ? (
         <FileViewer file={viewing} onClose={() => setViewing(null)} actions={(item, refresh) => (
-          <ItemActions repoId={repoId} item={{ ...item, id: viewing.itemId, fileName: item.fileName || viewing.fileName }} refresh={refresh} onChanged={() => setReload((x) => x + 1)} onDeleted={() => { setViewing(null); setReload((x) => x + 1); getRepos(true); }} />
+          <ItemActions repoId={repoId} perms={perms} item={{ ...item, id: viewing.itemId, fileName: item.fileName || viewing.fileName }} refresh={refresh} onChanged={() => setReload((x) => x + 1)} onDeleted={() => { setViewing(null); setReload((x) => x + 1); getRepos(true); }} />
         )} />
       ) : null}
       <Sheet open={pathsOpen} onClose={() => setPathsOpen(false)} title="Organize folders by">
@@ -421,6 +509,7 @@ export function LiveUpload() {
       const res = await repoApi.bulkUpload(dest.id, picked);
       const files = (res.files || []).map((f) => ({ fileId: f.fileId, fileName: f.fileName, phase: f.succeeded === false ? 'OcrFailed' : 'PendingOcr', error: f.error }));
       if (res.jobId) trackJob({ jobId: res.jobId, repositoryId: dest.id, repositoryName: dest.name, tenantId: session.tenantId, startedAt: Date.now(), files });
+      trackDraftRepo(session.tenantId, dest.id);
       setPicked([]);
       showToast(`${files.length} file${files.length === 1 ? '' : 's'} uploaded to ${dest.name}. AI is reading them now.`);
     } catch (e) {
@@ -431,12 +520,16 @@ export function LiveUpload() {
   const visible = jobs.filter((j) => jobFiles(j).length);
   const readyFor = visible.map((j) => ({ j, n: jobFiles(j).filter((f) => f.phase === 'OcrCompleted' || f.phase === 'OcrFailed').length })).filter((x) => x.n);
   const total = picked.reduce((n, f) => n + f.size, 0);
+  // drafts are re-read whenever an upload's files change phase, and after intelligent upload finishes
+  const [draftTick, setDraftTick] = useState(0);
+  const phases = jobs.map((j) => jobFiles(j).map((f) => f.phase).join('')).join('|');
+  const drafts = useDrafts(phases + ':' + draftTick, jobs.map((j) => j.repositoryId));
 
   return (
     <div className="screen">
       <TopBar title="Upload documents" back right={<span />} />
       <div className="content" style={{ gap: 16 }}>
-        {smartFiles ? <SmartUpload files={smartFiles} repos={list || []} onCancel={() => setSmartFiles(null)} onFinished={() => { setSmartFiles(null); getRepos(true); }} /> : null}
+        {smartFiles ? <SmartUpload files={smartFiles} repos={list || []} onCancel={() => { setSmartFiles(null); setDraftTick((x) => x + 1); }} onFinished={() => { setSmartFiles(null); setDraftTick((x) => x + 1); getRepos(true); }} /> : null}
         {!smartFiles ? (<>
         <div className="update-card smart-toggle" style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <span className="up-ic" style={{ background: 'rgba(255,255,255,.18)' }}><Sparkle size={20} color="#fff" /></span>
@@ -492,7 +585,8 @@ export function LiveUpload() {
             </section>
           );
         })}
-        {!smartFiles && !picked.length && !visible.length ? <div className="empty" style={{ padding: 20 }}>Scan a document, or choose photos or files to upload.<br /><span style={{ fontSize: 12 }}>Up to {MAX_FILE_MB} MB per file. You can upload several at once.</span></div> : null}
+        {!smartFiles ? <DraftsList drafts={drafts} repos={list} onOpen={(repoId, r) => nav(`/app/review?repo=${repoId}&id=${r.fileId || r.id}`)} /> : null}
+        {!smartFiles && !picked.length && !visible.length && !drafts.groups.length ? <div className="empty" style={{ padding: 20 }}>Scan a document, or choose photos or files to upload.<br /><span style={{ fontSize: 12 }}>Up to {MAX_FILE_MB} MB per file. You can upload several at once.</span></div> : null}
       </div>
       {!smartFiles ? <div className="bottombar">
         {picked.length && smart ? (
@@ -515,10 +609,7 @@ export function LiveUpload() {
   );
 }
 
-// ---------- 4. review a staged file: AI-extracted values → save / export / delete ----------
-const DATE_T = /date/i;
-const toInputDate = (v) => { const s = String(v || ''); const m = /^(\d{4}-\d{2}-\d{2})/.exec(s); if (m) return m[1]; const d = new Date(s); return s && !isNaN(d) ? d.toISOString().slice(0, 10) : ''; };
-
+// ---------- 4. review a staged file: AI-extracted values in the repository's own form → save / export / delete ----------
 export function LiveReview() {
   const nav = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -529,7 +620,7 @@ export function LiveReview() {
   const [rows, setRows] = useState(null);
   const [err, setErr] = useState('');
   const [tick, setTick] = useState(0);
-  const [schema, setSchema] = useState({ fields: [], folder: [] });
+  const repoSchema = useSchema(repoId);
   const [vals, setVals] = useState({});
   const [busy, setBusy] = useState('');
   const [confirm, setConfirm] = useState(false);
@@ -542,47 +633,33 @@ export function LiveReview() {
     repoApi.staged(repoId).then((d) => { if (!off) { setRows(d.rows); setErr(''); } }).catch((e) => { if (!off) { setRows([]); setErr(apiErrorMessage(e, 'files to review')); } });
     return () => { off = true; };
   }, [repoId, tick]);
-  useEffect(() => {
-    if (!repoId) return undefined;
-    let off = false;
-    Promise.all([repoApi.filterFields(repoId).catch(() => []), repoApi.structure(repoId).catch(() => null)]).then(([fields, st]) => {
-      if (!off) setSchema({ fields: fields.filter((f) => !isTechnicalLabel(f.name) && !isTechnicalKey(f.sqlColumnName || f.name)), folder: ((st && st.folderFields) || []).map((f) => f.name) });
-    });
-    return () => { off = true; };
-  }, [repoId]);
-
   const cur = rows && (rows.find((r) => (r.fileId || r.id) === params.get('id')) || rows[0]);
   const curId = cur && (cur.fileId || cur.id);
-  // fields: the repository's fields (folder levels first), plus anything OCR returned that isn't one of them
-  const fieldList = useMemo(() => {
-    if (!cur) return [];
-    const ocr = cur.fields || [];
-    const names = [...schema.folder, ...schema.fields.map((f) => f.name), ...ocr.map((f) => f.name)].filter((n, i, a) => n && a.indexOf(n) === i && !isTechnicalLabel(n));
-    const type = (n) => { const f = schema.fields.find((x) => x.name === n); return (f && f.dataType) || (ocr.find((x) => x.name === n) || {}).type || (DATE_T.test(n) ? 'DATE' : 'SHORT_TEXT'); };
-    return names.map((n) => { const o = ocr.find((x) => x.name === n); return { name: n, type: type(n), ocr: o ? String(o.value ?? '') : '', required: schema.folder.includes(n) }; });
-  }, [cur, schema]);
-  useEffect(() => { setVals(Object.fromEntries(fieldList.map((f) => [f.name, f.type === 'DATE' ? toInputDate(f.ocr) : f.ocr]))); setErrs({}); }, [curId, fieldList]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the repository's fields (typed controls, required, options), filled from the OCR values saved on the stage row
+  const ocr = useMemo(() => (cur && repoSchema ? valuesFromOcr(repoSchema, cur.fields || []) : null), [cur, repoSchema]);
+  const schema = useMemo(() => (repoSchema && ocr ? [...repoSchema, ...ocr.extra] : []), [repoSchema, ocr]);
+  useEffect(() => { if (ocr) { setVals(ocr.values); setErrs({}); } }, [curId, ocr]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goNext = (left) => {
     if (left.length) setParams({ repo: repoId, id: left[0].fileId || left[0].id }, { replace: true });
-    else { showToast('All files reviewed'); nav(`/app/folders/r/${repoId}?tab=files`, { replace: true }); }
+    else { showToast('All files reviewed'); nav('/app/upload', { replace: true }); }
   };
   const drop = () => { const left = rows.filter((r) => (r.fileId || r.id) !== curId); setRows(left); goNext(left); };
-  const fields = () => toFields(fieldList.map((f) => ({ name: f.name, value: vals[f.name] })));
-  const save = async () => { setBusy('save'); try { await repoApi.saveStaged(curId, repoId, fields()); showToast('Changes saved'); setTick((x) => x + 1); } catch (e) { showToast(apiErrorMessage(e, 'your changes'), { tone: 'bad' }); } finally { setBusy(''); } };
+  const fields = () => toStageFields(schema, vals);
+  const save = async () => { setBusy('save'); try { await repoApi.saveStaged(curId, repoId, fields()); showToast('Saved as draft. Finish it from Upload › Drafts.'); setTick((x) => x + 1); } catch (e) { showToast(apiErrorMessage(e, 'your changes'), { tone: 'bad' }); } finally { setBusy(''); } };
   const exportIt = async () => {
-    const e = {}; fieldList.forEach((f) => { if (f.required && !String(vals[f.name] || '').trim()) e[f.name] = `${f.name} is needed to file it in the right folder`; });
+    const e = validate(schema, vals);
     setErrs(e);
-    if (Object.keys(e).length) { showToast('Fill in the required details first', { tone: 'bad' }); return; }
+    if (Object.keys(e).length) { showToast(`Fill in ${Object.keys(e).length} required detail${Object.keys(e).length > 1 ? 's' : ''} first`, { tone: 'bad' }); setTimeout(() => { const el = document.querySelector('[data-err="1"]'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 50); return; }
     setBusy('export');
     try { await repoApi.exportStaged(curId, repoId, fields()); markJobFile(curId, 'Indexed'); showToast(`${cur.name} exported to ${(repo && repo.name) || 'the folder'}`, { tone: 'ok' }); getRepos(true); drop(); } catch (x) { showToast(x && x.status === 403 ? "You don't have permission to file documents here." : apiErrorMessage(x, 'the export'), { tone: 'bad' }); } finally { setBusy(''); }
   };
   const del = async () => { setBusy('delete'); try { await repoApi.deleteStaged([curId], repoId); markJobFile(curId, 'Missing'); showToast(`${cur.name} deleted`); setConfirm(false); drop(); } catch (e) { showToast(apiErrorMessage(e, 'this file'), { tone: 'bad' }); } finally { setBusy(''); } };
   const view = async () => { setBusy('view'); try { const blob = await repoApi.stagedFile(curId); setViewing({ fileName: cur.name, blob }); } catch (e) { showToast(apiErrorMessage(e, 'this file'), { tone: 'bad' }); } finally { setBusy(''); } };
 
-  const back = repoId ? `/app/folders/r/${repoId}?tab=review` : '/app/folders';
-  if (!repoId) return <div className="screen"><TopBar title="Review" back="/app/folders" /><div className="content"><div className="empty">Choose a folder to review its uploaded files.</div></div></div>;
-  if (rows === null) return <div className="screen"><TopBar title="Review" back={back} /><div className="content"><Skeleton n={5} h={64} /></div></div>;
+  const back = '/app/upload';
+  if (!repoId) return <div className="screen"><TopBar title="Review" back={back} /><div className="content"><div className="empty">Choose a folder to review its uploaded files.</div></div></div>;
+  if (rows === null || !repoSchema) return <div className="screen"><TopBar title="Review" back={back} /><div className="content"><Skeleton n={5} h={64} /></div></div>;
   if (!cur) {
     return (
       <div className="screen"><TopBar title="Review" sub={repo && repo.name} back={back} />
@@ -592,7 +669,8 @@ export function LiveReview() {
   }
   const idx = rows.indexOf(cur) + 1;
   const phase = stagePhase(cur.stageStatus || cur.status);
-  const found = fieldList.filter((f) => f.ocr).length;
+  const found = ocr ? ocr.found.size : 0;
+  const required = schema.filter((f) => f.required && !f.readOnly).length;
   return (
     <div className="screen">
       <TopBar title="Review & export" sub={`${idx} of ${rows.length} · ${(repo && repo.name) || ''}`} back={back} right={<IconBtn name="refresh" label="Refresh" onClick={() => setTick((x) => x + 1)} />} />
@@ -604,18 +682,9 @@ export function LiveReview() {
         </button>
         {phase === 'PendingOcr' ? <div className="notice info"><span className="spinner tiny" /><span className="grow">AI is still reading this file. Wait a moment and refresh, or fill in the details yourself.</span><button type="button" onClick={() => setTick((x) => x + 1)}>Refresh</button></div>
           : phase === 'OcrFailed' ? <div className="notice warn"><Icon name="warn" size={18} /><span className="grow">AI couldn't read this file. Fill in the details yourself before exporting.</span></div>
-            : <div className="rv-ai"><Sparkle size={18} color="#fff" /><span className="grow"><b>{found ? `AI extracted ${found} of ${fieldList.length} details` : 'No details were extracted'}</b><span>Check them, then export to the folder.</span></span></div>}
-        {fieldList.map((f) => {
-          const changed = (vals[f.name] || '') !== (f.type === 'DATE' ? toInputDate(f.ocr) : f.ocr);
-          return (
-            <div key={f.name} className="field" data-err={errs[f.name] ? '1' : undefined}>
-              <label htmlFor={'rv-' + f.name}>{f.name} {f.required ? <span className="req">*</span> : null}{f.ocr && !changed ? <span className="ocr-tag"><Sparkle size={10} color="#0A6E7A" />OCR</span> : changed ? <span className="ocr-tag edited">Edited</span> : null}</label>
-              <input id={'rv-' + f.name} className={'input strong' + (errs[f.name] ? ' error' : '')} type={f.type === 'DATE' ? 'date' : 'text'} inputMode={/NUMBER|AMOUNT|CURRENCY/i.test(f.type) ? 'decimal' : undefined} value={vals[f.name] || ''} placeholder={f.ocr ? '' : 'Not found · type a value'} onChange={(e) => { setVals({ ...vals, [f.name]: e.target.value }); setErrs({ ...errs, [f.name]: '' }); }} />
-              {errs[f.name] ? <span className="err" role="alert">{errs[f.name]}</span> : null}
-            </div>
-          );
-        })}
-        {!fieldList.length ? <div className="muted" style={{ fontSize: 14 }}>This folder has no details to fill in. You can export the file as it is.</div> : null}
+            : <div className="rv-ai"><Sparkle size={18} color="#fff" /><span className="grow"><b>{found ? `AI extracted ${found} of ${schema.length} details` : 'No details were extracted'}</b><span>Check them, then export to the folder.</span></span></div>}
+        {required ? <p className="muted" style={{ margin: 0, fontSize: 12 }}><span className="req">*</span> {required} required detail{required > 1 ? 's' : ''}; the rest are optional.</p> : null}
+        <MetaForm repoId={repoId} schema={schema} values={vals} base={ocr && ocr.values} found={ocr && ocr.found} errors={errs} idPrefix="rv" onChange={(v, name) => { setVals(v); setErrs((x) => ({ ...x, [name]: '' })); }} />
         <div className="rv-more">
           <button type="button" className="text-btn" disabled={!!busy} onClick={save}>{busy === 'save' ? 'Saving…' : 'Save for later'}</button>
           {rows.length > 1 ? <button type="button" className="text-btn" disabled={!!busy} onClick={() => { const n = rows[idx % rows.length]; setParams({ repo: repoId, id: n.fileId || n.id }, { replace: true }); }}>Skip</button> : null}

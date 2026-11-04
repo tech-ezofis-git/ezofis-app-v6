@@ -2,60 +2,60 @@
   {
     "issue_id": "I-001",
     "issue": "Programming tool price",
-    "evidence_a": "2026 price list: $598.50",
-    "evidence_b": "Approved EST-261132 feedback: $698.50",
-    "safe_interim_rule": "HOLD automatic price; use estimator-approved customer/project price",
-    "decision_needed": "Francine/JR to set master and customer exceptions",
-    "priority": "CRITICAL",
-    "status": "OPEN"
+    "evidence_a": "Old price list: $598.50",
+    "evidence_b": "Live inFlow + current price book: $698.50",
+    "safe_interim_rule": "Use live inFlow $698.50; no automatic waiver/free tool",
+    "decision_needed": "Closed - live inFlow is commercial authority",
+    "priority": "RESOLVED",
+    "status": "RESOLVED"
   },
   {
     "issue_id": "I-002",
     "issue": "Formula detector SKU",
-    "evidence_a": "Price list: VISIONPLUS_3D_DETECTOR",
-    "evidence_b": "FTL rule/approved quote: FS_VISIONPLUS_3D_CAR_DOOR_DET",
-    "safe_interim_rule": "Use FTL stated product in draft but block system release until SKU normalized",
-    "decision_needed": "Confirm canonical accounting/inventory code",
-    "priority": "HIGH",
-    "status": "OPEN"
+    "evidence_a": "Legacy price-list code differed",
+    "evidence_b": "Live inFlow ProductName FS_VISIONPLUS_3D_CAR_DOOR_DET / SKU FS_VISION_PLUS_FZU-1442",
+    "safe_interim_rule": "Use canonical inFlow product/SKU",
+    "decision_needed": "Closed - canonical accounting code supplied",
+    "priority": "RESOLVED",
+    "status": "RESOLVED"
   },
   {
     "issue_id": "I-003",
     "issue": "Formula detector electrical description",
-    "evidence_a": "FTL statement says both sides 24 VAC",
-    "evidence_b": "SUPRA manual gives +24 VDC at IPD, max 150 mA",
-    "safe_interim_rule": "Do not publish electrical claim or final wiring BOM until Formula datasheet validates",
-    "decision_needed": "Provide Formula VisionPlus 3D datasheet/wiring/current draw",
-    "priority": "CRITICAL",
-    "status": "OPEN"
+    "evidence_a": "Legacy FTL wording referenced 24 VAC",
+    "evidence_b": "Formula FZU-1442US01 guide: 18-30 VDC, NPN normally-closed output switched to ground",
+    "safe_interim_rule": "Use Formula guide for detector technical connectivity",
+    "decision_needed": "Closed - manufacturer guide supplied",
+    "priority": "RESOLVED",
+    "status": "RESOLVED"
   },
   {
     "issue_id": "I-004",
     "issue": "Universal door UOM and price",
-    "evidence_a": "Price list uses 2-panel set price for 2C/2T",
-    "evidence_b": "Approved quotes use individual-panel quantities/prices",
-    "safe_interim_rule": "Quantity logic fixed by panels; HOLD automatic pricing",
-    "decision_needed": "Define canonical SKU/UOM and price for each panel/set",
+    "evidence_a": "inFlow 2C/2T ProductName says 2-DOORS/SET",
+    "evidence_b": "Approved quote history uses physical panel quantities with current inFlow price records",
+    "safe_interim_rule": "Physical quantity = 2 panels/opening; HOLD autonomous 2C/2T door pricing until UOM is normalized",
+    "decision_needed": "Clean inFlow UOM/ProductName and confirm price basis per item",
     "priority": "CRITICAL",
     "status": "OPEN"
   },
   {
     "issue_id": "I-005",
     "issue": "Universal door stainless description",
-    "evidence_a": "Price list: #4 SS 441",
-    "evidence_b": "Element email: 304 stainless #4 brushed",
-    "safe_interim_rule": "Use neutral '#4 brushed finish' pending manufacturing confirmation",
-    "decision_needed": "Confirm standard stock material and update all sources",
-    "priority": "HIGH",
-    "status": "OPEN"
+    "evidence_a": "Legacy source conflict: 441 vs 304 wording",
+    "evidence_b": "Current inFlow product descriptions use #4 stainless steel 441 brushed finish",
+    "safe_interim_rule": "Use current inFlow customer description for controlled products",
+    "decision_needed": "Closed for current inFlow products; special finishes remain review",
+    "priority": "RESOLVED",
+    "status": "RESOLVED"
   },
   {
     "issue_id": "I-006",
     "issue": "OL100 commercial configuration",
-    "evidence_a": "No OL100 line in current price list",
-    "evidence_b": "EST-261132: $13,200; FTL rule adds $2,950 tension",
-    "safe_interim_rule": "Engineering/manual review and estimator approval required",
-    "decision_needed": "Confirm governor SKU, base price, swingarm vs vertical tension, fillers/fixings",
+    "evidence_a": "Live inFlow OL100-RE-LH = $14,400 and description says vertical tension weight + 6 fillers + fixings included",
+    "evidence_b": "Latest FTL rule: every OL governor carries a separate tension/swingarm line; Stage 2 retains $2,950 OL100 tension reference",
+    "safe_interim_rule": "Do not double-price automatically; OL100 remains manual REVIEW/HOLD until exact separate tension SKU/BOM treatment is published",
+    "decision_needed": "Normalize OL100 governor/tension commercial BOM and exact inFlow tension product",
     "priority": "CRITICAL",
     "status": "OPEN"
   },
@@ -72,22 +72,22 @@
   {
     "issue_id": "I-008",
     "issue": "Safety product identity/content",
-    "evidence_a": "Price list: CSGB03-SYNC generic SKU",
-    "evidence_b": "Detailed manuals: SGB01/02/03/05 and housing/linkage variants",
-    "safe_interim_rule": "No automatic safety selection or pricing",
-    "decision_needed": "Publish CSGB/SGB mapping, exact SKUs, housing/SYNC contents and prices",
+    "evidence_a": "Live inFlow: SGB01 $4,998.95; CSGB02/03 $5,591.60; missing separate SGB02/SGB03/CSGB01 records",
+    "evidence_b": "FTL rule: SGB01-03 and CSGB currently same commercial-price basis; every order includes sync + linkage",
+    "safe_interim_rule": "Engineering selects model; no automatic safety price until master price/SKU normalization",
+    "decision_needed": "Publish one standard simplex commercial price and exact inFlow records/SKUs for each offered family",
     "priority": "CRITICAL",
     "status": "OPEN"
   },
   {
     "issue_id": "I-009",
     "issue": "Freight matrix",
-    "evidence_a": "Telegram correct freight $975",
-    "evidence_b": "Element quotes use $850; prior thresholds not formally approved",
-    "safe_interim_rule": "Manual freight or approved customer/project rule only",
-    "decision_needed": "Issue formal freight matrix with thresholds and exception logic",
-    "priority": "HIGH",
-    "status": "OPEN"
+    "evidence_a": "Single SGV2 freight rule now published",
+    "evidence_b": "GTA $375; approx. <=150 km outside downtown Toronto $450; beyond/larger projects manual",
+    "safe_interim_rule": "Apply controlled single-package rule only; larger/project freight manual",
+    "decision_needed": "Closed for single SGV2; larger project freight intentionally manual",
+    "priority": "CONTROLLED",
+    "status": "RESOLVED"
   },
   {
     "issue_id": "I-010",
@@ -102,12 +102,12 @@
   {
     "issue_id": "I-011",
     "issue": "Door survey pages 7/8",
-    "evidence_a": "FTL rule references A-F and S measurements",
-    "evidence_b": "Exact page/form definitions are not in uploaded source set",
-    "safe_interim_rule": "Record rule; do not pretend to validate missing measurements",
-    "decision_needed": "Provide exact door survey package pages 7 and 8",
-    "priority": "HIGH",
-    "status": "OPEN"
+    "evidence_a": "Controlled survey now supplied",
+    "evidence_b": "2026 SGV2 survey includes A-F/S measurement pages and configuration diagrams",
+    "safe_interim_rule": "Use controlled survey/playbooks; targeted missing-field requests",
+    "decision_needed": "Closed - survey source supplied",
+    "priority": "RESOLVED",
+    "status": "RESOLVED"
   },
   {
     "issue_id": "I-012",
@@ -121,33 +121,33 @@
   },
   {
     "issue_id": "I-013",
-    "issue": "Customer-specific pricing profiles",
-    "evidence_a": "Element uses 15% operator/door, 10% clutch, detector reduction and free tool",
-    "evidence_b": "General price list/bundle incentives differ",
-    "safe_interim_rule": "Never learn global discount from historic quote",
-    "decision_needed": "Create versioned customer pricing table",
-    "priority": "CRITICAL",
-    "status": "OPEN"
+    "issue": "Historical/customer discount inference",
+    "evidence_a": "Historical customers and older catalogue material show varying discounts/incentives",
+    "evidence_b": "Latest FTL rule: no automatic discounts; all discounts/special prices are manual",
+    "safe_interim_rule": "Never infer or apply a discount automatically",
+    "decision_needed": "Closed - manual estimator approval only",
+    "priority": "RESOLVED",
+    "status": "RESOLVED"
   },
   {
     "issue_id": "I-014",
     "issue": "Governor tension optionality",
-    "evidence_a": "Uploaded OL35 guidance/form allows reuse/no tension",
-    "evidence_b": "Latest FTL rule requires swingarm with every OL governor",
-    "safe_interim_rule": "Latest FTL rule controls quoting",
-    "decision_needed": "Update survey guidance to eliminate conflicting option",
-    "priority": "MEDIUM",
-    "status": "PROVISIONAL"
+    "evidence_a": "Older survey guidance allowed reuse/no tension",
+    "evidence_b": "Latest FTL rule: every OL governor gets a separate tension/swingarm line",
+    "safe_interim_rule": "Latest FTL rule controls quote presentation",
+    "decision_needed": "Closed commercially; exact BOM remains model-specific and OL100 stays under I-006 until normalized",
+    "priority": "RESOLVED",
+    "status": "RESOLVED"
   },
   {
     "issue_id": "I-015",
     "issue": "Restrictor line meaning",
-    "evidence_a": "Technical material says integrated interlock eliminates added restrictor",
-    "evidence_b": "FTL quotes one $0 restrictor/value line per opening",
-    "safe_interim_rule": "Treat as customer-visible included-value line, not added hardware",
-    "decision_needed": "Confirm naming and whether any physical component is shipped",
-    "priority": "HIGH",
-    "status": "PROVISIONAL"
+    "evidence_a": "Technical material may integrate restriction through interlock",
+    "evidence_b": "FTL requires one $0 restriction-function value line per SGV2 opening",
+    "safe_interim_rule": "Customer-visible $0 value line only; not automatic loose inventory/BOM hardware",
+    "decision_needed": "Closed - value-line meaning approved",
+    "priority": "RESOLVED",
+    "status": "RESOLVED"
   },
   {
     "issue_id": "I-016",
@@ -162,11 +162,51 @@
   {
     "issue_id": "I-017",
     "issue": "Telegram regression total",
-    "evidence_a": "EST-261132 total was approved previously",
-    "evidence_b": "New mandatory OL100 $2,950 tension rule may change it",
-    "safe_interim_rule": "Use scope counts, not old total, until OL100 content is reconciled",
-    "decision_needed": "Confirm whether $13,200 already included the tension assembly",
+    "evidence_a": "Telegram historical total used prior OL100 interpretation",
+    "evidence_b": "Current inFlow OL100 $14,400 plus separate-line FTL rule remains unreconciled",
+    "safe_interim_rule": "Use scope/quantity regression, not old total, until I-006 closes",
+    "decision_needed": "Closes automatically with I-006",
     "priority": "CRITICAL",
     "status": "OPEN"
+  },
+  {
+    "issue_id": "I-018",
+    "issue": "Pricing authority",
+    "evidence_a": "Workbook/catalogue snapshots may differ",
+    "evidence_b": "Live inFlow is authoritative",
+    "safe_interim_rule": "Use exact live inFlow SKU/price before release",
+    "decision_needed": "Permanent control, not a conflict",
+    "priority": "CONTROL",
+    "status": "CONTROLLED"
+  },
+  {
+    "issue_id": "I-019",
+    "issue": "Training pair",
+    "evidence_a": "2645 Battleford records",
+    "evidence_b": "EST-261057 appears against more than one customer/project record",
+    "safe_interim_rule": "HOLD",
+    "decision_needed": "Confirm the issued estimate and correct customer/project",
+    "priority": "Training data",
+    "status": null
+  },
+  {
+    "issue_id": "I-020",
+    "issue": "Training pair",
+    "evidence_a": "120 Bloor records",
+    "evidence_b": "EST-261114 conflicts with EST-261110/261113; report suggestion incorrectly referenced EST-261057",
+    "safe_interim_rule": "HOLD",
+    "decision_needed": "Confirm the correct estimate numbers and attachments",
+    "priority": "Training data",
+    "status": null
+  },
+  {
+    "issue_id": "I-021",
+    "issue": "Qualification override",
+    "evidence_a": "Capital Renewal / EST-261073",
+    "evidence_b": "Initial DISQUALIFIED result followed by a manual sales estimate",
+    "safe_interim_rule": "Controlled exception",
+    "decision_needed": "Store initial label, override, approver, reason and downstream estimate separately",
+    "priority": "Qualifier",
+    "status": null
   }
 ]

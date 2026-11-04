@@ -26,7 +26,7 @@ import fitColumnsToWidth, {
 import getColumnPinnedStyles from './helpers/getColumnPinnedStyles'
 import hasTableRowsWithData from './helpers/hasTableRowsWithData'
 import TableActionBar, { type TableActionButton } from './TableActionBar'
-import TableBulkActionBar from './TableBulkActionBar'
+import TableBulkActionBar, { type TableBulkAction } from './TableBulkActionBar'
 import TableEllipsis, {
   shouldAllowCellOverflow,
   shouldDisableTableEllipsis,
@@ -40,6 +40,8 @@ interface Props<TData> extends ComponentProps<'table'> {
   table: TanstackTable<TData>
   /** ✅ Custom actions for action bar */
   actions?: TableActionButton[]
+  /** Actions for the bar shown while rows are selected. */
+  bulkActions?: TableBulkAction[]
   component?: any
   emptyDescription?: string
   emptyIcon?: string
@@ -107,6 +109,7 @@ const getStickyColumnStyle = <TData,>(
 
 const DataTable = <TData,>({
   actions,
+  bulkActions,
   component,
   emptyDescription,
   emptyIcon,
@@ -583,7 +586,7 @@ const DataTable = <TData,>({
         {renderTableContent()}
       </div>
 
-      <TableBulkActionBar table={table} />
+      <TableBulkActionBar actions={bulkActions} table={table} />
     </div>
   )
 }

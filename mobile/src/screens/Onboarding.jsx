@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon, Sheet, Sparkle, TopBar } from '../ui.jsx';
-import { authApi, loginErrorMessage, saveSession, loadSession, clearSession, IS_BROWSER_PREVIEW } from '../api.js';
-import { getProviderEmail, SocialUnavailable, SocialCancelled } from '../social.js';
+import { authApi, loginErrorMessage, saveSession, loadSession, clearSession, lastLogin, IS_BROWSER_PREVIEW } from '../api.js';
+import { bgSession, bgAllowNotifications } from '../background.js';
+import { pushUnregister } from '../push.js';
+import { getProviderEmail, socialShown, SocialUnavailable, SocialCancelled } from '../social.js';
 import { USER } from '../data.js';
 import markWhite from '../assets/mark-white.png';
 import markColor from '../assets/mark-color.png';
@@ -11,9 +13,10 @@ import lockup from '../assets/lockup-color.png';
 
 export function Splash() {
   const nav = useNavigate();
-  useEffect(() => { const t = setTimeout(() => nav('/loading', { replace: true }), 1300); return () => clearTimeout(t); }, [nav]);
+  const next = () => nav(loadSession() ? '/app/home' : '/loading', { replace: true });
+  useEffect(() => { const t = setTimeout(next, loadSession() ? 700 : 1300); return () => clearTimeout(t); }, [nav]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className="splash" onClick={() => nav('/loading', { replace: true })}>
+    <div className="splash" onClick={next}>
       <img className="mark" src={markWhite} alt="EZOFIS" />
     </div>
   );
@@ -36,7 +39,7 @@ export function Loader() {
   }, [i, nav]);
   return (
     <div className="splash">
-      <button type="button" onClick={() => nav('/welcome', { replace: true })} style={{ position: 'absolute', top: 'calc(var(--sat) + 16px)', right: 16, border: 0, background: 'transparent', color: 'rgba(255,255,255,.85)', fontWeight: 500, fontSize: 14, padding: 10 }}>Skip</button>
+      <button type="button" onClick={() => nav(loadSession() ? '/app/home' : '/welcome', { replace: true })} style={{ position: 'absolute', top: 'calc(var(--sat) + 16px)', right: 16, border: 0, background: 'transparent', color: 'rgba(255,255,255,.85)', fontWeight: 500, fontSize: 14, padding: 10 }}>Skip</button>
       <div className="loader-line" key={i} aria-live="polite">{LINES[i][0]}</div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         <div className="loader-bar"><span style={{ width: (i + 1) * 25 + '%' }} /></div>
@@ -52,12 +55,20 @@ const SLIDES = [
   { tone: 'purple', a: 'Approve on the go,', b: 'Inbox in your pocket', cta: 'See how' },
 ];
 
+// "Get started": what business users do in the app, each with a one-line explanation.
 const INFO = {
-  workspace: { title: 'Find your workspace', body: 'Enter your work email on the sign-in screen and EZOFIS opens your company workspace automatically. Your administrator can also share your workspace address.' },
-  support: { title: 'Contact support', body: 'Reach the EZOFIS support team from the Help Center, or ask your workspace administrator for access to workflows and folders.' },
-  help: { title: 'Help center', body: 'Step-by-step guides for the inbox, folders, uploads and approvals are available at help.ezofis.com.' },
-  security: { title: 'Security & privacy', body: 'EZOFIS is SOC 2 Type II compliant. Your session is protected by your EZOFIS sign-in and, where your organization enables it, two-step verification.' },
+  approve: { title: 'Approve requests on the go', body: 'Your workflow inbox comes with you. Open a request, check the form, files and AI insights, then approve, reject or comment from your phone. You get a notification when something new is waiting.' },
+  upload: { title: 'Upload and file documents', body: 'Scan a paper document or pick files. EZOFIS AI picks the right folder and reads the details with OCR; you check them and the document is filed.' },
+  ask: { title: 'Ask EZOFIS AI', body: 'Ask in your own words, like "show invoices from Acme last month", and open the documents and requests it finds.' },
+  sign: { title: 'Sign and share', body: 'Sign documents sent to you with your finger, request signatures, and share files with colleagues or partners by email.' },
+  help: { title: 'Help center', body: 'Step-by-step guides for the inbox, folders, uploads and approvals are available at help.ezofis.com. Your workspace administrator can give you access to workflows and folders.' },
 };
+const START = [
+  ['approve', 'checkCircle', 'p', '#8300E6', 'Approve requests', 'Act on your inbox anywhere'],
+  ['upload', 'upload', 't', '#0A7C89', 'Upload & file', 'AI files it in the right folder'],
+  ['ask', 'chat', 'd', '#643094', 'Ask EZOFIS AI', 'Find any document fast'],
+  ['sign', 'edit', 'a', '#0A7C89', 'Sign & share', 'Sign and send in seconds'],
+];
 
 export function Welcome() {
   const nav = useNavigate();
@@ -67,8 +78,8 @@ export function Welcome() {
   const s = SLIDES[slide];
   return (
     <div className="screen" style={{ minHeight: '100dvh' }}>
-      <div className="hero" style={{ paddingBottom: 96 }}>
-        <div className="hero-inner" style={{ maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 30 }}>
+      <div className="hero welcome-hero">
+        <div className="hero-inner" style={{ maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 18, paddingTop: 30 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={{ flex: 'none', width: 64, height: 64, borderRadius: 999, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 16px rgba(0,0,0,.2)' }}><img src={markColor} alt="" style={{ width: 38 }} /></span>
             <div>
@@ -76,14 +87,15 @@ export function Welcome() {
               <div style={{ fontSize: 16, opacity: 0.9 }}>EZOFIS Workspace</div>
             </div>
           </div>
-          <button type="button" onClick={() => nav('/login')} style={{ alignSelf: 'flex-start', marginLeft: 80, height: 46, border: '2px solid #fff', borderRadius: 999, padding: '0 6px 0 22px', display: 'flex', alignItems: 'center', gap: 14, color: '#fff', background: 'transparent', fontWeight: 500, fontSize: 16 }}>
-            Sign in<span style={{ width: 32, height: 32, borderRadius: 999, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="chevR" size={18} color="#643094" stroke={2.6} /></span>
+          <p className="welcome-lead">Your business workflows, documents and approvals — in your pocket.</p>
+          <button type="button" className="welcome-signin" onClick={() => nav('/login')}>
+            Sign in<span><Icon name="chevR" size={18} color="#643094" stroke={2.6} /></span>
           </button>
         </div>
       </div>
       <div className="sheet-body">
-        <div className="content" style={{ paddingTop: 0 }}>
-          <div className={'banner ' + s.tone} style={{ marginTop: -60 }} key={slide}>
+        <div className="content welcome-content">
+          <div className={'banner ' + s.tone} key={slide}>
             <img src={markWhite} alt="" className="wm" />
             <div style={{ position: 'absolute', right: 30, top: 22 }}><Sparkle size={36} color="#fff" /></div>
             <div className="b1">{s.a}<span className="b2">{s.b}</span></div>
@@ -91,12 +103,13 @@ export function Welcome() {
             <div className="dots">{SLIDES.map((x, j) => <button key={j} type="button" aria-label={'Slide ' + (j + 1)} className={j === slide ? 'on' : ''} onClick={() => setSlide(j)} />)}</div>
           </div>
           <h2 className="sec-title" style={{ fontSize: 20 }}>Get started</h2>
+          <p className="muted" style={{ margin: '-6px 0 2px', fontSize: 14, lineHeight: 1.5 }}>Built for business users: approve requests, file documents and find answers wherever you are.</p>
           <div className="grid2 wide4">
-            <button type="button" className="tile p" onClick={() => setInfo('workspace')}><Icon name="search" size={26} color="#8300E6" />Find your workspace</button>
-            <button type="button" className="tile t" onClick={() => setInfo('support')}><Icon name="chat" size={26} color="#0A7C89" />Contact support</button>
-            <button type="button" className="tile d" onClick={() => setInfo('help')}><Icon name="doc" size={26} color="#643094" />Help center</button>
-            <button type="button" className="tile a" onClick={() => setInfo('security')}><Icon name="lock" size={26} color="#0A7C89" />Security &amp; privacy</button>
+            {START.map(([k, ic, tone, col, t, sub]) => (
+              <button key={k} type="button" className={'tile start ' + tone} onClick={() => setInfo(k)}><Icon name={ic} size={26} color={col} /><span className="st"><b>{t}</b><small>{sub}</small></span></button>
+            ))}
           </div>
+          <button type="button" className="text-btn" style={{ alignSelf: 'center' }} onClick={() => setInfo('help')}>Need help? Visit the Help center</button>
         </div>
       </div>
       <Sheet open={!!info} onClose={() => setInfo(null)} title={info ? INFO[info].title : ''}>
@@ -104,6 +117,26 @@ export function Welcome() {
         <button type="button" className="btn primary" onClick={() => setInfo(null)}>Got it</button>
       </Sheet>
     </div>
+  );
+}
+
+// Provider marks for the sign-in buttons, in each provider's own colours (Google "G", Microsoft four squares).
+function GoogleLogo() {
+  return (
+    <svg className="sso-logo" width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+function MicrosoftLogo() {
+  return (
+    <svg className="sso-logo" width="20" height="20" viewBox="0 0 21 21" aria-hidden="true">
+      <rect x="1" y="1" width="9" height="9" fill="#F25022" /><rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+      <rect x="1" y="11" width="9" height="9" fill="#00A4EF" /><rect x="11" y="11" width="9" height="9" fill="#FFB900" />
+    </svg>
   );
 }
 
@@ -123,7 +156,7 @@ function OtpInput({ value, onChange, length = 6 }) {
 export function Login() {
   const nav = useNavigate();
   const [step, setStep] = useState('email');          // email | org | password | otp | guest
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => lastLogin().email || '');
   const [pw, setPw] = useState('');
   const [show, setShow] = useState(false);
   const [tenants, setTenants] = useState([]);
@@ -142,7 +175,7 @@ export function Login() {
     return () => clearTimeout(t);
   }, [step, left]);
 
-  const done = (login, t) => { saveSession(login, t, email.trim()); nav('/app/home', { replace: true }); };
+  const done = (login, t) => { const s = saveSession(login, t, email.trim()); bgSession(s); bgAllowNotifications(); nav('/app/home', { replace: true }); };
   const run = async (fn) => { setErr(''); setBusy(true); try { await fn(); } finally { setBusy(false); } };
 
   const afterTenants = async (list, mode, verifiedEmail) => {
@@ -228,9 +261,13 @@ export function Login() {
               {err ? <span className="err" role="alert">{err}</span> : null}
             </div>
             <button type="submit" className="btn primary" disabled={busy}>{busy && via === 'password' ? spinner : 'Continue'}</button>
-            <div className="or">or</div>
-            <button type="button" className="sso" onClick={() => social('google')} disabled={busy}><span className="slot" aria-hidden="true" />{busy && via === 'google' ? 'Signing in…' : 'Sign in with Google'}</button>
-            <button type="button" className="sso ms" onClick={() => social('microsoft')} disabled={busy}><span className="slot" aria-hidden="true" style={{ borderRadius: 0 }} />{busy && via === 'microsoft' ? 'Signing in…' : 'Sign in with Microsoft'}</button>
+            {socialShown() ? (
+              <>
+                <div className="or">or</div>
+                <button type="button" className="sso" onClick={() => social('google')} disabled={busy}><GoogleLogo />{busy && via === 'google' ? 'Signing in…' : 'Sign in with Google'}</button>
+                <button type="button" className="sso ms" onClick={() => social('microsoft')} disabled={busy}><MicrosoftLogo />{busy && via === 'microsoft' ? 'Signing in…' : 'Sign in with Microsoft'}</button>
+              </>
+            ) : null}
             <button type="button" className="text-btn" style={{ alignSelf: 'center', color: 'var(--muted)', fontWeight: 500 }} onClick={() => nav('/app/home', { replace: true })}>Explore with sample data instead</button>
           </form>
         ) : null}
@@ -326,7 +363,7 @@ export function Passcode() {
     if (hashPin(code, salt) === stored) nav('/app/home', { replace: true }); else fail('Wrong passcode. Try again.');
   };
   useEffect(() => { if (code.length === 4) { const t = setTimeout(verify, 250); return () => clearTimeout(t); } return undefined; }, [code]); // eslint-disable-line
-  const forgot = () => { clearSession(); writePin(null); nav('/login', { replace: true }); };
+  const forgot = () => { pushUnregister(loadSession()); clearSession(); bgSession(null); writePin(null); nav('/login', { replace: true }); };
   const title = mode === 'create' ? (first ? 'Confirm passcode' : 'Create a passcode') : 'Enter passcode';
   const sub = mode === 'create' ? (first ? 'Enter the same 4 digits again.' : 'Choose a 4-digit passcode to unlock EZOFIS on this device.') : mode === 'demo' ? 'Sample-data mode: enter any 4 digits.' : 'Unlock EZOFIS with your 4-digit passcode.';
   return (

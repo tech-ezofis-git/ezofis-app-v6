@@ -7,12 +7,30 @@ import IconButton from '@/components/base/button/IconButton'
 import Divider from '@/components/base/Divider'
 import cn from '@/utils/cn'
 
+export interface TableBulkAction {
+  icon: string
+  id: string
+  label: string
+  /** Red icon, for destructive actions. */
+  danger?: boolean
+  disabled?: boolean
+  loading?: boolean
+  /** Ids of the selected rows. */
+  onClick: (rowIds: string[]) => void
+}
+
 interface Props<TData> {
   table: TanstackTable<TData>
+  /** Real actions for the selection; without them the bar shows placeholders. */
+  actions?: TableBulkAction[]
   className?: string
 }
 
-const TableBulkActionBar = <TData,>({ className, table }: Props<TData>) => {
+const TableBulkActionBar = <TData,>({
+  actions,
+  className,
+  table,
+}: Props<TData>) => {
   const [open, setOpen] = useState(false)
   const { ref, width } = useElementSize()
   const selectionState = table.getState().rowSelection
@@ -43,20 +61,42 @@ const TableBulkActionBar = <TData,>({ className, table }: Props<TData>) => {
 
       <Divider className='mx-2 my-1.5' orientation='vertical' />
 
-      <Button
-        color='gray'
-        icon='lucide:download'
-        label='Export'
-        variant='subtle'
-      />
-      <Button
-        color='gray'
-        icon='lucide:trash-2'
-        iconClass='text-red-11'
-        label='Delete'
-        variant='subtle'
-      />
-      <IconButton color='gray' icon='lucide:more-vertical' variant='subtle' />
+      {actions ? (
+        actions.map((action) => (
+          <Button
+            color='gray'
+            disabled={action.disabled}
+            icon={action.icon}
+            iconClass={action.danger ? 'text-red-11' : 'text-gray-11'}
+            key={action.id}
+            label={action.label}
+            loading={action.loading}
+            variant='subtle'
+            onClick={() => action.onClick(selectedRows)}
+          />
+        ))
+      ) : (
+        <>
+          <Button
+            color='gray'
+            icon='lucide:download'
+            label='Export'
+            variant='subtle'
+          />
+          <Button
+            color='gray'
+            icon='lucide:trash-2'
+            iconClass='text-red-11'
+            label='Delete'
+            variant='subtle'
+          />
+          <IconButton
+            color='gray'
+            icon='lucide:more-vertical'
+            variant='subtle'
+          />
+        </>
+      )}
 
       <Divider className='mx-2 my-1.5' orientation='vertical' />
 

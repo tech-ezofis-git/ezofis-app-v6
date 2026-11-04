@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { useRef } from 'react'
 import type { ReportSpecHighlight } from '@/api/v6/reportAgent'
 import type {
   ReportBuilderPayloadSource,
@@ -12,6 +13,7 @@ import type {
 import {
   deleteReportAiReport,
   getReportAiReport,
+  isLegacyReportSpec,
   listReportAiReports,
   runReportAiReport,
   saveReportAiReport,
@@ -143,7 +145,10 @@ const AGENT_REPORT_PAGE_SIZE = 500
  */
 export const useReportAgentDataQuery = (report: Report | null | undefined) => {
   const agent = report?.agentConfig
-  return useQuery({
+  const queryClient = useQueryClient()
+  // Set by refreshWithDefaults: the next run brings the default columns up to date.
+  const refreshDefaults = useRef(false)
+  const query = useQuery({
     enabled: Boolean(agent),
     queryKey: [
       ...reportBuilderKeys.all,
@@ -153,11 +158,24 @@ export const useReportAgentDataQuery = (report: Report | null | undefined) => {
     ],
     retry: false,
     queryFn: async () => {
+      const withDefaults = refreshDefaults.current
+      refreshDefaults.current = false
       const { data, error } = await runReportAiReport(agent!.id, {
+        legacy: isLegacyReportSpec(agent!.reportSpec),
         page: 1,
         pageSize: AGENT_REPORT_PAGE_SIZE,
+        refreshDefaults: withDefaults,
       })
       if (error || !data) throw new Error(error || 'Failed to run report')
+      if (data.specSaved && report) {
+        // The saved report changed (new default columns): reload it for the list and the wizard.
+        void queryClient.invalidateQueries({
+          queryKey: reportBuilderKeys.list(),
+        })
+        void queryClient.invalidateQueries({
+          queryKey: reportBuilderKeys.detail(report.id),
+        })
+      }
       return {
         fieldSettings: runResultFieldSettings(data),
         result: agentRunToReportRunResult(data, {
@@ -169,6 +187,12 @@ export const useReportAgentDataQuery = (report: Report | null | undefined) => {
       }
     },
   })
+  /** Refresh button: re-run with the current default columns applied (saved for owners/admins). */
+  const refreshWithDefaults = () => {
+    refreshDefaults.current = true
+    return query.refetch()
+  }
+  return { ...query, refreshWithDefaults }
 }
 
 export const useReportBuilderPreviewMutation = () =>

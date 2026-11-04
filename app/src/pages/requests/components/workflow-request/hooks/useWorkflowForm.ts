@@ -12,6 +12,8 @@ import {
 } from '@/pages/form-builder/helpers/tableColumnFiles'
 import { getTableFieldErrors } from '@/pages/form-builder/helpers/runtimeValidation'
 import { uploadInstanceAttachment } from '@/pages/requests/utils/instanceAttachmentUpload'
+import { getStartStageHiddenFieldIds } from '@/pages/requests/utils/workflow.utils'
+import authUserStore from '@/stores/authUserStore'
 import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
@@ -834,11 +836,32 @@ export const useWorkflowForm = (
       return { error: errorMsg, success: false }
     }
 
+    // Fields (or whole panels) the start stage hides from this user are not
+    // shown, so they must never block the submit.
+    const stageHidden = getStartStageHiddenFieldIds(
+      workflow,
+      panels,
+      String(authUserStore.getState().session?.id || ''),
+    )
+    // A mandatory repository field is reported under its own `__repo__` id as
+    // well as the id of the form field it maps to. When the start stage hides
+    // that form field (e.g. "Selected Supplier" on a later Sourcing stage),
+    // the repo entry must not block the submit either.
+    const stageHiddenRepoIds = new Set(
+      repoFieldDescriptors
+        .filter(
+          (d) => d.matchedFieldId && stageHidden.has(String(d.matchedFieldId)),
+        )
+        .map((d) => d.fieldId),
+    )
     const missingList = getMissingMandatoryFieldsList(
       repoFieldDescriptors,
       panels,
       formModel,
       { formRules, hasUploadedFile },
+    ).filter(
+      (m) =>
+        !stageHidden.has(String(m.id)) && !stageHiddenRepoIds.has(String(m.id)),
     )
     if (missingList.length > 0) {
       // A repo field and the form field it maps to share one label — count
@@ -858,7 +881,15 @@ export const useWorkflowForm = (
     // Table columns have rules beyond "required" (content rules, ranges, date /
     // time / currency / file limits, conditional mandatory). They are shown
     // inline after a submit attempt, so they must also stop the submit.
-    const tableErrors = getTableFieldErrors(panels, formModel, { formRules })
+    const visiblePanels = panels.map((panel: any) => ({
+      ...panel,
+      fields: (panel.fields || []).filter(
+        (f: any) => !stageHidden.has(String(f.id)),
+      ),
+    }))
+    const tableErrors = getTableFieldErrors(visiblePanels, formModel, {
+      formRules,
+    })
     if (tableErrors.length > 0) {
       const errorMsg = `Please correct: ${tableErrors.join(' | ')}`
       setSubmitError(errorMsg)

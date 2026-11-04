@@ -38,6 +38,7 @@ import {
 } from '@/pages/form-builder/helpers/tableColumnDefaults'
 import { getSessionTableUser } from '@/pages/form-builder/helpers/tableColumnUser'
 import { getCurrentFormUser } from '@/utils/currentFormUser'
+import { parseFlexibleDate } from '@/utils/parseDate'
 import {
   getDateFieldDefault,
   getFileNameWithoutExtension,
@@ -193,8 +194,8 @@ export const normalizeScannedValue = (
     return Number.isFinite(n) ? n : undefined
   }
   if (fieldType === 'DATE' || fieldType === 'DATE_TIME') {
-    const parsed = dayjs(text)
-    if (!parsed.isValid()) return undefined
+    const parsed = parseFlexibleDate(text)
+    if (!parsed) return undefined
     return fieldType === 'DATE_TIME'
       ? parsed.format('YYYY-MM-DD HH:mm')
       : parsed.format('YYYY-MM-DD')
@@ -2054,6 +2055,14 @@ const ocrItemName = (raw?: string): string => {
   return trimmed.slice(0, comma).trim()
 }
 
+// The TYPE half of an OCR "Name,TYPE" item name, e.g. "DATE".
+const ocrItemType = (raw?: string): string => {
+  const comma = (raw || '').indexOf(',')
+  return comma > 0 ? raw!.slice(comma + 1).trim().toUpperCase() : ''
+}
+
+const OCR_DATE_TYPES = new Set(['DATE', 'DATE_TIME'])
+
 // Finds the form field whose label matches a repository field's name (same
 // convention the OCR mapping relies on: forms built off a repository use
 // the repository's field names as their labels).
@@ -2583,9 +2592,21 @@ export const mapOcrFieldsToModel = (
   for (const item of ocrFieldList) {
     const name = ocrItemName(item?.name)
     if (!name || !item.value) continue
-    patch[syntheticFieldId(name)] = item.value
     const matchedFieldId = findFormFieldIdByName(panels, name)
-    if (matchedFieldId) patch[matchedFieldId] = item.value
+    const matchedField = matchedFieldId
+      ? findFormFieldById(panels, matchedFieldId)
+      : undefined
+    // OCR often returns dates as printed ("15/10/2026") or junk ("Net 30");
+    // store them as YYYY-MM-DD, or leave the field empty if unreadable.
+    const fieldType =
+      ocrItemType(item.name) ||
+      (matchedField ? resolveRuntimeFieldType(matchedField) : '')
+    const value = OCR_DATE_TYPES.has(fieldType)
+      ? normalizeScannedValue(fieldType, item.value)
+      : item.value
+    if (value === undefined) continue
+    patch[syntheticFieldId(name)] = String(value)
+    if (matchedFieldId) patch[matchedFieldId] = String(value)
   }
 
   return patch
@@ -2608,6 +2629,11 @@ export const isFieldFilled = (field: any, value: any): boolean => {
 
   if (fieldType === 'FILE_UPLOAD' || fieldType === 'IMAGE_UPLOAD') {
     return Boolean(value?.fileId || value?.itemId || value?.fileName)
+  }
+  // Text that isn't a date ("Net 30") shows as an empty date box, so it
+  // can't count as filled either.
+  if (fieldType === 'DATE' || fieldType === 'DATE_TIME') {
+    return parseFlexibleDate(value) !== null
   }
   if (fieldType === 'MULTI_SELECT') {
     return normalizeStoredMultiSelectValue(value).length > 0

@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using SaaSApp.Workflow.Application.Contracts;
 using SaaSApp.Workflow.Application.Forms;
@@ -74,11 +75,15 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 return;
             }
 
-            // Step 1: the condition field is the mapping marked IsMainField -- it identifies which
-            // master-form row this sync applies to. Without one, there is no row to find; nothing
-            // to do (never fall back to inserting with no match criteria).
-            var mainMapping = config.FieldMappings.FirstOrDefault(m => m.IsMainField);
-            if (mainMapping == null)
+            // Step 1: the condition fields are the mappings marked IsMainField (the designer allows
+            // several) -- together they identify which master-form row this sync applies to.
+            // Without one, there is no row to find; nothing to do (never fall back to inserting
+            // with no match criteria).
+            var mainMappings = config.FieldMappings
+                .Where(m => m.IsMainField)
+                .DistinctBy(m => m.MasterFieldId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (mainMappings.Count == 0)
             {
                 _logger.LogInformation(
                     "End-sync: no field is marked IsMainField on workflow {WorkflowId} activity {ActivityId}; skipped.",
@@ -96,25 +101,39 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 formLineItemsJson,
                 cancellationToken);
 
-            // Step 2: the workflow's current value for the condition field.
-            if (!WorkflowFormFieldValues.TryGetMappedValue(values, mainMapping.WorkflowFieldId, out var matchValue)
-                || string.IsNullOrWhiteSpace(matchValue))
+            // Step 2: the workflow's current value for every condition field. A partial key could
+            // update the wrong row (or insert a duplicate), so a blank main field skips the sync.
+            var matchValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var mainMapping in mainMappings)
             {
-                _logger.LogInformation(
-                    "End-sync: condition field {WorkflowFieldId} has no value on workflow {WorkflowId} instance {InstanceId}; skipped.",
-                    mainMapping.WorkflowFieldId,
-                    workflowId,
-                    instanceId);
-                return;
+                if (!WorkflowFormFieldValues.TryGetMappedValue(values, mainMapping.WorkflowFieldId, out var raw)
+                    || NormalizeMatchValue(raw) is not { Length: > 0 } matchValue)
+                {
+                    _logger.LogInformation(
+                        "End-sync: condition field {WorkflowFieldId} has no value on workflow {WorkflowId} instance {InstanceId}; skipped.",
+                        mainMapping.WorkflowFieldId,
+                        workflowId,
+                        instanceId);
+                    return;
+                }
+
+                matchValues[mainMapping.MasterFieldId] = matchValue;
             }
 
-            // Include the main field too. Matching uses MatchColumnId/MatchValue; the write
-            // still needs the key on insert, otherwise a new row is created without the id
-            // and the existing master row never changes.
+            // Include the main fields too. Matching uses MatchColumnId/MatchValue (+ MatchFilters);
+            // the write still needs the key on insert, otherwise a new row is created without the
+            // id and the existing master row never changes. Main fields are written in the same
+            // normalised form they are matched with, so the next sync finds the row again.
             var fields = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
             var skipped = new List<string>();
             foreach (var mapping in config.FieldMappings)
             {
+                if (matchValues.TryGetValue(mapping.MasterFieldId, out var key))
+                {
+                    fields[mapping.MasterFieldId] = JsonSerializer.SerializeToElement(key);
+                    continue;
+                }
+
                 if (!WorkflowFormFieldValues.TryGetMappedValue(values, mapping.WorkflowFieldId, out var value)
                     || string.IsNullOrWhiteSpace(value))
                 {
@@ -135,11 +154,17 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 return;
             }
 
+            var primaryKey = mainMappings[0].MasterFieldId;
+            var extraKeys = mainMappings
+                .Skip(1)
+                .Select(m => new FormEntryColumnFilter(ColumnId: m.MasterFieldId, ColumnValue: matchValues[m.MasterFieldId]))
+                .ToList();
             var request = new FormEntryUpsertByColumnsRequest(
                 fields,
                 MatchColumn: null,
-                MatchColumnId: mainMapping.MasterFieldId,
-                MatchValue: matchValue);
+                MatchColumnId: primaryKey,
+                MatchValue: matchValues[primaryKey],
+                MatchFilters: extraKeys.Count > 0 ? extraKeys : null);
 
             _logger.LogInformation(
                 "End-sync upsert payload for workflow {WorkflowId} instance {InstanceId}: {Payload}",
@@ -153,14 +178,13 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 cancellationToken);
 
             _logger.LogInformation(
-                "End-sync to master form {MasterFormId} for workflow {WorkflowId} instance {InstanceId}: {Status} {Message} (match {MatchKey}={MatchValue}, fields={FieldCount})",
+                "End-sync to master form {MasterFormId} for workflow {WorkflowId} instance {InstanceId}: {Status} {Message} (match {MatchKeys}, fields={FieldCount})",
                 config.MasterFormId,
                 workflowId,
                 instanceId,
                 result.Status,
                 result.Message,
-                mainMapping.MasterFieldId,
-                matchValue,
+                string.Join(", ", matchValues.Select(kv => $"{kv.Key}={kv.Value}")),
                 fields.Count);
         }
         catch (Exception ex)
@@ -173,6 +197,15 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
                 activityId);
         }
     }
+
+    /// <summary>
+    /// Trims and collapses runs of whitespace (newlines, tabs, NBSP from extracted text) to one
+    /// space, the same way the master lookup normalises the stored column.
+    /// </summary>
+    internal static string NormalizeMatchValue(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : Regex.Replace(value, @"[\s ​]+", " ").Trim();
 
     private static string SerializeUpsertPayload(
         string? masterFormId,
@@ -191,6 +224,7 @@ public sealed class WorkflowEndSyncService : IWorkflowEndSyncService
             masterFormId,
             matchColumnId = request.MatchColumnId,
             matchValue = request.MatchValue,
+            matchFilters = request.MatchFilters,
             fields,
             skipped
         });

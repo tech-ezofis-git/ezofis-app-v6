@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+from app.ftl.quote_estimator.quote_template import HST_RATE
 
 _SKIP_TOP = frozenset(
     {
@@ -177,6 +179,139 @@ def order_number_for_quote(merged: Dict[str, Any], variant: Optional[Dict[str, A
     return f"{base}-Q{n}"
 
 
+def _compact(key: Any) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(key or "").lower())
+
+
+def _amount(value: Any) -> Optional[float]:
+    if isinstance(value, bool) or value in (None, ""):
+        return None
+    try:
+        return float(str(value).replace(",", "").replace("$", "").strip())
+    except ValueError:
+        return None
+
+
+def _keys_named(data: Dict[str, Any], names: Tuple[str, ...]) -> List[str]:
+    return [key for key in data if _compact(key) in names]
+
+
+def _first_amount(data: Dict[str, Any], names: Tuple[str, ...]) -> Optional[float]:
+    """The first non-zero amount under any of these names, else the first amount found."""
+    amounts = [_amount(data[key]) for key in _keys_named(data, names)]
+    amounts = [value for value in amounts if value is not None]
+    return next((value for value in amounts if value), amounts[0] if amounts else None)
+
+
+def _line_amount(row: Dict[str, Any]) -> Optional[float]:
+    fields = {_compact(key): cell for key, cell in row.items()}
+    stored = _amount(fields.get("subtotal"))
+    if stored is None:
+        stored = _amount(fields.get("amount"))
+    if stored is not None:
+        return stored
+    qty, price = _amount(fields.get("qty")), _amount(fields.get("price"))
+    return None if qty is None or price is None else qty * price
+
+
+_CONTACT_NAMES = ("contact", "contactname")
+_EMAIL_IN_TEXT_RE = re.compile(r"[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}", re.IGNORECASE)
+_EMPTY_BRACKETS_RE = re.compile(r"\(\s*\)|<\s*>|\[\s*\]")
+
+
+_COMPANY_NAMES = ("companyname", "customername", "company", "customer")
+
+
+def _clean_company_name(text: str, contact: str) -> str:
+    """"Test Co. / Pat Example (pat@x.com)" -> "Test Co.". A "/" part only goes when it comes with an
+    email or is the contact's name, so a company name that really has a slash stays whole."""
+    name = _EMPTY_BRACKETS_RE.sub(" ", _EMAIL_IN_TEXT_RE.sub(" ", text))
+    without_contact = re.sub(
+        r"\(([^()]*)\)", lambda m: " " if contact and _compact(m.group(1)) == _compact(contact) else m.group(0), name
+    )
+    had_contact = without_contact != name
+    name = re.sub(r"\s+", " ", without_contact).strip(" ,;:-–—|/")
+    parts = re.split(r"\s+/\s+", name)
+    if len(parts) > 1 and (had_contact or _EMAIL_IN_TEXT_RE.search(text) or _compact(parts[-1]) == _compact(contact)):
+        return parts[0]
+    return name
+
+
+def clean_contact_fields(data: Dict[str, Any]) -> Dict[str, Any]:
+    """A contact name must hold only the name: the model sometimes writes "Name (name@x.com)", which
+    overflows the PDF's contact box. The email moves to a blank Email field; a stated one is kept.
+    A company name must hold only the company, because the PDF prints it at the top of Bill To and
+    Ship To. An email found there is dropped, because it can belong to whoever forwarded the RFQ."""
+    out = dict(data)
+    for key in _keys_named(out, _CONTACT_NAMES):
+        text = out[key]
+        match = _EMAIL_IN_TEXT_RE.search(text) if isinstance(text, str) else None
+        if not match:
+            continue
+        name = _EMPTY_BRACKETS_RE.sub(" ", _EMAIL_IN_TEXT_RE.sub(" ", text))
+        out[key] = re.sub(r"\s+", " ", name).strip(" ,;:-–—|")
+        email_keys = _keys_named(out, ("email",)) or ["email" if key.islower() or "_" in key else "Email"]
+        if not any(str(out.get(email_key) or "").strip() for email_key in email_keys):
+            for email_key in email_keys:
+                out[email_key] = match.group(0)
+    contact_keys = _keys_named(out, _CONTACT_NAMES)
+    contact = str(out[contact_keys[0]] or "") if contact_keys else ""
+    for key in _keys_named(out, _COMPANY_NAMES):
+        if isinstance(out[key], str) and out[key].strip():
+            out[key] = _clean_company_name(out[key], contact)
+    return out
+
+
+_LINE_NAMES = ("lineitem", "lineitems")
+_FREIGHT_NAMES = ("freight", "freightestimate")
+_HST_NAMES = ("hst",)
+
+
+def reconcile_quote_totals(data: Dict[str, Any], *, recalculate_hst: bool = False) -> Dict[str, Any]:
+    """Make the PDF's totals add up from its own line items.
+
+    Saved form totals can't be trusted: calculated Total fields leave out freight, and Quote 2 / 3
+    formulas can keep Quote 1's total. Total is always subtotal - discount + freight + HST. A saved
+    HST is kept, because it already carries the freight. When no freight is saved, the freight that
+    HST was charged on is worked back out, so the document shows what the customer is taxed on."""
+    rows: List[Dict[str, Any]] = []
+    for key in _keys_named(data, _LINE_NAMES):
+        rows = _line_rows(data[key])
+        if rows:
+            break
+    amounts = [_line_amount(row) for row in rows]
+    if not amounts or any(value is None for value in amounts):
+        return data
+    subtotal = round(sum(amounts), 2)
+
+    line_discount = any(
+        (_amount(cell) or 0) > 0 for row in rows for key, cell in row.items() if _compact(key) == "discount"
+    )
+    discount = 0.0 if line_discount else max(0.0, _first_amount(data, ("discount",)) or 0.0)
+    taxable = max(0.0, subtotal - discount)
+
+    hst = None if recalculate_hst else _first_amount(data, _HST_NAMES)
+    freight = _first_amount(data, _FREIGHT_NAMES) or 0.0
+    if not freight and hst:
+        implied = round(hst / HST_RATE - taxable)
+        freight = float(implied) if implied >= 1 else 0.0
+    if hst is None:
+        hst = round((taxable + freight) * HST_RATE, 2)
+
+    out = dict(data)
+    for names, canonical, value in (
+        (("subtotal",), ("Subtotal",), subtotal),
+        (_HST_NAMES, ("HST",), hst),
+        (("total",), ("Total",), round(taxable + freight + hst, 2)),
+    ):
+        for key in _keys_named(out, names) or canonical:
+            out[key] = value
+    if freight:
+        for key in set(_keys_named(out, _FREIGHT_NAMES)) | {"Freight", "Freight Estimate"}:
+            out[key] = freight
+    return out
+
+
 def form_data_for_quote_type(
     *,
     form_data: Optional[Dict[str, Any]] = None,
@@ -198,16 +333,20 @@ def form_data_for_quote_type(
         order = order_number_for_quote(base, None, 1)
         if order:
             base["Order Number"] = order
-        return base, 1
+        return clean_contact_fields(reconcile_quote_totals(base)), 1
     explicit = quote_2 if n == 2 else quote_3
     variant = _variant_from(form, explicit, n)
     if not variant and isinstance(quote_result, dict):
         variant = _variant_from(quote_result, None, n)
     if not variant_has_form_values(variant, n):
         return None, n
-    merged = dict(base)
-    for key, value in _unprefix_variant(variant, n).items():
+    # Quote 1's freight is worked out first: a variant only carries the fields that changed.
+    merged = reconcile_quote_totals(base)
+    overlay = _unprefix_variant(variant, n)
+    for key, value in overlay.items():
         _merge_field(merged, key, value)
     order = order_number_for_quote(merged, variant, n)
     merged["Order Number"] = order
-    return merged, n
+    has_own_lines = any(_compact(key) in _LINE_NAMES for key in overlay)
+    has_own_hst = any(_compact(key) in _HST_NAMES for key in overlay)
+    return clean_contact_fields(reconcile_quote_totals(merged, recalculate_hst=has_own_lines and not has_own_hst)), n

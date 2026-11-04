@@ -113,6 +113,8 @@ class ExecuteReportRequest(_Body):
     as_of_date: date | None = Field(default=None, alias="asOfDate")
     filters: list[Condition] = Field(default_factory=list, max_length=20)
     limit: int | None = Field(default=None, ge=1, le=100_000)
+    # Refresh button: apply the current default columns to the saved report first (no LLM call).
+    refresh_defaults: bool = Field(default=False, alias="refreshDefaults")
 
 
 class HighlightRule(_Body):

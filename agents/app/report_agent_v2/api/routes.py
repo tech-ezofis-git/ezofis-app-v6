@@ -6,6 +6,7 @@ authentication and tenant middleware have validated the token and the tenant mem
 
 from __future__ import annotations
 
+import logging
 import time
 import uuid
 from datetime import date
@@ -34,9 +35,11 @@ from app.report_agent_v2.domain.compiler import CompiledQuery, SpecValidationErr
 from app.report_agent_v2.domain.executor import run_compiled, shape_result
 from app.report_agent_v2.domain.source_catalog import SourceCatalog
 from app.report_agent_v2.domain.spec import ReportSpec
-from app.report_agent_v2.errors import BadRequestError, ConflictError, ForbiddenError, UnprocessableError
+from app.report_agent_v2.errors import BadRequestError, ConflictError, ForbiddenError, NotFoundError, UnprocessableError
 from app.report_agent_v2.security.authorization import ReportAccess, evaluate_report_access, tenant_admin, tenant_user
 from app.report_agent_v2.security.principal import TenantContext
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["report-agent-v2"])
 PREVIEW_ROWS = 50
@@ -343,8 +346,24 @@ async def execute_report(
 ) -> dict:
     """Run a saved report. The body is optional: with no body (or {}) the saved definition runs as-is."""
     body = body or ExecuteReportRequest()
-    options = ExecutionOptions(as_of=body.as_of_date, filters=list(body.filters), limit=body.limit)
+    options = ExecutionOptions(as_of=body.as_of_date, filters=list(body.filters), limit=body.limit,
+                               refresh_defaults=body.refresh_defaults)
     return await request.app.state.execution_agent.execute(conn, ctx, report_id, options)
+
+
+@router.get("/reports/{report_id}/user-activity")
+async def user_activity(
+    report_id: uuid.UUID,
+    email: str = Query(min_length=3, max_length=320),
+    as_of_date: date | None = Query(default=None, alias="asOfDate"),
+    ctx: TenantContext = Depends(tenant_admin),
+    conn: AsyncConnection = Depends(tenant_connection),
+) -> dict:
+    """One user's logins and security events behind a row of User Login and Security Activity (Admin)."""
+    definition = await store.load_definition(conn, ctx.tenant_id, report_id)
+    if definition is None or store.system_template_key(definition) != "user_login_security":
+        raise NotFoundError("Report not found.")
+    return await system_reports.user_login_activity(conn, ctx.tenant_id, email, as_of=as_of_date or date.today())
 
 
 @router.get("/reports/{report_id}/execute")
@@ -353,11 +372,15 @@ async def execute_report_by_id(
     request: Request,
     as_of_date: date | None = Query(default=None, alias="asOfDate"),
     limit: int | None = Query(default=None, ge=1, le=100_000),
+    refresh_defaults: bool = Query(default=False, alias="refreshDefaults"),
     ctx: TenantContext = Depends(tenant_user),
     conn: AsyncConnection = Depends(tenant_connection),
 ) -> dict:
-    """Run a saved report with only its id (e.g. when a report is clicked in the list). No body needed."""
-    options = ExecutionOptions(as_of=as_of_date, limit=limit)
+    """Run a saved report with only its id (e.g. when a report is clicked in the list). No body needed.
+
+    refreshDefaults=true (the Refresh button) first brings its default columns up to date.
+    """
+    options = ExecutionOptions(as_of=as_of_date, limit=limit, refresh_defaults=refresh_defaults)
     return await request.app.state.execution_agent.execute(conn, ctx, report_id, options)
 
 
@@ -375,6 +398,16 @@ async def list_reports(
     kind: executable (default: agent + default reports, the ones this API can run), agent, default, or all
     (also lists reports saved by the old AI builder; those have "executable": false here).
     """
+    # A tenant gets its default reports the first time an Admin opens the list (new tenants included),
+    # so nobody has to call /defaults/install. Never blocks the list.
+    if ctx.is_admin and kind != "agent":
+        try:
+            created = await store.install_missing_default_reports(
+                conn, tenant_id=ctx.tenant_id, user_id=ctx.user_id, templates=system_reports.TEMPLATES.values())
+            if created:
+                logger.info("Installed %d default report(s) for tenant %s", created, ctx.tenant_id)
+        except Exception:  # noqa: BLE001 -- the list still works without them
+            logger.exception("Could not install default reports for tenant %s", ctx.tenant_id)
     groups = await store.user_group_ids(conn, ctx.user_id)
     visible = []
     for row in await store.list_definitions(conn, ctx.tenant_id, (search or "").strip() or None):

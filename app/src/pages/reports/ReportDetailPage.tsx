@@ -5,6 +5,7 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import { AnimateFadeIn } from '@/components/common/animations'
 import { useReportBuilderByIdQuery } from '@/pages/report-builder/hooks/useReportBuilderApi'
+import { DEFAULT_REPORT_DOMAIN } from '@/pages/report-builder/utils/agentReport'
 import OverviewTab from './components/OverviewTab'
 import ReportHighlightsPanel from './components/ReportHighlightsPanel'
 import ReportKpiCards from './components/ReportKpiCards'
@@ -54,18 +55,23 @@ const ReportDetailPage = ({ reportId }: Props) => {
     <AnimateFadeIn className='flex h-full min-h-0 flex-col overflow-hidden'>
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         {/* <ReportKpiCards report={report} /> */}
-        {showHighlights && report.agentConfig && (
-          <ReportHighlightsPanel
-            report={report}
-            onClose={() => setShowHighlights(false)}
-          />
-        )}
+        {showHighlights &&
+          report.agentConfig &&
+          report.domain !== DEFAULT_REPORT_DOMAIN && (
+            <ReportHighlightsPanel
+              report={report}
+              onClose={() => setShowHighlights(false)}
+            />
+          )}
         <OverviewTab
           report={report}
           toolbarActions={
             !report.isAiReport ? (
               <ReportShareButton reportId={report.id} />
-            ) : report.canEdit && report.agentConfig ? (
+            ) : report.canEdit &&
+              report.agentConfig &&
+              // Default reports are fixed templates: no highlights.
+              report.domain !== DEFAULT_REPORT_DOMAIN ? (
               <Button
                 color='gray'
                 icon='lucide:highlighter'
