@@ -10,6 +10,7 @@ import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
 import Tooltip from '@/components/base/Tooltip'
 import { formatDatetime } from '@/utils/dayjs'
+import type { ExcelExportHeader } from './excelReport'
 
 type ColumnScope = 'visible' | 'all'
 type FileFormat = 'csv' | 'excel'
@@ -17,6 +18,11 @@ interface Props<TData> {
   table: TanstackTable<TData>
   fileName?: string
   iconOnly?: boolean
+  /**
+   * Excel only: rows above the data (logo, report name, period, generated
+   * by...). Built when the user downloads, so it reflects the current filters.
+   */
+  excelHeader?: () => ExcelExportHeader
 }
 
 type RowScope = 'selected' | 'all'
@@ -138,7 +144,11 @@ const downloadBlob = (blob: Blob, fileName: string) => {
   URL.revokeObjectURL(url)
 }
 
+const EXCEL_TYPE =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
 const TableExport = <TData,>({
+  excelHeader,
   fileName = 'export',
   iconOnly = true,
   table,
@@ -167,7 +177,7 @@ const TableExport = <TData,>({
     [iconOnly],
   )
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!canDownloadSelected) return
 
     const { data, headers, rowCount } = buildExportRows(
@@ -194,14 +204,26 @@ const TableExport = <TData,>({
       return
     }
 
+    if (excelHeader) {
+      try {
+        const { buildExcelWithHeader } = await import('./excelReport')
+        const buffer = await buildExcelWithHeader(excelHeader(), headers, data)
+        downloadBlob(
+          new Blob([buffer], { type: EXCEL_TYPE }),
+          `${baseName}.xlsx`,
+        )
+        return
+      } catch {
+        // Fall back to the plain sheet below.
+      }
+    }
+
     const excelBuffer = XLSX.write(workbook, {
       bookType: 'xlsx',
       type: 'array',
     })
     downloadBlob(
-      new Blob([excelBuffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      }),
+      new Blob([excelBuffer], { type: EXCEL_TYPE }),
       `${baseName}.xlsx`,
     )
   }
@@ -264,7 +286,7 @@ const TableExport = <TData,>({
         disabled={!canDownloadSelected}
         label='Download'
         variant='subtle'
-        onClick={handleDownload}
+        onClick={() => void handleDownload()}
       />
     </Menu>
   )
