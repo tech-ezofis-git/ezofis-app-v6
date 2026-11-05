@@ -675,8 +675,7 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
 
 
 _LOGIN_COLS = (Col("User"), Col("Logins", "number", "measure", True), Col("Web", "number", "measure", True),
-               Col("Mobile", "number", "measure", True), Col("Distinct IPs", "number", "measure"),
-               Col("Last Login", "date", "value"), Col("Security Events", "number", "measure", True),
+               Col("Mobile", "number", "measure", True), Col("Last Login", "date", "value"), Col("Security Events", "number", "measure", True),
                Col("Warnings", "number", "measure", True), Col("Permission Changes", "number", "measure", True))
 
 
@@ -687,11 +686,10 @@ async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
         return _empty(_LOGIN_COLS), ["No login or activity logs found."]
     login = sql.SQL(
         """SELECT lower("Email") AS email, COUNT(*) AS logins, COUNT(*) FILTER (WHERE "LoggedFrom" = 'WEB') AS web,
-                  COUNT(*) FILTER (WHERE "LoggedFrom" = 'MOBILE') AS mobile, COUNT(DISTINCT "IpAddress") AS ips,
-                  MAX("CreatedAtUtc") AS last_login
+                  COUNT(*) FILTER (WHERE "LoggedFrom" = 'MOBILE') AS mobile, MAX("CreatedAtUtc") AS last_login
            FROM auth."LoginHistory" WHERE "TenantId" = {tid} AND "CreatedAtUtc" >= {since} AND "CreatedAtUtc" < {until} GROUP BY 1"""
     ) if has_login else sql.SQL(
-        "SELECT NULL::text AS email, 0::bigint AS logins, 0::bigint AS web, 0::bigint AS mobile, 0::bigint AS ips, NULL::timestamptz AS last_login WHERE false")
+        "SELECT NULL::text AS email, 0::bigint AS logins, 0::bigint AS web, 0::bigint AS mobile, NULL::timestamptz AS last_login WHERE false")
     events = sql.SQL(
         """SELECT lower("UserEmail") AS email, COUNT(*) FILTER (WHERE "Category" = 'Security') AS sec,
                   COUNT(*) FILTER (WHERE "Severity" = 'Warning') AS warn,
@@ -704,10 +702,10 @@ async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     q = sql.SQL(
         """WITH l AS ({login}), e AS ({events})
            SELECT COALESCE(l.email, e.email) AS c0, COALESCE(l.logins, 0) AS c1, COALESCE(l.web, 0) AS c2, COALESCE(l.mobile, 0) AS c3,
-                  COALESCE(l.ips, 0) AS c4, l.last_login AS c5, COALESCE(e.sec, 0) AS c6,
-                  COALESCE(e.warn, 0) AS c7, COALESCE(e.perm, 0) AS c8
+                  l.last_login AS c4, COALESCE(e.sec, 0) AS c5,
+                  COALESCE(e.warn, 0) AS c6, COALESCE(e.perm, 0) AS c7
            FROM l FULL JOIN e ON e.email = l.email
-           ORDER BY c6 DESC, c1 DESC, c0 LIMIT {limit}"""
+           ORDER BY c5 DESC, c1 DESC, c0 LIMIT {limit}"""
     ).format(login=login.format(**args), events=events.format(**args), limit=sql.Literal(ctx.limit))
     return q, []
 
@@ -1012,7 +1010,7 @@ TEMPLATES: dict[str, Template] = {t.key: t for t in (
              "Requests submitted per workflow and month: completed, pending, failed, completion rate and average completion time "
              "(last 12 months).", "all_workflows", 365, _PORTAL_COLS, _portal_submission_performance),
     Template("user_login_security", "User Login and Security Activity",
-             "Logins (web/mobile, IPs) and security, warning and permission-change events per user over the last 30 days.",
+             "Logins (web/mobile) and security (e.g. failed logins), warning and permission-change events per user over the last 30 days.",
              "tenant", 30, _LOGIN_COLS, _user_login_security),
     Template("workflow_sla_compliance", "Workflow SLA Compliance",
              "Response and resolution SLA met vs breached, in progress, escalations, compliance % and SLA notifications sent "
