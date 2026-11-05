@@ -87,6 +87,8 @@ type Store = {
   rawWorkflowData: any
   /** Name of the workflow whose request list is on screen (topbar title). */
   listWorkflowName: string | null
+  /** Bumped when the sidebar Workflows icon asks for the All Workflows inbox. */
+  allWorkflowsSignal: number
   reloadMeta: boolean
   repoData: any
   requestListTab: string // New state for main list tabs
@@ -116,6 +118,7 @@ type Store = {
   setJobMapping: (jobId: string | number, instanceId: string) => void
   setJobStatus: (id: string, status: any) => void
   setListWorkflowName: (name: string | null) => void
+  showAllWorkflows: () => void
   setPendingDeepLink: (deepLink: Store['pendingDeepLink']) => void
 
   setPendingNav: (v: any) => void
@@ -142,6 +145,7 @@ const requestStore = create<Store>()(
       jobMappings: getInitialJobMappings(),
       jobStatuses: getInitialJobStatuses(),
       kanbanMissingFieldIds: [],
+      allWorkflowsSignal: 0,
       listWorkflowName: null,
       newRequest: false,
       newRequestMeta: null,
@@ -216,6 +220,25 @@ const requestStore = create<Store>()(
                 .some((pid) => String(pid) === String(id)),
           ),
         })),
+      showAllWorkflows: () => {
+        // Remembered for when the Requests page mounts after navigation.
+        try {
+          sessionStorage.setItem('ezofis_requests_all_workflows', '1')
+        } catch {
+          // ignore
+        }
+        set((state) => ({
+          activeTabValue: null,
+          allWorkflowsSignal: state.allWorkflowsSignal + 1,
+          isAutoOpenedRequest: false,
+          isRequestOpen: false,
+          newRequest: false,
+          newRequestMeta: null,
+          pendingDeepLink: null,
+          pendingOpenNewRequest: false,
+          selectedItem: null,
+        }))
+      },
       stopRefresh: () => set({ reloadMeta: false }),
       toggleMaximize: () =>
         set(({ isMaximized }) => ({ isMaximized: !isMaximized })),
