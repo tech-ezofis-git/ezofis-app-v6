@@ -2163,6 +2163,93 @@ LIMIT 1;
         }
     }
 
+    private static readonly HashSet<string> SavableClientLabels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "billingaddress", "billto", "contact", "contactname", "contactperson",
+        "email", "contactemail", "phone", "phonenumber", "contactphone",
+    };
+
+    internal static bool IsSavableClientLabel(string? label) =>
+        SavableClientLabels.Contains(NormalizeFieldKey(label ?? string.Empty));
+
+    public async Task<bool> SaveClientFieldAsync(
+        Guid workflowId,
+        Guid instanceId,
+        string? formId,
+        string fieldId,
+        string? value,
+        CancellationToken cancellationToken = default)
+    {
+        var tenantCs = _connectionProvider.ConnectionString;
+        if (string.IsNullOrWhiteSpace(tenantCs) || string.IsNullOrWhiteSpace(formId))
+            return false;
+
+        var controls = await LoadFtlFormControlsAsync(formId, tenantCs, cancellationToken);
+        var control = controls.FirstOrDefault(c => string.Equals(c.JsonId, fieldId, StringComparison.OrdinalIgnoreCase));
+        if (control is null || !IsSavableClientLabel(control.Label))
+            return false;
+
+        var suffix = workflowId.ToString("N")[..8];
+        var instanceKey = instanceId.ToString("N");
+        var saved = false;
+        await using var connection = new NpgsqlConnection(tenantCs);
+        await connection.OpenAsync(cancellationToken);
+        foreach (var prefix in new[] { "inbox", "sent", "completed" })
+        {
+            var table = $"workflow.{prefix}_{suffix}";
+            string? current;
+            try
+            {
+                await using var read = new NpgsqlCommand(
+                    $"""
+                    SELECT form_data
+                    FROM {table}
+                    WHERE REPLACE(LOWER(workflow_instance_id::text), '-', '') = @InstanceId
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    connection);
+                read.Parameters.AddWithValue("@InstanceId", instanceKey);
+                var stored = await read.ExecuteScalarAsync(cancellationToken);
+                current = stored == null || stored == DBNull.Value ? null : Convert.ToString(stored);
+            }
+            catch (PostgresException)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(current))
+                continue;
+
+            JsonObject? root;
+            try
+            {
+                root = JsonNode.Parse(current) as JsonObject;
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            if (root == null)
+                continue;
+
+            root[control.JsonId] = value ?? string.Empty;
+            await using var update = new NpgsqlCommand(
+                $"""
+                UPDATE {table}
+                SET form_data = @FormData
+                WHERE REPLACE(LOWER(workflow_instance_id::text), '-', '') = @InstanceId
+                """,
+                connection);
+            update.Parameters.AddWithValue("@FormData", root.ToJsonString());
+            update.Parameters.AddWithValue("@InstanceId", instanceKey);
+            saved |= await update.ExecuteNonQueryAsync(cancellationToken) > 0;
+        }
+
+        return saved;
+    }
+
     private static async Task<HashSet<string>> LoadEzfbColumnsAsync(
         NpgsqlConnection connection,
         string tableName,

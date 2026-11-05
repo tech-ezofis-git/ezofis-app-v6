@@ -14,10 +14,11 @@ import Button from '@/components/base/button/Button'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import { invalidateRequestLists } from '@/pages/requests/hooks/useAllWorkflowsInbox'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import { mapExternalRowsToTableColumns } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
@@ -551,6 +552,7 @@ const QuoteAgentResultView = ({
   onQuoteTotalChange,
 }: Props) => {
   const { t } = useLingui()
+  const queryClient = useQueryClient()
   // Set by the user's own edits (not the totals auto-sync), so the
   // "changed since the PDF was generated" state ignores load-time writes.
   const userEditedRef = useRef(false)
@@ -1471,6 +1473,29 @@ const QuoteAgentResultView = ({
     value: string
   } | null>(null)
 
+  // Edits otherwise stay on screen until Save or an action, and the agent's
+  // value would come back when the request is reopened.
+  const saveFieldToTicket = async (fieldId: string, value: string) => {
+    const workflowId = requestData?.workflowId || workflow?.id
+    const instanceId =
+      requestData?.workflowInstanceId || requestData?.processId
+    if (!workflowId || !instanceId) return
+    const { error } = await workflowsApiV6.saveFtlClientField(
+      workflowId,
+      instanceId,
+      { fieldId, value },
+    )
+    if (error) {
+      showToast({
+        message: t`Could not save this change on the request: ${error}`,
+        variant: 'error',
+      })
+      return
+    }
+    invalidateRequestLists(queryClient)
+    void queryClient.invalidateQueries({ queryKey: ['request-detail'] })
+  }
+
   const saveDetailToMaster = async (
     client: ClientMasterRow | null,
     detail: ClientDetail,
@@ -1499,6 +1524,10 @@ const QuoteAgentResultView = ({
       String(readFormValue(fieldForDetail(opened.detail)) ?? '').trim() !==
         opened.value
     ) {
+      void saveFieldToTicket(
+        opened.id,
+        String(readFormValue(fieldForDetail(opened.detail)) ?? '').trim(),
+      )
       void saveDetailToMaster(opened.client, opened.detail)
     }
     const nextField = nextId
@@ -1532,6 +1561,8 @@ const QuoteAgentResultView = ({
       if (fromForm !== undefined && fromForm !== null && fromForm !== '') {
         return fromForm
       }
+      // A client field the user cleared stays blank, not the agent's old value.
+      if (fromForm === '' && clientDetailForField(field)) return ''
     }
     if (
       resultKey &&
