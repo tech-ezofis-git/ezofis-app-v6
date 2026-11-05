@@ -85,55 +85,124 @@ const asCellValue = (
   return { value: text }
 }
 
+/** Excel column width (characters) to pixels, as Excel draws it at 100%. */
+const columnPx = (width: number) => Math.round(width * 7 + 5)
+
 export const buildExcelWithHeader = async (
   header: ExcelExportHeader,
-  columns: string[],
-  rows: unknown[][],
+  allColumns: string[],
+  allRows: unknown[][],
 ): Promise<ArrayBuffer> => {
   const { default: ExcelJS } = await import('exceljs')
   const workbook = new ExcelJS.Workbook()
   const sheet = workbook.addWorksheet('Report')
-  const span = Math.max(columns.length, 4)
+
+  // Columns with no value in any row (e.g. a hidden grouping column) only add noise.
+  const keep = allColumns
+    .map((_, index) => index)
+    .filter((index) =>
+      allRows.some((row) => String(row[index] ?? '').trim() !== ''),
+    )
+  const columns = keep.length > 0 ? keep.map((i) => allColumns[i]) : allColumns
+  const rows =
+    keep.length > 0 ? allRows.map((row) => keep.map((i) => row[i])) : allRows
+
+  // Column widths from the table; the header label gets room for Excel's filter button.
+  const widths = columns.map((label, index) => {
+    const longest = rows.reduce<number>((max, values) => {
+      const { format, value } = asCellValue(values[index])
+      return Math.max(max, format ? format.length : String(value).length)
+    }, label.length + 3)
+    return Math.min(50, Math.max(12, longest + 2))
+  })
+  // The heading is centred over the table; a narrow table is widened so it fits.
+  const span = Math.max(columns.length, 1)
+  const detailText = header.details.map((d) => `${d.label}: ${d.value}`)
+  const needed = Math.max(
+    header.title.length * 1.6,
+    ...detailText.map((t) => Math.min(t.length, 90)),
+  )
+  const tableWidth = widths.reduce((sum, w) => sum + w, 0)
+  if (tableWidth < needed && widths.length > 0) {
+    const extra = (needed - tableWidth) / widths.length
+    widths.forEach((w, i) => (widths[i] = Math.ceil(w + extra)))
+  }
+  widths.forEach((w, i) => (sheet.getColumn(i + 1).width = w))
+
+  const centred = {
+    horizontal: 'center',
+    vertical: 'middle',
+    wrapText: true,
+  } as const
+  const mergeRow = (rowNo: number) => {
+    if (span > 1) sheet.mergeCells(rowNo, 1, rowNo, span)
+  }
 
   let rowNo = 1
   const logo = await logoAsPng(header.logo ?? '')
   if (logo?.base64) {
     const imageId = workbook.addImage({ base64: logo.base64, extension: 'png' })
+    // Place the logo's left edge so its middle sits in the middle of the table.
+    const pixels = widths.map(columnPx)
+    let left = Math.max(0, (pixels.reduce((a, b) => a + b, 0) - logo.width) / 2)
+    let col = 0
+    while (col < pixels.length - 1 && left >= pixels[col]) {
+      left -= pixels[col]
+      col += 1
+    }
+    const logoRows = 3
+    // Exact offsets in EMU (9525 per pixel): a fractional `col` would be scaled
+    // by exceljs' default column width, not this sheet's.
+    const EMU = 9525
     sheet.addImage(imageId, {
       ext: { height: logo.height, width: logo.width },
-      tl: { col: 0, row: 0 },
+      tl: {
+        nativeCol: col,
+        nativeColOff: Math.round(left * EMU),
+        nativeRow: 0,
+        nativeRowOff: 4 * EMU,
+      } as unknown as { col: number; row: number },
     })
     // Rows the logo covers (Excel rows are in points; 1px = 0.75pt).
-    const logoRows = 3
     for (let i = 1; i <= logoRows; i++) {
-      sheet.getRow(i).height = Math.max(15, (logo.height * 0.75) / logoRows)
+      sheet.getRow(i).height = Math.max(15, (logo.height * 0.75 + 6) / logoRows)
     }
-    rowNo = logoRows + 2
+    rowNo = logoRows + 1
   }
 
   const title = sheet.getRow(rowNo)
   title.getCell(1).value = header.title
   title.getCell(1).font = { bold: true, size: 16 }
-  sheet.mergeCells(rowNo, 1, rowNo, span)
+  title.getCell(1).alignment = centred
+  title.height = 26
+  mergeRow(rowNo)
   rowNo += 1
 
   if (header.subtitle) {
     const subtitle = sheet.getRow(rowNo)
     subtitle.getCell(1).value = header.subtitle
     subtitle.getCell(1).font = { color: { argb: LABEL_COLOR }, size: 11 }
-    sheet.mergeCells(rowNo, 1, rowNo, span)
+    subtitle.getCell(1).alignment = centred
+    mergeRow(rowNo)
     rowNo += 1
   }
   rowNo += 1
 
+  // Details: "Label: value", one per row, centred under the title.
   for (const detail of header.details) {
-    if (!detail.value) continue
-    const row = sheet.getRow(rowNo)
-    row.getCell(1).value = detail.label
-    row.getCell(1).font = { bold: true, color: { argb: LABEL_COLOR } }
-    row.getCell(2).value = detail.value
-    row.getCell(2).alignment = { vertical: 'top', wrapText: true }
-    if (span > 2) sheet.mergeCells(rowNo, 2, rowNo, span)
+    if (!detail.value || detail.label === 'Report') continue // the title already names it
+    const cell = sheet.getRow(rowNo).getCell(1)
+    cell.value = {
+      richText: [
+        {
+          font: { bold: true, color: { argb: LABEL_COLOR } },
+          text: `${detail.label}: `,
+        },
+        { text: detail.value },
+      ],
+    }
+    cell.alignment = centred
+    mergeRow(rowNo)
     rowNo += 1
   }
   rowNo += 1
@@ -169,16 +238,6 @@ export const buildExcelWithHeader = async (
     }
   }
   sheet.views = [{ state: 'frozen', ySplit: headerRowNo }]
-
-  // Column widths from the table (not the heading, which is merged).
-  columns.forEach((label, index) => {
-    const longest = rows.reduce<number>((max, values) => {
-      const { format, value } = asCellValue(values[index])
-      return Math.max(max, format ? format.length : String(value).length)
-    }, label.length)
-    sheet.getColumn(index + 1).width = Math.min(50, Math.max(12, longest + 2))
-  })
-  if (columns.length < 2) sheet.getColumn(2).width = 40
 
   return (await workbook.xlsx.writeBuffer()) as ArrayBuffer
 }
