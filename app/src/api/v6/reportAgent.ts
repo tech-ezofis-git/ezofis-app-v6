@@ -464,13 +464,23 @@ export const runReportAiReport = async (
   }
 }
 
+export interface UserLoginAction {
+  at: string | null
+  category: string | null
+  event: string | null
+  method: string | null
+  path: string | null
+  severity: string | null
+  status: number | null
+  type: string | null
+}
+
 export interface UserLoginActivity {
   email: string
   events: {
     at: string | null
     category: string | null
     event: string | null
-    ip: string | null
     severity: string | null
     type: string | null
   }[]
@@ -478,28 +488,57 @@ export interface UserLoginActivity {
     at: string | null
     channel: string | null
     device: string | null
-    ip: string | null
   }[]
   since: string
   until: string
+  /** Every activity-log entry of the window; only with `includeActions`. */
+  actions?: UserLoginAction[]
 }
 
 /**
  * One user's logins and security events behind a row of the User Login and
- * Security Activity default report (Admin only).
+ * Security Activity default report (Admin only). `includeActions` also returns
+ * every action of the period (for the export).
  */
 export const getReportUserActivity = async (
   reportId: string,
   email: string,
+  options: { includeActions?: boolean } = {},
 ) => {
   const { data } = await axiosV6({
     headers: getTenantHeaders(),
     method: 'GET',
-    params: { email },
+    params: {
+      email,
+      ...(options.includeActions ? { includeActions: true } : {}),
+    },
     skipCancellation: true,
     url: `${reportAgentBase()}/reports/${encodeURIComponent(reportId)}/user-activity`,
   })
   return data as UserLoginActivity
+}
+
+export interface UserLoginSession {
+  actions: UserLoginAction[]
+  email: string
+  from: string
+  until: string
+}
+
+/** What a user did in one login session (until their next login, max 8 h). */
+export const getReportUserSession = async (
+  reportId: string,
+  email: string,
+  loginAt: string,
+) => {
+  const { data } = await axiosV6({
+    headers: getTenantHeaders(),
+    method: 'GET',
+    params: { email, loginAt },
+    skipCancellation: true,
+    url: `${reportAgentBase()}/reports/${encodeURIComponent(reportId)}/user-session`,
+  })
+  return data as UserLoginSession
 }
 
 export const getReportAiReport = async (id: string) => {
