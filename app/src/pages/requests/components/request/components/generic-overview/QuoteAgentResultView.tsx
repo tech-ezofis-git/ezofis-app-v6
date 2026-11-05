@@ -20,7 +20,6 @@ import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import { invalidateRequestLists } from '@/pages/requests/hooks/useAllWorkflowsInbox'
 import showToast from '@/components/base/toast/showToast'
-import Tooltip from '@/components/base/Tooltip'
 import { mapExternalRowsToTableColumns } from '@/pages/requests/components/workflow-request/components/TableFieldRenderer'
 import {
   getConfiguredFieldOptions,
@@ -2771,24 +2770,20 @@ const QuoteAgentResultView = ({
                       </p>
                     </div>
                     <div className='flex shrink-0 items-center gap-2'>
-                      {/* The generated PDF is out of date until regenerated. */}
-                      <Tooltip
-                        content={t`Quote data has changed. Regenerate the quotation to preview the latest version.`}
-                        position='bottom'
-                        width={260}
-                      >
-                        <Button
-                          aria-disabled
-                          className='pointer-events-none !border-secondary-5 !bg-secondary-2 !text-secondary-11 opacity-50'
-                          color='secondary'
-                          icon='lucide:eye'
-                          label={t`Quote Preview`}
-                          size='sm'
-                          type='button'
-                          variant='outline'
-                          disabled
-                        />
-                      </Tooltip>
+                      {/* Previews the edited data; the saved PDF stays old until regenerated. */}
+                      <Button
+                        aria-disabled={previewDisabled}
+                        aria-label={t`Quote Preview`}
+                        className='!border-secondary-5 !bg-secondary-2 !text-secondary-11 hover:!bg-secondary-3'
+                        color='secondary'
+                        disabled={previewDisabled}
+                        icon='lucide:eye'
+                        label={t`Quote Preview`}
+                        size='sm'
+                        type='button'
+                        variant='outline'
+                        onClick={() => selectPaneMode('preview')}
+                      />
                       <Button
                         color='primary'
                         disabled={isRegenerating}
