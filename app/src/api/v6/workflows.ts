@@ -581,6 +581,30 @@ export type RegenerateDocumentResponse = {
  * Document Generate Agent step or any step after it; the previous PDFs are
  * retired once the new ones are archived.
  */
+/** Saves one edited client field on the ticket straight away. */
+const saveFtlClientField = async (
+  workflowId: number | string,
+  instanceId: number | string,
+  payload: { fieldId: string; value: string },
+) => {
+  try {
+    await axiosV6({
+      data: JSON.stringify(payload),
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: `/Workflows/${workflowId}/instances/${instanceId}/ftl/client-field`,
+    })
+    return { error: '' }
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: { error?: string } } }
+    return {
+      error:
+        err?.response?.data?.error || err?.message || 'error saving the field',
+    }
+  }
+}
+
 const regenerateDocument = async (
   workflowId: number | string,
   instanceId: number | string,
@@ -1142,6 +1166,7 @@ export const workflowsApiV6 = {
   regenerateAgent,
   regenerateDocument,
   reinitiate,
+  saveFtlClientField,
   searchTickets,
   shareFile,
   startWorkflow,

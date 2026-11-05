@@ -290,6 +290,37 @@ public sealed class WorkflowsController : ControllerBase
         }
     }
 
+    /// <summary>Saves one edited client field on the ticket straight away (see the pipeline method).</summary>
+    [HttpPost("{workflowId:guid}/instances/{instanceId:guid}/ftl/client-field")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SaveFtlClientField(
+        Guid workflowId,
+        Guid instanceId,
+        [FromBody] FtlClientFieldRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.FieldId))
+            return BadRequest(new { error = "fieldId is required." });
+
+        var workflow = await _mediator.Send(new GetWorkflowByIdQuery(workflowId), cancellationToken);
+        if (workflow == null)
+            return NotFound(new { error = "Workflow not found." });
+
+        var saved = await _ftlAgentPipeline.SaveClientFieldAsync(
+            workflowId,
+            instanceId,
+            workflow.FormId,
+            request.FieldId,
+            request.Value,
+            cancellationToken);
+        return saved
+            ? Ok(new { saved = true })
+            : BadRequest(new { error = "This field could not be saved on the request." });
+    }
+
     /// <summary>
     /// Regenerate the quote PDF(s) for this ticket without moving it: re-renders quote_1/2/3,
     /// archives each new PDF, then replaces the previous PDF(s) for this ticket (soft-deleted,
@@ -2975,6 +3006,7 @@ public record ExtractEmlAttachmentsRequest(Guid? RepositoryId = null, Guid? Item
 
 /// <summary>Activity id of the step the ticket is currently on (same convention as move-next).</summary>
 public record FtlRegenerateRequest(string ActivityId);
+public record FtlClientFieldRequest(string FieldId, string? Value);
 
 /// <summary>Activity id of the End block the request finished on.</summary>
 public record ReinitiateWorkflowRequest(string ActivityId);
