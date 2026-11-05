@@ -39,6 +39,7 @@ to the date, days_between(start, end), bucket(number) with integer "edges" and l
 (value <= edges[0] -> labels[0], ... , above the last edge -> last label), if(condition, then, else), date_part(date, "day"|"week"|"month"|"quarter"|"year") = a sortable period label such as 2026-03 (dataType text).
   Each arg sets exactly one of ref / number / text; the others are null.
 - filters: row conditions combined with AND. Date values may be YYYY-MM-DD, "today", "today-30", "today+7".
+  Add a filter ONLY for a value the user states ("status Approved", "last 30 days", "amount over 1000"). "Filter by X, Y" without values means the user wants to filter on those fields in the report screen: include X and Y as columns and add NO filter for them. Never guess or default a filter value.
 - groupBy + measures produce one row per group. In a grouped report every non-measure column must be in \
 groupBy. A measure's "where" conditions make it conditional, e.g. SUM(outstanding) only where \
 aging_bucket = "31-60" — use this to spread buckets or statuses across columns.

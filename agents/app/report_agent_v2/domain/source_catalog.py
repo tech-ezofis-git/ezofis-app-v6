@@ -68,6 +68,8 @@ class SourceCatalog:
     instances_columns: dict[str, str] = field(default_factory=dict)
     inbox_table: str | None = None
     inbox_columns: dict[str, str] = field(default_factory=dict)
+    transaction_table: str | None = None  # the request's steps (workflow.transaction_<suffix>)
+    transaction_columns: dict[str, str] = field(default_factory=dict)
     has_users: bool = False  # users."Users" exists: user ids can be shown as emails
     # ai.agent_request_logs is readable: AI usage per ticket/file can be joined (alias "al").
     has_ai_log: bool = False
@@ -263,6 +265,9 @@ async def load_workflow_catalog(
     inbox = f"inbox_{suffix}"
     if inbox_cols := await _columns(conn, "workflow", inbox):
         catalog.inbox_table, catalog.inbox_columns = inbox, inbox_cols
+    transaction = f"transaction_{suffix}"
+    if tx_cols := await _columns(conn, "workflow", transaction):
+        catalog.transaction_table, catalog.transaction_columns = transaction, tx_cols
 
     seen_columns: set[str] = set()
     for control in await _controls(conn, form_id):
@@ -317,6 +322,9 @@ def _add_workflow_system_fields(c: SourceCatalog) -> None:
             add("sys.request_raised_at", "Created At", "date", "wi", "request_raised_at", {"instances"})
         if "completed_at_utc" in ic:
             add("sys.request_completed_at", "Completed On", "date", "wi", "request_completed_at", {"instances"})
+        if c.transaction_table and {"workflow_instance_id", "review", "action_status"} <= c.transaction_columns.keys():
+            # The action taken on the request's latest finished step: Submit, Approve, Reject, Complete...
+            add("sys.last_action", "Last Action", "text", "wi", "last_action", {"instances"})
     if c.has_users and (
         (c.instances_table and c.process_form_table and "started_by" in ic)
         or "created_by" in c.process_form_columns or "created_by" in c.items_columns

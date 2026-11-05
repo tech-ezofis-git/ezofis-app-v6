@@ -201,6 +201,12 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     (report.agentConfig?.reportSpec as unknown as ReportSpec | undefined)
       ?.agentSpec?.template === 'user_login_security'
   const [activityEmail, setActivityEmail] = useState<string | null>(null)
+  // Pending Workflow Requests shows one workflow at a time (Accounts Payable
+  // first); the Workflow filter picks another.
+  const isPendingReport =
+    isDefaultReport &&
+    (report.agentConfig?.reportSpec as unknown as ReportSpec | undefined)
+      ?.agentSpec?.template === 'pending_workflow_requests'
   const legacyQuery = useReportBuilderDataQuery(
     isAgentReport ? null : report.id,
   )
@@ -687,6 +693,21 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     [allFilterDefinitions, isInlineFilter],
   )
 
+  // Pending Workflow Requests: with no workflow picked, Accounts Payable (or
+  // the first workflow when there is none), so the report never lists all.
+  const filters = useMemo(() => {
+    if (!isPendingReport) return activeFilters
+    const workflow = allFilterDefinitions.find(
+      (def) => normalizeName(def.label) === 'workflow',
+    )
+    if (!workflow || workflow.options.length === 0 || activeFilters[workflow.id])
+      return activeFilters
+    const preferred =
+      workflow.options.find((o) => /payable/i.test(o.label)) ??
+      workflow.options[0]
+    return { ...activeFilters, [workflow.id]: preferred.value }
+  }, [isPendingReport, activeFilters, allFilterDefinitions])
+
   const filteredRows = useMemo(() => {
     return sourceRows.filter((row) => {
       // 1. Search Query via TableSearch (Target selected column or search across all)
@@ -712,7 +733,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
 
       // 2. Active Column Filters
       for (const col of previewColumns) {
-        const rawFilterValue = activeFilters[col.id]
+        const rawFilterValue = filters[col.id]
         if (!rawFilterValue) continue
 
         const rowVal = valueForColumn(col, row)
@@ -746,7 +767,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
     sourceRows,
     search,
     selectedColumnId,
-    activeFilters,
+    filters,
     previewColumns,
     valueForColumn,
     displayValueForColumn,
@@ -914,7 +935,7 @@ const OverviewTab = ({ report, toolbarActions }: Props) => {
         )}
       >
         <CustomFilter
-          activeFilters={activeFilters}
+          activeFilters={filters}
           customSearchComponent={<TableSearch table={table as any} />}
           filters={filterDefinitions}
           moreFilters={moreFilterGroups}

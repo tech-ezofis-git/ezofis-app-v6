@@ -10,6 +10,7 @@ spec is only ever saved once it compiles AND the database accepts the query.
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from dataclasses import dataclass
 
@@ -150,6 +151,59 @@ def refresh_default_columns(spec: ReportSpec, catalog: SourceCatalog) -> ReportS
     return with_ticket_columns(spec, catalog)
 
 
+_VALUE_FREE_OPS = {"isEmpty", "isNotEmpty"}
+# Values the model may write itself for a stated range ("last 30 days" -> today-30, "over 1000").
+_DATE_OR_NUMBER = re.compile(r"^(today([+-]\d+)?|\d{4}-\d{2}-\d{2}.*|-?\d+(\.\d+)?)$", re.IGNORECASE)
+# "Filter by Created At, Stage and Status" / "filters on ..." up to the end of the sentence.
+_FILTER_BY = re.compile(r"\bfilter(?:s|ed|ing)?\s+(?:by|on)\b([^.;\n]*)", re.IGNORECASE)
+
+
+def _words(text: object) -> str:
+    return " ".join(str(text or "").lower().split())
+
+
+def _user_filters_only(raw: dict, prompt: str, labels: dict[str, str]) -> None:
+    """Drop filter conditions the user did not ask for (in place).
+
+    "Filter by Created At, Stage and Status" asks for filter controls -- every column of a report
+    already gets one in the report screen -- not for conditions. Models turn it into conditions with
+    no value, or with a guessed value ("defaults applied"), which empties or cuts down the report and
+    differs run to run. So a condition without a value is dropped, and so is a condition on a field
+    named after "filter by" whose text value the prompt never mentions. Conditions the model reads
+    from the request itself ("active requests" -> status not Completed) are kept.
+    labels: field / derived id -> label, to match the fields named after "filter by".
+    """
+    filters = raw.get("filters")
+    if not isinstance(filters, list):
+        return
+    said = _words(prompt)
+    filter_by = " ".join(_words(m.group(1)) for m in _FILTER_BY.finditer(prompt or ""))
+
+    def given(value: object) -> bool:
+        text = _words(value)
+        return bool(text) and (bool(_DATE_OR_NUMBER.match(text)) or text in said)
+
+    kept = []
+    for cond in filters:
+        if not isinstance(cond, dict):
+            continue
+        if cond.get("op") in _VALUE_FREE_OPS:
+            kept.append(cond)
+            continue
+        value = cond.get("value")
+        values = [v for v in (cond.get("values") or []) if _words(v)]
+        if not _words(value) and not values:
+            continue  # no value: the user only wants to filter on it in the report screen
+        label = _words(labels.get(str(cond.get("ref")), ""))
+        if label and filter_by and re.search(rf"\b{re.escape(label)}\b", filter_by):
+            values = [v for v in values if given(v)]
+            value = value if given(value) else None
+            if value is None and not values:
+                continue
+        kept.append({**cond, "value": value, "values": values})
+    raw["filters"] = kept
+
+
 def _pydantic_feedback(exc: ValidationError) -> list[str]:
     return [f"{'.'.join(str(p) for p in err['loc'])}: {err['msg']}" for err in exc.errors()[:20]]
 
@@ -198,6 +252,9 @@ class ReportDefinitionAgent:
             attempts = attempt + 1
             raw, history, model = await self._planner.plan(request, catalog.llm_view(), feedback, history)
             raw["schemaVersion"] = 1
+            _user_filters_only(raw, prompt, {**{f.id: f.label for f in catalog.fields.values()},
+                                             **{str(d.get("id")): str(d.get("label") or "") for d in raw.get("derived") or []
+                                                if isinstance(d, dict)}})
             try:
                 spec = with_ticket_columns(ReportSpec.model_validate(raw), catalog)
                 compiled = compile_spec(spec, catalog, max_rows=self._settings.max_rows, limit_override=1)

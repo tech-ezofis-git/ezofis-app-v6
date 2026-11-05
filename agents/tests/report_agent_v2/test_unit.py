@@ -208,3 +208,28 @@ def test_date_part_groups_by_month():
     bad = spec.model_copy(update={"derived": [spec.derived[0].model_copy(update={"args": [spec.derived[0].args[0]]})]})
     with pytest.raises(SpecValidationError, match="date_part takes a date"):
         compile_spec(bad, _aging_catalog(), max_rows=10)
+
+
+def test_filters_without_a_stated_value_are_dropped():
+    from app.report_agent_v2.agents.definition_agent import _user_filters_only
+
+    labels = {"sys.request_raised_at": "Created At", "sys.current_stage": "Stage", "unit": "Company Unit",
+              "sys.request_status": "Status", "brand": "Brand"}
+    prompt = ("Show active requests with brand Acme in the last 30 days. "
+              "Filter by Created At, Stage and Company Unit. Sort by Created At.")
+    raw = {"filters": [
+        {"ref": "sys.request_raised_at", "op": "equals", "value": None, "values": []},  # "filter by": control only
+        {"ref": "sys.current_stage", "op": "equals", "value": "Management", "values": []},  # guessed value
+        {"ref": "unit", "op": "in", "value": None, "values": ["North", "South"]},  # guessed values
+        {"ref": "sys.request_status", "op": "notIn", "value": None, "values": ["Completed"]},  # read from "active"
+        {"ref": "brand", "op": "equals", "value": "Acme", "values": []},  # stated
+        {"ref": "sys.request_raised_at", "op": "gte", "value": "today-30", "values": []},  # stated range
+        {"ref": "brand", "op": "isNotEmpty", "value": None, "values": []},
+    ]}
+    _user_filters_only(raw, prompt, labels)
+    assert [(f["ref"], f["op"], f["value"], f["values"]) for f in raw["filters"]] == [
+        ("sys.request_status", "notIn", None, ["Completed"]),
+        ("brand", "equals", "Acme", []),
+        ("sys.request_raised_at", "gte", "today-30", []),
+        ("brand", "isNotEmpty", None, []),
+    ]
