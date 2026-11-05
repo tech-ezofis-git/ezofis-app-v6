@@ -16,6 +16,7 @@ import {
   uploadForOcr,
 } from '@/api/v6/folder/folder'
 import { getUsers } from '@/api/v6/user'
+import InputRichText from '@/components/base/inputs/InputRichText'
 import Icon from '@/components/base/icon/Icon'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -1419,6 +1420,14 @@ const renderPreviewInput = (
     case 'DIVIDER':
       return <Divider className='my-2' />
     case 'TEXT_BUILDER':
+      return (
+        <InputRichText
+          disabled={disabled}
+          minHeight={100}
+          value={typeof fieldValue === 'string' ? fieldValue : ''}
+          onChange={(v) => onChange(field.id, v)}
+        />
+      )
     case 'HTML_EDITOR':
       return (
         <div className='min-h-[100px] w-full overflow-hidden rounded-lg border border-gray-3 bg-surface'>
