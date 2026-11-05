@@ -3,7 +3,7 @@ import { useDebouncedValue } from '@mantine/hooks'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReportSpec, ReportSpecColumn } from '@/api/v6/reportAgent'
-import { runReportAiReport } from '@/api/v6/reportAgent'
+import { isLegacyReportSpec, runReportAiReport } from '@/api/v6/reportAgent'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
@@ -176,6 +176,8 @@ const FieldsStepAgent = () => {
     setPreviewError('')
     const config = buildAgentConfigFromDraft(draft.agent, draft)
     const { data, error } = await runReportAiReport(config.id, {
+      // A report saved by the old AI builder has no agent spec; it runs on the V6 API.
+      legacy: isLegacyReportSpec(draft.agent.reportSpec),
       page: 1,
       pageSize: PREVIEW_ROWS,
       reportPrompt: config.reportPrompt,

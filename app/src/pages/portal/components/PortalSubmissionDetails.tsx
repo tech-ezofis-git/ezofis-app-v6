@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
+import RichTextView from '@/components/base/inputs/RichTextView'
 import { formatRuntimeFieldDisplayValue } from '@/pages/form-builder/helpers/runtimeFieldAdapter'
 import { isFieldHidden } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import cn from '@/utils/cn'
@@ -30,7 +31,12 @@ type SectionItem =
   | { kind: 'table'; question: PortalFormQuestion }
 
 const TABLE_TYPES = new Set(['TABLE', 'DYNAMIC_TABLE'])
-const WIDE_TYPES = new Set(['LONG_TEXT', 'TEXT_AREA', 'RICH_TEXT'])
+const WIDE_TYPES = new Set([
+  'LONG_TEXT',
+  'TEXT_AREA',
+  'RICH_TEXT',
+  'TEXT_BUILDER',
+])
 
 const isTableField = (field: FormControl) =>
   TABLE_TYPES.has(String(field.type || '').toUpperCase()) &&
@@ -210,6 +216,10 @@ const PortalSubmissionDetails = ({
                     const wide = WIDE_TYPES.has(
                       String(question.type || '').toUpperCase(),
                     )
+                    // Text Builder is saved as HTML: show it formatted, not as tags.
+                    const isRichText =
+                      String(question.type || '').toUpperCase() ===
+                        'TEXT_BUILDER' && typeof value === 'string'
 
                     return (
                       <div
@@ -236,17 +246,21 @@ const PortalSubmissionDetails = ({
                             </span>
                           )}
                         </div>
-                        <p
-                          className={cn(
-                            'text-14 break-words',
-                            filled
-                              ? 'font-semibold text-gray-13'
-                              : 'text-gray-8',
-                            wide && 'whitespace-pre-wrap',
-                          )}
-                        >
-                          {filled ? display : t`Not provided`}
-                        </p>
+                        {filled && isRichText ? (
+                          <RichTextView html={String(value)} />
+                        ) : (
+                          <p
+                            className={cn(
+                              'text-14 break-words',
+                              filled
+                                ? 'font-semibold text-gray-13'
+                                : 'text-gray-8',
+                              wide && 'whitespace-pre-wrap',
+                            )}
+                          >
+                            {filled ? display : t`Not provided`}
+                          </p>
+                        )}
                       </div>
                     )
                   })}

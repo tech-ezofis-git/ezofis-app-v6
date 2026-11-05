@@ -21,6 +21,7 @@ import {
 } from '@/api/v6/folder/folder'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InputRichText from '@/components/base/inputs/InputRichText'
 import InputSelectBase from '@/components/base/inputs/InputSelect'
 import InputSelectMultipleBase from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
@@ -3409,45 +3410,13 @@ const QuestionSettings = ({
                   <label className='block text-13 font-medium text-gray-11'>
                     Default Content
                   </label>
-                  <div className='overflow-hidden rounded-lg border bg-surface'>
-                    <div className='flex items-center gap-1 border-b border-gray-3 bg-surface p-1'>
-                      <Icon
-                        className='rounded p-1 text-gray-8 hover:bg-surface-hover'
-                        height={14}
-                        name='lucide:bold'
-                        width={14}
-                      />
-                      <Icon
-                        className='rounded p-1 text-gray-8 hover:bg-surface-hover'
-                        height={14}
-                        name='lucide:italic'
-                        width={14}
-                      />
-                      <div className='mx-1 h-3 w-px bg-gray-2' />
-                      <Icon
-                        className='rounded p-1 text-gray-8 hover:bg-surface-hover'
-                        height={14}
-                        name='lucide:list'
-                        width={14}
-                      />
-                      <div className='ml-auto flex cursor-pointer items-center gap-1 rounded bg-blue-2 px-2 py-0.5 text-[10px] font-bold text-blue-11 transition-colors hover:bg-blue-3'>
-                        <Icon height={10} name='lucide:plus' width={10} />
-                        Insert Field
-                      </div>
-                    </div>
-                    <textarea
-                      className='min-h-[120px] w-full resize-none p-3 text-sm outline-none'
-                      placeholder='Configure your template here...'
-                      value={
-                        activeQuestion.settings.specific.defaultValue || ''
-                      }
-                      onChange={(e) =>
-                        updateNested('specific', {
-                          defaultValue: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
+                  <InputRichText
+                    minHeight={120}
+                    value={activeQuestion.settings.specific.defaultValue || ''}
+                    onChange={(html) =>
+                      updateNested('specific', { defaultValue: html })
+                    }
+                  />
                 </div>
               </div>
             )}
@@ -4493,7 +4462,8 @@ const QuestionSettings = ({
           isYesNoToggle ||
           isAddress ||
           isFIB ||
-          isFullName) && (
+          isFullName ||
+          isTextBuilder) && (
           <SettingsSection
             icon='lucide:shield-check'
             isOpen={openValidation}
@@ -5104,8 +5074,7 @@ const QuestionSettings = ({
                   isNumber ||
                   isTime ||
                   isCountryCode ||
-                  isPassword ||
-                  isTextBuilder) && (
+                  isPassword) && (
                   <div className='grid grid-cols-2 gap-3'>
                     <NumberInput
                       placeholder={isPassword ? '8' : '0'}

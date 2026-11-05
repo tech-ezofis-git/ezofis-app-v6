@@ -28,6 +28,7 @@ import SLAConfiguration from './common/SLAConfiguration'
 import ChecklistTab from './manual-user/ChecklistTab'
 import GeneralTab from './manual-user/GeneralTab'
 import SecurityTab from './manual-user/SecurityTab'
+import type { PanelOption } from './manual-user/securityPanels'
 import WorkflowInitiatorTab from './manual-user/WorkflowInitiatorTab'
 
 const PDF_TEMPLATE_PLACEHOLDER = `{
@@ -107,9 +108,12 @@ export default function ManualUserSettingsPanel({
   // Options for form fields, used by document generation, mandatory fields,
   // dynamic-user routing, and per-user access rules.
   const [fieldOptions, setFieldOptions] = useState<Option[]>([])
+  // Form panels (sections) and their fields, so Security rules can pick a whole panel.
+  const [panelOptions, setPanelOptions] = useState<PanelOption[]>([])
   useEffect(() => {
     if (!formId) {
       setFieldOptions([])
+      setPanelOptions([])
       return
     }
     let cancelled = false
@@ -123,7 +127,9 @@ export default function ManualUserSettingsPanel({
             : response.formJson
         const panels = [...(form.panels || []), ...(form.secondaryPanels || [])]
         const options: Option[] = []
-        panels.forEach((panel: any) => {
+        const panelList: PanelOption[] = []
+        panels.forEach((panel: any, panelIndex: number) => {
+          const fieldIds: string[] = []
           ;(panel?.fields || []).forEach((field: any) => {
             if (field.type === 'DIVIDER') return
             // Keyed by field.id to match how the Requests overview reads
@@ -133,9 +139,20 @@ export default function ManualUserSettingsPanel({
               id: String(field.id),
               name: field.label || field.type,
             })
+            fieldIds.push(String(field.id))
           })
+          if (fieldIds.length > 0) {
+            panelList.push({
+              fieldIds,
+              id: String(panel?.id ?? `panel_${panelIndex}`),
+              name: panel?.settings?.title || `Section ${panelIndex + 1}`,
+            })
+          }
         })
-        if (!cancelled) setFieldOptions(options)
+        if (!cancelled) {
+          setFieldOptions(options)
+          setPanelOptions(panelList)
+        }
       } catch {
         // ignore - field pickers just stay empty
       }
@@ -360,6 +377,7 @@ export default function ManualUserSettingsPanel({
             assignedUsers={selectedUsers}
             fieldOptions={fieldOptions}
             nodeData={mergedNodeData}
+            panelOptions={panelOptions}
             updateNodeData={updateNodeData}
             userOptions={userOptions}
           />
