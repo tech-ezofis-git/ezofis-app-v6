@@ -209,6 +209,17 @@ class _Compiler:
             if self.catalog.has_users and "created_by" in c.process_form_columns:
                 parts.append(_user_email(_ident("pf", "created_by")))
             return Expr(sql.SQL("COALESCE({})").format(sql.SQL(", ").join(parts)), "text")
+        if f.system == "last_action":
+            tx = c.transaction_columns
+            acted = (sql.SQL("COALESCE(x.modified_at, x.created_at)") if {"modified_at", "created_at"} <= tx.keys()
+                     else sql.SQL("x.created_at") if "created_at" in tx else sql.SQL("x.id") if "id" in tx else None)
+            not_deleted = sql.SQL(" AND COALESCE(x.is_deleted, false) = false") if "is_deleted" in tx else sql.SQL("")
+            return Expr(sql.SQL(
+                "(SELECT NULLIF(btrim((x.review)::text), '') FROM {tx} x "
+                "WHERE (x.workflow_instance_id)::text = (wi.id)::text AND x.action_status <> 0{nd} "
+                "AND NULLIF(btrim((x.review)::text), '') IS NOT NULL{o} LIMIT 1)"
+            ).format(tx=_ident("workflow", c.transaction_table), nd=not_deleted,
+                     o=sql.SQL(" ORDER BY {} DESC").format(acted) if acted is not None else sql.SQL("")), "text")
         if f.system == "stage_since":
             return Expr(self._coalesce_inbox(["started_at_utc", "created_at_utc", "transaction_created_at"], "date"), "date")
         if f.system in _AI_USAGE_SQL:
