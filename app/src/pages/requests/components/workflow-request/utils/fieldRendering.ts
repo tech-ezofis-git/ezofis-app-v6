@@ -216,7 +216,13 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
       const specific = field?.settings?.specific || {}
       const fieldType = resolveRuntimeFieldType(field)
 
-      if (fieldType === 'NUMBER') {
+      if (fieldType === 'TEXT_BUILDER') {
+        // Default Content from the builder (HTML, or plain text from older forms).
+        const raw = specific.defaultValue
+        if (typeof raw === 'string' && raw.trim() !== '') {
+          model[field.id] = raw
+        }
+      } else if (fieldType === 'NUMBER') {
         const raw = specific.customDefaultValue
         if (
           !fillsFromElsewhere(field) &&

@@ -410,6 +410,30 @@ describe('Phase 4: Runtime Validation, Defaults & Cascading Options V5 Parity', 
     expect(initialModel['f_date']).toBeDefined()
   })
 
+  it('8b. seeds Text Builder Default Content and skips a blank one', () => {
+    const panels = [
+      {
+        id: 'p1',
+        fields: [
+          {
+            id: 'f_tb',
+            type: 'TEXT_BUILDER',
+            settings: { specific: { defaultValue: '<p>Dear <b>customer</b></p>' } },
+          },
+          {
+            id: 'f_tb_blank',
+            type: 'TEXT_BUILDER',
+            settings: { specific: { defaultValue: '   ' } },
+          },
+        ],
+      },
+    ]
+
+    const model = buildInitialFormModel(panels)
+    expect(model['f_tb']).toBe('<p>Dear <b>customer</b></p>')
+    expect(model['f_tb_blank']).toBeUndefined()
+  })
+
   it('9. preserves intentionally empty saved values when editing existing entries', () => {
     const panels = [
       {
