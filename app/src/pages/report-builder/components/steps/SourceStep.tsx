@@ -7,6 +7,7 @@ import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import {
   createReportAgentSessionId,
   generateReportAiPrompt,
+  isLegacyReportSpec,
   runReportAiReport,
 } from '@/api/v6/reportAgent'
 import {
@@ -244,6 +245,8 @@ const SourceStep = ({ onPlanGenerated, onProceedManual }: Props) => {
     setPreviewRows(null)
     setIsPreviewing(true)
     const { data, error } = await runReportAiReport(agent.id, {
+      // A report saved by the old AI builder has no agent spec; it runs on the V6 API.
+      legacy: isLegacyReportSpec(agent.reportSpec),
       page: 1,
       pageSize: 25,
       reportPrompt: agent.reportPrompt,
