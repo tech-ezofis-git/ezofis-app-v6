@@ -4448,7 +4448,8 @@ const QuestionSettings = ({
           isYesNoToggle ||
           isAddress ||
           isFIB ||
-          isFullName) && (
+          isFullName ||
+          isTextBuilder) && (
           <SettingsSection
             icon='lucide:shield-check'
             isOpen={openValidation}
@@ -5059,8 +5060,7 @@ const QuestionSettings = ({
                   isNumber ||
                   isTime ||
                   isCountryCode ||
-                  isPassword ||
-                  isTextBuilder) && (
+                  isPassword) && (
                   <div className='grid grid-cols-2 gap-3'>
                     <NumberInput
                       placeholder={isPassword ? '8' : '0'}
