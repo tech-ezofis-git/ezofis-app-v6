@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { addAPIProvider } from '@iconify/react'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
@@ -15,11 +14,16 @@ import type { SlaSettings } from '../../../utils/slaSettings'
 import { createSlaRule } from '../../../utils/slaSettings'
 import SLAConfiguration from './SLAConfiguration'
 
-// Icons are fetched over the network in the app. With no API in tests, Iconify
-// keeps retry timers that fire after the jsdom environment is torn down
-// ("window is not defined"). An empty provider stops it scheduling loads, as
-// test-utils/renderWithProviders does.
-addAPIProvider('', { resources: [] })
+// Icons are fetched over the network in the app. In tests Iconify keeps load /
+// retry timers that can fire after the jsdom environment is torn down and set
+// state ("window is not defined", an unhandled error that fails CI). A plain
+// <span> never loads anything; an empty API provider alone was not enough.
+vi.mock('@iconify/react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@iconify/react')>()),
+  Icon: ({ icon }: { icon?: unknown }) => (
+    <span data-icon={typeof icon === 'string' ? icon : undefined} />
+  ),
+}))
 
 vi.mock('@/api/v6/user', () => ({
   getGroups: async () => ({
