@@ -24,8 +24,15 @@ const PageTitle = () => {
   const navigate = useNavigate()
   const isGuestShare = useIsGuestShare()
   const matches = useMatches()
-  const { closeRequest, isRequestOpen, listWorkflowName, selectedWorkflow } =
-    requestStore((state) => state)
+  const {
+    closeNewRequest,
+    closeRequest,
+    isRequestOpen,
+    listWorkflowName,
+    newRequest: isNewRequest,
+    rawWorkflowData,
+    selectedWorkflow,
+  } = requestStore((state) => state)
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
   const isApSetupStarted = useSetupStore((state) => state.isSetupStarted)
   const isDmsSetupStarted = useDmsSetupStore((state) => state.isSetupStarted)
@@ -151,26 +158,33 @@ const PageTitle = () => {
       )
     }
 
-    // The list-tab badge (Inbox / Sent / Approved) lives in the request header.
-    if (isRequestsRoute && isRequestOpen && selectedWorkflow?.name) {
+    // Inbox, new request and request overview of one workflow all show
+    // "Workflows > <workflow name>"; the list-tab badge (Inbox / Sent /
+    // Approved) lives in the request header.
+    const requestWorkflowName = String(
+      (isRequestOpen ? selectedWorkflow?.name : null) ||
+        listWorkflowName ||
+        (isNewRequest
+          ? selectedWorkflow?.name || rawWorkflowData?.name
+          : null) ||
+        '',
+    )
+    if (isRequestsRoute && requestWorkflowName) {
+      const backToList = () => {
+        if (isRequestOpen) closeRequest()
+        else if (isNewRequest) closeNewRequest()
+      }
       return (
-        <div className='flex items-center gap-3 text-15/5 font-semibold text-gray-13'>
-          <span
-            className='hover:text-primary cursor-pointer hover:underline'
-            onClick={closeRequest}
-          >
-            {selectedWorkflow.name}
-          </span>
-        </div>
-      )
-    }
-
-    // A single workflow's request list: its name replaces the generic title.
-    if (isRequestsRoute && !isRequestOpen && listWorkflowName) {
-      return (
-        <div className='flex items-center gap-4'>
-          <Title level={3} title={listWorkflowName} />
-        </div>
+        <SettingsBreadcrumbs
+          items={[
+            {
+              key: isRequestOpen || isNewRequest ? 'workflows' : undefined,
+              label: 'Workflows',
+            },
+            { label: requestWorkflowName },
+          ]}
+          onNavigate={backToList}
+        />
       )
     }
 

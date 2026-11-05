@@ -35,6 +35,10 @@ const CustomEdge = ({
     targetY,
   })
 
+  const strokeColor = id === activeEdgeId ? '#22c55e' : '#94a3b8'
+  const arrowSize = 14
+  const arrowId = `edge-arrow-${id}`
+
   const onAddClick = (event: React.MouseEvent) => {
     event.stopPropagation()
     openAddMenu({ x: labelX, y: labelY }, id)
@@ -77,15 +81,34 @@ const CustomEdge = ({
         onMouseLeave={handleMouseLeave}
       />
 
+      {/* Arrowhead showing the flow direction (source -> target) */}
+      <defs>
+        <marker
+          id={arrowId}
+          markerHeight={arrowSize}
+          markerUnits='userSpaceOnUse'
+          markerWidth={arrowSize}
+          orient='auto-start-reverse'
+          refX={arrowSize - 1}
+          refY={arrowSize / 2}
+          viewBox={`0 0 ${arrowSize} ${arrowSize}`}
+        >
+          <path
+            d={`M 1 1 L ${arrowSize - 1} ${arrowSize / 2} L 1 ${arrowSize - 1} Z`}
+            fill={strokeColor}
+          />
+        </marker>
+      </defs>
+
       {/* Visible Path */}
       <BaseEdge
-        markerEnd={markerEnd}
+        markerEnd={`url(#${arrowId})`}
         path={edgePath}
         style={{
           ...style,
           animation:
             id === activeEdgeId ? 'dashdraw 0.5s linear infinite' : undefined,
-          stroke: id === activeEdgeId ? '#22c55e' : '#cbd5e1',
+          stroke: strokeColor,
           strokeDasharray: id === activeEdgeId ? 5 : undefined,
           strokeWidth: 3,
         }}
