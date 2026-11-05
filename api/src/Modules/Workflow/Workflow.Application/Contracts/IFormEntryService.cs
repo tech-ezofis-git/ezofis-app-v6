@@ -54,6 +54,15 @@ public interface IFormEntryService
         string entryIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The form's fields (<c>dbo."wFormControl"</c>): jsonId, label and ezfb column, so callers can find an
+    /// entry's value by field label. Empty when the form has no controls.
+    /// </summary>
+    Task<IReadOnlyList<FormFieldLabel>> GetFieldLabelsAsync(
+        string formId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<FormFieldLabel>>([]);
+
     /// <summary>List form entries for a form (v5 POST /api/form/{id}/entry/all).</summary>
     Task<FormEntryAllResult> ListEntriesAsync(
         string formId,

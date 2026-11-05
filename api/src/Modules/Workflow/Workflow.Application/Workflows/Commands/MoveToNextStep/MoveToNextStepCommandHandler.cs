@@ -300,7 +300,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             mailboxForm,
             cancellationToken,
             endWorkflow: request.EndWorkflow,
-            overrideNextStep: overrideNextStep);
+            overrideNextStep: overrideNextStep,
+            overrideNextAssigneeUserId: request.NextAssigneeUserId);
 
         // Assignee (verify/sign, approve, or Forward) must see this workflow in the menu.
         if (legacySync.NextActivityUserId is Guid assignedUserId && assignedUserId != Guid.Empty)
@@ -332,7 +333,8 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                 targetDefinitionStep, request.Review, orderedSteps);
             var routesToDocumentAgent = upcomingStep != null
                 && FtlAgentStepDetector.IsDocumentGenerateAgent(upcomingStep);
-            if (!FtlAgentStepDetector.IsDocumentGenerateAgent(targetDefinitionStep)
+            if (!request.IsReinitiate
+                && !FtlAgentStepDetector.IsDocumentGenerateAgent(targetDefinitionStep)
                 && !routesToDocumentAgent)
             {
                 generatedPdf = await _pdfGeneration.TryGenerateOnStepCompleteAsync(
@@ -526,17 +528,20 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                 targetDefinitionStep.ActivityId,
                 request.ActivityId);
 
-            await TryEndSyncAsync(
-                instance.WorkflowId,
-                instance.Id,
-                completedActivityId,
-                targetDefinitionStep.Name,
-                formId,
-                formEntryId,
-                request.SubmittedFormDataJson,
-                request.FormDataFields,
-                request.FormLineItemsJson,
-                cancellationToken);
+            if (!request.IsReinitiate)
+            {
+                await TryEndSyncAsync(
+                    instance.WorkflowId,
+                    instance.Id,
+                    completedActivityId,
+                    targetDefinitionStep.Name,
+                    formId,
+                    formEntryId,
+                    request.SubmittedFormDataJson,
+                    request.FormDataFields,
+                    request.FormLineItemsJson,
+                    cancellationToken);
+            }
 
             if (!isCompleted && nextDefinitionStep != null)
             {

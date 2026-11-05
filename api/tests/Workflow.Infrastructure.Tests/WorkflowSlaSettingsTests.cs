@@ -167,8 +167,8 @@ public class WorkflowSlaSettingsTests
         yield return [StandardRule(ValidRule(new("stage", null, "other-workflow-stage"))), "is not a stage of this workflow"];
         yield return [StandardRule(ValidRule(new("stage", null, "start-1"))), "is not a stage of this workflow"]; // Gmail trigger
         yield return [StandardRule(ValidRule(new("stage", null, "verifier-1"))), "cannot escalate to itself"];
-        yield return [StandardRule(ValidRule(new("group", "g", null))), "must be 'user' or 'stage'"];
-        yield return [StandardRule(ValidRule(new(null, "stale-user", null))), "choose User or Stage"];
+        yield return [StandardRule(ValidRule(new("team", "g", null))), "must be 'user', 'group' or 'stage'"];
+        yield return [StandardRule(ValidRule(new(null, "stale-user", null))), "choose User, Group or Stage"];
     }
 
     [Theory]

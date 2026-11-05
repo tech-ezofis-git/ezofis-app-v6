@@ -63,6 +63,16 @@ public sealed class WorkflowStepInstance : Entity<Guid>
         StartedAtUtc = DateTime.UtcNow;
     }
 
+    /// <summary>Back to not started, so a re-initiated request can run this step again.</summary>
+    public void Reopen()
+    {
+        Status = StepInstanceStatus.Pending;
+        StartedAtUtc = null;
+        CompletedAtUtc = null;
+        CompletedBy = null;
+        Result = null;
+    }
+
     /// <summary>Complete step execution.</summary>
     public void Complete(Guid completedBy, string? result = null)
     {

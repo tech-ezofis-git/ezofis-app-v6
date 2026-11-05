@@ -1,7 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
 import { Textarea } from '@mantine/core'
+import { useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
+import { formQueries } from '@/api/form/queries'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InfoCard from '@/components/base/InfoCard'
@@ -16,6 +18,7 @@ import {
   shortenDescription,
   shortenFormName,
 } from '@/services/ai/formConfig'
+import SlaFormDialog from './SlaFormDialog'
 
 interface AiFormBuilderProps {
   onApply: (payload: any) => void
@@ -35,6 +38,12 @@ const FORM_TYPE_OPTIONS = [
     icon: 'lucide:database',
     id: 'MASTER',
     name: 'Master Form',
+  },
+  {
+    description: 'Use this form to set SLA times and users',
+    icon: 'lucide:timer',
+    id: 'SLA',
+    name: 'SLA Form',
   },
 ]
 
@@ -76,6 +85,8 @@ export default function AiFormBuilder({
   const [formType, setFormType] = useState<FormTypeOption | null>(null)
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isSlaDialogOpen, setIsSlaDialogOpen] = useState(false)
+  const queryClient = useQueryClient()
 
   const handleManual = () => {
     if (onManualCreate) {
@@ -168,7 +179,7 @@ export default function AiFormBuilder({
           {!formType ? (
             <motion.div
               animate={{ opacity: 1, y: 0 }}
-              className='grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2'
+              className='grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3'
               exit={{ opacity: 0, y: -8 }}
               initial={{ opacity: 0, y: 8 }}
               key='type-select'
@@ -179,7 +190,10 @@ export default function AiFormBuilder({
                   className='flex flex-col items-start gap-2.5 rounded-2xl border border-gray-4 bg-surface-primary p-5 text-left transition-all hover:border-primary-9/50 hover:shadow-xs'
                   key={option.id}
                   type='button'
-                  onClick={() => setFormType(option.id as FormTypeOption)}
+                  onClick={() => {
+                    if (option.id === 'SLA') setIsSlaDialogOpen(true)
+                    else setFormType(option.id as FormTypeOption)
+                  }}
                 >
                   <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-primary-2 text-primary-9'>
                     <Icon className='size-5' name={option.icon} />
@@ -288,6 +302,20 @@ export default function AiFormBuilder({
           )}
         </AnimatePresence>
       </div>
+
+      <SlaFormDialog
+        opened={isSlaDialogOpen}
+        onClose={() => setIsSlaDialogOpen(false)}
+        onCreated={(name) => {
+          void queryClient.invalidateQueries({ queryKey: formQueries.all() })
+          showToast({
+            message: t`${name} is ready. Add its entries from the forms list.`,
+            variant: 'success',
+          })
+          setIsSlaDialogOpen(false)
+          onBack()
+        }}
+      />
     </motion.div>
   )
 }

@@ -1,5 +1,9 @@
 import type { Edge, Node } from '@xyflow/react'
 import { create } from 'zustand'
+import {
+  type BusinessHours,
+  normalizeBusinessHours,
+} from '../utils/businessHours'
 import { importWorkflow } from '../utils/importWorkflow'
 import {
   type KanbanCardSetting,
@@ -74,6 +78,8 @@ type Store = {
   activeEdgeId: string | null
   activeNodeId: string | null
   addMenu: AddMenuState
+  /** Business hours for SLA deadlines (`settings.general.slaSettings`); null = calendar time. */
+  businessHours: BusinessHours | null
   folder: number | null
   form: number | null
   initiateUsing: string
@@ -114,6 +120,7 @@ type Store = {
   selectNode: (node: Node | null) => void
   setActiveEdge: (edgeId: string | null) => void
   setActiveNode: (nodeId: string | null) => void
+  setBusinessHours: (hours: BusinessHours | null) => void
   setFolder: (value: number | null) => void
   setForm: (value: number | null) => void
   setInitiateUsing: (value: string) => void
@@ -143,6 +150,7 @@ const useWorkflowStore = create<Store>()((set) => ({
     nodeId: null,
     position: null,
   },
+  businessHours: null,
   folder: null,
   form: null,
   initiateUsing: 'document-form',
@@ -263,6 +271,9 @@ const useWorkflowStore = create<Store>()((set) => ({
       legacyJson.settings?.general?.initiateUsing?.formId ?? apiData?.formId
 
     set({
+      businessHours: normalizeBusinessHours(
+        legacyJson.settings?.general?.slaSettings,
+      ),
       folder: isFilledValue(rawFolder)
         ? typeof rawFolder === 'number'
           ? rawFolder
@@ -310,6 +321,7 @@ const useWorkflowStore = create<Store>()((set) => ({
     }),
   resetWorkflow: () =>
     set({
+      businessHours: null,
       folder: null,
       form: null,
       initiateUsing: 'document-form',
@@ -360,6 +372,7 @@ const useWorkflowStore = create<Store>()((set) => ({
     set({ activeEdgeId: null, activeNodeId: null, isRunningTest: false }),
   setActiveEdge: (edgeId) => set({ activeEdgeId: edgeId }),
   setActiveNode: (nodeId) => set({ activeNodeId: nodeId }),
+  setBusinessHours: (businessHours) => set({ businessHours }),
   setFolder: (value) => set({ folder: value }),
   setForm: (value) => set({ form: value }),
   setInitiateUsing: (value) => set({ initiateUsing: value }),

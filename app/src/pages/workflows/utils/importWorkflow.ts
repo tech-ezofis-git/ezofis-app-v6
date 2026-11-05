@@ -536,6 +536,8 @@ export const importWorkflow = (
         // End node - post-completion sync (SAP / QuickBooks / Master Form)
         endSync: block.settings?.endSync,
         fromDomainName,
+        // End node - finished requests can be re-initiated
+        reprocess: block.settings?.reprocess,
         fromDomainNameEnabled,
         fromMailAddressEnabled,
         fromMailAddresses,

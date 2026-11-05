@@ -8,8 +8,9 @@ namespace SaaSApp.Workflow.Infrastructure.Services;
 
 /// <summary>
 /// Pure SLA timing rules used by <see cref="WorkflowSlaTimerService"/>: when each Standard rule is due
-/// for a ticket and which channels it uses. Durations run on calendar time from when the ticket
-/// reached the stage (response SLA) or was created (resolution SLA).
+/// for a ticket and which channels it uses. Durations run from when the ticket reached the stage
+/// (response SLA) or was created (resolution SLA), on calendar time or, when the workflow has
+/// business hours, on working time.
 /// </summary>
 internal static class WorkflowSlaSchedule
 {
@@ -17,6 +18,46 @@ internal static class WorkflowSlaSchedule
         sla != null
         && string.Equals(sla.Mode?.Trim(), WorkflowSlaSettingsValidator.ModeStandard, StringComparison.OrdinalIgnoreCase)
         && sla.Rules?.Any(r => ToDuration(r) != null) == true;
+
+    /// <summary>Workflow-level Advanced SLA with an SLA Master and at least one enabled rule (or a fallback entry).</summary>
+    internal static bool IsActiveAdvanced(WorkflowSlaConfigurationDto? sla) =>
+        sla != null
+        && string.Equals(sla.Mode?.Trim(), WorkflowSlaSettingsValidator.ModeAdvanced, StringComparison.OrdinalIgnoreCase)
+        && !string.IsNullOrWhiteSpace(sla.SlaMasterId)
+        && (sla.AdvancedRules?.Any(r => r.Enabled != false) == true || !string.IsNullOrWhiteSpace(sla.FallbackEntryId));
+
+    /// <summary>
+    /// Advanced SLA with one SLA Master entry (picked by field + value), on a stage (response) or the
+    /// workflow (resolution). Saved rule-based settings keep using <see cref="IsActiveAdvanced"/>.
+    /// </summary>
+    internal static bool IsMasterEntry(WorkflowSlaConfigurationDto? sla) =>
+        sla != null
+        && string.Equals(sla.Mode?.Trim(), WorkflowSlaSettingsValidator.ModeAdvanced, StringComparison.OrdinalIgnoreCase)
+        && !string.IsNullOrWhiteSpace(sla.SlaMasterId)
+        && MasterRows(sla).Count > 0
+        && !IsActiveAdvanced(sla);
+
+    internal sealed record MasterRow(string RowId, string EntryId, bool Notify, bool Escalate);
+
+    /// <summary>
+    /// The SLA Master rows of an Advanced SLA: complete rows of <c>masterEntries</c>, or for settings saved
+    /// with a single <c>entryId</c>, one row that notifies and escalates (keyed by the entry, as before).
+    /// </summary>
+    internal static IReadOnlyList<MasterRow> MasterRows(WorkflowSlaConfigurationDto sla)
+    {
+        if (sla.MasterEntries is { Count: > 0 } rows)
+        {
+            return rows
+                .Where(r => !string.IsNullOrWhiteSpace(r.Id) && !string.IsNullOrWhiteSpace(r.EntryId)
+                    && (r.Notify == true || r.Escalate == true))
+                .Select(r => new MasterRow(r.Id!.Trim(), r.EntryId!.Trim(), r.Notify == true, r.Escalate == true))
+                .ToList();
+        }
+
+        return string.IsNullOrWhiteSpace(sla.EntryId)
+            ? []
+            : [new MasterRow(sla.EntryId!.Trim(), sla.EntryId!.Trim(), true, true)];
+    }
 
     internal static TimeSpan? ToDuration(WorkflowSlaConfigurationRuleDto rule)
     {
@@ -35,17 +76,29 @@ internal static class WorkflowSlaSchedule
 
     /// <summary>
     /// One timer per valid rule, due <c>startedAtUtc + duration</c>, earliest first — so levels fire in order
-    /// (e.g. 30 min → email, 1 h → SMS, 2 h → move stage).
+    /// (e.g. 30 min → email, 1 h → SMS, 2 h → move stage). With business hours the duration counts
+    /// working time only (see <see cref="DueAt"/>).
     /// </summary>
     internal static IReadOnlyList<(string RuleId, DateTime DueAtUtc)> Timers(
         WorkflowSlaConfigurationDto sla,
-        DateTime startedAtUtc) =>
+        DateTime startedAtUtc,
+        WorkflowBusinessCalendar? calendar = null) =>
         (sla.Rules ?? [])
             .Select(rule => (Rule: rule, Duration: ToDuration(rule)))
             .Where(x => x.Duration != null)
             .OrderBy(x => x.Duration)
-            .Select(x => (x.Rule.Id!, startedAtUtc + x.Duration!.Value))
+            .Select(x => (x.Rule.Id!, DueAt(startedAtUtc, x.Rule.Duration!.Value, x.Rule.DurationUnit, calendar)!.Value))
             .ToList();
+
+    /// <summary>
+    /// When <paramref name="duration"/> <paramref name="unit"/>s from <paramref name="startedAtUtc"/> is up:
+    /// calendar time without business hours; with them, minutes / hours are working time and a day is
+    /// one working day. Null for a unit that is not minutes / hours / days or a duration of zero or less.
+    /// </summary>
+    internal static DateTime? DueAt(DateTime startedAtUtc, decimal duration, string? unit, WorkflowBusinessCalendar? calendar) =>
+        WorkflowBusinessCalendar.DueAt(startedAtUtc, duration, unit, calendar);
+
+    internal static string? NormalizeUnit(string? unit) => WorkflowBusinessCalendar.NormalizeUnit(unit);
 
     internal static WorkflowSlaConfigurationRuleDto? FindRule(WorkflowSlaConfigurationDto? sla, string ruleId) =>
         sla?.Rules?.FirstOrDefault(r => string.Equals(r.Id, ruleId, StringComparison.Ordinal));
@@ -61,7 +114,18 @@ internal static class WorkflowSlaSchedule
             .OrderBy(b => b.Id, StringComparer.Ordinal)
             .Select(b => new { b.Id, Sla = b.Settings!.SlaSettings });
         var resolution = IsActiveStandard(json.Settings?.SlaSettings) ? json.Settings!.SlaSettings : null;
-        var text = JsonSerializer.Serialize(new { stages, resolution });
+        // Advanced is added only when on, so workflows without it keep the hash they had before.
+        var masterStages = (json.Blocks ?? [])
+            .Where(b => IsMasterEntry(b.Settings?.SlaSettings))
+            .OrderBy(b => b.Id, StringComparer.Ordinal)
+            .Select(b => new { b.Id, Sla = b.Settings!.SlaSettings })
+            .ToList();
+        var advanced = IsActiveAdvanced(json.Settings?.SlaSettings) || IsMasterEntry(json.Settings?.SlaSettings)
+            ? json.Settings!.SlaSettings
+            : null;
+        var text = advanced != null || masterStages.Count > 0
+            ? JsonSerializer.Serialize(new { stages, resolution, advanced, masterStages })
+            : JsonSerializer.Serialize(new { stages, resolution });
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 

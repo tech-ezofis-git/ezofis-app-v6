@@ -541,6 +541,29 @@ const moveNext = async (instanceId: string, payload: any) => {
   return response
 }
 
+/** Sends a request that finished on this End block back through the workflow. */
+const reinitiate = async (instanceId: string, activityId: string) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data } = await axiosV6({
+      data: JSON.stringify({ activityId }),
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: `/Workflows/instances/${instanceId}/reinitiate`,
+    })
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as {
+      message?: string
+      response?: { data?: { message?: string } }
+    }
+    response.error =
+      err?.response?.data?.message || err?.message || 'error re-initiating'
+  }
+  return response
+}
+
 export type RegenerateDocumentResponse = {
   attachmentId?: string
   documents?: {
@@ -1118,6 +1141,7 @@ export const workflowsApiV6 = {
   raiseTicket,
   regenerateAgent,
   regenerateDocument,
+  reinitiate,
   searchTickets,
   shareFile,
   startWorkflow,

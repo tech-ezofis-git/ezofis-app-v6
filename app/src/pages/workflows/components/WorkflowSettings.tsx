@@ -18,6 +18,7 @@ import { folderApi } from '@/pages/folders/api/folderApi'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import type { PrefixSegment } from '../stores/useWorkflowStore'
 import useWorkflowStore from '../stores/useWorkflowStore'
+import { validateBusinessHours } from '../utils/businessHours'
 import { generateId } from '../utils/generateId'
 import { NODE_TOOL_TYPE, normalizeNodeToolType } from '../utils/nodeToolTypes'
 import {
@@ -31,13 +32,18 @@ import {
   TOKEN_TYPE_OPTIONS,
   YEAR_OPTIONS,
 } from '../utils/prefixFormat'
-import { firstSlaError, validateSlaSettings } from '../utils/slaSettings'
+import {
+  firstSlaError,
+  isSlaEscalationTarget,
+  validateSlaSettings,
+} from '../utils/slaSettings'
 import useDefaultSectionOpen from '../utils/useDefaultSectionOpen'
 import {
   normalizeInitiateUsing,
   validateWorkflowSettings,
 } from '../utils/validateWorkflowSettings'
 import { getDefaultShortName } from '../utils/workflowShortName'
+import BusinessHoursSettingsSection from './settings/BusinessHoursSettingsSection'
 import NumberPartsDnd, { NumberPartRow } from './settings/common/NumberPartsDnd'
 import SettingsSection from './settings/common/SettingsSection'
 import SLAConfiguration from './settings/common/SLAConfiguration'
@@ -62,8 +68,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   const [openKanban, setOpenKanban] = useState(false)
   const [openRequestViews, setOpenRequestViews] = useState(false)
   const [openSla, setOpenSla] = useState(false)
+  const [openBusinessHours, setOpenBusinessHours] = useState(false)
+  const [showBusinessHoursErrors, setShowBusinessHoursErrors] = useState(false)
 
   const {
+    businessHours,
     closeSettings,
     folder,
     form,
@@ -80,6 +89,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     workflowName,
     workflowShortName,
     workflowStatus,
+    setBusinessHours,
     setFolder,
     setForm,
     setInitiateUsing,
@@ -104,6 +114,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   const [isShortNameFocused, setIsShortNameFocused] = useState(false)
   const lastAutoShortNameRef = useRef('')
   const slaSnapshotRef = useRef<typeof slaSettings>(null)
+  const businessHoursSnapshotRef = useRef<typeof businessHours>(null)
   useEffect(() => {
     if (isShortNameFocused) return
     const current = workflowShortName.trim()
@@ -136,9 +147,16 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     setOpenKanban(false)
     setOpenRequestViews(false)
     setOpenSla(false)
-    // Workflow SLA as it was when the panel opened; Cancel restores it.
+    setOpenBusinessHours(false)
+    setShowBusinessHoursErrors(false)
+    // Workflow SLA and business hours as they were when the panel opened;
+    // Cancel restores them.
     const saved = useWorkflowStore.getState().slaSettings
     slaSnapshotRef.current = saved ? structuredClone(saved) : null
+    const savedHours = useWorkflowStore.getState().businessHours
+    businessHoursSnapshotRef.current = savedHours
+      ? structuredClone(savedHours)
+      : null
   }, [isSettingsOpen])
 
   useEffect(() => {
@@ -246,6 +264,15 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     () =>
       previewFields.map((field) => ({ id: field.label, name: field.label })),
     [previewFields],
+  )
+
+  // Stages the workflow SLA (Advanced) can use: people's stages and END.
+  const slaStageOptions: Option[] = useMemo(
+    () =>
+      nodes
+        .filter((n) => isSlaEscalationTarget(n.data))
+        .map((n) => ({ id: n.id, name: String(n.data?.label || n.id) })),
+    [nodes],
   )
 
   const titleFieldOptions: Option[] = useMemo(
@@ -804,6 +831,20 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
         </SettingsSection>
 
         <SettingsSection
+          icon='lucide:calendar-clock'
+          isOpen={openBusinessHours || showBusinessHoursErrors}
+          title='Business Hours'
+          variant='premium'
+          onToggle={() => setOpenBusinessHours(!openBusinessHours)}
+        >
+          <BusinessHoursSettingsSection
+            showErrors={showBusinessHoursErrors}
+            value={businessHours}
+            onChange={setBusinessHours}
+          />
+        </SettingsSection>
+
+        <SettingsSection
           icon='lucide:timer'
           isOpen={openSla || showSlaErrors}
           title='SLA'
@@ -814,6 +855,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             scope='workflow'
             showErrors={showSlaErrors}
             value={slaSettings}
+            workflowStages={slaStageOptions}
             onChange={setSlaSettings}
           />
         </SettingsSection>
@@ -827,7 +869,9 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
           onClick={() => {
             setSettingsValidationErrors(null)
             setSlaSettings(slaSnapshotRef.current)
+            setBusinessHours(businessHoursSnapshotRef.current)
             setShowSlaErrors(false)
+            setShowBusinessHoursErrors(false)
             closeSettings()
           }}
         >
@@ -859,8 +903,27 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
               return
             }
             setSettingsValidationErrors(null)
+            const hoursError = Object.values(
+              validateBusinessHours(businessHours),
+            )[0]
+            if (hoursError) {
+              setShowBusinessHoursErrors(true)
+              setOpenBusinessHours(true)
+              showToast({
+                message: hoursError,
+                toastTitle: 'Business Hours',
+                variant: 'default',
+              })
+              return
+            }
+            setShowBusinessHoursErrors(false)
+            businessHoursSnapshotRef.current = businessHours
             const slaError = firstSlaError(
-              validateSlaSettings(slaSettings, 'workflow'),
+              validateSlaSettings(
+                slaSettings,
+                'workflow',
+                slaStageOptions.map((s) => String(s.id)),
+              ),
             )
             if (slaError) {
               setShowSlaErrors(true)

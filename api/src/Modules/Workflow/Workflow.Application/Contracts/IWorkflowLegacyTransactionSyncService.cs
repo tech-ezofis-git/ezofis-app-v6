@@ -22,7 +22,10 @@ public interface IWorkflowLegacyTransactionSyncService
         bool endWorkflow = false,
         /// <summary>Route the reviewed step to this step instead of the ProceedAction / next-order step
         /// (used by SLA "Escalate to Stage"). The review is recorded but not matched against actions.</summary>
-        WorkflowStep? overrideNextStep = null);
+        WorkflowStep? overrideNextStep = null,
+        /// <summary>Give the next step to this user instead of working it out from the step
+        /// (a re-initiated request going back to the start block returns to whoever raised it).</summary>
+        Guid? overrideNextAssigneeUserId = null);
 
     /// <summary>
     /// Legacy process FlowStatus for the instance (0 = running, 1 = completed), or null if no process row exists.
