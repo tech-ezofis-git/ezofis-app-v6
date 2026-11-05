@@ -955,3 +955,43 @@ async def test_user_activity_lists_one_users_logins_and_events(world, make_clien
             conn.execute('DROP TABLE IF EXISTS auth."LoginHistory"')
             conn.execute('DROP TABLE IF EXISTS activitylog."EventLogs"')
 
+
+async def test_user_session_lists_actions_until_the_next_login(world, make_client):
+    """A login session's activity: every activity-log entry from that login until the user's next login."""
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+    from datetime import timezone as _tz
+
+    tenant_db = next(p.split("=")[1] for p in npgsql_to_conninfo((await _tenant_cs(world))).split() if p.startswith("dbname"))
+    t0 = _dt.now(_tz.utc).replace(microsecond=0) - _td(hours=5)
+    with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+        conn.execute("CREATE SCHEMA IF NOT EXISTS auth")
+        conn.execute("CREATE SCHEMA IF NOT EXISTS activitylog")
+        conn.execute("""CREATE TABLE auth."LoginHistory" ("Id" uuid, "TenantId" uuid, "Email" text, "LoggedFrom" text,
+                        "IpAddress" text, "UserAgent" text, "CreatedAtUtc" timestamptz)""")
+        conn.execute("""CREATE TABLE activitylog."EventLogs" ("Id" uuid, "TenantId" uuid, "UserEmail" text, "EventTitle" text,
+                        "EventType" text, "Category" text, "Severity" text, "IpAddress" text, "HttpMethod" text, "Path" text,
+                        "StatusCode" int, "CreatedAtUtc" timestamptz)""")
+        for at in (t0, t0 + _td(hours=2)):  # the second login ends the first session
+            conn.execute('INSERT INTO auth."LoginHistory" VALUES (%s,%s,%s,%s,%s,%s,%s)',
+                         (uuid.uuid4(), world.tenant_a, "owner@a.example.com", "WEB", "10.0.0.1", "x", at))
+        for mins, title in ((65, "Approved REQ-2"), (10, "Opened Requests"), (150, "Next session")):
+            conn.execute('INSERT INTO activitylog."EventLogs" VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                         (uuid.uuid4(), world.tenant_a, "owner@a.example.com", title, "Action", "Workflow", "Info",
+                          "10.0.0.1", "POST", "/api/workflows", 200, t0 + _td(minutes=mins)))
+    try:
+        client = await make_client()
+        admin = _h(world, world.admin, role="Admin")
+        ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
+        url = f"/api/report-agent-v2/reports/{ids['user_login_security']}/user-session"
+        body = (await client.get(url, params={"email": "owner@a.example.com", "loginAt": t0.isoformat()}, headers=admin)).json()
+        assert [a["event"] for a in body["actions"]] == ["Opened Requests", "Approved REQ-2"]
+        assert body["actions"][0]["method"] == "POST" and body["actions"][0]["path"] == "/api/workflows"
+        assert body["until"].startswith((t0 + _td(hours=2)).isoformat()[:19])
+        user = await client.get(url, params={"email": "owner@a.example.com", "loginAt": t0.isoformat()}, headers=_h(world, world.owner))
+        assert user.status_code == 403
+    finally:
+        with psycopg.connect(f"{TEST_PG} dbname={tenant_db}", autocommit=True) as conn:
+            conn.execute('DROP TABLE IF EXISTS auth."LoginHistory"')
+            conn.execute('DROP TABLE IF EXISTS activitylog."EventLogs"')
+

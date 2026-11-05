@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import AsyncIterator, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -364,6 +364,23 @@ async def user_activity(
     if definition is None or store.system_template_key(definition) != "user_login_security":
         raise NotFoundError("Report not found.")
     return await system_reports.user_login_activity(conn, ctx.tenant_id, email, as_of=as_of_date or date.today())
+
+
+@router.get("/reports/{report_id}/user-session")
+async def user_session(
+    report_id: uuid.UUID,
+    email: str = Query(min_length=3, max_length=320),
+    login_at: datetime = Query(alias="loginAt"),
+    ctx: TenantContext = Depends(tenant_admin),
+    conn: AsyncConnection = Depends(tenant_connection),
+) -> dict:
+    """What a user did in one login session (until their next login), for User Login and Security Activity (Admin)."""
+    definition = await store.load_definition(conn, ctx.tenant_id, report_id)
+    if definition is None or store.system_template_key(definition) != "user_login_security":
+        raise NotFoundError("Report not found.")
+    if login_at.tzinfo is None:
+        login_at = login_at.replace(tzinfo=timezone.utc)
+    return await system_reports.user_login_session(conn, ctx.tenant_id, email, login_at=login_at)
 
 
 @router.get("/reports/{report_id}/execute")

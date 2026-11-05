@@ -677,8 +677,7 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
 _LOGIN_COLS = (Col("User"), Col("Logins", "number", "measure", True), Col("Web", "number", "measure", True),
                Col("Mobile", "number", "measure", True), Col("Distinct IPs", "number", "measure"),
                Col("Last Login", "date", "value"), Col("Security Events", "number", "measure", True),
-               Col("Critical", "number", "measure", True), Col("Warnings", "number", "measure", True),
-               Col("Permission Changes", "number", "measure", True))
+               Col("Warnings", "number", "measure", True), Col("Permission Changes", "number", "measure", True))
 
 
 async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
@@ -695,20 +694,20 @@ async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
         "SELECT NULL::text AS email, 0::bigint AS logins, 0::bigint AS web, 0::bigint AS mobile, 0::bigint AS ips, NULL::timestamptz AS last_login WHERE false")
     events = sql.SQL(
         """SELECT lower("UserEmail") AS email, COUNT(*) FILTER (WHERE "Category" = 'Security') AS sec,
-                  COUNT(*) FILTER (WHERE "Severity" = 'Critical') AS crit, COUNT(*) FILTER (WHERE "Severity" = 'Warning') AS warn,
+                  COUNT(*) FILTER (WHERE "Severity" = 'Warning') AS warn,
                   COUNT(*) FILTER (WHERE "EventType" = 'Permission Changed') AS perm
            FROM activitylog."EventLogs" WHERE "TenantId" = {tid} AND "CreatedAtUtc" >= {since} AND "CreatedAtUtc" < {until}
              AND "UserEmail" IS NOT NULL GROUP BY 1"""
     ) if has_events else sql.SQL(
-        "SELECT NULL::text AS email, 0::bigint AS sec, 0::bigint AS crit, 0::bigint AS warn, 0::bigint AS perm WHERE false")
+        "SELECT NULL::text AS email, 0::bigint AS sec, 0::bigint AS warn, 0::bigint AS perm WHERE false")
     args = {"tid": ctx.bind(ctx.tenant_id), "since": ctx.bind(ctx.since), "until": ctx.bind(ctx.until)}
     q = sql.SQL(
         """WITH l AS ({login}), e AS ({events})
            SELECT COALESCE(l.email, e.email) AS c0, COALESCE(l.logins, 0) AS c1, COALESCE(l.web, 0) AS c2, COALESCE(l.mobile, 0) AS c3,
-                  COALESCE(l.ips, 0) AS c4, l.last_login AS c5, COALESCE(e.sec, 0) AS c6, COALESCE(e.crit, 0) AS c7,
-                  COALESCE(e.warn, 0) AS c8, COALESCE(e.perm, 0) AS c9
+                  COALESCE(l.ips, 0) AS c4, l.last_login AS c5, COALESCE(e.sec, 0) AS c6,
+                  COALESCE(e.warn, 0) AS c7, COALESCE(e.perm, 0) AS c8
            FROM l FULL JOIN e ON e.email = l.email
-           ORDER BY c7 DESC, c6 DESC, c1 DESC, c0 LIMIT {limit}"""
+           ORDER BY c6 DESC, c1 DESC, c0 LIMIT {limit}"""
     ).format(login=login.format(**args), events=events.format(**args), limit=sql.Literal(ctx.limit))
     return q, []
 
@@ -935,11 +934,11 @@ async def user_login_activity(conn: AsyncConnection, tenant_id: uuid.UUID, email
         cols = await _columns(conn, "activitylog", "EventLogs")
         title = '"EventTitle"' if "EventTitle" in cols else '"EventType"'
         ip = '"IpAddress"' if "IpAddress" in cols else "NULL"
-        # The same events the report counts: Security, Critical, Warning and permission changes.
+        # The same events the report counts: Security, Warning and permission changes.
         cur = await conn.execute(
             f"""SELECT "CreatedAtUtc", {title}, "EventType", "Category", "Severity", {ip} FROM activitylog."EventLogs"
                 WHERE "TenantId" = %s AND lower("UserEmail") = %s AND "CreatedAtUtc" >= %s AND "CreatedAtUtc" < %s
-                  AND ("Category" = 'Security' OR "Severity" IN ('Critical', 'Warning') OR "EventType" = 'Permission Changed')
+                  AND ("Category" = 'Security' OR "Severity" = 'Warning' OR "EventType" = 'Permission Changed')
                 ORDER BY "CreatedAtUtc" DESC LIMIT %s""",
             (tenant_id, who, since, until, limit),
         )
@@ -951,6 +950,46 @@ async def user_login_activity(conn: AsyncConnection, tenant_id: uuid.UUID, email
     return {"email": who, "since": since.isoformat(), "until": until.isoformat(), "logins": logins, "events": events}
 
 
+# A login "session" lasts until the user's next login, at most this long (no logout is recorded).
+_SESSION_MAX = timedelta(hours=8)
+
+
+async def user_login_session(conn: AsyncConnection, tenant_id: uuid.UUID, email: str, *, login_at: datetime,
+                             limit: int = 300) -> dict:
+    """What a user did in one login session: every activity-log entry from that login until their next login
+    (at most 8 hours), oldest first."""
+    who = email.strip().lower()
+    until = login_at + _SESSION_MAX
+    if {"Email", "CreatedAtUtc", "TenantId"} <= await _columns(conn, "auth", "LoginHistory"):
+        cur = await conn.execute(
+            """SELECT MIN("CreatedAtUtc") FROM auth."LoginHistory"
+               WHERE "TenantId" = %s AND lower("Email") = %s AND "CreatedAtUtc" > %s""",
+            (tenant_id, who, login_at),
+        )
+        nxt = (await cur.fetchone())[0]
+        if nxt is not None and nxt < until:
+            until = nxt
+    actions: list[dict] = []
+    cols = await _columns(conn, "activitylog", "EventLogs")
+    if {"UserEmail", "CreatedAtUtc", "TenantId"} <= cols:
+        def col(name: str) -> str:
+            return f'"{name}"' if name in cols else "NULL"
+        cur = await conn.execute(
+            f"""SELECT "CreatedAtUtc", {col("EventTitle")}, {col("EventType")}, {col("Category")}, {col("Severity")},
+                       {col("HttpMethod")}, {col("Path")}, {col("StatusCode")}
+                FROM activitylog."EventLogs"
+                WHERE "TenantId" = %s AND lower("UserEmail") = %s AND "CreatedAtUtc" >= %s AND "CreatedAtUtc" < %s
+                ORDER BY "CreatedAtUtc" LIMIT %s""",
+            (tenant_id, who, login_at, until, limit),
+        )
+        actions = [
+            {"at": at.isoformat() if at else None, "event": title or etype, "type": etype, "category": cat,
+             "severity": sev, "method": method, "path": path, "status": status}
+            for at, title, etype, cat, sev, method, path, status in await cur.fetchall()
+        ]
+    return {"email": who, "from": login_at.isoformat(), "until": until.isoformat(), "actions": actions}
+
+
 TEMPLATES: dict[str, Template] = {t.key: t for t in (
     Template("ai_credit_consumption", "AI Credit Consumption",
              "AI credits used per request and skill (AP agent), plus AI summary, OCR and intelligent upload credits from billing, over the last 90 days.", "tenant", 90, _CREDIT_COLS, _ai_credit_consumption),
@@ -958,7 +997,7 @@ TEMPLATES: dict[str, Template] = {t.key: t for t in (
              "Requests submitted per workflow and month: completed, pending, failed, completion rate and average completion time "
              "(last 12 months).", "all_workflows", 365, _PORTAL_COLS, _portal_submission_performance),
     Template("user_login_security", "User Login and Security Activity",
-             "Logins (web/mobile, IPs) and security, critical, warning and permission-change events per user over the last 30 days.",
+             "Logins (web/mobile, IPs) and security, warning and permission-change events per user over the last 30 days.",
              "tenant", 30, _LOGIN_COLS, _user_login_security),
     Template("workflow_sla_compliance", "Workflow SLA Compliance",
              "Response and resolution SLA met vs breached, in progress, escalations, compliance % and SLA notifications sent "

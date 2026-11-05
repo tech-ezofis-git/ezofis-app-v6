@@ -1,14 +1,21 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
-import { motion } from 'motion/react'
+import dayjs from 'dayjs'
+import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
-import { getReportUserActivity } from '@/api/v6/reportAgent'
+import type { UserLoginActivity } from '@/api/v6/reportAgent'
+import {
+  getReportUserActivity,
+  getReportUserSession,
+} from '@/api/v6/reportAgent'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Modal from '@/components/base/Modal'
 import cn from '@/utils/cn'
 import { formatReportDate } from '@/utils/utcDate'
 import StatusPill from './StatusPill'
+
+type Login = UserLoginActivity['logins'][number]
 
 interface Props {
   email: string | null
@@ -24,13 +31,117 @@ const SEVERITY_COLORS: Record<string, string> = {
   Warning: 'orange',
 }
 
+const minutesBetween = (from?: null | string, to?: null | string) =>
+  from && to ? Math.max(0, dayjs(to).diff(dayjs(from), 'minute')) : 0
+
+/**
+ * The actions of one login session (until the next login), shown under its
+ * row when the row is opened; loaded only then.
+ */
+const SessionTimeline = ({
+  email,
+  login,
+  reportId,
+}: {
+  email: string
+  login: Login
+  reportId: string
+}) => {
+  const { t } = useLingui()
+  const query = useQuery({
+    queryKey: ['report-user-session', reportId, email, login.at],
+    retry: false,
+    queryFn: () => getReportUserSession(reportId, email, login.at!),
+  })
+  const actions = query.data?.actions ?? []
+  const lastAt = actions[actions.length - 1]?.at
+  const minutes = minutesBetween(login.at, lastAt)
+
+  return (
+    <motion.div
+      animate={{ height: 'auto', opacity: 1 }}
+      className='overflow-hidden'
+      exit={{ height: 0, opacity: 0 }}
+      initial={{ height: 0, opacity: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
+      <div className='mb-2 ml-4 border-l-2 border-primary-4 pl-4'>
+        {query.isLoading && (
+          <p className='flex items-center gap-2 py-2 text-12 text-gray-10'>
+            <Icon className='size-3.5 animate-spin' name='lucide:loader-2' />
+            {t`Loading session...`}
+          </p>
+        )}
+        {query.isError && (
+          <p className='py-2 text-12 text-red-11'>
+            {t`Could not load this session.`}
+          </p>
+        )}
+        {query.isSuccess && actions.length === 0 && (
+          <p className='py-2 text-12 text-gray-10'>
+            {t`No activity recorded in this session.`}
+          </p>
+        )}
+        {actions.length > 0 && (
+          <ul className='flex flex-col'>
+            {actions.map((action, index) => (
+              <motion.li
+                animate={{ opacity: 1, x: 0 }}
+                className='relative flex items-start gap-3 py-1.5'
+                initial={{ opacity: 0, x: -6 }}
+                key={`${action.at}-${index}`}
+                transition={{
+                  delay: Math.min(index, 15) * 0.025,
+                  duration: 0.18,
+                }}
+              >
+                <span className='absolute top-3 -left-[21px] size-2 rounded-full bg-primary-9 ring-2 ring-surface' />
+                <span className='w-14 shrink-0 pt-px font-mono text-12 text-gray-10'>
+                  {action.at ? dayjs(action.at).format('hh:mm A') : '-'}
+                </span>
+                <div className='min-w-0 flex-1'>
+                  <p className='truncate text-13 text-gray-13'>
+                    {action.event || action.type || '-'}
+                  </p>
+                  {(action.path || action.category) && (
+                    <p className='truncate text-12 text-gray-10'>
+                      {action.path
+                        ? [action.method, action.path].filter(Boolean).join(' ')
+                        : action.category}
+                    </p>
+                  )}
+                </div>
+                {action.severity && action.severity !== 'Info' && (
+                  <StatusPill
+                    color={SEVERITY_COLORS[action.severity] ?? 'gray'}
+                    label={action.severity}
+                  />
+                )}
+              </motion.li>
+            ))}
+          </ul>
+        )}
+        {actions.length > 0 && (
+          <p className='pt-1 pb-1 text-12 font-medium text-gray-11'>
+            {minutes > 0
+              ? t`${actions.length} actions in ${minutes} min`
+              : t`${actions.length} actions`}
+          </p>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
 /**
  * Every login (time, web / mobile, IP, device) and security event of one
  * user, opened from a row of the User Login and Security Activity report.
+ * A login opens in place to show what the user did in that session.
  */
 const UserActivityModal = ({ email, reportId, onClose }: Props) => {
   const { t } = useLingui()
   const [tab, setTab] = useState<Tab>('logins')
+  const [openLogin, setOpenLogin] = useState<null | string>(null)
 
   const query = useQuery({
     enabled: Boolean(email),
@@ -47,8 +158,13 @@ const UserActivityModal = ({ email, reportId, onClose }: Props) => {
     { count: events.length, id: 'events', label: t`Events` },
   ]
 
+  const close = () => {
+    setOpenLogin(null)
+    onClose()
+  }
+
   return (
-    <Modal opened={Boolean(email)} width={640} onClose={onClose}>
+    <Modal opened={Boolean(email)} width={640} onClose={close}>
       <div className='flex max-h-[80vh] flex-col p-5'>
         <div className='flex items-start gap-3'>
           <div className='flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-2 text-primary-11'>
@@ -74,7 +190,7 @@ const UserActivityModal = ({ email, reportId, onClose }: Props) => {
             icon='lucide:x'
             size='sm'
             variant='ghost'
-            onClick={onClose}
+            onClick={close}
           />
         </div>
 
@@ -121,49 +237,83 @@ const UserActivityModal = ({ email, reportId, onClose }: Props) => {
             )}
           {query.isSuccess && tab === 'logins' && logins.length > 0 && (
             <ul className='flex flex-col'>
-              {logins.map((login, index) => (
-                <motion.li
-                  animate={{ opacity: 1, y: 0 }}
-                  className='flex items-center gap-3 border-b border-gray-3 py-2.5 last:border-b-0'
-                  initial={{ opacity: 0, y: 6 }}
-                  key={`${login.at}-${index}`}
-                  transition={{
-                    delay: Math.min(index, 12) * 0.03,
-                    duration: 0.2,
-                  }}
-                >
-                  <span
-                    className={cn(
-                      'flex size-8 shrink-0 items-center justify-center rounded-lg',
-                      login.channel === 'Mobile'
-                        ? 'bg-green-2 text-green-11'
-                        : 'bg-blue-2 text-blue-11',
-                    )}
+              {logins.map((login, index) => {
+                const isOpen = Boolean(login.at) && openLogin === login.at
+                return (
+                  <motion.li
+                    animate={{ opacity: 1, y: 0 }}
+                    className='border-b border-gray-3 last:border-b-0'
+                    initial={{ opacity: 0, y: 6 }}
+                    key={`${login.at}-${index}`}
+                    transition={{
+                      delay: Math.min(index, 12) * 0.03,
+                      duration: 0.2,
+                    }}
                   >
-                    <Icon
-                      className='size-4'
-                      name={
-                        login.channel === 'Mobile'
-                          ? 'lucide:smartphone'
-                          : 'lucide:monitor'
+                    <button
+                      aria-expanded={isOpen}
+                      disabled={!login.at}
+                      type='button'
+                      className={cn(
+                        'flex w-full cursor-pointer items-center gap-3 rounded-md px-1 py-2.5 text-left transition-colors hover:bg-gray-2',
+                        isOpen && 'bg-gray-2',
+                      )}
+                      onClick={() =>
+                        setOpenLogin(isOpen ? null : (login.at ?? null))
                       }
-                    />
-                  </span>
-                  <div className='min-w-0 flex-1'>
-                    <p className='text-13 font-medium text-gray-13'>
-                      {login.at ? formatReportDate(login.at) : '-'}
-                    </p>
-                    <p className='truncate text-12 text-gray-10'>
-                      {[login.channel, login.device]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                  </div>
-                  <span className='shrink-0 font-mono text-12 text-gray-11'>
-                    {login.ip || '-'}
-                  </span>
-                </motion.li>
-              ))}
+                    >
+                      <Icon
+                        className='size-4 shrink-0 text-gray-9'
+                        name={
+                          isOpen
+                            ? 'lucide:chevron-down'
+                            : 'lucide:chevron-right'
+                        }
+                      />
+                      <span
+                        className={cn(
+                          'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                          login.channel === 'Mobile'
+                            ? 'bg-green-2 text-green-11'
+                            : 'bg-blue-2 text-blue-11',
+                        )}
+                      >
+                        <Icon
+                          className='size-4'
+                          name={
+                            login.channel === 'Mobile'
+                              ? 'lucide:smartphone'
+                              : 'lucide:monitor'
+                          }
+                        />
+                      </span>
+                      <div className='min-w-0 flex-1'>
+                        <p className='text-13 font-medium text-gray-13'>
+                          {login.at ? formatReportDate(login.at) : '-'}
+                        </p>
+                        <p className='truncate text-12 text-gray-10'>
+                          {[login.channel, login.device]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      </div>
+                      <span className='shrink-0 font-mono text-12 text-gray-11'>
+                        {login.ip || '-'}
+                      </span>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isOpen && email && (
+                        <SessionTimeline
+                          email={email}
+                          key='session'
+                          login={login}
+                          reportId={reportId}
+                        />
+                      )}
+                    </AnimatePresence>
+                  </motion.li>
+                )
+              })}
             </ul>
           )}
           {query.isSuccess && tab === 'events' && events.length > 0 && (
