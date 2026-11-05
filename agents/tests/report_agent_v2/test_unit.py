@@ -233,3 +233,18 @@ def test_filters_without_a_stated_value_are_dropped():
         ("sys.request_raised_at", "gte", "today-30", []),
         ("brand", "isNotEmpty", None, []),
     ]
+
+
+def test_guessed_date_on_a_filter_by_field_is_dropped():
+    from app.report_agent_v2.agents.definition_agent import _user_filters_only
+
+    labels = {"sys.request_raised_at": "Created At", "amount": "Amount"}
+    guessed = {"ref": "sys.request_raised_at", "op": "gte", "value": "today-30", "values": []}
+    # "Filter by Created At" states no period: the model's default window is a guess.
+    raw = {"filters": [dict(guessed), {"ref": "amount", "op": "gt", "value": "500", "values": []}]}
+    _user_filters_only(raw, "Show all requests. Filter by Created At and Amount.", labels)
+    assert raw["filters"] == []
+    # A stated period keeps the date the model wrote for it; a stated number keeps its filter.
+    raw = {"filters": [dict(guessed), {"ref": "amount", "op": "gt", "value": "500", "values": []}]}
+    _user_filters_only(raw, "Requests from the last 30 days over 500. Filter by Created At and Amount.", labels)
+    assert [f["value"] for f in raw["filters"]] == ["today-30", "500"]
