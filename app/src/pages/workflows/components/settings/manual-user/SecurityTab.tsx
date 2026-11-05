@@ -5,6 +5,11 @@ import InputLabel from '@/components/base/inputs/InputLabel'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import { generateId } from '../../../utils/generateId'
+import {
+  applyPanelSelection,
+  type PanelOption,
+  selectedPanelIds,
+} from './securityPanels'
 
 interface AccessRule {
   formFields: string[]
@@ -29,6 +34,7 @@ interface SecurityTabProps {
   nodeData: Record<string, any>
   userOptions: Option[]
   assignedUsers?: Option[]
+  panelOptions?: PanelOption[]
   updateNodeData: (key: string, value: any) => void
 }
 
@@ -36,6 +42,7 @@ export default function SecurityTab({
   assignedUsers = [],
   fieldOptions,
   nodeData,
+  panelOptions = [],
   updateNodeData,
   userOptions,
 }: SecurityTabProps) {
@@ -98,6 +105,7 @@ export default function SecurityTab({
             <AccessRuleEditor
               assignedUsers={effectiveAssignedUsers}
               fieldOptions={fieldOptions}
+              panelOptions={panelOptions}
               rules={formEditControls}
               userOptions={userOptions}
               onChange={(rules) => updateNodeData('formEditControls', rules)}
@@ -134,6 +142,7 @@ export default function SecurityTab({
               assignedUsers={effectiveAssignedUsers}
               fieldOptions={fieldOptions}
               isVisibilityRules
+              panelOptions={panelOptions}
               rules={formSecureControls}
               userOptions={userOptions}
               onChange={(rules) => updateNodeData('formSecureControls', rules)}
@@ -170,6 +179,7 @@ export default function SecurityTab({
 function AccessRuleEditor({
   assignedUsers = [],
   fieldOptions,
+  panelOptions = [],
   rules,
   userOptions,
   isVisibilityRules = false,
@@ -177,6 +187,7 @@ function AccessRuleEditor({
 }: {
   assignedUsers?: Option[]
   fieldOptions: Option[]
+  panelOptions?: PanelOption[]
   rules: AccessRule[]
   userOptions: Option[]
   isVisibilityRules?: boolean
@@ -234,6 +245,18 @@ function AccessRuleEditor({
                     />
                   </div>
                 )}
+                <PanelPicker
+                  isVisibilityRules={isVisibilityRules}
+                  mode={currentMode}
+                  panelOptions={panelOptions}
+                  rule={rule}
+                  onChange={(formFields) =>
+                    updateRule(rule.id, {
+                      formFields,
+                      userId: String(singleUser?.id || ''),
+                    })
+                  }
+                />
                 <div className='space-y-1'>
                   {isVisibilityRules && (
                     <span className='text-[11px] font-medium text-gray-10'>
@@ -303,6 +326,13 @@ function AccessRuleEditor({
                     />
                   </div>
                 )}
+                <PanelPicker
+                  isVisibilityRules={isVisibilityRules}
+                  mode={currentMode}
+                  panelOptions={panelOptions}
+                  rule={rule}
+                  onChange={(formFields) => updateRule(rule.id, { formFields })}
+                />
                 <div className='space-y-1'>
                   <span className='text-[11px] font-medium text-gray-10'>
                     {isVisibilityRules
@@ -349,6 +379,57 @@ function AccessRuleEditor({
         <Icon className='h-3.5 w-3.5' name='lucide:plus' />
         <span>Add Rule</span>
       </button>
+    </div>
+  )
+}
+
+/** Pick whole panels: adds or removes all of a panel's fields in the rule. */
+function PanelPicker({
+  isVisibilityRules,
+  mode,
+  panelOptions,
+  rule,
+  onChange,
+}: {
+  isVisibilityRules: boolean
+  mode: 'HIDE' | 'SHOW'
+  panelOptions: PanelOption[]
+  rule: AccessRule
+  onChange: (formFields: string[]) => void
+}) {
+  if (panelOptions.length === 0) return null
+  const options: Option[] = panelOptions.map((p) => ({
+    id: p.id,
+    name: p.name,
+  }))
+  const picked = selectedPanelIds(panelOptions, rule.formFields)
+  return (
+    <div className='space-y-1'>
+      <span className='text-[11px] font-medium text-gray-10'>
+        {isVisibilityRules
+          ? mode === 'HIDE'
+            ? 'Panels to Hide'
+            : 'Panels to Show'
+          : 'Panels'}
+      </span>
+      <InputSelectMultiple
+        className='bg-surface'
+        maxDisplayCount={3}
+        options={options}
+        placeholder='Select whole panels...'
+        value={options.filter((o) => picked.includes(String(o.id)))}
+        clearable
+        searchable
+        onChange={(val) =>
+          onChange(
+            applyPanelSelection(
+              panelOptions,
+              rule.formFields,
+              val.map((v) => String(v.id)),
+            ),
+          )
+        }
+      />
     </div>
   )
 }
