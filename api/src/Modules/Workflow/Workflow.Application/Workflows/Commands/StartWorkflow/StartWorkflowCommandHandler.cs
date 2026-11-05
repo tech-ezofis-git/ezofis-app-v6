@@ -26,6 +26,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
     private readonly IEmlAttachmentExtractionService _emlAttachmentExtraction;
     private readonly IWorkflowInsightQueue _insightQueue;
     private readonly IWorkflowConditionRouter _conditionRouter;
+    private readonly IWorkflowConnectorRunner _connectorRunner;
     private readonly ILogger<StartWorkflowCommandHandler> _logger;
 
     public StartWorkflowCommandHandler(
@@ -45,6 +46,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
         IEmlAttachmentExtractionService emlAttachmentExtraction,
         IWorkflowInsightQueue insightQueue,
         IWorkflowConditionRouter conditionRouter,
+        IWorkflowConnectorRunner connectorRunner,
         ILogger<StartWorkflowCommandHandler> logger)
     {
         _repository = repository;
@@ -63,6 +65,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
         _emlAttachmentExtraction = emlAttachmentExtraction;
         _insightQueue = insightQueue;
         _conditionRouter = conditionRouter;
+        _connectorRunner = connectorRunner;
         _logger = logger;
     }
 
@@ -326,10 +329,22 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
                 }
             }
 
-            // First stage after Start is a condition block: check it and move on now.
-            // AP Agent workflows open the AP_AGENT step instead, so they never stop on a condition here.
+            // First stage after Start is a condition or connector block: run it and move on now.
+            // AP Agent workflows open the AP_AGENT step instead, so they never stop on one here.
+            // A condition that moves on runs any connector after it itself (in move-next).
             if (dedicatedApAgent == null)
-                await _conditionRouter.TryRouteAsync(instance.Id, cancellationToken: cancellationToken);
+            {
+                // Start fans out to several blocks (e.g. a Manual User and Workflow Connectors): the ticket
+                // waits on the real step, and the connectors start their connected workflows now.
+                var currentDefinitionStepId = instance.StepInstances
+                    .FirstOrDefault(s => s.Id == instance.CurrentStepInstanceId)?.WorkflowStepId;
+                if (orderedSteps.FirstOrDefault() is { } startDefinition)
+                    await _connectorRunner.StartFanOutAsync(
+                        instance.Id, startDefinition, review: null, currentDefinitionStepId, cancellationToken);
+
+                if (await _conditionRouter.TryRouteAsync(instance.Id, cancellationToken: cancellationToken) == null)
+                    await _connectorRunner.TryRunAsync(instance.Id, cancellationToken: cancellationToken);
+            }
 
             return new StartWorkflowCommandResult(
                 instance.Id,

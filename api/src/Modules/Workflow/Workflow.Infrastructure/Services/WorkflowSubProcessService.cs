@@ -67,6 +67,15 @@ public sealed class WorkflowSubProcessService : IWorkflowSubProcessService
         throw new InvalidOperationException("This request is already a sub-process of another request.");
     }
 
+    public async Task<bool> IsSubProcessAsync(
+        Guid tenantId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new NpgsqlConnection(RequireConnection());
+        await connection.OpenAsync(cancellationToken);
+        return await LinksTableExistsAsync(connection, cancellationToken)
+            && await FindParentLinkAsync(connection, tenantId, workflowId, processId, cancellationToken) is not null;
+    }
+
     public async Task<IReadOnlyList<WorkflowSubProcessRowDto>> GetChildrenAsync(
         Guid tenantId, Guid userId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default)
     {

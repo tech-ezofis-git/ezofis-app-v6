@@ -8,10 +8,7 @@ import {
   writeConnectorSettings,
 } from '@/features/sub-workflow'
 import useDefaultSectionOpen from '@/pages/workflows/utils/useDefaultSectionOpen'
-import {
-  CONNECTOR_ENGINE_READY,
-  WORKFLOW_CONNECTOR_NODE,
-} from '@/pages/workflows/utils/workflowConnector'
+import { WORKFLOW_CONNECTOR_NODE } from '@/pages/workflows/utils/workflowConnector'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
 import SubWorkflowPicker from './common/SubWorkflowPicker'
@@ -65,15 +62,15 @@ export default function WorkflowConnectorSettingsPanel({
           <h3 className='text-sm font-bold text-pink-12'>Workflow Connector</h3>
           <p className='text-xs leading-relaxed font-medium text-pink-11'>
             When a request reaches this step, a new request is started in the
-            selected workflow and linked to it as a sub-process.
+            selected workflow and linked to it as a sub-process. Fields with
+            matching labels are copied over, and this request moves on without
+            waiting for the new one.
           </p>
-          {!CONNECTOR_ENGINE_READY && (
-            <p className='mt-1.5 flex items-start gap-1 text-xs leading-relaxed font-semibold text-pink-12'>
-              <Icon className='mt-0.5 size-3.5 shrink-0' name='lucide:info' />
-              Preview only: the server can't run this step yet, so a workflow
-              that contains it won't save until it's removed.
-            </p>
-          )}
+          <p className='mt-1.5 flex items-start gap-1 text-xs leading-relaxed font-medium text-pink-11'>
+            <Icon className='mt-0.5 size-3.5 shrink-0' name='lucide:info' />
+            The selected workflow can't have a Workflow Connector of its own:
+            sub-processes are one level deep.
+          </p>
         </div>
       </div>
 

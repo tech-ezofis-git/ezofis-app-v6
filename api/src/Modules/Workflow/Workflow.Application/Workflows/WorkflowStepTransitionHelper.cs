@@ -33,6 +33,10 @@ public static class WorkflowStepTransitionHelper
         || string.Equals(step.StageType?.Trim(), "CONDITION", StringComparison.OrdinalIgnoreCase)
         || string.Equals(step.StageType?.Trim(), "RULES", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Designer WORKFLOW_CONNECTOR block: the API starts the connected workflow and moves on by itself.</summary>
+    public static bool IsConnectorStep(WorkflowStep step) =>
+        string.Equals(step.StageType?.Trim(), WorkflowConnectorJson.BlockType, StringComparison.OrdinalIgnoreCase);
+
     public static bool IsApproveReview(string? review) =>
         string.Equals(review?.Trim(), "Approve", StringComparison.OrdinalIgnoreCase);
 

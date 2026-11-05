@@ -69,6 +69,10 @@ public class WorkflowSubProcessControllerTests
             Guid tenantId, Guid userId, WorkflowSubProcessLinkDto link, CancellationToken cancellationToken = default) =>
             failure is null ? Task.FromResult(link) : Task.FromException<WorkflowSubProcessLinkDto>(failure);
 
+        public Task<bool> IsSubProcessAsync(
+            Guid tenantId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public Task<IReadOnlyList<WorkflowSubProcessRowDto>> GetChildrenAsync(
             Guid tenantId, Guid userId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
