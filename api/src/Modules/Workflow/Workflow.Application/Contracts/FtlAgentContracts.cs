@@ -21,6 +21,18 @@ public interface IFtlAgentJobClient
 
 public interface IFtlAgentPipelineService
 {
+    /// <summary>
+    /// Saves one edited client field (Bill To, Contact, Phone, Email) on the ticket straight away,
+    /// so it survives closing the request. False when the field isn't one of those or no ticket row was found.
+    /// </summary>
+    Task<bool> SaveClientFieldAsync(
+        Guid workflowId,
+        Guid instanceId,
+        string? formId,
+        string fieldId,
+        string? value,
+        CancellationToken cancellationToken = default);
+
     Task ExecuteAsync(FtlAgentJobArgs args, string hangfireJobId, CancellationToken cancellationToken = default);
 
     /// <summary>
