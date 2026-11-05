@@ -23,6 +23,7 @@ You will be provided:
      - `Product_Code` / `Supplier_Pdt_Code` -> `Material_Code`
      - `Brand` -> `Brand`
      - `Size` -> `Size`
+     - `Version_cal` -> `Version` (a header field: copy it to every target record, and do not put it in `Version_Number`)
      - `Status` -> Default to "Active" or source `Status` if present.
    - Inherit header fields where appropriate (e.g., Brand, Size, Customer) to each child component item unless the component has a specific override.
    - For composite columns (like `Material_Specifications` or `Dimension`):
