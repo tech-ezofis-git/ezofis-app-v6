@@ -55,7 +55,7 @@ Until the API is ready, all sub-workflow UI is shown only on a local dev host. `
 
 Import still reads the keys (it changes nothing that's saved).
 
-**Connector save block:** the save failure reported on 2026-10-27 came from `SubWorkflowId` being `int?` in `WorkflowJsonDto.cs`, so any GUID target failed, on Initiator blocks too. That's fixed. The API can now store a `WORKFLOW_CONNECTOR` block, but the engine can't run it: it would become a manual step nobody can act on. So the builder still refuses to save a workflow containing a Connector step until `CONNECTOR_ENGINE_READY` (`utils/workflowConnector.ts`) is true, whatever `VITE_SUB_WORKFLOW_API` says. It shows an error toast and sends nothing (`getConnectorSaveBlock`, called from `BuilderHeader.tsx`), and the Connector panel tells the user it's preview-only. **To go live:** delete `featureFlag.ts` and every `isSubWorkflowEnabled()` check (grep for it), and drop the `location` stubs in the two test files.
+**Workflow Connector:** the engine runs it (2026-11-03). When a request reaches a Connector step, the API starts a request in the connected workflow with matching field labels copied over (tables too), links it as a sub-process, adds a comment, and moves the parent on along the Connector's connection without waiting for the child (`WorkflowConnectorRunner`, called after a move and at start, like the Condition router). Before starting anything it checks that the target is set and published, that the user can access both workflows, that the parent isn't itself a sub-process, and that the target has no Connector of its own (links are one level deep), so a child is never left unlinked. If a check fails, the request stays on the Connector step with a comment saying why. The builder no longer blocks saving a Connector. **To go live:** delete `featureFlag.ts` and every `isSubWorkflowEnabled()` check (grep for it), and drop the `location` stubs in the two test files.
 
 **Live API (`VITE_SUB_WORKFLOW_API=live`):** the link endpoints exist (see §4a) and the web app uses them for Initiate, the Sub Process tab and the parent link. Inbox chips and connector history stay empty in live mode until the list and history responses carry that data.
 
@@ -78,7 +78,9 @@ Built in `api/`. Tested on 2026-10-31 through a local API against a real tenant 
 
 Still open:
 
-- Q1 and Q6: the Connector engine, and what happens to a child when its parent is rejected, withdrawn or force-closed.
+- Q6: what happens to a child when its parent is rejected, withdrawn or force-closed. Today nothing: the child carries on.
+- Connector: the parent doesn't wait for the child. Waiting would need the engine to hold the parent and resume it when the child ends.
+- A child started with Initiate isn't linked until its form is submitted, so if its workflow starts with a Connector, that Connector runs first and the Initiate link is then refused (one level deep).
 - Q3: `putSubWorkflow` isn't built, as nothing calls it.
 - Q5: `subworkflowTransaction` and `subWorkflowHistory` on list and history responses.
 - Linking doesn't check that the parent's step really targets that child workflow, or that the user is the current assignee. The web app does check these.

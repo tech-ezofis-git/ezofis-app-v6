@@ -11,7 +11,6 @@ import {
   buildSubWorkflowPrefill,
   flattenFormFields,
   isSubWorkflowEnabled,
-  toLinkedProcessSummary,
   useLinkSubProcess,
 } from '@/features/sub-workflow'
 import useLatestWorkflow from '@/features/sub-workflow/hooks/useLatestWorkflow'
@@ -779,20 +778,6 @@ const WorkflowRequest = ({
                 mainWorkflowId: workflow?.id,
                 subProcessId: child.processId,
                 subWorkflowId: child.subWorkflowId,
-              },
-              {
-                child: toLinkedProcessSummary({
-                  processId: child.processId,
-                  requestNo: child.requestNo,
-                  workflowId: child.subWorkflowId,
-                  workflowName: child.subWorkflowName,
-                }),
-                parent: toLinkedProcessSummary({
-                  processId: createdProcessId,
-                  requestNo,
-                  workflowId: workflow?.id,
-                  workflowName: workflow?.name,
-                }),
               },
             ]),
           ),

@@ -12,7 +12,6 @@ import { AnimateFadeIn } from '@/components/common/animations'
 import {
   hasSubWorkflowSetup,
   isSubWorkflowEnabled,
-  toLinkedProcessSummary,
   useLinkSubProcess,
   useMainProcess,
   useSubProcesses,
@@ -3367,20 +3366,6 @@ const Request = ({
                 mainWorkflowId: resolvedWorkflowId,
                 subProcessId: processId,
                 subWorkflowId: subWorkflow.subWorkflowId,
-              },
-              {
-                child: toLinkedProcessSummary({
-                  processId,
-                  requestNo,
-                  workflowId: subWorkflow.subWorkflowId,
-                  workflowName: subWorkflow.childName,
-                }),
-                parent: toLinkedProcessSummary({
-                  processId: parentProcessId,
-                  requestNo: resolvedRequestNo,
-                  workflowId: resolvedWorkflowId,
-                  workflowName: rawWorkflowData?.name,
-                }),
               },
             ])
             const childLabel = requestNo || subWorkflow.childName

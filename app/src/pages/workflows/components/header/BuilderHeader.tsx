@@ -17,8 +17,6 @@ import { getNodeToolType, NODE_TOOL_TYPE } from '../../utils/nodeToolTypes'
 import { diffSlaSettings, getWorkflowSlaError } from '../../utils/slaSettings'
 import { validateWorkflowSettings } from '../../utils/validateWorkflowSettings'
 import {
-  CONNECTOR_ENGINE_READY,
-  getConnectorSaveBlock,
   getWorkflowConnectorErrors,
   getWorkflowInitiatorErrors,
 } from '../../utils/workflowConnector'
@@ -130,21 +128,6 @@ const BuilderHeader = () => {
         })
         return
       }
-    }
-
-    // The engine can't run WORKFLOW_CONNECTOR blocks yet, so don't send them
-    // (applies to drafts too).
-    const connectorBlock = getConnectorSaveBlock(
-      getNodes(),
-      CONNECTOR_ENGINE_READY,
-    )
-    if (connectorBlock) {
-      showToast({
-        message: connectorBlock,
-        toastTitle: 'Workflow Connector',
-        variant: 'error',
-      })
-      return
     }
 
     state.setWorkflowStatus(isPublished ? 'published' : 'draft')

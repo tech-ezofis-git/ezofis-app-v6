@@ -212,6 +212,7 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<RunQuanticsFormSyncJob>();
         services.AddScoped<IWorkflowEndSyncService, WorkflowEndSyncService>();
         services.AddScoped<IWorkflowConditionRouter, WorkflowConditionRouter>();
+        services.AddScoped<IWorkflowConnectorRunner, WorkflowConnectorRunner>();
         services.AddScoped<IWorkflowDelegationService, WorkflowDelegationService>();
         services.AddScoped<IWorkflowSubProcessService, WorkflowSubProcessService>();
 

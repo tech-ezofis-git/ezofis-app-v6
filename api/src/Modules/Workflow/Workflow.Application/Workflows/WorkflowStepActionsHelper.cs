@@ -57,17 +57,40 @@ public static class WorkflowStepActionsHelper
             .FirstOrDefault(a => ReviewMatchesProceedAction(review, a.ProceedAction));
     }
 
-    /// <summary>Resolve next step from Actions JSON using review / ProceedAction. Returns null when no rule matches.</summary>
+    /// <summary>
+    /// Resolve next step from Actions JSON using review / ProceedAction. Returns null when no rule matches.
+    /// When one label fans out to several blocks, the ticket follows the first block that is not a Workflow
+    /// Connector (a person or agent step to wait on). Connector blocks on the same label start their connected
+    /// workflows without taking the ticket, so they never win over a real step.
+    /// </summary>
     public static WorkflowStep? ResolveNextStepByReview(
         WorkflowStep currentStep,
         string? review,
         IReadOnlyList<WorkflowStep> allSteps)
     {
-        var action = FindMatchingAction(currentStep, review);
-        if (action == null || string.IsNullOrWhiteSpace(action.ToBlockId))
+        if (string.IsNullOrWhiteSpace(review))
             return null;
 
-        return ResolveStepByBlockId(allSteps, action.ToBlockId);
+        var matches = ParseActions(currentStep.ActionsJson)
+            .Where(a => ReviewMatchesProceedAction(review, a.ProceedAction))
+            .ToList();
+        if (matches.Count == 0)
+            return null;
+
+        var first = matches[0];
+        if (string.IsNullOrWhiteSpace(first.ToBlockId))
+            return null;
+
+        foreach (var action in matches)
+        {
+            if (string.IsNullOrWhiteSpace(action.ToBlockId))
+                continue;
+            var target = ResolveStepByBlockId(allSteps, action.ToBlockId);
+            if (target != null && !WorkflowStepTransitionHelper.IsConnectorStep(target))
+                return target;
+        }
+
+        return ResolveStepByBlockId(allSteps, first.ToBlockId);
     }
 
     public static WorkflowStep? ResolveStepByBlockId(IReadOnlyList<WorkflowStep> steps, string blockId)
