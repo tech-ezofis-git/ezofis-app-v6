@@ -692,7 +692,7 @@ const WorkflowRequest = ({
               </ul>
             </div>
           ),
-          variant: 'error',
+          variant: 'info',
         })
         // Scroll to and focus the first missing field that is on screen
         // (a repo field may not be rendered in every layout).

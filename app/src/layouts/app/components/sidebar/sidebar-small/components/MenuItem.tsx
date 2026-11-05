@@ -8,6 +8,7 @@ import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
 import { triggerResetFolderView } from '@/pages/folders/utils/folderExplorerSession'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 import { clearOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import cn from '@/utils/cn'
 import isMenuRouteActive from '../../isMenuRouteActive'
@@ -65,6 +66,9 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
               }
               if (route === '/folders') {
                 triggerResetFolderView()
+              }
+              if (route === '/requests') {
+                requestStore.getState().showAllWorkflows()
               }
             })
           }
