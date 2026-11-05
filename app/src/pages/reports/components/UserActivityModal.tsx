@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
+import * as XLSX from 'xlsx'
 import type { UserLoginActivity } from '@/api/v6/reportAgent'
 import {
   getReportUserActivity,
@@ -11,6 +12,7 @@ import {
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Modal from '@/components/base/Modal'
+import showToast from '@/components/base/toast/showToast'
 import cn from '@/utils/cn'
 import { formatReportDate } from '@/utils/utcDate'
 import StatusPill from './StatusPill'
@@ -158,6 +160,90 @@ const UserActivityModal = ({ email, reportId, onClose }: Props) => {
     { count: events.length, id: 'events', label: t`Events` },
   ]
 
+  const [exporting, setExporting] = useState(false)
+
+  // Excel with three sheets: the logins (with their session's action count),
+  // every action grouped under the login it belongs to, and the counted events.
+  const exportActivity = async () => {
+    if (!email) return
+    setExporting(true)
+    try {
+      const data = await getReportUserActivity(reportId, email, {
+        includeActions: true,
+      })
+      const loginTimes = (data.logins ?? [])
+        .map((login) => login.at)
+        .filter((at): at is string => Boolean(at))
+        .sort()
+      // An action belongs to the latest login at or before it.
+      const sessionOf = (at: null | string) => {
+        if (!at) return null
+        let found: null | string = null
+        for (const loginAt of loginTimes) {
+          if (loginAt <= at) found = loginAt
+          else break
+        }
+        return found
+      }
+      const actions = (data.actions ?? []).map((action) => ({
+        ...action,
+        session: sessionOf(action.at),
+      }))
+      const show = (at: null | string) => (at ? formatReportDate(at) : '')
+      const book = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(
+        book,
+        XLSX.utils.json_to_sheet(
+          (data.logins ?? []).map((login) => ({
+            [t`Actions`]: actions.filter((a) => a.session === login.at).length,
+            [t`Channel`]: login.channel ?? '',
+            [t`Device`]: login.device ?? '',
+            [t`Login Time`]: show(login.at),
+          })),
+        ),
+        t`Logins`,
+      )
+      XLSX.utils.book_append_sheet(
+        book,
+        XLSX.utils.json_to_sheet(
+          actions.map((action) => ({
+            [t`Action`]: action.event || action.type || '',
+            [t`Action Time`]: show(action.at),
+            [t`Category`]: action.category ?? '',
+            [t`Login Time`]: show(action.session),
+            [t`Method`]: action.method ?? '',
+            [t`Page`]: action.path ?? '',
+            [t`Severity`]: action.severity ?? '',
+          })),
+        ),
+        t`Session Activity`,
+      )
+      XLSX.utils.book_append_sheet(
+        book,
+        XLSX.utils.json_to_sheet(
+          (data.events ?? []).map((event) => ({
+            [t`Category`]: event.category ?? '',
+            [t`Event`]: event.event || event.type || '',
+            [t`Severity`]: event.severity ?? '',
+            [t`Time`]: show(event.at),
+          })),
+        ),
+        t`Events`,
+      )
+      XLSX.writeFile(
+        book,
+        `${email.replace(/[^a-z0-9._-]+/gi, '_')}-activity.xlsx`,
+      )
+    } catch {
+      showToast({
+        message: t`Could not export this user's activity.`,
+        variant: 'error',
+      })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const close = () => {
     setOpenLogin(null)
     onClose()
@@ -184,6 +270,17 @@ const UserActivityModal = ({ email, reportId, onClose }: Props) => {
               )}
             </p>
           </div>
+          <IconButton
+            ariaLabel={t`Export to Excel`}
+            color='gray'
+            disabled={exporting || !query.isSuccess}
+            icon={exporting ? 'lucide:loader-2' : 'lucide:download'}
+            iconClass={exporting ? 'animate-spin' : undefined}
+            size='sm'
+            tooltip={t`Export logins, session activity and events`}
+            variant='ghost'
+            onClick={() => void exportActivity()}
+          />
           <IconButton
             ariaLabel={t`Close`}
             color='gray'
@@ -297,9 +394,6 @@ const UserActivityModal = ({ email, reportId, onClose }: Props) => {
                             .join(' · ')}
                         </p>
                       </div>
-                      <span className='shrink-0 font-mono text-12 text-gray-11'>
-                        {login.ip || '-'}
-                      </span>
                     </button>
                     <AnimatePresence initial={false}>
                       {isOpen && email && (
@@ -337,7 +431,6 @@ const UserActivityModal = ({ email, reportId, onClose }: Props) => {
                       {[
                         event.at ? formatReportDate(event.at) : null,
                         event.category,
-                        event.ip,
                       ]
                         .filter(Boolean)
                         .join(' · ')}

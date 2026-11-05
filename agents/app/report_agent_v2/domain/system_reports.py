@@ -891,6 +891,8 @@ async def _document_recent_activity(ctx: _Ctx) -> tuple[sql.Composable, list[str
 _BROWSERS = (("Edg/", "Edge"), ("OPR/", "Opera"), ("Chrome/", "Chrome"), ("Firefox/", "Firefox"), ("Safari/", "Safari"))
 _SYSTEMS = (("Windows", "Windows"), ("Android", "Android"), ("iPhone", "iOS"), ("iPad", "iOS"), ("Mac OS X", "macOS"),
             ("Linux", "Linux"))
+# The mobile app's own HTTP clients (no browser): iOS sends CFNetwork / Darwin, Android okhttp / Dalvik.
+_APP_SYSTEMS = (("CFNetwork", "iOS"), ("Darwin", "iOS"), ("okhttp", "Android"), ("Dalvik", "Android"))
 
 
 def device_label(user_agent: str | None) -> str | None:
@@ -902,13 +904,17 @@ def device_label(user_agent: str | None) -> str | None:
     system = next((name for token, name in _SYSTEMS if token in ua), None)
     if browser and system:
         return f"{browser} on {system}"
+    app_system = next((name for token, name in _APP_SYSTEMS if token in ua), None)
+    if not browser and app_system:
+        return f"App on {app_system}"
     return browser or system or ua[:60]
 
 
 async def user_login_activity(conn: AsyncConnection, tenant_id: uuid.UUID, email: str, *, as_of: date,
-                              limit: int = 500) -> dict:
+                              limit: int = 500, include_actions: bool = False) -> dict:
     """Every login and security event of one user in the report's window (the User Login and Security
-    Activity report counts them per user; this lists them)."""
+    Activity report counts them per user; this lists them). IP addresses are not returned.
+    include_actions: also every activity-log entry of the window (for the export), oldest first."""
     template = TEMPLATES["user_login_security"]
     until = datetime.combine(as_of + timedelta(days=1), time.min, tzinfo=timezone.utc)
     since = until - timedelta(days=template.window_days)
@@ -917,7 +923,7 @@ async def user_login_activity(conn: AsyncConnection, tenant_id: uuid.UUID, email
     if {"Email", "LoggedFrom", "IpAddress", "CreatedAtUtc", "TenantId"} <= await _columns(conn, "auth", "LoginHistory"):
         agent = 'NULLIF(btrim("UserAgent"), \'\')' if "UserAgent" in await _columns(conn, "auth", "LoginHistory") else "NULL"
         cur = await conn.execute(
-            f"""SELECT "CreatedAtUtc", "LoggedFrom", "IpAddress", {agent} FROM auth."LoginHistory"
+            f"""SELECT "CreatedAtUtc", "LoggedFrom", {agent} FROM auth."LoginHistory"
                 WHERE "TenantId" = %s AND lower("Email") = %s AND "CreatedAtUtc" >= %s AND "CreatedAtUtc" < %s
                 ORDER BY "CreatedAtUtc" DESC LIMIT %s""",
             (tenant_id, who, since, until, limit),
@@ -925,18 +931,17 @@ async def user_login_activity(conn: AsyncConnection, tenant_id: uuid.UUID, email
         logins = [
             {"at": at.isoformat() if at else None,
              "channel": {"WEB": "Web", "MOBILE": "Mobile"}.get(str(channel or "").upper(), channel),
-             "ip": ip, "device": device_label(ua)}
-            for at, channel, ip, ua in await cur.fetchall()
+             "device": device_label(ua)}
+            for at, channel, ua in await cur.fetchall()
         ]
     events: list[dict] = []
     if {"UserEmail", "Category", "Severity", "EventType", "CreatedAtUtc", "TenantId"} <= await _columns(
             conn, "activitylog", "EventLogs"):
         cols = await _columns(conn, "activitylog", "EventLogs")
         title = '"EventTitle"' if "EventTitle" in cols else '"EventType"'
-        ip = '"IpAddress"' if "IpAddress" in cols else "NULL"
         # The same events the report counts: Security, Warning and permission changes.
         cur = await conn.execute(
-            f"""SELECT "CreatedAtUtc", {title}, "EventType", "Category", "Severity", {ip} FROM activitylog."EventLogs"
+            f"""SELECT "CreatedAtUtc", {title}, "EventType", "Category", "Severity" FROM activitylog."EventLogs"
                 WHERE "TenantId" = %s AND lower("UserEmail") = %s AND "CreatedAtUtc" >= %s AND "CreatedAtUtc" < %s
                   AND ("Category" = 'Security' OR "Severity" = 'Warning' OR "EventType" = 'Permission Changed')
                 ORDER BY "CreatedAtUtc" DESC LIMIT %s""",
@@ -944,10 +949,37 @@ async def user_login_activity(conn: AsyncConnection, tenant_id: uuid.UUID, email
         )
         events = [
             {"at": at.isoformat() if at else None, "event": ttl or etype, "type": etype, "category": cat,
-             "severity": sev, "ip": addr}
-            for at, ttl, etype, cat, sev, addr in await cur.fetchall()
+             "severity": sev}
+            for at, ttl, etype, cat, sev in await cur.fetchall()
         ]
-    return {"email": who, "since": since.isoformat(), "until": until.isoformat(), "logins": logins, "events": events}
+    result = {"email": who, "since": since.isoformat(), "until": until.isoformat(), "logins": logins, "events": events}
+    if include_actions:
+        result["actions"] = await _user_actions(conn, tenant_id, who, since, until, limit=5000)
+    return result
+
+
+async def _user_actions(conn: AsyncConnection, tenant_id: uuid.UUID, who: str, since: datetime, until: datetime,
+                        *, limit: int) -> list[dict]:
+    """Every activity-log entry of a user between two times, oldest first (no IP)."""
+    cols = await _columns(conn, "activitylog", "EventLogs")
+    if not {"UserEmail", "CreatedAtUtc", "TenantId"} <= cols:
+        return []
+
+    def col(name: str) -> str:
+        return f'"{name}"' if name in cols else "NULL"
+    cur = await conn.execute(
+        f"""SELECT "CreatedAtUtc", {col("EventTitle")}, {col("EventType")}, {col("Category")}, {col("Severity")},
+                   {col("HttpMethod")}, {col("Path")}, {col("StatusCode")}
+            FROM activitylog."EventLogs"
+            WHERE "TenantId" = %s AND lower("UserEmail") = %s AND "CreatedAtUtc" >= %s AND "CreatedAtUtc" < %s
+            ORDER BY "CreatedAtUtc" LIMIT %s""",
+        (tenant_id, who, since, until, limit),
+    )
+    return [
+        {"at": at.isoformat() if at else None, "event": title or etype, "type": etype, "category": cat,
+         "severity": sev, "method": method, "path": path, "status": status}
+        for at, title, etype, cat, sev, method, path, status in await cur.fetchall()
+    ]
 
 
 # A login "session" lasts until the user's next login, at most this long (no logout is recorded).
@@ -969,24 +1001,7 @@ async def user_login_session(conn: AsyncConnection, tenant_id: uuid.UUID, email:
         nxt = (await cur.fetchone())[0]
         if nxt is not None and nxt < until:
             until = nxt
-    actions: list[dict] = []
-    cols = await _columns(conn, "activitylog", "EventLogs")
-    if {"UserEmail", "CreatedAtUtc", "TenantId"} <= cols:
-        def col(name: str) -> str:
-            return f'"{name}"' if name in cols else "NULL"
-        cur = await conn.execute(
-            f"""SELECT "CreatedAtUtc", {col("EventTitle")}, {col("EventType")}, {col("Category")}, {col("Severity")},
-                       {col("HttpMethod")}, {col("Path")}, {col("StatusCode")}
-                FROM activitylog."EventLogs"
-                WHERE "TenantId" = %s AND lower("UserEmail") = %s AND "CreatedAtUtc" >= %s AND "CreatedAtUtc" < %s
-                ORDER BY "CreatedAtUtc" LIMIT %s""",
-            (tenant_id, who, login_at, until, limit),
-        )
-        actions = [
-            {"at": at.isoformat() if at else None, "event": title or etype, "type": etype, "category": cat,
-             "severity": sev, "method": method, "path": path, "status": status}
-            for at, title, etype, cat, sev, method, path, status in await cur.fetchall()
-        ]
+    actions = await _user_actions(conn, tenant_id, who, login_at, until, limit=limit)
     return {"email": who, "from": login_at.isoformat(), "until": until.isoformat(), "actions": actions}
 
 

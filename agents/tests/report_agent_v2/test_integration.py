@@ -941,9 +941,13 @@ async def test_user_activity_lists_one_users_logins_and_events(world, make_clien
         ids = {x["key"]: x["id"] for x in (await client.post("/api/report-agent-v2/defaults/install", headers=admin)).json()["reports"]}
         url = f"/api/report-agent-v2/reports/{ids['user_login_security']}/user-activity"
         body = (await client.get(url, params={"email": "owner@a.example.com"}, headers=admin)).json()
-        assert [(x["channel"], x["ip"], x["device"]) for x in body["logins"]] == [
-            ("Web", "10.0.0.1", "Chrome on Windows"), ("Mobile", "10.0.0.2", "EZOFIS/1.4")]
+        assert [(x["channel"], x["device"]) for x in body["logins"]] == [
+            ("Web", "Chrome on Windows"), ("Mobile", "EZOFIS/1.4")]
         assert sorted(e["event"] for e in body["events"]) == ["Password changed", "Role updated"]
+        # IP addresses are not shown (nor sent); the export asks for every action as well.
+        assert not any("ip" in x for x in body["logins"] + body["events"]) and "actions" not in body
+        export = (await client.get(url, params={"email": "owner@a.example.com", "includeActions": "true"}, headers=admin)).json()
+        assert sorted(a["event"] for a in export["actions"]) == ["Password changed", "Report viewed", "Role updated"]
         # Admin only, and only behind the login report.
         user = await client.get(url, params={"email": "owner@a.example.com"}, headers=_h(world, world.owner))
         assert user.status_code == 403
