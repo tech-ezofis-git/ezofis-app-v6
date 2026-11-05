@@ -122,10 +122,9 @@ export function getColumnOptionsSource(col: any): ColumnOptionsSource {
 }
 
 /** The "predefined list" a column reads its options from (default: users). */
-export function getColumnPredefinedType(col: any): 'FOLDER' | 'USER' {
-  return col?.settings?.specific?.predefinedType === 'FOLDER'
-    ? 'FOLDER'
-    : 'USER'
+export function getColumnPredefinedType(col: any): 'FOLDER' | 'GROUP' | 'USER' {
+  const type = col?.settings?.specific?.predefinedType
+  return type === 'FOLDER' || type === 'GROUP' ? type : 'USER'
 }
 
 /**

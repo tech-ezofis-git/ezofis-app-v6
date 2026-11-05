@@ -22,9 +22,8 @@ namespace SaaSApp.Workflow.Infrastructure.Services;
 /// re-checked (ticket still waiting / not resolved), notifications are written to the outbox, then the
 /// escalation runs: User = Forward (reassign), Stage = move the ticket to the chosen stage.</item>
 /// </list>
-/// Advanced (SLA Master) configurations are not executed.
 /// </summary>
-public sealed class WorkflowSlaTimerService
+public sealed partial class WorkflowSlaTimerService
 {
     public const string ScopeResponse = "response";
     public const string ScopeResolution = "resolution";
@@ -40,33 +39,56 @@ public sealed class WorkflowSlaTimerService
     // Parsed SLA per workflow, refreshed when the workflow row is modified.
     private static readonly ConcurrentDictionary<Guid, CachedDefinition> Definitions = new();
 
+    // Reasons already logged: tickets are re-read every pass, the reason is written once per ticket.
+    private static readonly ConcurrentDictionary<string, byte> LoggedReasons = new();
+
+    private static bool FirstTime(string key)
+    {
+        if (LoggedReasons.Count > 20000)
+            LoggedReasons.Clear();
+        return LoggedReasons.TryAdd(key, 0);
+    }
+
     private readonly ITenantContext _tenantContext;
     private readonly IWorkflowJsonStorageService _jsonStorage;
     private readonly IMediator _mediator;
     private readonly WorkflowSlaOptions _options;
     private readonly ILogger<WorkflowSlaTimerService> _logger;
+    private readonly IWorkflowLegacyMailboxSyncService _mailboxSync;
+    private readonly IWorkflowEzfbFormDataLoader _formDataLoader;
+    private readonly IFormEntryService _formEntryService;
+    private readonly IWorkflowSecurityService _workflowSecurity;
 
     public WorkflowSlaTimerService(
         ITenantContext tenantContext,
         IWorkflowJsonStorageService jsonStorage,
         IMediator mediator,
         IOptions<WorkflowSlaOptions> options,
-        ILogger<WorkflowSlaTimerService> logger)
+        ILogger<WorkflowSlaTimerService> logger,
+        IWorkflowLegacyMailboxSyncService mailboxSync,
+        IWorkflowEzfbFormDataLoader formDataLoader,
+        IFormEntryService formEntryService,
+        IWorkflowSecurityService workflowSecurity)
     {
+        _workflowSecurity = workflowSecurity;
         _tenantContext = tenantContext;
         _jsonStorage = jsonStorage;
         _mediator = mediator;
+        _mailboxSync = mailboxSync;
+        _formDataLoader = formDataLoader;
+        _formEntryService = formEntryService;
         _options = options.Value;
         _logger = logger;
     }
 
     private sealed record CachedDefinition(DateTime? ModifiedAtUtc, WorkflowJsonDto? Json);
 
-    private sealed record SlaWorkflow(Guid Id, string Name, DateTime? ModifiedAtUtc, WorkflowJsonDto Json);
+    private sealed record SlaWorkflow(
+        Guid Id, string Name, DateTime? ModifiedAtUtc, WorkflowJsonDto Json, WorkflowBusinessCalendar? Calendar);
 
     private sealed record ClaimedTimer(
         long Id, Guid WorkflowId, Guid InstanceId, string Scope, int TransactionId, string? ActivityId,
-        string RuleId, DateTime DueAtUtc, int Attempts);
+        string RuleId, DateTime DueAtUtc, int Attempts, string? SnapshotJson);
 
     /// <summary>Returns the number of timers fired.</summary>
     public async Task<int> RunAsync(CancellationToken cancellationToken = default)
@@ -112,17 +134,35 @@ public sealed class WorkflowSlaTimerService
                 return;
         }
 
-        var (lastTransactionId, lastInstanceCreatedAt, slaSince) = await PrepareStateAsync(connection, workflow, cancellationToken);
+        var (lastTransactionId, lastInstanceCreatedAt, slaSince) = await PrepareStateAsync(connection, workflow, _logger, cancellationToken);
 
         var blocks = (workflow.Json.Blocks ?? [])
             .Where(b => WorkflowSlaSchedule.IsActiveStandard(b.Settings?.SlaSettings))
             .ToDictionary(b => b.Id, b => b.Settings.SlaSettings!, StringComparer.Ordinal);
+        var masterBlocks = (workflow.Json.Blocks ?? [])
+            .Where(b => WorkflowSlaSchedule.IsMasterEntry(b.Settings?.SlaSettings))
+            .ToDictionary(b => b.Id, b => b.Settings.SlaSettings!, StringComparer.Ordinal);
+        var fromTransactionId = lastTransactionId;
         if (blocks.Count > 0)
-            lastTransactionId = await MaterializeResponseAsync(connection, workflow.Id, suffix, blocks, lastTransactionId, slaSince, cancellationToken);
+            lastTransactionId = await MaterializeResponseAsync(
+                connection, workflow.Id, suffix, blocks, workflow.Calendar, fromTransactionId, slaSince, _logger, cancellationToken);
+        if (masterBlocks.Count > 0)
+        {
+            // Same transactions as the Standard scan: continue from the lower point when either stopped early.
+            var masterLast = await MaterializeMasterResponseAsync(
+                connection, workflow, suffix, masterBlocks, fromTransactionId, slaSince, cancellationToken);
+            lastTransactionId = blocks.Count > 0 ? Math.Min(lastTransactionId, masterLast) : masterLast;
+        }
 
         var resolution = workflow.Json.Settings?.SlaSettings;
-        if (WorkflowSlaSchedule.IsActiveStandard(resolution))
-            lastInstanceCreatedAt = await MaterializeResolutionAsync(connection, workflow.Id, suffix, resolution!, lastInstanceCreatedAt, slaSince, cancellationToken);
+        if (WorkflowSlaSchedule.IsActiveAdvanced(resolution))
+            await MaterializeAdvancedAsync(connection, workflow, suffix, resolution!, slaSince, cancellationToken);
+        else if (WorkflowSlaSchedule.IsMasterEntry(resolution))
+            lastInstanceCreatedAt = await MaterializeMasterResolutionAsync(
+                connection, workflow, suffix, resolution!, lastInstanceCreatedAt, slaSince, cancellationToken);
+        else if (WorkflowSlaSchedule.IsActiveStandard(resolution))
+            lastInstanceCreatedAt = await MaterializeResolutionAsync(
+                connection, workflow.Id, suffix, resolution!, workflow.Calendar, lastInstanceCreatedAt, slaSince, _logger, cancellationToken);
 
         const string save = """
             UPDATE workflow.sla_workflow_state
@@ -143,6 +183,7 @@ public sealed class WorkflowSlaTimerService
     private static async Task<(int LastTransactionId, DateTime? LastInstanceCreatedAt, DateTime? SlaSince)> PrepareStateAsync(
         NpgsqlConnection connection,
         SlaWorkflow workflow,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var fingerprint = WorkflowSlaSchedule.Fingerprint(workflow.Json);
@@ -181,7 +222,8 @@ public sealed class WorkflowSlaTimerService
         // New or edited definition: rebuild pending timers from every waiting ticket that arrived after
         // the SLA was set. Rules that already fired keep their row, so they do not fire again.
         const string reset = """
-            DELETE FROM workflow.sla_timers WHERE workflow_id = @WorkflowId AND status = 0;
+            DELETE FROM workflow.sla_timers
+            WHERE workflow_id = @WorkflowId AND status = 0 AND scope IN ('response', 'resolution');
             INSERT INTO workflow.sla_workflow_state
                 (workflow_id, definition_modified_at, last_transaction_id, last_instance_created_at, sla_fingerprint, sla_since)
             VALUES (@WorkflowId, @DefinitionAt, 0, NULL, @Fingerprint, @Since)
@@ -197,6 +239,9 @@ public sealed class WorkflowSlaTimerService
         cmd.Parameters.AddWithValue("@Fingerprint", fingerprint);
         cmd.Parameters.AddWithValue("@Since", since);
         await cmd.ExecuteNonQueryAsync(cancellationToken);
+        logger.LogInformation(
+            "SLA: workflow {WorkflowId} was saved; pending Standard timers rebuilt for tickets that arrived after {SlaSince:u} (older tickets get no SLA).",
+            workflow.Id, since);
         return (0, null, since);
     }
 
@@ -210,8 +255,10 @@ public sealed class WorkflowSlaTimerService
         Guid workflowId,
         string suffix,
         Dictionary<string, WorkflowSlaConfigurationDto> blocks,
+        WorkflowBusinessCalendar? calendar,
         int lastTransactionId,
         DateTime? slaSince,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         int maxId;
@@ -253,8 +300,16 @@ public sealed class WorkflowSlaTimerService
                 var activityId = reader.GetString(2);
                 var arrived = reader.GetDateTime(3).ToUniversalTime();
                 if (!WorkflowSlaSchedule.AppliesTo(arrived, slaSince))
-                    continue; // reached the stage before the SLA was set
-                foreach (var (ruleId, due) in WorkflowSlaSchedule.Timers(blocks[activityId], arrived))
+                {
+                    // reached the stage before the SLA was set
+                    if (FirstTime($"since|{workflowId}|{lastSeen}"))
+                        logger.LogInformation(
+                            "SLA: no timer for transaction {TransactionId} of workflow {WorkflowId}: it reached the stage at {Arrived:u}, before the SLA was saved at {SlaSince:u}.",
+                            lastSeen, workflowId, arrived, slaSince);
+                    continue;
+                }
+
+                foreach (var (ruleId, due) in WorkflowSlaSchedule.Timers(blocks[activityId], arrived, calendar))
                 {
                     transactions.Add(lastSeen);
                     instances.Add(reader.GetGuid(1));
@@ -275,8 +330,10 @@ public sealed class WorkflowSlaTimerService
         Guid workflowId,
         string suffix,
         WorkflowSlaConfigurationDto sla,
+        WorkflowBusinessCalendar? calendar,
         DateTime? lastInstanceCreatedAt,
         DateTime? slaSince,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var sql = $"""
@@ -309,8 +366,16 @@ public sealed class WorkflowSlaTimerService
                 if (newest is null || created > newest)
                     newest = created;
                 if (!WorkflowSlaSchedule.AppliesTo(created, slaSince))
-                    continue; // created before the SLA was set
-                foreach (var (ruleId, due) in WorkflowSlaSchedule.Timers(sla, created))
+                {
+                    // created before the SLA was set
+                    if (FirstTime($"since|{workflowId}|{reader.GetGuid(0)}"))
+                        logger.LogInformation(
+                            "SLA: no resolution timer for ticket {InstanceId} of workflow {WorkflowId}: it was created at {Created:u}, before the SLA was saved at {SlaSince:u}.",
+                            reader.GetGuid(0), workflowId, created, slaSince);
+                    continue;
+                }
+
+                foreach (var (ruleId, due) in WorkflowSlaSchedule.Timers(sla, created, calendar))
                 {
                     instances.Add(reader.GetGuid(0));
                     rules.Add(ruleId);
@@ -377,11 +442,11 @@ public sealed class WorkflowSlaTimerService
             UPDATE workflow.sla_timers SET locked_until = now() + interval '5 minutes'
             WHERE id IN (
                 SELECT id FROM workflow.sla_timers
-                WHERE status = 0 AND due_at_utc <= now() AND (locked_until IS NULL OR locked_until < now())
+                WHERE status IN (0, 4) AND due_at_utc <= now() AND (locked_until IS NULL OR locked_until < now())
                 ORDER BY due_at_utc
                 LIMIT @Batch
                 FOR UPDATE SKIP LOCKED)
-            RETURNING id, workflow_id, workflow_instance_id, scope, transaction_id, activity_id, rule_id, due_at_utc, attempts;
+            RETURNING id, workflow_id, workflow_instance_id, scope, transaction_id, activity_id, rule_id, due_at_utc, attempts, snapshot_json;
             """;
         var timers = new List<ClaimedTimer>();
         await using (var cmd = new NpgsqlCommand(claim, connection))
@@ -393,7 +458,8 @@ public sealed class WorkflowSlaTimerService
                 timers.Add(new ClaimedTimer(
                     reader.GetInt64(0), reader.GetGuid(1), reader.GetGuid(2), reader.GetString(3), reader.GetInt32(4),
                     reader.IsDBNull(5) ? null : reader.GetString(5), reader.GetString(6),
-                    reader.GetDateTime(7).ToUniversalTime(), reader.GetInt32(8)));
+                    reader.GetDateTime(7).ToUniversalTime(), reader.GetInt32(8),
+                    reader.IsDBNull(9) ? null : reader.GetString(9)));
             }
         }
 
@@ -440,6 +506,8 @@ public sealed class WorkflowSlaTimerService
     {
         if (!workflows.TryGetValue(timer.WorkflowId, out var workflow))
             return (WorkflowSlaStore.TimerCancelled, "workflow is no longer published with an SLA");
+        if (IsAdvancedScope(timer.Scope))
+            return await FireAdvancedAsync(connection, timer, workflow, cancellationToken);
 
         var suffix = workflow.Id.ToString("N")[..8];
         var isResponse = timer.Scope == ScopeResponse;
@@ -465,6 +533,11 @@ public sealed class WorkflowSlaTimerService
             && Guid.TryParse(rule.EscalateTo!.UserId, out var escUser) ? escUser : null;
         if (escalationUserId is { } eu)
             recipientIds.Add(eu);
+        var groupMembers = isResponse && IsType(rule.EscalateTo, WorkflowSlaSettingsValidator.EscalateToGroup)
+            && Guid.TryParse(rule.EscalateTo!.GroupId, out var escalationGroup)
+                ? await WorkflowSlaGroupEscalation.ListMembersAsync(connection, escalationGroup, cancellationToken)
+                : [];
+        recipientIds.UnionWith(groupMembers);
 
         var reference = string.IsNullOrWhiteSpace(ticket.Reference) ? timer.InstanceId.ToString("D")[..8] : ticket.Reference;
         var limit = WorkflowSlaSchedule.Describe(rule);
@@ -500,7 +573,7 @@ public sealed class WorkflowSlaTimerService
 
         // 2) Escalation (response SLA only).
         if (isResponse)
-            outcome.Add(await EscalateAsync(connection, timer, rule, ticket, limit, cancellationToken));
+            outcome.Add(await EscalateAsync(connection, timer, rule, ticket, limit, groupMembers, cancellationToken));
 
         return (WorkflowSlaStore.TimerFired, string.Join("; ", outcome.Where(o => o.Length > 0)));
     }
@@ -543,7 +616,7 @@ public sealed class WorkflowSlaTimerService
               AND NOT EXISTS (
                   SELECT 1 FROM workflow.transaction_{suffix} t
                   WHERE t.workflow_instance_id = i.id AND t.is_deleted = false
-                    AND UPPER(TRIM(COALESCE(t.stage_type, ''))) = 'END');
+                    AND {WorkflowStepTransitionHelper.FinishedEndRowSql("t")});
             """;
         await using var cmd = new NpgsqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@InstanceId", instanceId);
@@ -618,10 +691,18 @@ public sealed class WorkflowSlaTimerService
         WorkflowSlaConfigurationRuleDto rule,
         TicketRow ticket,
         string limit,
+        IReadOnlyList<Guid> groupMembers,
         CancellationToken cancellationToken)
     {
         try
         {
+            if (IsType(rule.EscalateTo, WorkflowSlaSettingsValidator.EscalateToGroup))
+            {
+                return await EscalateToGroupAsync(
+                    connection, timer, rule.EscalateTo!.GroupId!, groupMembers, ticket.AssigneeUserId,
+                    $"SLA '{rule.Name}' crossed ({limit}); sent to the group automatically.", cancellationToken);
+            }
+
             if (IsType(rule.EscalateTo, WorkflowSlaSettingsValidator.EscalateToUser)
                 && Guid.TryParse(rule.EscalateTo!.UserId, out var forwardTo))
             {
@@ -690,7 +771,7 @@ public sealed class WorkflowSlaTimerService
             """
             UPDATE workflow.sla_timers
             SET attempts = @Attempts, locked_until = NULL, outcome = @Outcome,
-                status = CASE WHEN @Attempts >= @Max THEN 3 ELSE 0 END,
+                status = CASE WHEN @Attempts >= @Max THEN 3 ELSE status END,
                 processed_at_utc = CASE WHEN @Attempts >= @Max THEN now() ELSE NULL END
             WHERE id = @Id;
             """,
@@ -732,14 +813,34 @@ public sealed class WorkflowSlaTimerService
         {
             var json = await LoadDefinitionAsync(id, modified, cancellationToken);
             if (json != null && HasStandardSla(json))
-                result[id] = new SlaWorkflow(id, name, modified, json);
+                result[id] = new SlaWorkflow(id, name, modified, json, LoadCalendar(id, json));
         }
 
         return result;
     }
 
+    /// <summary>
+    /// The workflow's business hours, or null (calendar time). Saving invalid hours is refused, so an
+    /// invalid one here is an old definition: it is logged and the SLA runs on calendar time.
+    /// </summary>
+    private WorkflowBusinessCalendar? LoadCalendar(Guid workflowId, WorkflowJsonDto json)
+    {
+        try
+        {
+            return WorkflowBusinessCalendar.TryCreate(json.Settings?.General?.SlaSettings);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning("SLA: workflow {WorkflowId} business hours are invalid ({Error}); using calendar time.", workflowId, ex.Message);
+            return null;
+        }
+    }
+
     private static bool HasStandardSla(WorkflowJsonDto json) =>
         WorkflowSlaSchedule.IsActiveStandard(json.Settings?.SlaSettings)
+        || WorkflowSlaSchedule.IsActiveAdvanced(json.Settings?.SlaSettings)
+        || WorkflowSlaSchedule.IsMasterEntry(json.Settings?.SlaSettings)
+        || (json.Blocks ?? []).Any(b => WorkflowSlaSchedule.IsMasterEntry(b.Settings?.SlaSettings))
         || (json.Blocks ?? []).Any(b => WorkflowSlaSchedule.IsActiveStandard(b.Settings?.SlaSettings));
 
     private async Task<WorkflowJsonDto?> LoadDefinitionAsync(Guid workflowId, DateTime? modifiedAtUtc, CancellationToken cancellationToken)
@@ -769,6 +870,8 @@ public sealed class WorkflowSlaTimerService
             return " It is being moved to the stage chosen for escalation.";
         if (IsType(rule.EscalateTo, WorkflowSlaSettingsValidator.EscalateToUser))
             return " It is being reassigned for escalation.";
+        if (IsType(rule.EscalateTo, WorkflowSlaSettingsValidator.EscalateToGroup))
+            return " It is being sent to the group chosen for escalation.";
         return string.Empty;
     }
 

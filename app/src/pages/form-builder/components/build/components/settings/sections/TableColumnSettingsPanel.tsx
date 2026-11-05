@@ -1,5 +1,5 @@
-import { useMemo, type ComponentProps } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { type ComponentProps, useMemo } from 'react'
 import type {
   Question,
   QuestionType,
@@ -16,6 +16,7 @@ import { FILL_SYNC_COLUMN_TYPES } from '@/pages/form-builder/helpers/tableColumn
 import {
   extractFormFieldChoices,
   getColumnOptionsSource,
+  getColumnPredefinedType,
 } from '@/pages/form-builder/helpers/tableColumnOptions'
 import FormulaBuilder from './FormulaBuilder'
 import { settingLabelClass } from './settingLabelClasses'
@@ -132,6 +133,7 @@ const optionsSourceRadio = [
 const PREDEFINED_TYPE_OPTIONS = [
   { id: 'USER', name: 'User directory (emails)' },
   { id: 'FOLDER', name: 'Folders / Repositories (names)' },
+  { id: 'GROUP', name: 'User groups (names)' },
 ]
 
 export type TableColumn = NonNullable<
@@ -218,8 +220,7 @@ const TableColumnSettingsPanel = ({
   const masterFormId = column.settings?.specific?.masterFormId || ''
   const masterFormColumn = column.settings?.specific?.masterFormColumn || ''
   const showAllData = Boolean(column.settings?.specific?.showAllData)
-  const predefinedType =
-    column.settings?.specific?.predefinedType === 'FOLDER' ? 'FOLDER' : 'USER'
+  const predefinedType = getColumnPredefinedType(column)
 
   const { data: masterColumns = [] } = useQuery({
     enabled: showOptions && optionsSource === 'MASTER' && !!masterFormId,
@@ -490,9 +491,9 @@ const TableColumnSettingsPanel = ({
                   Options depend on another column
                 </label>
                 <InputSelect
+                  options={cascadeOptions}
                   placeholder='Does not depend on another column'
                   clearable
-                  options={cascadeOptions}
                   value={
                     cascadeOptions.find((c) => c.id === cascadeFromColumn) ||
                     null
@@ -571,9 +572,9 @@ const TableColumnSettingsPanel = ({
                   Options depend on another column
                 </label>
                 <InputSelect
+                  options={cascadeOptions}
                   placeholder='Does not depend on another column'
                   clearable
-                  options={cascadeOptions}
                   value={
                     cascadeOptions.find((c) => c.id === cascadeFromColumn) ||
                     null
@@ -608,7 +609,10 @@ const TableColumnSettingsPanel = ({
                 onChange={(opt) =>
                   onUpdate({
                     specific: {
-                      predefinedType: opt?.id === 'FOLDER' ? 'FOLDER' : 'USER',
+                      predefinedType:
+                        opt?.id === 'FOLDER' || opt?.id === 'GROUP'
+                          ? opt.id
+                          : 'USER',
                     },
                   })
                 }

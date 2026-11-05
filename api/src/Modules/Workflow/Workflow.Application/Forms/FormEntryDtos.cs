@@ -174,3 +174,6 @@ public sealed record FormEntryByColumnResult(
     IReadOnlyList<Dictionary<string, object?>>? Entries,
     int UpdatedCount = 0,
     IReadOnlyList<string>? Values = null);
+
+/// <summary>A form field: its jsonId (entry JSON key), label, and ezfb column (when the form has a table).</summary>
+public sealed record FormFieldLabel(string JsonId, string? Label, string? Type, string? ColumnName);

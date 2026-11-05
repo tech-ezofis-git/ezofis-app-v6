@@ -17,7 +17,122 @@ public record WorkflowSlaConfigurationDto(
     [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
     string? SlaMasterId = null,
     [property: JsonPropertyName("notifications")]
-    WorkflowSlaNotificationsDto? Notifications = null
+    WorkflowSlaNotificationsDto? Notifications = null,
+    /// <summary>Advanced (workflow settings): SLA Master fields (stable jsonIds) the SLA values are read from.</summary>
+    [property: JsonPropertyName("fieldMapping")]
+    WorkflowSlaFieldMappingDto? FieldMapping = null,
+    /// <summary>Advanced: rules that pick SLA Master entries from the request's form values.</summary>
+    [property: JsonPropertyName("advancedRules")]
+    List<WorkflowSlaAdvancedRuleDto>? AdvancedRules = null,
+    /// <summary>
+    /// Advanced: the stage whose first action completes the response SLA. No stage = no response SLA
+    /// (only resolution, which completes when the request reaches the end of the workflow).
+    /// </summary>
+    [property: JsonPropertyName("responseStageId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? ResponseStageId = null,
+    /// <summary>Advanced: entry used when no rule matches. None = no SLA for that request.</summary>
+    [property: JsonPropertyName("fallbackEntryId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? FallbackEntryId = null,
+    /// <summary>
+    /// Advanced (workflow or stage): the SLA Master field (jsonId) that names the entries in the settings,
+    /// e.g. Name. The SLA itself always comes from <see cref="EntryId"/>.
+    /// </summary>
+    [property: JsonPropertyName("masterFieldId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? MasterFieldId = null,
+    /// <summary>Not used: the designer saves only <see cref="EntryId"/>, so renaming the entry keeps it.</summary>
+    [property: JsonPropertyName("masterValue")]
+    string? MasterValue = null,
+    /// <summary>
+    /// Advanced: the chosen SLA Master entry (item_id). Its Response / Resolution Time and Type, Notify and
+    /// Escalate are read from the master by field label each time timers are created and fired.
+    /// </summary>
+    [property: JsonPropertyName("entryId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? EntryId = null,
+    /// <summary>
+    /// Advanced (workflow or stage): several SLA Master entries, each with its own time and what it does
+    /// (notify, escalate, or both). Settings saved with only <see cref="EntryId"/> mean one row doing both.
+    /// </summary>
+    [property: JsonPropertyName("masterEntries")]
+    List<WorkflowSlaMasterEntryDto>? MasterEntries = null
+);
+
+/// <summary>One SLA Master entry on an SLA: its time comes live from the entry.</summary>
+public record WorkflowSlaMasterEntryDto(
+    [property: JsonPropertyName("id")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? Id = null,
+    [property: JsonPropertyName("entryId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? EntryId = null,
+    /// <summary>At the entry's time, notify its Notify users.</summary>
+    [property: JsonPropertyName("notify")] bool? Notify = null,
+    /// <summary>At the entry's time, escalate to its Escalate users.</summary>
+    [property: JsonPropertyName("escalate")] bool? Escalate = null
+);
+
+/// <summary>SLA Master field jsonIds for each SLA property (Advanced mode).</summary>
+public record WorkflowSlaFieldMappingDto(
+    [property: JsonPropertyName("name")] string? Name = null,
+    [property: JsonPropertyName("responseDuration")] string? ResponseDuration = null,
+    [property: JsonPropertyName("responseUnit")] string? ResponseUnit = null,
+    [property: JsonPropertyName("resolutionDuration")] string? ResolutionDuration = null,
+    [property: JsonPropertyName("resolutionUnit")] string? ResolutionUnit = null,
+    [property: JsonPropertyName("notifyUsers")] string? NotifyUsers = null,
+    [property: JsonPropertyName("escalationUsers")] string? EscalationUsers = null
+);
+
+/// <summary>One condition on the request's form: field jsonId, operator (condition block operators), value.</summary>
+public record WorkflowSlaConditionDto(
+    [property: JsonPropertyName("fieldId")] string? FieldId = null,
+    [property: JsonPropertyName("logic")] string? Logic = null,
+    [property: JsonPropertyName("value")] string? Value = null
+);
+
+/// <summary>
+/// Advanced SLA rule: when its conditions match the request, the selected SLA Master entries give the
+/// response / resolution targets. Several entries are resolved by <see cref="EntryStrategy"/>.
+/// </summary>
+public record WorkflowSlaAdvancedRuleDto(
+    [property: JsonPropertyName("id")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? Id = null,
+    [property: JsonPropertyName("name")] string? Name = null,
+    [property: JsonPropertyName("enabled")] bool? Enabled = null,
+    [property: JsonPropertyName("priority")]
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+    int? Priority = null,
+    [property: JsonPropertyName("stopAfterMatch")] bool? StopAfterMatch = null,
+    /// <summary>True = all conditions (AND), false = any (OR). No conditions = always matches.</summary>
+    [property: JsonPropertyName("matchAll")] bool? MatchAll = null,
+    [property: JsonPropertyName("conditions")] List<WorkflowSlaConditionDto>? Conditions = null,
+    [property: JsonPropertyName("entryIds")] List<string>? EntryIds = null,
+    /// <summary>first | shortest | longest | each.</summary>
+    [property: JsonPropertyName("entryStrategy")] string? EntryStrategy = null,
+    /// <summary>Remind this many working minutes before each deadline; null / 0 = no reminder.</summary>
+    [property: JsonPropertyName("reminderMinutes")]
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+    int? ReminderMinutes = null,
+    /// <summary>Users notified besides the entry's Notify users.</summary>
+    [property: JsonPropertyName("notifyUserIds")] List<string>? NotifyUserIds = null,
+    [property: JsonPropertyName("initiator")] bool? Initiator = null,
+    [property: JsonPropertyName("breachAction")] WorkflowSlaBreachActionDto? BreachAction = null
+);
+
+/// <summary>
+/// What happens when a deadline passes: <c>notify</c> (escalation users are notified only),
+/// <c>reassign</c> (current assignee replaced by the first escalation user, through Forward) or
+/// <c>stage</c> (moved to <see cref="StageId"/>). <see cref="On"/>: response | resolution | both.
+/// </summary>
+public record WorkflowSlaBreachActionDto(
+    [property: JsonPropertyName("type")] string? Type = null,
+    [property: JsonPropertyName("stageId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? StageId = null,
+    [property: JsonPropertyName("on")] string? On = null
 );
 
 public record WorkflowSlaConfigurationRuleDto(
@@ -51,7 +166,11 @@ public record WorkflowSlaEscalationDto(
     string? UserId = null,
     [property: JsonPropertyName("stageId")]
     [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
-    string? StageId = null
+    string? StageId = null,
+    /// <summary>Type <c>group</c>: the tenant group (<c>users."Groups"</c>) that receives the request.</summary>
+    [property: JsonPropertyName("groupId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? GroupId = null
 );
 
 public record WorkflowSlaNotificationsDto(

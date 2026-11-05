@@ -8,6 +8,26 @@ public static class WorkflowStepTransitionHelper
 {
     public const string StartProceedReview = "Submit";
 
+    /// <summary>Review recorded on the End row when a finished request is sent back through the workflow.</summary>
+    public const string ReinitiateReview = "Re-initiate";
+
+    public static bool IsReinitiateReview(string? review) =>
+        string.Equals(review?.Trim(), ReinitiateReview, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// SQL for "this End row means the request is finished". A re-initiated End row stays as history,
+    /// but the request is running again.
+    /// </summary>
+    public static string FinishedEndRowSql(string alias) =>
+        $"(UPPER(TRIM(COALESCE({alias}.stage_type, ''))) = 'END' AND COALESCE(TRIM({alias}.review), '') <> '{ReinitiateReview}')";
+
+    /// <summary>Steps from this order on run again; earlier ones keep their history.</summary>
+    public static void ReopenStepInstancesFrom(WorkflowInstance instance, int order)
+    {
+        foreach (var step in instance.StepInstances.Where(s => s.Order >= order))
+            step.Reopen();
+    }
+
     /// <summary>AP Agent step only when explicitly defined (not Order=2 fallback).</summary>
     public static WorkflowStep? TryResolveDedicatedApAgentStep(IReadOnlyList<WorkflowStep> orderedSteps) =>
         orderedSteps.FirstOrDefault(IsApAgentStep)
