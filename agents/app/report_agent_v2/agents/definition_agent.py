@@ -95,7 +95,14 @@ def with_ticket_columns(spec: ReportSpec, catalog: SourceCatalog) -> ReportSpec:
 
 _VALUE_FREE_OPS = {"isEmpty", "isNotEmpty"}
 # Values the model may write itself for a stated range ("last 30 days" -> today-30, "over 1000").
-_DATE_OR_NUMBER = re.compile(r"^(today([+-]\d+)?|\d{4}-\d{2}-\d{2}.*|-?\d+(\.\d+)?)$", re.IGNORECASE)
+_DATE_VALUE = re.compile(r"^(today([+-]\d+)?|\d{4}-\d{2}-\d{2}.*)$", re.IGNORECASE)
+_NUMBER = re.compile(r"^-?\d+(\.\d+)?$")
+# The request states a period ("last 30 days", "this month", "since 2026-01-01", "in October"...),
+# so a date value the model wrote for it is the user's, not a guess.
+_PERIOD = re.compile(
+    r"\b(today|yesterday|tomorrow|since|before|after|between|until|till|overdue|ytd|mtd|(last|past|previous|next|this|current)\s+(\d+\s+)?(day|week|month|quarter|year)s?|\d+\s+(day|week|month|quarter|year)s?|\d{4}-\d{2}(-\d{2})?|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|june?|july?|aug(ust)?|sep(tember)?|oct(ober)?|nov(ember)?|dec(ember)?)\b",
+    re.IGNORECASE,
+)
 # "Filter by Created At, Stage and Status" / "filters on ..." up to the end of the sentence.
 _FILTER_BY = re.compile(r"\bfilter(?:s|ed|ing)?\s+(?:by|on)\b([^.;\n]*)", re.IGNORECASE)
 
@@ -111,7 +118,8 @@ def _user_filters_only(raw: dict, prompt: str, labels: dict[str, str]) -> None:
     already gets one in the report screen -- not for conditions. Models turn it into conditions with
     no value, or with a guessed value ("defaults applied"), which empties or cuts down the report and
     differs run to run. So a condition without a value is dropped, and so is a condition on a field
-    named after "filter by" whose text value the prompt never mentions. Conditions the model reads
+    named after "filter by" whose value the request does not give: text or a number it never
+    mentions, or a date when it states no period ("today-30" for "Filter by Created At"). Conditions the model reads
     from the request itself ("active requests" -> status not Completed) are kept.
     labels: field / derived id -> label, to match the fields named after "filter by".
     """
@@ -121,9 +129,19 @@ def _user_filters_only(raw: dict, prompt: str, labels: dict[str, str]) -> None:
     said = _words(prompt)
     filter_by = " ".join(_words(m.group(1)) for m in _FILTER_BY.finditer(prompt or ""))
 
+    states_period = bool(_PERIOD.search(prompt or ""))
+
     def given(value: object) -> bool:
+        """The value comes from the request: written in it, or a date for a period it states.
+        ("Filter by Created At" alone states no period, so a "today-30" for it is a guess.)"""
         text = _words(value)
-        return bool(text) and (bool(_DATE_OR_NUMBER.match(text)) or text in said)
+        if not text:
+            return False
+        if _DATE_VALUE.match(text):
+            return states_period or text in said
+        if _NUMBER.match(text):
+            return re.search(rf"(?<![\d.]){re.escape(text)}(?!\d|\.\d)", said) is not None
+        return text in said
 
     kept = []
     for cond in filters:
