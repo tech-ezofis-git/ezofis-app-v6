@@ -675,13 +675,18 @@ async def _workflow_sla_compliance(ctx: _Ctx) -> tuple[sql.Composable, list[str]
 
 
 _LOGIN_COLS = (Col("User"), Col("Logins", "number", "measure", True), Col("Web", "number", "measure", True),
-               Col("Mobile", "number", "measure", True), Col("Last Login", "date", "value"), Col("Security Events", "number", "measure", True),
+               Col("Mobile", "number", "measure", True), Col("Last Login", "date", "value"), Col("Failed Logins", "number", "measure", True),
                Col("Warnings", "number", "measure", True), Col("Permission Changes", "number", "measure", True))
 
 
 async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     has_login = {"Email", "LoggedFrom", "IpAddress", "CreatedAtUtc", "TenantId"} <= await _columns(ctx.conn, "auth", "LoginHistory")
-    has_events = {"UserEmail", "Category", "Severity", "EventType", "CreatedAtUtc", "TenantId"} <= await _columns(ctx.conn, "activitylog", "EventLogs")
+    event_cols = await _columns(ctx.conn, "activitylog", "EventLogs")
+    has_events = {"UserEmail", "Category", "Severity", "EventType", "CreatedAtUtc", "TenantId"} <= event_cols
+    # Failed Logins: security events of a rejected sign-in ("Failed login attempt", or a 401 on a login path).
+    failed = [""""EventTitle" ILIKE '%%failed login%%'""" if "EventTitle" in event_cols else None,
+              """("StatusCode" = 401 AND "Path" ILIKE '%%login%%')""" if {"StatusCode", "Path"} <= event_cols else None]
+    failed_login = sql.SQL(" OR ".join(f for f in failed if f) or "false")
     if not (has_login or has_events):
         return _empty(_LOGIN_COLS), ["No login or activity logs found."]
     login = sql.SQL(
@@ -691,7 +696,7 @@ async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
     ) if has_login else sql.SQL(
         "SELECT NULL::text AS email, 0::bigint AS logins, 0::bigint AS web, 0::bigint AS mobile, NULL::timestamptz AS last_login WHERE false")
     events = sql.SQL(
-        """SELECT lower("UserEmail") AS email, COUNT(*) FILTER (WHERE "Category" = 'Security') AS sec,
+        """SELECT lower("UserEmail") AS email, COUNT(*) FILTER (WHERE "Category" = 'Security' AND ({failed_login})) AS sec,
                   COUNT(*) FILTER (WHERE "Severity" = 'Warning') AS warn,
                   COUNT(*) FILTER (WHERE "EventType" = 'Permission Changed') AS perm
            FROM activitylog."EventLogs" WHERE "TenantId" = {tid} AND "CreatedAtUtc" >= {since} AND "CreatedAtUtc" < {until}
@@ -706,7 +711,7 @@ async def _user_login_security(ctx: _Ctx) -> tuple[sql.Composable, list[str]]:
                   COALESCE(e.warn, 0) AS c6, COALESCE(e.perm, 0) AS c7
            FROM l FULL JOIN e ON e.email = l.email
            ORDER BY c5 DESC, c1 DESC, c0 LIMIT {limit}"""
-    ).format(login=login.format(**args), events=events.format(**args), limit=sql.Literal(ctx.limit))
+    ).format(login=login.format(**args), events=events.format(failed_login=failed_login, **args), limit=sql.Literal(ctx.limit))
     return q, []
 
 
@@ -1010,7 +1015,7 @@ TEMPLATES: dict[str, Template] = {t.key: t for t in (
              "Requests submitted per workflow and month: completed, pending, failed, completion rate and average completion time "
              "(last 12 months).", "all_workflows", 365, _PORTAL_COLS, _portal_submission_performance),
     Template("user_login_security", "User Login and Security Activity",
-             "Logins (web/mobile) and security (e.g. failed logins), warning and permission-change events per user over the last 30 days.",
+             "Logins (web/mobile), failed login attempts, warnings and permission changes per user over the last 30 days.",
              "tenant", 30, _LOGIN_COLS, _user_login_security),
     Template("workflow_sla_compliance", "Workflow SLA Compliance",
              "Response and resolution SLA met vs breached, in progress, escalations, compliance % and SLA notifications sent "
