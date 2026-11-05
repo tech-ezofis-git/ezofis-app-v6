@@ -3,7 +3,6 @@ import {
   Divider,
   NumberInput,
   SegmentedControl,
-  Select,
   Tooltip,
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
@@ -86,6 +85,48 @@ const TABLE_COLUMN_TYPES: Array<{ label: string; value: QuestionType }> = [
   { label: 'Opinion Scale', value: 'OPINION_SCALE' },
   { label: 'Score', value: 'SCORE' },
 ]
+
+const TABLE_COLUMN_TYPE_OPTIONS: Option[] = TABLE_COLUMN_TYPES.map((t) => ({
+  id: t.value,
+  name: t.label,
+}))
+
+/**
+ * Column name box for the table column list. It keeps what you type in local
+ * state because the store refuses an empty name (normalizeFieldSchema falls
+ * back to the previous label), which made a cleared box snap back and left
+ * only the last character you typed. A non-empty name is saved as you type;
+ * an empty box goes back to the saved name when you leave it.
+ */
+const TableColumnNameInput = ({
+  name,
+  onCommit,
+}: {
+  name: string
+  onCommit: (name: string) => void
+}) => {
+  const [text, setText] = useState(name)
+
+  useEffect(() => {
+    setText(name)
+  }, [name])
+
+  return (
+    <input
+      className='min-w-0 flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface-hover focus:border-accent-primary focus:bg-surface focus:outline-none'
+      placeholder='Column name...'
+      type='text'
+      value={text}
+      onBlur={() => {
+        if (!text.trim()) setText(name)
+      }}
+      onChange={(e) => {
+        setText(e.target.value)
+        if (e.target.value.trim()) onCommit(e.target.value)
+      }}
+    />
+  )
+}
 
 interface QuestionSettingsProps {
   activeQuestion: Question
@@ -769,6 +810,7 @@ const QuestionSettings = ({
   const handleUpdateTableColumn = (
     colId: string,
     patch: Partial<{
+      displayLabel: string
       name: string
       settings: (typeof tableColumns)[number]['settings']
       size: 'SMALL' | 'MEDIUM' | 'LARGE'
@@ -791,6 +833,12 @@ const QuestionSettings = ({
     const col = tableColumns.find((c) => c.id === colId)
     if (!col) return
     handleUpdateTableColumn(colId, {
+      // normalizeFieldSchema('save') copies a column's top-level displayLabel
+      // over settings.general.displayLabel, so a stale top-level value undoes
+      // every edit (the box kept its first letter). Keep both in step.
+      ...(settingsPatch.general?.displayLabel !== undefined && {
+        displayLabel: settingsPatch.general.displayLabel,
+      }),
       settings: {
         aiSettings: {
           ...col.settings?.aiSettings,
@@ -3474,73 +3522,70 @@ const QuestionSettings = ({
                               >
                                 <div
                                   className={cn(
-                                    'group/col flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border bg-surface p-1.5 transition-colors',
+                                    'group/col flex min-w-0 flex-1 flex-col gap-1.5 rounded-lg border bg-surface p-1.5 transition-colors',
                                     expandedColumnId === col.id
                                       ? 'border-primary-5 bg-primary-1/40'
                                       : 'border-gray-2 hover:border-gray-3',
                                   )}
                                 >
-                                  <input
-                                    className='min-w-0 flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-surface-hover focus:border-accent-primary focus:bg-surface focus:outline-none'
-                                    placeholder='Column name...'
-                                    type='text'
-                                    value={col.name}
-                                    onChange={(e) =>
-                                      handleUpdateTableColumn(col.id, {
-                                        name: e.target.value,
-                                      })
-                                    }
-                                  />
-                                  <div className='w-32 shrink-0'>
-                                    <Select
-                                      comboboxProps={{ width: 340 }}
-                                      data={TABLE_COLUMN_TYPES}
-                                      size='xs'
-                                      value={col.type || 'SHORT_TEXT'}
-                                      searchable
-                                      classNames={{
-                                        input:
-                                          'h-7 border-gray-3 bg-surface text-xs font-medium text-gray-12',
-                                        option: 'break-words whitespace-normal',
-                                      }}
-                                      onChange={(val) =>
-                                        val &&
+                                  <div className='flex min-w-0 items-center gap-1.5'>
+                                    <TableColumnNameInput
+                                      name={col.name}
+                                      onCommit={(name) =>
                                         handleUpdateTableColumn(col.id, {
-                                          type: val as QuestionType,
+                                          name,
                                         })
                                       }
                                     />
-                                  </div>
-                                  <div className='flex shrink-0 items-center gap-0.5'>
-                                    <IconButton
-                                      icon='lucide:settings'
-                                      size='xs'
-                                      color={
-                                        expandedColumnId === col.id
-                                          ? 'primary'
-                                          : 'gray'
-                                      }
-                                      variant={
-                                        expandedColumnId === col.id
-                                          ? 'subtle'
-                                          : 'ghost'
-                                      }
-                                      onClick={() =>
-                                        setExpandedColumnId(
+                                    <div className='flex shrink-0 items-center gap-0.5'>
+                                      <IconButton
+                                        icon='lucide:settings'
+                                        size='xs'
+                                        color={
                                           expandedColumnId === col.id
-                                            ? null
-                                            : col.id,
-                                        )
+                                            ? 'primary'
+                                            : 'gray'
+                                        }
+                                        variant={
+                                          expandedColumnId === col.id
+                                            ? 'subtle'
+                                            : 'ghost'
+                                        }
+                                        onClick={() =>
+                                          setExpandedColumnId(
+                                            expandedColumnId === col.id
+                                              ? null
+                                              : col.id,
+                                          )
+                                        }
+                                      />
+                                      <IconButton
+                                        color='red'
+                                        disabled={tableColumns.length <= 1}
+                                        icon='lucide:trash-2'
+                                        size='xs'
+                                        variant='ghost'
+                                        onClick={() =>
+                                          handleDeleteTableColumn(col.id)
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className='w-full'>
+                                    <InputSelect
+                                      wrapOptions={false}
+                                      options={TABLE_COLUMN_TYPE_OPTIONS}
+                                      value={
+                                        TABLE_COLUMN_TYPE_OPTIONS.find(
+                                          (o) =>
+                                            o.id === (col.type || 'SHORT_TEXT'),
+                                        ) || null
                                       }
-                                    />
-                                    <IconButton
-                                      color='red'
-                                      disabled={tableColumns.length <= 1}
-                                      icon='lucide:trash-2'
-                                      size='xs'
-                                      variant='ghost'
-                                      onClick={() =>
-                                        handleDeleteTableColumn(col.id)
+                                      onChange={(opt) =>
+                                        opt &&
+                                        handleUpdateTableColumn(col.id, {
+                                          type: opt.id as QuestionType,
+                                        })
                                       }
                                     />
                                   </div>
