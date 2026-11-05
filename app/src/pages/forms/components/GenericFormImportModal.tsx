@@ -16,6 +16,7 @@ import {
 } from '@/components/common/animations'
 import { findBestHeaderMatch } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
 import cn from '@/utils/cn'
+import { sheetRowsToRecords } from '../utils/sheetRows'
 
 export type GenericImportStrategy = 'replace' | 'append'
 
@@ -197,11 +198,10 @@ export default function GenericFormImportModal({
         throw new Error(t`File appears to be empty.`)
       }
 
-      const headers = (rawRows[0] || [])
-        .map((h: any) => String(h ?? '').trim())
-        .filter(Boolean)
-
-      const allRows = XLSX.utils.sheet_to_json(ws) as any[]
+      // Rows are keyed by the same trimmed headers the mapping uses; reading them
+      // with sheet_to_json(ws) keyed by the raw header lost any column whose
+      // header cell had a trailing space or line break.
+      const { headers, rows: allRows } = sheetRowsToRecords(rawRows)
 
       // Progress animation
       let currentProgress = 0
