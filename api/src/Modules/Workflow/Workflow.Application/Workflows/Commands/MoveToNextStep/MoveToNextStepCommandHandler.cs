@@ -588,7 +588,7 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
             }
         }
 
-        // Quantics packaging: on completion, sync the ticket form to the master form
+        // Packaging requisition (Quantics, Amlion): on completion, sync the ticket form to the master form
         // via the Python form_sync chat intent (background job; never fails the move).
         if (isCompleted && QuanticsPackaging.IsThisWorkflow(instance.WorkflowId, instance.TenantId))
         {
@@ -604,13 +604,13 @@ public sealed class MoveToNextStepCommandHandler : IRequestHandler<MoveToNextSte
                         formEntryId),
                     cancellationToken);
                 _logger.LogInformation(
-                    "Enqueued Quantics form sync job {JobId} for completed instance {InstanceId}.",
+                    "Enqueued packaging form sync job {JobId} for completed instance {InstanceId}.",
                     syncJobId,
                     instance.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Quantics form sync enqueue failed for instance {InstanceId}.", instance.Id);
+                _logger.LogError(ex, "Packaging form sync enqueue failed for instance {InstanceId}.", instance.Id);
             }
         }
 
