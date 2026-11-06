@@ -85,6 +85,36 @@ const asCellValue = (
   return { value: text }
 }
 
+import type ExcelJSModule from 'exceljs'
+// The prebuilt browser file, copied as-is (?url): bundling exceljs ran the
+// production build out of memory. It is loaded only when someone exports.
+import excelJsUrl from 'exceljs/dist/exceljs.min.js?url'
+
+type ExcelJSApi = typeof ExcelJSModule
+let excelJsLoading: Promise<ExcelJSApi> | null = null
+
+/** Load exceljs once, as a script that sets window.ExcelJS. */
+const loadExcelJS = (): Promise<ExcelJSApi> => {
+  const ready = (window as { ExcelJS?: ExcelJSApi }).ExcelJS
+  if (ready) return Promise.resolve(ready)
+  excelJsLoading ??= new Promise<ExcelJSApi>((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = excelJsUrl
+    script.async = true
+    script.onload = () => {
+      const api = (window as { ExcelJS?: ExcelJSApi }).ExcelJS
+      if (api) resolve(api)
+      else reject(new Error('exceljs did not load'))
+    }
+    script.onerror = () => {
+      excelJsLoading = null
+      reject(new Error('exceljs did not load'))
+    }
+    document.head.appendChild(script)
+  })
+  return excelJsLoading
+}
+
 /** Excel column width (characters) to pixels, as Excel draws it at 100%. */
 const columnPx = (width: number) => Math.round(width * 7 + 5)
 
@@ -93,7 +123,7 @@ export const buildExcelWithHeader = async (
   allColumns: string[],
   allRows: unknown[][],
 ): Promise<ArrayBuffer> => {
-  const { default: ExcelJS } = await import('exceljs')
+  const ExcelJS = await loadExcelJS()
   const workbook = new ExcelJS.Workbook()
   const sheet = workbook.addWorksheet('Report')
 
