@@ -1,9 +1,5 @@
 export * from './api/queries'
-export {
-  subWorkflowApi,
-  toSubProcessRow,
-} from './api/subWorkflowApi'
-export { isSubWorkflowEnabled } from './featureFlag'
+export { subWorkflowApi, toSubProcessRow } from './api/subWorkflowApi'
 export * from './types'
 export * from './utils/blockSettings'
 export * from './utils/history'

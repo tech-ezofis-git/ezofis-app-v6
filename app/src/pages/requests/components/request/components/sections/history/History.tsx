@@ -5,7 +5,6 @@ import {
   attachConnectorHistory,
   getConnectorSteps,
   isConnectorFinished,
-  isSubWorkflowEnabled,
   useSubWorkflowHistory,
 } from '@/features/sub-workflow'
 import { useHistory } from '@/pages/requests/hooks/useHistory'
@@ -448,19 +447,15 @@ export default function History({
     return result
   }, [flows, isCompleted, showSapTimeline])
 
-  // Sub-workflow connector steps (localhost-only until the API is ready):
-  // each linked child's own history is read and shown under the parent.
-  const subWorkflowEnabled = isSubWorkflowEnabled()
+  // Sub-workflow connector steps: each linked child's own history is read
+  // and shown under the parent.
   const { data: connectorEntries } = useSubWorkflowHistory(
-    subWorkflowEnabled ? workflowId : undefined,
+    workflowId,
     instanceId || processId,
   )
   const displayFlows = useMemo(
-    () =>
-      subWorkflowEnabled
-        ? attachConnectorHistory(baseFlows, connectorEntries)
-        : baseFlows,
-    [baseFlows, connectorEntries, subWorkflowEnabled],
+    () => attachConnectorHistory(baseFlows, connectorEntries),
+    [baseFlows, connectorEntries],
   )
 
   if (isLoading) {
@@ -549,9 +544,7 @@ export default function History({
 
           {displayFlows.map((h, idx) => {
             const isStart = idx === 0
-            const connectorSteps = subWorkflowEnabled
-              ? getConnectorSteps(h)
-              : []
+            const connectorSteps = getConnectorSteps(h)
             const baseConfig = getStepConfig(h, isStart)
             // A connector row is only done once its sub-ticket has completed.
             const config =

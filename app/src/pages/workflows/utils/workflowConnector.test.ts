@@ -1,5 +1,5 @@
 import type { Node } from '@xyflow/react'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { exportWorkflow } from './exportWorkflow'
 import { importWorkflow } from './importWorkflow'
 import { NODE_TOOL_TYPE } from './nodeToolTypes'
@@ -7,10 +7,6 @@ import {
   getWorkflowConnectorErrors,
   getWorkflowInitiatorErrors,
 } from './workflowConnector'
-
-// Sub-workflow is localhost-only for now; run these as on a dev host.
-beforeAll(() => vi.stubGlobal('location', { hostname: 'localhost' }))
-afterAll(() => vi.unstubAllGlobals())
 
 const node = (id: string, data: Record<string, unknown>, y = 0): Node => ({
   data,
@@ -175,35 +171,5 @@ describe('Workflow Initiator JSON', () => {
         '10',
       ),
     ).toEqual([])
-  })
-})
-
-describe('off localhost', () => {
-  it('saves workflows without the initiator keys', () => {
-    vi.stubGlobal('location', { hostname: 'cloud.ezofis.com' })
-    try {
-      const json: any = exportWorkflow(
-        [
-          node('start', {
-            label: 'start',
-            subWorkflowId: '42',
-            toolType: NODE_TOOL_TYPE.MANUAL_USER,
-            workflowInitiator: true,
-          }),
-        ],
-        [],
-      )
-      const start = json.blocks.find((b: any) => b.id === 'start')
-      // Node data passes through untouched; nothing is normalised or added.
-      expect(start.settings.workflowInitiator).toBe(true)
-      const plain: any = exportWorkflow(
-        [node('s', { label: 's', toolType: NODE_TOOL_TYPE.MANUAL_USER })],
-        [],
-      )
-      expect(plain.blocks[0].settings).not.toHaveProperty('workflowInitiator')
-      expect(plain.blocks[0].settings).not.toHaveProperty('subWorkflowId')
-    } finally {
-      vi.stubGlobal('location', { hostname: 'localhost' })
-    }
   })
 })

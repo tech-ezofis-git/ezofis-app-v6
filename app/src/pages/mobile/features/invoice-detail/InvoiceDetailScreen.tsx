@@ -1,9 +1,5 @@
 import { useMemo, useState } from 'react'
-import {
-  isSubWorkflowEnabled,
-  useMainProcess,
-  useSubProcesses,
-} from '@/features/sub-workflow'
+import { useMainProcess, useSubProcesses } from '@/features/sub-workflow'
 import cn from '@/utils/cn'
 import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 import { AppBar, IconButton } from '../../components/layout/AppBar'
@@ -40,9 +36,8 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<DetailTab>('extracted')
   const detail = useMobileRequestDetail()
-  // Sub-workflow links (read-only on mobile; localhost-only for now).
-  const subWorkflowEnabled = isSubWorkflowEnabled()
-  const linkedWorkflowId = subWorkflowEnabled ? detail.workflowId : undefined
+  // Sub-workflow links (read-only on mobile).
+  const linkedWorkflowId = detail.workflowId
   const { data: subProcesses = [], isLoading: subProcessesLoading } =
     useSubProcesses(linkedWorkflowId, detail.processId)
   const { data: parentProcess } = useMainProcess(
@@ -67,21 +62,16 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
           label: `Comments${detail.comments.length ? ` · ${detail.comments.length}` : ''}`,
         },
         { id: 'history' as const, label: 'History' },
-        ...(subWorkflowEnabled
-          ? [
-              {
-                id: 'sub_process' as const,
-                label: `Sub process${subProcesses.length ? ` · ${subProcesses.length}` : ''}`,
-              },
-            ]
-          : []),
+        {
+          id: 'sub_process' as const,
+          label: `Sub process${subProcesses.length ? ` · ${subProcesses.length}` : ''}`,
+        },
       ] as const,
     [
       detail.attachments.length,
       detail.comments.length,
       detail.lineItems.length,
       subProcesses.length,
-      subWorkflowEnabled,
     ],
   )
 
