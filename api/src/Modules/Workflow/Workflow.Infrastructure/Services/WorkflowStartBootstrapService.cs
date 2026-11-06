@@ -98,7 +98,7 @@ public sealed class WorkflowStartBootstrapService : IWorkflowStartBootstrapServi
     /// "Submit for Approval" etc., so use the step's own first ProceedAction
     /// (preferring an exact "Submit") instead of assuming the literal "Submit".
     /// </summary>
-    private static string ResolveStartProceedReview(WorkflowStep startStep)
+    internal static string ResolveStartProceedReview(WorkflowStep startStep)
     {
         var actions = WorkflowStepActionsHelper.ParseActions(startStep.ActionsJson)
             .Where(a => !string.IsNullOrWhiteSpace(a.ProceedAction))
