@@ -41,6 +41,25 @@ public sealed class WorkflowEzfbFormDataLoader : SaaSApp.Workflow.Application.Co
         CancellationToken cancellationToken = default) =>
         LoadAsync(formId, formEntryId, deleted: true, cancellationToken);
 
+    public async Task<IReadOnlyDictionary<Guid, string>> LoadFormDataJsonBatchAsync(
+        string formId,
+        IReadOnlyCollection<Guid> formEntryIds,
+        bool deleted,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = formEntryIds.Where(id => id != Guid.Empty).Distinct().ToArray();
+        if (string.IsNullOrWhiteSpace(formId) || ids.Length == 0)
+            return new Dictionary<Guid, string>();
+
+        var connectionString = _tenantContext.ConnectionString;
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return new Dictionary<Guid, string>();
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        return await LoadFormDataJsonBatchAsync(connection, formId, ids, cancellationToken, deleted);
+    }
+
     private async Task<string?> LoadAsync(
         string formId,
         Guid formEntryId,
@@ -59,16 +78,18 @@ public sealed class WorkflowEzfbFormDataLoader : SaaSApp.Workflow.Application.Co
         return await LoadFormDataJsonAsync(connection, formId, formEntryId, cancellationToken, deleted);
     }
 
-    internal static async Task<string?> LoadFormDataJsonAsync(
+    /// <summary>What the form's ezfb table looks like: which columns to read and how to name their keys.</summary>
+    private sealed record LoadPlan(
+        string TableName,
+        string SelectList,
+        Dictionary<string, (string? JsonId, string? Name, EzfbColumnNaming.EzfbColumnMatchKind Kind)> ColumnMeta);
+
+    /// <summary>The metadata lookups (table, columns, form controls). Done once per call, not once per entry.</summary>
+    private static async Task<LoadPlan?> BuildLoadPlanAsync(
         NpgsqlConnection connection,
         string rawFormId,
-        Guid formEntryId,
-        CancellationToken cancellationToken,
-        bool deleted = false)
+        CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(rawFormId) || formEntryId == Guid.Empty)
-            return null;
-
         string tableSuffix;
         try
         {
@@ -131,11 +152,30 @@ public sealed class WorkflowEzfbFormDataLoader : SaaSApp.Workflow.Application.Co
         var selectList = string.Join(", ", selectColumns.Select(c =>
             SystemColumns.Contains(c) ? c : $"\"{EscapeColumn(c)}\""));
 
-        var deletedFilter = deleted ? "is_deleted = true" : "(is_deleted = false OR is_deleted IS NULL)";
+        return new LoadPlan(tableName, selectList, columnMeta);
+    }
+
+    private static string DeletedFilter(bool deleted) =>
+        deleted ? "is_deleted = true" : "(is_deleted = false OR is_deleted IS NULL)";
+
+    internal static async Task<string?> LoadFormDataJsonAsync(
+        NpgsqlConnection connection,
+        string rawFormId,
+        Guid formEntryId,
+        CancellationToken cancellationToken,
+        bool deleted = false)
+    {
+        if (string.IsNullOrWhiteSpace(rawFormId) || formEntryId == Guid.Empty)
+            return null;
+
+        var plan = await BuildLoadPlanAsync(connection, rawFormId, cancellationToken);
+        if (plan == null)
+            return null;
+
         var dataSql = $@"
-SELECT {selectList}
-FROM dbo.""{tableName}""
-WHERE item_id = @ItemId AND {deletedFilter};";
+SELECT {plan.SelectList}
+FROM dbo.""{plan.TableName}""
+WHERE item_id = @ItemId AND {DeletedFilter(deleted)};";
 
         await using var dataCmd = new NpgsqlCommand(dataSql, connection);
         dataCmd.Parameters.AddWithValue("@ItemId", formEntryId);
@@ -143,8 +183,51 @@ WHERE item_id = @ItemId AND {deletedFilter};";
         if (!await reader.ReadAsync(cancellationToken))
             return null;
 
+        return BuildRowJson(reader, plan.ColumnMeta);
+    }
+
+    /// <summary>One metadata lookup plus one row query for all <paramref name="entryIds"/>.</summary>
+    internal static async Task<IReadOnlyDictionary<Guid, string>> LoadFormDataJsonBatchAsync(
+        NpgsqlConnection connection,
+        string rawFormId,
+        IReadOnlyCollection<Guid> entryIds,
+        CancellationToken cancellationToken,
+        bool deleted = false)
+    {
+        var result = new Dictionary<Guid, string>();
+        if (string.IsNullOrWhiteSpace(rawFormId) || entryIds.Count == 0)
+            return result;
+
+        var plan = await BuildLoadPlanAsync(connection, rawFormId, cancellationToken);
+        if (plan == null)
+            return result;
+
+        // item_id is a system column, so BuildRowJson skips it; it is only read here to match rows to entries.
+        var dataSql = $@"
+SELECT item_id, {plan.SelectList}
+FROM dbo.""{plan.TableName}""
+WHERE item_id = ANY(@ItemIds) AND {DeletedFilter(deleted)};";
+
+        await using var dataCmd = new NpgsqlCommand(dataSql, connection);
+        dataCmd.Parameters.AddWithValue("@ItemIds", entryIds.ToArray());
+        await using var reader = await dataCmd.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            if (reader.IsDBNull(0) || reader.GetValue(0) is not Guid itemId)
+                continue;
+
+            result[itemId] = BuildRowJson(reader, plan.ColumnMeta);
+        }
+
+        return result;
+    }
+
+    private static string BuildRowJson(
+        NpgsqlDataReader reader,
+        Dictionary<string, (string? JsonId, string? Name, EzfbColumnNaming.EzfbColumnMatchKind Kind)> columnMeta)
+    {
         using var stream = new MemoryStream();
-        await using (var writer = new Utf8JsonWriter(stream))
+        using (var writer = new Utf8JsonWriter(stream))
         {
             writer.WriteStartObject();
             var writtenKeys = new HashSet<string>(StringComparer.Ordinal);

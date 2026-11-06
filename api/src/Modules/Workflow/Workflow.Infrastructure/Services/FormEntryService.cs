@@ -434,6 +434,27 @@ public sealed class FormEntryService : IFormEntryService
 
         if (request.IncludeFormJson && entries.Count > 0)
         {
+            // One batched read for the whole page. This used to be one loader call per entry
+            // (about 5 round trips each), which made a 150-entry list take tens of seconds.
+            var entryIds = new List<Guid>(entries.Count);
+            foreach (var entry in entries)
+            {
+                if (!entry.TryGetValue("item_id", out var itemObj) || itemObj == null)
+                    continue;
+
+                var parsedId = itemObj switch
+                {
+                    Guid guid => guid,
+                    string text when Guid.TryParse(text, out var parsed) => parsed,
+                    _ => Guid.Empty
+                };
+                if (parsedId != Guid.Empty)
+                    entryIds.Add(parsedId);
+            }
+
+            var formDataByEntry = await _formDataLoader.LoadFormDataJsonBatchAsync(
+                normalizedFormId, entryIds, includeDeleted, cancellationToken);
+
             for (var i = 0; i < entries.Count; i++)
             {
                 if (!entries[i].TryGetValue("item_id", out var itemObj) || itemObj == null)
@@ -448,10 +469,8 @@ public sealed class FormEntryService : IFormEntryService
                 if (entryId == Guid.Empty)
                     continue;
 
-                var formDataJson = includeDeleted
-                    ? await _formDataLoader.LoadDeletedFormDataJsonAsync(normalizedFormId, entryId, cancellationToken)
-                    : await _formDataLoader.LoadFormDataJsonAsync(normalizedFormId, entryId, cancellationToken);
-                if (string.IsNullOrWhiteSpace(formDataJson))
+                if (!formDataByEntry.TryGetValue(entryId, out var formDataJson)
+                    || string.IsNullOrWhiteSpace(formDataJson))
                     continue;
 
                 try

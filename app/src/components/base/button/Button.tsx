@@ -12,7 +12,7 @@ interface Props extends HTMLMotionProps<'button'> {
   color?: ButtonColor
   icon?: string
   iconClass?: string
-  label?: string
+  label?: React.ReactNode
   labelClass?: string
   leftSection?: ReactNode
   loading?: boolean
