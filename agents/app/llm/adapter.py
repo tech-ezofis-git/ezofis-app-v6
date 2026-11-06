@@ -23,14 +23,20 @@ app restart.
 """
 import asyncio
 import logging
+import time
 from typing import Optional
 
 import litellm
 
 from app.config import Settings, get_settings
+from app.control import agent_request_log
 from app.llm.model_presets import preset_call_overrides
 
 logger = logging.getLogger("orchestrator.llm")
+
+
+def _elapsed_ms(started: float) -> int:
+    return int((time.perf_counter() - started) * 1000)
 
 
 class LLMAdapterError(Exception):
@@ -212,6 +218,7 @@ class LLMAdapter:
             kwargs["timeout"] = timeout
             kwargs["request_timeout"] = timeout
 
+        call_started = time.perf_counter()
         try:
             if timeout and timeout > 0:
                 response = await asyncio.wait_for(
@@ -221,6 +228,10 @@ class LLMAdapter:
             else:
                 response = await litellm.acompletion(**kwargs)
         except asyncio.TimeoutError as exc:
+            agent_request_log.record_llm_failure(
+                timed_out=True, model=model, api_base=resolved_api_base,
+                duration_ms=_elapsed_ms(call_started), error_type="TimeoutError",
+            )
             logger.warning(
                 "llm_call_timed_out",
                 extra={"model": model, "api_base": resolved_api_base, "timeout_seconds": timeout},
@@ -233,6 +244,10 @@ class LLMAdapter:
             # str()/args, which for auth errors can echo back request
             # headers or key fragments. api_base is safe to log (never a
             # secret); api_key never is and never appears here.
+            agent_request_log.record_llm_failure(
+                model=model, api_base=resolved_api_base,
+                duration_ms=_elapsed_ms(call_started), error_type=type(exc).__name__,
+            )
             logger.warning(
                 "llm_call_failed",
                 extra={"model": model, "api_base": resolved_api_base, "error_type": type(exc).__name__},
@@ -253,4 +268,8 @@ class LLMAdapter:
                 "total_tokens": getattr(raw_usage, "total_tokens", None),
             }
 
+        agent_request_log.record_llm_call(
+            model, api_base=resolved_api_base, usage=usage, response=response,
+            duration_ms=_elapsed_ms(call_started),
+        )
         return {"content": content, "usage": usage}
