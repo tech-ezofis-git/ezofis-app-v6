@@ -1778,6 +1778,36 @@ const FormEntriesPage = () => {
     },
   })
 
+  // Export "All rows": read every entry straight from the database, page by
+  // page, so the file is not limited to what is on screen (or the first 500).
+  const loadAllEntriesForExport = useCallback(async () => {
+    const pageSize = 500
+    const all: any[] = []
+    let previousFirstId = ''
+    for (let currentPage = 1; currentPage <= 200; currentPage++) {
+      const { data, error } = await formApi.getFormEntries(
+        formId,
+        currentPage,
+        pageSize,
+        true,
+      )
+      if (error) throw new Error(error)
+      const rows: any[] =
+        data && typeof data === 'object' && Array.isArray(data.entries)
+          ? data.entries
+          : Array.isArray(data)
+            ? data
+            : []
+      if (rows.length === 0) break
+      const firstId = String(rows[0]?.id ?? '')
+      if (firstId && firstId === previousFirstId) break
+      previousFirstId = firstId
+      all.push(...rows)
+      if (rows.length < pageSize) break
+    }
+    return all.map(parseFetchedEntry).filter((entry: any) => !entry.isDeleted)
+  }, [formId])
+
   // Search button / Enter in the column search: query again even when the
   // text did not change (a changed text already refetches via the query key).
   const handleEntrySearch = useCallback(
@@ -2274,6 +2304,8 @@ const FormEntriesPage = () => {
       colList.push({
         id: field.id,
         label: fieldLabel,
+        exportValue: (row: any) =>
+          formatRuntimeFieldDisplayValue(row.values?.[field.id], field),
         // minSize: dynamicSize,
         size: dynamicSize,
         renderCell: (row: any) => {
@@ -2388,6 +2420,7 @@ const FormEntriesPage = () => {
       {
         id: 'createdBy',
         label: t`Created By`,
+        exportValue: (row: any) => resolveUserName(row.createdBy),
         size: 180,
         renderCell: (row: any) => (
           <span className='font-medium text-[var(--gray-12)]'>
@@ -3541,7 +3574,14 @@ const FormEntriesPage = () => {
               />
             }
             searchQuery=''
-            trailingActions={<TableExport table={table as any} />}
+            trailingActions={
+              <TableExport
+                loadAllRows={
+                  tabValue === 'Browse' ? loadAllEntriesForExport : undefined
+                }
+                table={table as any}
+              />
+            }
             actionButtons={[
               {
                 color: 'gray',

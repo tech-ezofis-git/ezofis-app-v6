@@ -35,6 +35,7 @@ export default function transformColumns(
       id: column.id,
       meta: {
         className: column.className ?? '',
+        exportValue: column.exportValue,
         label: column.label,
         showMenu: column.showMenu ?? true,
       },
