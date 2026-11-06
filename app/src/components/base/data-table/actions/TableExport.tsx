@@ -8,9 +8,27 @@ import Menu from '@/components/base/menu/Menu'
 import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
+import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import { formatDatetime } from '@/utils/dayjs'
 import type { ExcelExportHeader } from './excelReport'
+
+const EXPORT_TOAST_ID = 'table-export'
+
+/** Three dots that pulse one after another, for "Exporting..." labels. */
+const LoadingDots = () => (
+  <span className='ml-px inline-flex' aria-hidden>
+    {[0, 1, 2].map((index) => (
+      <span
+        className='animate-bounce'
+        key={index}
+        style={{ animationDelay: `${index * 150}ms` }}
+      >
+        .
+      </span>
+    ))}
+  </span>
+)
 
 type ColumnScope = 'visible' | 'all'
 type FileFormat = 'csv' | 'excel'
@@ -23,6 +41,11 @@ interface Props<TData> {
    * by...). Built when the user downloads, so it reflects the current filters.
    */
   excelHeader?: () => ExcelExportHeader
+  /**
+   * When set, "All rows" loads every record from the server (all pages, not
+   * just the rows on screen) and exports those.
+   */
+  loadAllRows?: () => Promise<TData[]>
 }
 
 type RowScope = 'selected' | 'all'
@@ -98,6 +121,18 @@ const getCellValue = <TData,>(
   row: ReturnType<TanstackTable<TData>['getRowModel']>['rows'][number],
   columnId: string,
 ) => {
+  const exportValue = (
+    row.getAllCells().find((cell) => cell.column.id === columnId)?.column
+      .columnDef.meta as { exportValue?: (row: unknown) => unknown } | undefined
+  )?.exportValue
+  if (exportValue) {
+    try {
+      return formatCellValue(exportValue(row.original), columnId)
+    } catch {
+      // Fall through to the generic lookup below.
+    }
+  }
+
   try {
     const value = row.getValue(columnId)
     if (value !== undefined) return formatCellValue(value, columnId)
@@ -133,6 +168,41 @@ const buildExportRows = <TData,>(
   return { data, headers, rowCount: rows.length }
 }
 
+const getColumnMetaExportValue = <TData,>(
+  column: ReturnType<TanstackTable<TData>['getAllLeafColumns']>[number],
+) =>
+  (
+    column.columnDef.meta as
+      | { exportValue?: (row: unknown) => unknown }
+      | undefined
+  )?.exportValue
+
+/** Builds the sheet from raw records (e.g. fetched from the database) instead of table rows. */
+const buildExportRowsFromRecords = <TData,>(
+  table: TanstackTable<TData>,
+  columnScope: ColumnScope,
+  records: TData[],
+) => {
+  const columns = (
+    columnScope === 'visible'
+      ? table.getVisibleLeafColumns()
+      : table.getAllLeafColumns()
+  ).filter((column) => isExportableColumn(column))
+
+  const headers = columns.map((column) => getColumnLabel(column))
+  const data = records.map((record) =>
+    columns.map((column) => {
+      const exportValue = getColumnMetaExportValue(column)
+      const value = exportValue
+        ? exportValue(record)
+        : (record as Record<string, unknown>)?.[column.id]
+      return formatCellValue(value, column.id)
+    }),
+  )
+
+  return { data, headers, rowCount: records.length }
+}
+
 const downloadBlob = (blob: Blob, fileName: string) => {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -151,8 +221,10 @@ const TableExport = <TData,>({
   excelHeader,
   fileName = 'export',
   iconOnly = true,
+  loadAllRows,
   table,
 }: Props<TData>) => {
+  const [isExporting, setIsExporting] = useState(false)
   const [columnScope, setColumnScope] = useState<ColumnScope>('all')
   const [rowScope, setRowScope] = useState<RowScope>('all')
   const [fileFormat, setFileFormat] = useState<FileFormat>('excel')
@@ -178,54 +250,94 @@ const TableExport = <TData,>({
   )
 
   const handleDownload = async () => {
-    if (!canDownloadSelected) return
+    if (!canDownloadSelected || isExporting) return
 
-    const { data, headers, rowCount } = buildExportRows(
-      table,
-      columnScope,
-      rowScope,
-    )
+    setIsExporting(true)
+    // Stays on screen until the file is ready; the result toast below
+    // replaces it (same id).
+    showToast({
+      autoClose: false,
+      id: EXPORT_TOAST_ID,
+      loading: true,
+      message: 'Preparing your file. This can take a moment…',
+      toastTitle: 'Exporting',
+    })
 
-    if (!headers.length || rowCount === 0) return
+    try {
+      const { data, headers, rowCount } =
+        rowScope === 'all' && loadAllRows
+          ? buildExportRowsFromRecords(table, columnScope, await loadAllRows())
+          : buildExportRows(table, columnScope, rowScope)
 
-    const sheet = XLSX.utils.aoa_to_sheet([headers, ...data])
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, sheet, 'Data')
+      if (!headers.length || rowCount === 0) {
+        showToast({
+          id: EXPORT_TOAST_ID,
+          message: 'There are no rows to export.',
+          toastTitle: 'Nothing to export',
+          variant: 'warning',
+        })
+        return
+      }
 
-    const stamp = new Date().toISOString().slice(0, 10)
-    const baseName = `${fileName}-${stamp}`
+      const sheet = XLSX.utils.aoa_to_sheet([headers, ...data])
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Data')
 
-    if (fileFormat === 'csv') {
-      const csv = XLSX.utils.sheet_to_csv(sheet)
-      downloadBlob(
-        new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
-        `${baseName}.csv`,
-      )
-      return
-    }
+      const stamp = new Date().toISOString().slice(0, 10)
+      const baseName = `${fileName}-${stamp}`
 
-    if (excelHeader) {
-      try {
-        const { buildExcelWithHeader } = await import('./excelReport')
-        const buffer = await buildExcelWithHeader(excelHeader(), headers, data)
+      if (fileFormat === 'csv') {
+        const csv = XLSX.utils.sheet_to_csv(sheet)
         downloadBlob(
-          new Blob([buffer], { type: EXCEL_TYPE }),
+          new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
+          `${baseName}.csv`,
+        )
+      } else {
+        // Reports: logo and report details above the data (exceljs); any
+        // other table, or if that fails, the plain sheet.
+        let buffer: ArrayBuffer | null = null
+        if (excelHeader) {
+          try {
+            const { buildExcelWithHeader } = await import('./excelReport')
+            buffer = await buildExcelWithHeader(excelHeader(), headers, data)
+          } catch (error) {
+            console.error(
+              'Excel heading failed; exporting the plain sheet',
+              error,
+            )
+          }
+        }
+        downloadBlob(
+          new Blob(
+            [
+              buffer ??
+                XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }),
+            ],
+            {
+              type: EXCEL_TYPE,
+            },
+          ),
           `${baseName}.xlsx`,
         )
-        return
-      } catch {
-        // Fall back to the plain sheet below.
       }
-    }
 
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array',
-    })
-    downloadBlob(
-      new Blob([excelBuffer], { type: EXCEL_TYPE }),
-      `${baseName}.xlsx`,
-    )
+      showToast({
+        id: EXPORT_TOAST_ID,
+        message: `${rowCount} ${rowCount === 1 ? 'row' : 'rows'} exported.`,
+        toastTitle: 'Export complete',
+        variant: 'success',
+      })
+    } catch (error) {
+      console.error('Export failed', error)
+      showToast({
+        id: EXPORT_TOAST_ID,
+        message: 'The export could not be completed. Please try again.',
+        toastTitle: 'Export failed',
+        variant: 'error',
+      })
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   return (
@@ -283,9 +395,19 @@ const TableExport = <TData,>({
       <Button
         className='mb-px w-full justify-center text-13'
         color='gray'
-        disabled={!canDownloadSelected}
-        label='Download'
+        disabled={!canDownloadSelected || isExporting}
+        loading={isExporting}
         variant='subtle'
+        label={
+          isExporting ? (
+            <>
+              Exporting
+              <LoadingDots />
+            </>
+          ) : (
+            'Download'
+          )
+        }
         onClick={() => void handleDownload()}
       />
     </Menu>

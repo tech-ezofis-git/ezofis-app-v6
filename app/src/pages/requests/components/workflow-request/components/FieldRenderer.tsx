@@ -14,6 +14,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
+import InputRichText from '@/components/base/inputs/InputRichText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import InputTime from '@/components/base/inputs/InputTime'
 import showToast from '@/components/base/toast/showToast'
@@ -1318,9 +1319,17 @@ const FieldRendererBase = ({
         </>
       )
 
+    case 'TEXT_BUILDER':
+      return (
+        <InputRichText
+          {...common}
+          value={typeof value === 'string' ? value : ''}
+          onChange={onChange}
+        />
+      )
+
     case 'HTML_EDITOR':
     case 'JSON_EDITOR':
-    case 'TEXT_BUILDER':
     case 'LONG_TEXT':
       return (
         <InputTextarea

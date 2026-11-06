@@ -5,6 +5,8 @@ declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     className?: string
+    /** Plain value written by TableExport when the row has no top-level key for this column. */
+    exportValue?: (row: any) => unknown
     /** Skip DataTable 2-line ellipsis wrap (icons, actions, pills, etc.). */
     disableEllipsis?: boolean
     headerAlign?: 'left' | 'center' | 'right'
