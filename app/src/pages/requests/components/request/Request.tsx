@@ -3573,6 +3573,7 @@ const Request = ({
           subProcessCount={
             showSubProcessTab ? (subProcesses?.length ?? 0) : undefined
           }
+          subProcesses={showSubProcessTab ? subProcesses : undefined}
           ticketUserId={
             selectedItem?.userId ||
             request?.userId ||

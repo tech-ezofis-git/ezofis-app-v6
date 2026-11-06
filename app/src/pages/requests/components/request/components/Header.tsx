@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import React from 'react'
 import type { ButtonColor } from '@/components/base/button/types'
+import type { SubProcessRow } from '@/features/sub-workflow'
 import type { StageTrailItem } from '@/pages/requests/utils/workflow.utils'
 import { getUserListQueryOptions } from '@/api/userQueries'
 import Badge from '@/components/base/Badge'
@@ -71,10 +72,15 @@ interface HeaderProps {
   status?: string
   /** Sub Process tab count; the tab is hidden while undefined. */
   subProcessCount?: number
+  /** Sub-tickets started by this request, listed beside the current stage. */
+  subProcesses?: SubProcessRow[]
   ticketUserId?: string
   totalAmount?: string
   /** Workflow AI insight for the step this request is on (summary + next action). Shown without a score. */
-  workflowInsight?: null | { nextAction?: null | string; summary?: null | string }
+  workflowInsight?: null | {
+    nextAction?: null | string
+    summary?: null | string
+  }
   setRightView: (
     view: 'overview' | 'history' | 'attachments' | 'comments' | 'subProcess',
   ) => void
@@ -336,6 +342,7 @@ const Header: React.FC<HeaderProps> = ({
   stageTrail = [],
   status = 'Pending Review',
   subProcessCount,
+  subProcesses,
   ticketUserId,
   totalAmount,
   workflowInsight,
@@ -365,9 +372,7 @@ const Header: React.FC<HeaderProps> = ({
             : 'blue'
       }
       label={
-        requestListTab
-          ? localizeRequestListTab(i18n, requestListTab)
-          : t`Inbox`
+        requestListTab ? localizeRequestListTab(i18n, requestListTab) : t`Inbox`
       }
     />
   )
@@ -411,12 +416,9 @@ const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-
-
   const [localActiveAction, setLocalActiveAction] = React.useState<
     string | null
   >(null)
-
 
   React.useEffect(() => {
     if (!approveLoading) {
@@ -782,7 +784,7 @@ const Header: React.FC<HeaderProps> = ({
           {showStageInfo && (
             <motion.div
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              className='absolute top-full left-0 z-[100] mt-2.5 w-[380px] sm:w-[420px] max-w-[calc(100vw-2rem)] rounded-xl border border-[var(--gray-3)] bg-surface/98 p-4 shadow-2xl backdrop-blur-md'
+              className='absolute top-full left-0 z-[100] mt-2.5 w-[380px] max-w-[calc(100vw-2rem)] rounded-xl border border-[var(--gray-3)] bg-surface/98 p-4 shadow-2xl backdrop-blur-md sm:w-[420px]'
               exit={{ opacity: 0, scale: 0.95, y: 6 }}
               initial={{ opacity: 0, scale: 0.95, y: 6 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
@@ -819,7 +821,7 @@ const Header: React.FC<HeaderProps> = ({
                       {t`Current Stage`}
                     </span>
                     <span
-                      className='break-words text-xs font-bold text-purple-11'
+                      className='text-xs font-bold break-words text-purple-11'
                       title={String(stage || '')}
                     >
                       {stage ? String(stage) : t`Not specified`}
@@ -832,7 +834,7 @@ const Header: React.FC<HeaderProps> = ({
                       {t`Assigned User`}
                     </span>
                     <span
-                      className='break-words text-xs font-bold text-[var(--gray-13)]'
+                      className='text-xs font-bold break-words text-[var(--gray-13)]'
                       title={assigneeDisplay || ''}
                     >
                       {assigneeDisplay || t`Unassigned`}
@@ -938,7 +940,10 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   // One paragraph: summary and next action joined, with no line breaks.
-  const workflowInsightText = [workflowInsight?.summary, workflowInsight?.nextAction]
+  const workflowInsightText = [
+    workflowInsight?.summary,
+    workflowInsight?.nextAction,
+  ]
     .map((part) => String(part ?? '').trim())
     .filter(Boolean)
     .join(' ')
@@ -1062,7 +1067,11 @@ const Header: React.FC<HeaderProps> = ({
             the request title on narrower screens. */}
         {stageTrail.length > 0 ? (
           <div className='hidden min-w-0 flex-auto items-center justify-center md:flex'>
-            <StageTrail items={stageTrail} since={stageSince} />
+            <StageTrail
+              items={stageTrail}
+              since={stageSince}
+              subProcesses={subProcesses}
+            />
           </div>
         ) : null}
 
@@ -1073,7 +1082,9 @@ const Header: React.FC<HeaderProps> = ({
               if (!raw) return null
               const amountNum = Number(raw.replace(/[^0-9.-]/g, ''))
               const isAmount =
-                /\d/.test(raw) && Number.isFinite(amountNum) && !/[a-z]/i.test(raw)
+                /\d/.test(raw) &&
+                Number.isFinite(amountNum) &&
+                !/[a-z]/i.test(raw)
               const code = String(currency || '')
                 .trim()
                 .toUpperCase()
@@ -1085,10 +1096,13 @@ const Header: React.FC<HeaderProps> = ({
                   </span>
                   <span className='text-[12px] leading-tight font-semibold whitespace-nowrap text-[var(--primary-9)] sm:text-[13px]'>
                     {isAmount
-                      ? `${currencyLabel} ${amountNum.toLocaleString(undefined, {
-                          maximumFractionDigits: 2,
-                          minimumFractionDigits: 2,
-                        })}`
+                      ? `${currencyLabel} ${amountNum.toLocaleString(
+                          undefined,
+                          {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2,
+                          },
+                        )}`
                       : raw}
                   </span>
                 </div>
@@ -1326,149 +1340,149 @@ const Header: React.FC<HeaderProps> = ({
             {renderStageInfoGroup()}
           </div>
         </div>
-          <div className='flex shrink-0 flex-wrap items-center gap-1.5 sm:gap-2'>
-            {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
-              <span className='animate-in fade-in slide-in-from-left-2 shrink-0 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-[var(--gray-11)] duration-300 sm:text-[11px]'>
-                {`# ${poNumber.replace(/^#\s*/, '')}`}
-              </span>
-            )}
-            {status &&
-              !statusRepeatsDuplicate &&
-              (isProcessing && percent !== undefined
-                ? (() => {
-                    const styles = getProgressStyles(percent)
-                    return (
+        <div className='flex shrink-0 flex-wrap items-center gap-1.5 sm:gap-2'>
+          {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
+            <span className='animate-in fade-in slide-in-from-left-2 shrink-0 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-[var(--gray-11)] duration-300 sm:text-[11px]'>
+              {`# ${poNumber.replace(/^#\s*/, '')}`}
+            </span>
+          )}
+          {status &&
+            !statusRepeatsDuplicate &&
+            (isProcessing && percent !== undefined
+              ? (() => {
+                  const styles = getProgressStyles(percent)
+                  return (
+                    <div
+                      className={cn(
+                        'animate-in fade-in zoom-in-95 relative overflow-hidden rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-300',
+                        styles.badge,
+                      )}
+                    >
+                      {/* Progress Fill Layer */}
                       <div
+                        style={{ width: `${percent}%` }}
                         className={cn(
-                          'animate-in fade-in zoom-in-95 relative overflow-hidden rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-300',
-                          styles.badge,
+                          'absolute inset-y-0 left-0 transition-all duration-500 ease-out',
+                          styles.fill,
                         )}
-                      >
-                        {/* Progress Fill Layer */}
-                        <div
-                          style={{ width: `${percent}%` }}
-                          className={cn(
-                            'absolute inset-y-0 left-0 transition-all duration-500 ease-out',
-                            styles.fill,
-                          )}
-                        />
+                      />
 
-                        {/* Content Layer */}
-                        <span className='relative z-10 flex items-center gap-1.5'>
-                          {percent < 100 && (
-                            <Icon
-                              name='tabler:loader-2'
-                              className={cn(
-                                'h-3.5 w-3.5 animate-spin',
-                                styles.icon,
-                              )}
-                            />
-                          )}
-                          <span>{localizeRequestStatus(i18n, status)}</span>
-                        </span>
-                      </div>
-                    )
-                  })()
-                : (() => {
-                    const dec = String(status || '').toUpperCase()
-                    let iconName = ''
-                    let badgeColorClass = ''
-                    let isLoaderIcon = false
-
-                    if (
-                      dec === 'APPROVED' ||
-                      dec === 'MATCHED' ||
-                      dec === 'VERIFIED'
-                    ) {
-                      iconName = 'tabler:circle-check'
-                      badgeColorClass =
-                        'border-[var(--green-9)] bg-[var(--green-9)] text-white'
-                    } else if (
-                      dec === 'REJECTED' ||
-                      dec === 'NO MATCH' ||
-                      dec === 'NOT MATCHED'
-                    ) {
-                      iconName = 'tabler:alert-circle'
-                      badgeColorClass =
-                        'border-[var(--red-9)] bg-[var(--red-9)] text-white'
-                    } else if (
-                      dec === 'PARTIALLY APPROVED' ||
-                      dec === 'PARTIALLY_APPROVED' ||
-                      dec === 'PARTIALLY MATCHED' ||
-                      dec === 'PARTIAL MATCH'
-                    ) {
-                      iconName = 'tabler:alert-triangle'
-                      badgeColorClass =
-                        'border-transparent bg-[var(--orange-9)] text-white'
-                    } else if (
-                      dec.includes('ANALYZING') ||
-                      dec.includes('FINALIZING') ||
-                      dec.includes('FETCHING') ||
-                      dec.includes('INITIATING') ||
-                      dec.includes('SETTING UP')
-                    ) {
-                      iconName = 'tabler:loader-2'
-                      badgeColorClass =
-                        'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
-                      isLoaderIcon = true
-                    } else {
-                      iconName = 'tabler:clock'
-                      badgeColorClass =
-                        'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
-                    }
-
-                    return (
-                      <span
-                        className={cn(
-                          'animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-all duration-300',
-                          badgeColorClass,
+                      {/* Content Layer */}
+                      <span className='relative z-10 flex items-center gap-1.5'>
+                        {percent < 100 && (
+                          <Icon
+                            name='tabler:loader-2'
+                            className={cn(
+                              'h-3.5 w-3.5 animate-spin',
+                              styles.icon,
+                            )}
+                          />
                         )}
-                      >
-                        <Icon
-                          name={iconName}
-                          className={cn(
-                            'h-3.5 w-3.5',
-                            isLoaderIcon && 'animate-spin',
-                          )}
-                        />
                         <span>{localizeRequestStatus(i18n, status)}</span>
                       </span>
-                    )
-                  })())}
+                    </div>
+                  )
+                })()
+              : (() => {
+                  const dec = String(status || '').toUpperCase()
+                  let iconName = ''
+                  let badgeColorClass = ''
+                  let isLoaderIcon = false
 
-            {/* Duplicate Detection Badge */}
-            {isDuplicate && (
-              <Tooltip
-                content={
-                  duplicateMessage ||
-                  t`Potential duplicate invoice detected in ERP records`
-                }
-                position='bottom'
-              >
-                <span className='animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border border-transparent bg-[var(--red-9)] px-2 py-0.5 text-[11px] font-semibold text-white shadow-2xs transition-all duration-300'>
-                  <Icon name='lucide:copy-check' className='h-3.5 w-3.5' />
-                  <span>{t`Duplicate`}</span>
-                </span>
-              </Tooltip>
-            )}
+                  if (
+                    dec === 'APPROVED' ||
+                    dec === 'MATCHED' ||
+                    dec === 'VERIFIED'
+                  ) {
+                    iconName = 'tabler:circle-check'
+                    badgeColorClass =
+                      'border-[var(--green-9)] bg-[var(--green-9)] text-white'
+                  } else if (
+                    dec === 'REJECTED' ||
+                    dec === 'NO MATCH' ||
+                    dec === 'NOT MATCHED'
+                  ) {
+                    iconName = 'tabler:alert-circle'
+                    badgeColorClass =
+                      'border-[var(--red-9)] bg-[var(--red-9)] text-white'
+                  } else if (
+                    dec === 'PARTIALLY APPROVED' ||
+                    dec === 'PARTIALLY_APPROVED' ||
+                    dec === 'PARTIALLY MATCHED' ||
+                    dec === 'PARTIAL MATCH'
+                  ) {
+                    iconName = 'tabler:alert-triangle'
+                    badgeColorClass =
+                      'border-transparent bg-[var(--orange-9)] text-white'
+                  } else if (
+                    dec.includes('ANALYZING') ||
+                    dec.includes('FINALIZING') ||
+                    dec.includes('FETCHING') ||
+                    dec.includes('INITIATING') ||
+                    dec.includes('SETTING UP')
+                  ) {
+                    iconName = 'tabler:loader-2'
+                    badgeColorClass =
+                      'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
+                    isLoaderIcon = true
+                  } else {
+                    iconName = 'tabler:clock'
+                    badgeColorClass =
+                      'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
+                  }
 
-            {/* BackOrder Detection Badge */}
-            {isBackOrder && (
-              <Tooltip
-                content={
-                  backOrderMessage ||
-                  t`Backorder detected on purchase order fulfillment`
-                }
-                position='bottom'
-              >
-                <span className='animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border border-transparent bg-[var(--orange-9)] px-2 py-0.5 text-[11px] font-semibold text-white shadow-2xs transition-all duration-300'>
-                  <Icon name='lucide:package-x' className='h-3.5 w-3.5' />
-                  <span>{t`Backorder`}</span>
-                </span>
-              </Tooltip>
-            )}
-          </div>
+                  return (
+                    <span
+                      className={cn(
+                        'animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-all duration-300',
+                        badgeColorClass,
+                      )}
+                    >
+                      <Icon
+                        name={iconName}
+                        className={cn(
+                          'h-3.5 w-3.5',
+                          isLoaderIcon && 'animate-spin',
+                        )}
+                      />
+                      <span>{localizeRequestStatus(i18n, status)}</span>
+                    </span>
+                  )
+                })())}
+
+          {/* Duplicate Detection Badge */}
+          {isDuplicate && (
+            <Tooltip
+              content={
+                duplicateMessage ||
+                t`Potential duplicate invoice detected in ERP records`
+              }
+              position='bottom'
+            >
+              <span className='animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border border-transparent bg-[var(--red-9)] px-2 py-0.5 text-[11px] font-semibold text-white shadow-2xs transition-all duration-300'>
+                <Icon name='lucide:copy-check' className='h-3.5 w-3.5' />
+                <span>{t`Duplicate`}</span>
+              </span>
+            </Tooltip>
+          )}
+
+          {/* BackOrder Detection Badge */}
+          {isBackOrder && (
+            <Tooltip
+              content={
+                backOrderMessage ||
+                t`Backorder detected on purchase order fulfillment`
+              }
+              position='bottom'
+            >
+              <span className='animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border border-transparent bg-[var(--orange-9)] px-2 py-0.5 text-[11px] font-semibold text-white shadow-2xs transition-all duration-300'>
+                <Icon name='lucide:package-x' className='h-3.5 w-3.5' />
+                <span>{t`Backorder`}</span>
+              </span>
+            </Tooltip>
+          )}
         </div>
+      </div>
 
       {/* Right Side Group: Total Amount + Actions */}
       <div className='ml-auto flex shrink-0 flex-wrap items-center gap-2 sm:gap-2.5'>
