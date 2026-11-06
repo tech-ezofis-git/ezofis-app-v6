@@ -30,10 +30,10 @@ public sealed class RunQuanticsFormSyncJob
     public async Task Execute(string tenantDisplay, QuanticsFormSyncJobArgs args, PerformContext? context)
     {
         var jobId = context?.BackgroundJob.Id
-            ?? throw new InvalidOperationException("Hangfire PerformContext is required for Quantics form sync jobs.");
+            ?? throw new InvalidOperationException("Hangfire PerformContext is required for packaging form sync jobs.");
 
         _logger.LogInformation(
-            "Quantics form sync job {JobId} started for workflow {WorkflowId} instance {InstanceId}",
+            "Packaging form sync job {JobId} started for workflow {WorkflowId} instance {InstanceId}",
             jobId,
             args.WorkflowId,
             args.InstanceId);
@@ -63,7 +63,7 @@ public sealed class RunQuanticsFormSyncJob
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Quantics form sync job {JobId} failed for instance {InstanceId}", jobId, args.InstanceId);
+            _logger.LogError(ex, "Packaging form sync job {JobId} failed for instance {InstanceId}", jobId, args.InstanceId);
             try
             {
                 await progress.SetHangfireStateAsync(jobId, "Failed", $"{QuanticsPackaging.FormSyncLabel} failed", ex.Message);
@@ -74,7 +74,7 @@ public sealed class RunQuanticsFormSyncJob
             }
             catch (Exception progressEx)
             {
-                _logger.LogWarning(progressEx, "Failed to persist Quantics form sync job failure for {JobId}", jobId);
+                _logger.LogWarning(progressEx, "Failed to persist packaging form sync job failure for {JobId}", jobId);
             }
 
             throw;
