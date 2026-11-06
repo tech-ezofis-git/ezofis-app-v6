@@ -2021,6 +2021,12 @@ public sealed class FormEntryService : IFormEntryService
         IReadOnlyList<(string Column, string Value)> filters,
         CancellationToken cancellationToken)
     {
+        // The filter predicates call dbo.try_json_scalar; without the function (a tenant database
+        // where no upsert has run yet) a filtered by-column call fails with a 500. Same as
+        // LoadEntriesByColumnValueAsync, create it first. Unfiltered calls don't use it.
+        if (filters.Count > 0)
+            await EnsureTryJsonScalarFunctionAsync(connection, cancellationToken);
+
         var escaped = EscapeColumn(column);
         var whereParts = new List<string>
         {
