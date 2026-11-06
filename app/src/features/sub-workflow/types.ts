@@ -49,13 +49,25 @@ export type SubProcessStatus = 'completed' | 'forceClosed' | 'running'
 
 /** One child stage inside a parent history row (`subWorkflowHistory[]`). */
 export interface SubWorkflowHistoryRow {
+  action?: string
+  actionAt?: string | null
+  actionStatus?: number
+  actionUser?: string | null
+  actionUserEmail?: string | null
+  activityId?: string | number
+  agentType?: string
+  description?: string
+  performedByUserName?: string
+  processedBy?: string | null
+  processedOn?: string | null
+  receivedOn?: string | null
   requestNo: string
+  review?: string
   stage: string
-  actionUser?: string
-  processedBy?: string
-  processedOn?: string
-  receivedOn?: string
+  stageName?: string
+  stageType?: string
   status?: string
+  title?: string
 }
 
 /** Row of the parent→child link table (`POST /workflow/postSubWorkflow`). */

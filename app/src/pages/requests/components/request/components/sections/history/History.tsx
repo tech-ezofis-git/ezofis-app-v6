@@ -4,6 +4,7 @@ import Icon from '@/components/base/icon/Icon'
 import {
   attachConnectorHistory,
   getConnectorSteps,
+  isConnectorFinished,
   isSubWorkflowEnabled,
   useSubWorkflowHistory,
 } from '@/features/sub-workflow'
@@ -224,6 +225,57 @@ const getTitle = (h: HistoryRow) => {
   return stage || status || h.action || t`Stage processed`
 }
 
+// A sub-ticket's step, drawn like the request's own history rows.
+const renderChildStep = (row: HistoryRow) => {
+  const title = row.title || getTitle(row)
+  const actor = pickActor(row)
+  const date = getFormattedTimestamp(row)
+  const config = getStepConfig(row, false)
+  return (
+    <div className='relative flex items-start gap-3'>
+      <div
+        className={cn(
+          'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm',
+          config.bulletBg,
+        )}
+      >
+        <Icon className='size-4' name={config.icon} />
+      </div>
+      <div className='flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5'>
+        <div className='text-13 leading-snug font-semibold text-gray-13'>
+          {title}
+        </div>
+        <div className='flex flex-wrap items-center gap-1.5 text-11 font-medium text-gray-9'>
+          <span className='flex items-center gap-1'>
+            <Icon
+              className={cn(
+                'size-3.5 shrink-0',
+                actor === 'AI Agent'
+                  ? 'text-[var(--primary-9)]'
+                  : 'text-gray-8',
+              )}
+              name={
+                actor === 'AI Agent'
+                  ? 'lucide:bot'
+                  : actor === 'System' || actor === 'System (Email)'
+                    ? 'tabler:settings'
+                    : 'tabler:user'
+              }
+            />
+            <span>{actor}</span>
+          </span>
+          {date && (
+            <>
+              <span className='text-gray-6'>·</span>
+              <span>{date}</span>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function History({
   enabled,
   instanceId,
@@ -397,7 +449,7 @@ export default function History({
   }, [flows, isCompleted, showSapTimeline])
 
   // Sub-workflow connector steps (localhost-only until the API is ready):
-  // live rows carry `subWorkflowHistory`; the mock supplies them separately.
+  // each linked child's own history is read and shown under the parent.
   const subWorkflowEnabled = isSubWorkflowEnabled()
   const { data: connectorEntries } = useSubWorkflowHistory(
     subWorkflowEnabled ? workflowId : undefined,
@@ -454,11 +506,16 @@ export default function History({
     )
   }
 
+  // Connector rows (a sub-ticket added after the request's own steps) are not
+  // steps of this request, so they take no part in the durations.
+  const isExtraConnectorRow = (row: HistoryRow) => row.status === 'Connector'
+  const timelineFlows = displayFlows.filter((row) => !isExtraConnectorRow(row))
+
   const firstDate =
-    displayFlows.length > 0 ? getStepDate(displayFlows[0]) : null
+    timelineFlows.length > 0 ? getStepDate(timelineFlows[0]) : null
   const lastDate =
-    displayFlows.length > 1
-      ? getStepDate(displayFlows[displayFlows.length - 1])
+    timelineFlows.length > 1
+      ? getStepDate(timelineFlows[timelineFlows.length - 1])
       : null
   const isChronological =
     firstDate && lastDate ? firstDate.getTime() <= lastDate.getTime() : true
@@ -492,14 +549,19 @@ export default function History({
 
           {displayFlows.map((h, idx) => {
             const isStart = idx === 0
-            const config = getStepConfig(h, isStart)
+            const connectorSteps = subWorkflowEnabled
+              ? getConnectorSteps(h)
+              : []
+            const baseConfig = getStepConfig(h, isStart)
+            // A connector row is only done once its sub-ticket has completed.
+            const config =
+              connectorSteps.length > 0 && !isConnectorFinished(connectorSteps)
+                ? { bulletBg: 'text-orange-9', icon: 'tabler:progress' }
+                : baseConfig
             const title = h.title || getTitle(h)
             const actor = pickActor(h)
             const date = getFormattedTimestamp(h)
             const titleLc = safeLower(title)
-            const connectorSteps = subWorkflowEnabled
-              ? getConnectorSteps(h)
-              : []
             const isApAgent = titleLc.includes('ap agent')
             const isSapCreated =
               titleLc.includes('supplier invoice created in sap') ||
@@ -549,15 +611,16 @@ export default function History({
             let durationText = ''
             let isLatestDuration = false
             const currentDate = getStepDate(h)
-            if (currentDate) {
+            const timelineIdx = timelineFlows.indexOf(h)
+            if (currentDate && timelineIdx >= 0) {
               let nextStep: HistoryRow | undefined
               if (isChronological) {
-                if (idx + 1 < displayFlows.length) {
-                  nextStep = displayFlows[idx + 1]
+                if (timelineIdx + 1 < timelineFlows.length) {
+                  nextStep = timelineFlows[timelineIdx + 1]
                 }
               } else {
-                if (idx - 1 >= 0) {
-                  nextStep = displayFlows[idx - 1]
+                if (timelineIdx - 1 >= 0) {
+                  nextStep = timelineFlows[timelineIdx - 1]
                 }
               }
 
@@ -573,8 +636,8 @@ export default function History({
                 }
               } else {
                 const isLatest = isChronological
-                  ? idx === displayFlows.length - 1
-                  : idx === 0
+                  ? timelineIdx === timelineFlows.length - 1
+                  : timelineIdx === 0
                 if (isLatest) {
                   const isTerminal =
                     safeLower(title).includes('complet') ||
@@ -681,7 +744,10 @@ export default function History({
                     )}
                   </div>
                   {connectorSteps.length > 0 && (
-                    <SubWorkflowHistoryBlock rows={connectorSteps} />
+                    <SubWorkflowHistoryBlock
+                      renderStep={renderChildStep}
+                      rows={connectorSteps}
+                    />
                   )}
                 </div>
               </div>
