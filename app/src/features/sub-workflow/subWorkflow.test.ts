@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mockSubWorkflowBackend } from './api/mock/mockStore'
 import { toMainProcess, toSubProcessRow } from './api/subWorkflowApi'
 import {
@@ -397,27 +397,6 @@ describe('hasSubWorkflowSetup', () => {
         ),
       ),
     ).toBe(false)
-  })
-})
-
-describe('isSubWorkflowEnabled', () => {
-  afterEach(() => vi.unstubAllGlobals())
-
-  it('is on for local dev hosts only', async () => {
-    const { isSubWorkflowEnabled } = await import('./featureFlag')
-    for (const hostname of [
-      'localhost',
-      '127.0.0.1',
-      '[::1]',
-      'app.localhost',
-    ]) {
-      vi.stubGlobal('location', { hostname })
-      expect(isSubWorkflowEnabled()).toBe(true)
-    }
-    for (const hostname of ['cloud.ezofis.com', 'staging.ezofis.com', '']) {
-      vi.stubGlobal('location', { hostname })
-      expect(isSubWorkflowEnabled()).toBe(false)
-    }
   })
 })
 

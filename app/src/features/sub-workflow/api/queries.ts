@@ -62,7 +62,7 @@ export const useSubProcessesForWorkflow = (workflowId?: Id) =>
     queryFn: () => subWorkflowApi.getSubProcessesForWorkflow(workflowId!),
   })
 
-/** Mock connector steps for a request's history (live rows carry their own). */
+/** Connector steps for a request's history: each linked child's own steps. */
 export const useSubWorkflowHistory = (workflowId?: Id, processId?: Id) =>
   useQuery({
     enabled: Boolean(workflowId && processId),

@@ -1,4 +1,6 @@
 import { requestApi } from '@/api/requests/requests'
+import workflowsApiV6 from '@/api/v6/workflows'
+import { mapHistoryFlow } from '@/pages/requests/hooks/useHistory'
 import type {
   Id,
   MainProcessDetails,
@@ -61,15 +63,41 @@ export const subWorkflowApi = {
 
   /**
    * Connector steps for a request's history, as `{ stage,
-   * subWorkflowHistory }`. Live history rows carry `subWorkflowHistory`
-   * themselves (V5 processHistory), so nothing extra is fetched here.
+   * subWorkflowHistory }`: one entry per child request, holding the child's
+   * own steps. The parent's history response doesn't carry them, so each
+   * linked child's history is read here.
    */
   getHistory: async (
-    _workflowId: Id,
-    _processId: Id,
+    workflowId: Id,
+    processId: Id,
   ): Promise<
     { stage: string; subWorkflowHistory: SubWorkflowHistoryRow[] }[]
-  > => [],
+  > => {
+    const children = await subWorkflowApi.getSubProcesses(workflowId, processId)
+    const entries = await Promise.all(
+      children.map(async (child) => {
+        const res = await workflowsApiV6.getInstanceHistory(
+          child.subWorkflowId,
+          child.processId,
+        )
+        const flows: any[] = Array.isArray(res.data?.flows)
+          ? res.data.flows
+          : Array.isArray(res.data)
+            ? res.data
+            : []
+        return {
+          stage: child.subWorkflowName,
+          subWorkflowHistory: flows.map(
+            (flow, idx): SubWorkflowHistoryRow => ({
+              ...(mapHistoryFlow(flow, idx) as SubWorkflowHistoryRow),
+              requestNo: child.requestNo,
+            }),
+          ),
+        }
+      }),
+    )
+    return entries.filter((entry) => entry.subWorkflowHistory.length > 0)
+  },
 
   /** Parent of a child request, or null when the request is not a child. */
   getMainProcess: async (

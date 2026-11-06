@@ -1,10 +1,15 @@
 import { useLingui } from '@lingui/react/macro'
 import { AnimatePresence, motion } from 'motion/react'
 import { Fragment, useEffect, useState } from 'react'
+import type { SubProcessRow } from '@/features/sub-workflow'
 import type {
   StageRoute,
   StageTrailItem,
 } from '@/pages/requests/utils/workflow.utils'
+import {
+  getSubProcessStatus,
+  SUB_PROCESS_STATUS_META,
+} from '@/features/sub-workflow'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
@@ -30,6 +35,12 @@ const ACTION_COLOR_CLASS: Record<string, string> = {
   primary: 'border-primary-4 bg-primary-3 text-primary-11',
   red: 'border-red-4 bg-red-3 text-red-11',
   secondary: 'border-secondary-4 bg-secondary-3 text-secondary-11',
+}
+
+const SUB_STATUS_TEXT: Record<string, string> = {
+  green: 'text-green-9',
+  orange: 'text-orange-9',
+  red: 'text-red-9',
 }
 
 const isRejectLikeAction = (label: string) =>
@@ -75,18 +86,23 @@ const formatShortAge = (since?: string) => {
 export default function StageTrail({
   items,
   since,
+  subProcesses = [],
 }: {
   items: StageTrailItem[]
   /** When the request reached the current step (transactionCreatedAt). */
   since?: string
+  /** Sub-tickets started by this request's connectors, shown at the current step. */
+  subProcesses?: SubProcessRow[]
 }) {
   const { t } = useLingui()
   const [routesOpen, setRoutesOpen] = useState(false)
+  const [subOpen, setSubOpen] = useState(false)
   const currentId = items.find(({ step }) => step.status === 'current')?.step.id
 
   // Close when the request moves to another stage.
   useEffect(() => {
     setRoutesOpen(false)
+    setSubOpen(false)
   }, [currentId])
 
   if (!items.length) return null
@@ -107,6 +123,9 @@ export default function StageTrail({
         // Only a real choice (2+ routes) gets the arrow and the popover; a
         // single route is just the next stage's name.
         const hasRouteChoices = routeCount > 1
+        // The current stage started sub-processes that run in parallel with it.
+        const hasSubChoices =
+          isCurrent && !hasRouteChoices && subProcesses.length > 0
         const stepLabel =
           routeCount > 1
             ? t`${routeCount} routes`
@@ -142,13 +161,19 @@ export default function StageTrail({
                 · {t`${age} ago`}
               </span>
             ) : null}
-            {hasRouteChoices ? (
+            {hasSubChoices ? (
+              <span className='inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-3 px-1.5 py-0.5 text-[10px] font-semibold text-primary-11'>
+                <Icon className='size-3' name='lucide:git-branch' />
+                {subProcesses.length}
+              </span>
+            ) : null}
+            {hasRouteChoices || hasSubChoices ? (
               <Icon
                 name='lucide:chevron-down'
                 aria-hidden
                 className={cn(
                   'size-3.5 shrink-0 transition-transform duration-200',
-                  routesOpen && 'rotate-180',
+                  (hasRouteChoices ? routesOpen : subOpen) && 'rotate-180',
                 )}
               />
             ) : null}
@@ -267,6 +292,88 @@ export default function StageTrail({
                                     {route.condition}
                                   </span>
                                 ) : null}
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : hasSubChoices ? (
+              <div
+                className='relative inline-flex min-w-0 shrink'
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget)) {
+                    setSubOpen(false)
+                  }
+                }}
+                onFocus={() => setSubOpen(true)}
+                onMouseEnter={() => setSubOpen(true)}
+                onMouseLeave={() => setSubOpen(false)}
+              >
+                <button
+                  aria-current='step'
+                  aria-expanded={subOpen}
+                  aria-haspopup='dialog'
+                  type='button'
+                  className={cn(
+                    stepClassName,
+                    'cursor-default active:scale-95',
+                  )}
+                  onClick={() => setSubOpen(true)}
+                >
+                  {stepBody}
+                </button>
+
+                <AnimatePresence>
+                  {subOpen && (
+                    <motion.div
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      aria-label={t`Sub Process`}
+                      className='absolute top-full right-0 z-[100] pt-3'
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      role='dialog'
+                    >
+                      <div className='w-[320px] rounded-xl border border-[var(--gray-3)] bg-surface/95 p-4 shadow-2xl backdrop-blur-md'>
+                        <div className='mb-3 flex items-center gap-2 border-b border-[var(--gray-2)] pb-2.5'>
+                          <Icon
+                            className='size-4 text-[var(--primary-9)]'
+                            name='lucide:git-branch'
+                          />
+                          <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
+                            {t`Sub Process`}
+                          </span>
+                        </div>
+                        <ul className='m-0 flex list-none flex-col gap-1 p-0'>
+                          {subProcesses.map((row) => {
+                            const meta =
+                              SUB_PROCESS_STATUS_META[getSubProcessStatus(row)]
+                            return (
+                              <li
+                                className='flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] transition-colors hover:bg-[var(--gray-2)]'
+                                key={String(row.processId)}
+                              >
+                                <Icon
+                                  className={cn(
+                                    'size-4 shrink-0',
+                                    SUB_STATUS_TEXT[meta.color],
+                                  )}
+                                  name={meta.icon}
+                                />
+                                <span className='shrink-0 font-semibold text-[var(--gray-13)]'>
+                                  {row.requestNo}
+                                </span>
+                                <Icon
+                                  className='size-3.5 shrink-0 text-gray-8'
+                                  name='lucide:arrow-right'
+                                  aria-hidden
+                                />
+                                <span className='truncate font-medium text-[var(--gray-12)]'>
+                                  {row.subWorkflowName}
+                                </span>
                               </li>
                             )
                           })}
