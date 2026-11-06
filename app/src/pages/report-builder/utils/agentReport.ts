@@ -408,13 +408,16 @@ export const agentRunToReportRunResult = (
     return mapped
   })
   return {
+    asOfDate: result.asOfDate,
     columns,
     domain: meta.domain,
+    generatedAtUtc: result.generatedAtUtc,
     name: result.title || meta.name,
     reportId: meta.reportId,
     rowCount: result.totalCount ?? rows.length,
     rows,
     totals: null,
+    windowDays: result.windowDays ?? null,
   }
 }
 
