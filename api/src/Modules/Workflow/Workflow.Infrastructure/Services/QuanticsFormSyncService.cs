@@ -13,7 +13,7 @@ using SaaSApp.Workflow.Application.Workflows;
 namespace SaaSApp.Workflow.Infrastructure.Services;
 
 /// <summary>
-/// On completion of a Quantics "New Packaging Requisition" ticket, sends the ticket's
+/// On completion of a "New Packaging Requisition" ticket (Quantics, Amlion: QuanticsPackaging.Targets), sends the ticket's
 /// form fields (ezfb column names) to the Python chat API with intent <c>form_sync</c>,
 /// which upserts the packaging master form records.
 /// </summary>
@@ -43,8 +43,9 @@ public sealed class QuanticsFormSyncService : IQuanticsFormSyncService
 
     public async Task ExecuteAsync(QuanticsFormSyncJobArgs args, string hangfireJobId, CancellationToken cancellationToken = default)
     {
-        if (!QuanticsPackaging.IsThisWorkflow(args.WorkflowId, args.TenantId))
-            throw new InvalidOperationException("Quantics form sync job was queued for a different workflow.");
+        var target = QuanticsPackaging.Find(args.WorkflowId, args.TenantId)
+            ?? throw new InvalidOperationException(
+                $"Packaging form sync job was queued for workflow {args.WorkflowId:D}, which has no master form sync.");
 
         var chatUrl = _agentsChat.ResolveChatUrl();
         if (string.IsNullOrWhiteSpace(chatUrl))
@@ -54,7 +55,7 @@ public sealed class QuanticsFormSyncService : IQuanticsFormSyncService
             ?? throw new InvalidOperationException("Tenant connection is not set.");
 
         var sourceFormId = string.IsNullOrWhiteSpace(args.FormId)
-            ? QuanticsPackaging.SourceFormId.ToString("D")
+            ? target.SourceFormId.ToString("D")
             : args.FormId!;
 
         await using var connection = new NpgsqlConnection(tenantCs);
@@ -76,14 +77,18 @@ public sealed class QuanticsFormSyncService : IQuanticsFormSyncService
             message = "Sync packaging requisition ticket",
             payload = new
             {
+                // The Python agent opens this tenant's database (ezofis_Tenant_<id8>); without it,
+                // it falls back to Quantics.
+                tenant_id = args.TenantId.ToString("D"),
                 source_form_id = sourceFormId,
-                target_form_id = QuanticsPackaging.TargetFormId.ToString("D"),
+                target_form_id = target.TargetFormId.ToString("D"),
                 payload = fields
             }
         });
 
         _logger.LogInformation(
-            "Quantics form sync for instance {InstanceId}: POST {ChatUrl} intent {Intent} with {FieldCount} field(s).",
+            "{Tenant} packaging form sync for instance {InstanceId}: POST {ChatUrl} intent {Intent} with {FieldCount} field(s).",
+            target.Name,
             args.InstanceId,
             chatUrl,
             QuanticsPackaging.FormSyncIntent,
@@ -110,7 +115,7 @@ public sealed class QuanticsFormSyncService : IQuanticsFormSyncService
 
         var reply = FindProperty(doc.RootElement, "reply");
         _logger.LogInformation(
-            "Quantics form sync completed for instance {InstanceId}: {Reply}",
+            "Packaging form sync completed for instance {InstanceId}: {Reply}",
             args.InstanceId,
             reply.ValueKind == JsonValueKind.String ? reply.GetString() : responseJson);
     }
