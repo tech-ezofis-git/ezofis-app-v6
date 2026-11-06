@@ -12,6 +12,10 @@ import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import {
+  hasNoEmailOptions,
+  isDynamicUserField,
+} from '@/pages/workflows/utils/dynamicUserFields'
+import {
   getNodeToolType,
   NODE_TOOL_TYPE,
 } from '@/pages/workflows/utils/nodeToolTypes'
@@ -109,10 +113,17 @@ export default function ManualUserSettingsPanel({
   const [fieldOptions, setFieldOptions] = useState<Option[]>([])
   // Form panels (sections) and their fields, so Security rules can pick a whole panel.
   const [panelOptions, setPanelOptions] = useState<PanelOption[]>([])
+  // The subset of fields that can hold assignee emails, for dynamic-user routing.
+  const [emailFieldOptions, setEmailFieldOptions] = useState<Option[]>([])
+  const [noEmailOptionFieldIds, setNoEmailOptionFieldIds] = useState<string[]>(
+    [],
+  )
   useEffect(() => {
     if (!formId) {
       setFieldOptions([])
       setPanelOptions([])
+      setEmailFieldOptions([])
+      setNoEmailOptionFieldIds([])
       return
     }
     let cancelled = false
@@ -127,6 +138,8 @@ export default function ManualUserSettingsPanel({
         const panels = [...(form.panels || []), ...(form.secondaryPanels || [])]
         const options: Option[] = []
         const panelList: PanelOption[] = []
+        const emailOptions: Option[] = []
+        const noEmailOptionIds: string[] = []
         panels.forEach((panel: any, panelIndex: number) => {
           const fieldIds: string[] = []
           ;(panel?.fields || []).forEach((field: any) => {
@@ -134,10 +147,15 @@ export default function ManualUserSettingsPanel({
             // Keyed by field.id to match how the Requests overview reads
             // form data (WorkflowFormRenderer/FieldRenderer key formModel
             // and onFieldChange by field.id, not field.name).
-            options.push({
+            const option = {
               id: String(field.id),
               name: field.label || field.type,
-            })
+            }
+            options.push(option)
+            if (isDynamicUserField(field)) {
+              emailOptions.push(option)
+              if (hasNoEmailOptions(field)) noEmailOptionIds.push(option.id)
+            }
             fieldIds.push(String(field.id))
           })
           if (fieldIds.length > 0) {
@@ -151,6 +169,8 @@ export default function ManualUserSettingsPanel({
         if (!cancelled) {
           setFieldOptions(options)
           setPanelOptions(panelList)
+          setEmailFieldOptions(emailOptions)
+          setNoEmailOptionFieldIds(noEmailOptionIds)
         }
       } catch {
         // ignore - field pickers just stay empty
@@ -352,7 +372,9 @@ export default function ManualUserSettingsPanel({
       <div className='flex-1 space-y-1 overflow-y-auto px-4 pt-2 pb-4'>
         <GeneralTab
           actorNodeOptions={actorNodeOptions}
+          emailFieldOptions={emailFieldOptions}
           fieldOptions={fieldOptions}
+          noEmailOptionFieldIds={noEmailOptionFieldIds}
           groupOptions={groupOptions}
           nodeData={mergedNodeData}
           openSections={openSections}

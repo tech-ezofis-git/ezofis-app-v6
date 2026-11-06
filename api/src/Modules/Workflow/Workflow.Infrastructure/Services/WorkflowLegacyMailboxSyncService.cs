@@ -72,7 +72,7 @@ public sealed class WorkflowLegacyMailboxSyncService : IWorkflowLegacyMailboxSyn
         await connection.OpenAsync(cancellationToken);
 
         await using (var alter = new NpgsqlCommand(
-            $"ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS user_ids text NULL; ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS group_ids text NULL;",
+            $"ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS user_ids text NULL; ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS group_ids text NULL; ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS dynamic_user_ids text NULL;",
             connection))
         {
             try
@@ -87,12 +87,14 @@ public sealed class WorkflowLegacyMailboxSyncService : IWorkflowLegacyMailboxSyn
 
         var openRows = new List<(int Id, string? ActivityId, string? UserIds)>();
         // A row escalated to a group (group_ids holds its id) keeps the group's members, not the stage's users.
+        // A Dynamic User row keeps the people from its own request.
         var sql = $@"
 SELECT id, activity_id, user_ids
 FROM {transactionTable}
 WHERE is_deleted = false
   AND action_status = 0
   AND UPPER(TRIM(COALESCE(stage_type, ''))) <> 'END'
+  AND COALESCE(dynamic_user_ids, '') = ''
   AND COALESCE(group_ids, '') !~* '^[0-9a-f]{{8}}-[0-9a-f]{{4}}-';";
         await using (var cmd = new NpgsqlCommand(sql, connection))
         await using (var reader = await cmd.ExecuteReaderAsync(cancellationToken))
@@ -555,6 +557,7 @@ INSERT INTO {ownerTable}
 
         var stepUserIds = targetTable == inboxTable
             ? await ListGroupEscalationUserIdsAsync(connection, transactionTable, transactionRowId, cancellationToken)
+                ?? await ListDynamicUserIdsAsync(connection, transactionTable, transactionRowId, cancellationToken)
                 ?? await ListStepAssigneeUserIdsAsync(connection, workflowId, activityId, cancellationToken)
             : Array.Empty<Guid>();
         if (stepUserIds.Count > 0)
@@ -720,6 +723,71 @@ INSERT INTO {ownerTable}
             .Where(id => id != Guid.Empty)
             .Distinct()
             .ToList();
+    }
+
+    /// <summary>
+    /// The people a Dynamic User stage resolved to for this request (<c>dynamic_user_ids</c>). Null for any other row.
+    /// Read through to_jsonb so transaction tables that never used Dynamic User need no new column.
+    /// </summary>
+    internal static async Task<IReadOnlyList<Guid>?> ListDynamicUserIdsAsync(
+        NpgsqlConnection connection,
+        string transactionTable,
+        int transactionRowId,
+        CancellationToken cancellationToken)
+    {
+        await using var cmd = new NpgsqlCommand(
+            $"SELECT to_jsonb(t) ->> 'dynamic_user_ids' FROM {transactionTable} t WHERE t.id = @Id;",
+            connection);
+        cmd.Parameters.AddWithValue("@Id", transactionRowId);
+        if (await cmd.ExecuteScalarAsync(cancellationToken) is not string csv || string.IsNullOrWhiteSpace(csv))
+            return null;
+
+        var users = csv
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(v => Guid.TryParse(v, out var id) ? id : Guid.Empty)
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+        return users.Count > 0 ? users : null;
+    }
+
+    internal static async Task SetDynamicUserIdsAsync(
+        NpgsqlConnection connection,
+        string transactionTable,
+        int transactionRowId,
+        IReadOnlyList<Guid> userIds,
+        CancellationToken cancellationToken)
+    {
+        var sql = $@"
+ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS dynamic_user_ids text NULL;
+UPDATE {transactionTable} SET dynamic_user_ids = @UserIds WHERE id = @Id;";
+        await using var cmd = new NpgsqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@UserIds", string.Join(',', userIds.Select(id => id.ToString("D"))));
+        cmd.Parameters.AddWithValue("@Id", transactionRowId);
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <summary>Forward on a Dynamic User row: the recipient takes the forwarder's place among the row's people.</summary>
+    internal static async Task ReplaceDynamicUserAsync(
+        NpgsqlConnection connection,
+        string transactionTable,
+        int transactionRowId,
+        Guid forwardedByUserId,
+        Guid? previousAssigneeUserId,
+        Guid forwardedToUserId,
+        CancellationToken cancellationToken)
+    {
+        var users = await ListDynamicUserIdsAsync(connection, transactionTable, transactionRowId, cancellationToken);
+        if (users == null)
+            return;
+
+        var replaced = users.Contains(forwardedByUserId) ? forwardedByUserId : previousAssigneeUserId;
+        var updated = users
+            .Select(id => id == replaced ? forwardedToUserId : id)
+            .Append(forwardedToUserId)
+            .Distinct()
+            .ToList();
+        await SetDynamicUserIdsAsync(connection, transactionTable, transactionRowId, updated, cancellationToken);
     }
 
     private static async Task<IReadOnlyList<Guid>> ListStepAssigneeUserIdsAsync(

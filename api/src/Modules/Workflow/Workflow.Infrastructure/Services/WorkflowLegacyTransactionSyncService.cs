@@ -31,6 +31,7 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
     private readonly IWorkflowDelegationService _delegations;
     private readonly WorkflowDelegationMailService _delegationMail;
     private readonly ILogger<WorkflowLegacyTransactionSyncService> _logger;
+    private readonly WorkflowDynamicAssigneeService? _dynamicAssignees;
 
     public WorkflowLegacyTransactionSyncService(
         ITenantContext tenantContext,
@@ -39,8 +40,10 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         IRepositoryItemShareService itemShares,
         IWorkflowDelegationService delegations,
         WorkflowDelegationMailService delegationMail,
-        ILogger<WorkflowLegacyTransactionSyncService> logger)
+        ILogger<WorkflowLegacyTransactionSyncService> logger,
+        WorkflowDynamicAssigneeService? dynamicAssignees = null)
     {
+        _dynamicAssignees = dynamicAssignees;
         _tenantContext = tenantContext;
         _tableCreator = tableCreator;
         _mailboxSync = mailboxSync;
@@ -195,6 +198,9 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
                     userId,
                     cancellationToken);
 
+                await WorkflowLegacyMailboxSyncService.ReplaceDynamicUserAsync(
+                    connection, transactionTable, existingRow.Id, userId, existingRow.ActivityUserId, forwardTo, cancellationToken);
+
                 // Recipient: Inbox + Submit. Forwarder: Sent (visible until completed).
                 await _mailboxSync.SyncTransactionRowAsync(
                     workflowId,
@@ -222,7 +228,27 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
                     NextCreatedByUserId: userId);
             }
 
+            // Dynamic User: work out the next stage's people BEFORE this step closes. A bad value must leave the
+            // request where it is, so the person can correct it and act again (a closed step could not be retried).
+            var nextDynamicUsers = await ResolveNextDynamicUsersAsync(
+                connection,
+                transactionTable,
+                workflowId,
+                workflowInstanceId,
+                targetStep,
+                orderedSteps,
+                review,
+                endWorkflow,
+                overrideNextStep,
+                overrideNextAssigneeUserId,
+                mailboxForm,
+                userId,
+                cancellationToken);
+
+            var currentDynamicUsers = await WorkflowLegacyMailboxSyncService.ListDynamicUserIdsAsync(
+                connection, transactionTable, existingRow.Id, cancellationToken);
             var actedByUserId = targetStep.GetApproverIds().Any(id => id == userId)
+                || currentDynamicUsers?.Contains(userId) == true
                 ? userId
                 : resolvedActivityUserId;
             await UpdateReviewAsync(
@@ -330,14 +356,16 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
                 {
                     var (nextActivityUserId, nextCreatedByUserId) = overrideNextAssigneeUserId is Guid chosenAssignee
                         ? (chosenAssignee, userId)
-                        : await ResolveNextStepAssigneeAsync(
-                            connection,
-                            workflowInstanceId,
-                            nextStep,
-                            resolvedActivityUserId,
-                            userId,
-                            mailboxForm,
-                            cancellationToken);
+                        : nextDynamicUsers is { Count: > 0 }
+                            ? (nextDynamicUsers[0], userId)
+                            : await ResolveNextStepAssigneeAsync(
+                                connection,
+                                workflowInstanceId,
+                                nextStep,
+                                resolvedActivityUserId,
+                                userId,
+                                mailboxForm,
+                                cancellationToken);
 
                     // The next step's own assignee may be away: route it to their active delegate.
                     // (The check above only covers the current step's assignee.)
@@ -355,6 +383,16 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
                         nextCreatedByUserId,
                         matchedRule?.Id,
                         cancellationToken);
+
+                    if (nextDynamicUsers is { Count: > 0 })
+                    {
+                        await WorkflowLegacyMailboxSyncService.SetDynamicUserIdsAsync(
+                            connection,
+                            transactionTable,
+                            nextTransactionId.Value,
+                            SwapDelegate(nextDynamicUsers, nextStepAssignee, nextActivityUserId),
+                            cancellationToken);
+                    }
 
                     if (nextActivityUserId != nextStepAssignee)
                     {
@@ -442,6 +480,20 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
                 WorkflowCompleted: false);
         }
 
+        // Opening a stage directly: a caller-chosen user still wins, as it does everywhere else.
+        IReadOnlyList<Guid>? openDynamicUsers = null;
+        if (activityUserId is null && _dynamicAssignees != null && !IsEndStage(targetStep))
+        {
+            openDynamicUsers = await _dynamicAssignees.ResolveAsync(
+                connection, workflowId, workflowInstanceId, targetStep, mailboxForm, userId, cancellationToken);
+            if (openDynamicUsers is { Count: > 0 })
+            {
+                currentStepAssignee = openDynamicUsers[0];
+                resolvedActivityUserId = await RedirectToDelegateAsync(
+                    workflowId, txActivityId, currentStepAssignee, cancellationToken);
+            }
+        }
+
         var (insertedId, insertedGuid) = await InsertOpenTransactionForDefinitionStepAsync(
             connection,
             transactionTable,
@@ -452,6 +504,16 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
             userId,
             ruleId: null,
             cancellationToken);
+
+        if (openDynamicUsers is { Count: > 0 })
+        {
+            await WorkflowLegacyMailboxSyncService.SetDynamicUserIdsAsync(
+                connection,
+                transactionTable,
+                insertedId,
+                SwapDelegate(openDynamicUsers, currentStepAssignee, resolvedActivityUserId),
+                cancellationToken);
+        }
 
         await _mailboxSync.SyncTransactionRowAsync(
             workflowId, insertedId, connection, mailboxForm, cancellationToken);
@@ -727,6 +789,56 @@ WHERE id = @WorkflowInstanceId;";
             delegateId);
         return delegateId;
     }
+
+    /// <summary>
+    /// The Dynamic User people for the stage this review opens, or null when that stage has none, the caller picked
+    /// the assignee, or it is already open (a retry keeps the people it was assigned to).
+    /// </summary>
+    private async Task<IReadOnlyList<Guid>?> ResolveNextDynamicUsersAsync(
+        NpgsqlConnection connection,
+        string transactionTable,
+        Guid workflowId,
+        Guid workflowInstanceId,
+        WorkflowStep targetStep,
+        IReadOnlyList<WorkflowStep> orderedSteps,
+        string? review,
+        bool endWorkflow,
+        WorkflowStep? overrideNextStep,
+        Guid? overrideNextAssigneeUserId,
+        MailboxFormSnapshot? mailboxForm,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        if (_dynamicAssignees == null || overrideNextAssigneeUserId != null || endWorkflow || IsEndReview(review))
+            return null;
+
+        var nextStep = overrideNextStep;
+        if (nextStep == null)
+        {
+            if (WorkflowStepActionsHelper.FindMatchingAction(targetStep, review) != null)
+                nextStep = WorkflowStepActionsHelper.ResolveNextStepByReview(targetStep, review, orderedSteps);
+            else if (WorkflowStepActionsHelper.ParseActions(targetStep.ActionsJson).Count == 0)
+                nextStep = orderedSteps.Where(s => s.Order > targetStep.Order).OrderBy(s => s.Order).FirstOrDefault();
+        }
+
+        if (nextStep == null || IsEndStage(nextStep))
+            return null;
+
+        var nextActivityId = ResolveTransactionActivityId(nextStep, nextStep.ActivityId ?? nextStep.Id.ToString("D"));
+        var existing = await FindTransactionRowForStepAsync(
+            connection, transactionTable, workflowInstanceId, nextStep, nextActivityId, cancellationToken);
+        if (existing != null && string.IsNullOrWhiteSpace(existing.Review))
+            return null;
+
+        return await _dynamicAssignees.ResolveAsync(
+            connection, workflowId, workflowInstanceId, nextStep, mailboxForm, userId, cancellationToken);
+    }
+
+    /// <summary>When delegation sent the first person's task to their delegate, the delegate takes their place.</summary>
+    private static IReadOnlyList<Guid> SwapDelegate(IReadOnlyList<Guid> users, Guid assignee, Guid activityUser) =>
+        assignee == activityUser
+            ? users
+            : users.Select(id => id == assignee ? activityUser : id).Distinct().ToList();
 
     /// <summary>
     /// Resolve who owns the newly opened next step.
