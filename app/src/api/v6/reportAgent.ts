@@ -46,6 +46,9 @@ export interface ReportAgentPromptResult {
 export interface ReportAgentRunResult {
   columns: ReportSpecColumn[]
   rows: Record<string, unknown>[]
+  /** The run's reference date (YYYY-MM-DD). */
+  asOfDate?: string
+  generatedAtUtc?: string
   id?: string
   page?: number
   pageSize?: number
@@ -55,6 +58,8 @@ export interface ReportAgentRunResult {
   title?: string
   totalCount?: number
   warnings?: string[]
+  /** Default reports: the days the run covers up to asOfDate (none = all time). */
+  windowDays?: number | null
 }
 
 /**
@@ -261,12 +266,15 @@ const sourceFromSpec = (spec: Record<string, unknown> | undefined) => {
 }
 
 interface V2RunPayload {
+  asOfDate?: string
   columns?: { calc?: string; key: string; label?: string }[]
+  generatedAtUtc?: string
   rowCount?: number
   rows?: Record<string, unknown>[]
   specSaved?: boolean
   truncated?: boolean
   warnings?: string[]
+  windowDays?: number | null
 }
 
 const toRunResult = (
@@ -275,14 +283,17 @@ const toRunResult = (
 ): ReportAgentRunResult => {
   const rows = Array.isArray(payload?.rows) ? payload.rows : []
   return {
+    asOfDate: payload?.asOfDate,
     columns: (payload?.columns ?? []).map((column) => ({
       calc: column.calc,
       key: column.key,
       label: column.label || column.key,
     })),
+    generatedAtUtc: payload?.generatedAtUtc,
     rows,
     totalCount: payload?.rowCount ?? rows.length,
     warnings: payload?.warnings ?? warnings,
+    windowDays: payload?.windowDays ?? null,
   }
 }
 

@@ -11,12 +11,13 @@ import MenuLabel from '@/components/base/menu/MenuLabel'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import { formatDatetime } from '@/utils/dayjs'
+import type { ExcelExportHeader } from './excelReport'
 
 const EXPORT_TOAST_ID = 'table-export'
 
 /** Three dots that pulse one after another, for "Exporting..." labels. */
 const LoadingDots = () => (
-  <span aria-hidden className='ml-px inline-flex'>
+  <span className='ml-px inline-flex' aria-hidden>
     {[0, 1, 2].map((index) => (
       <span
         className='animate-bounce'
@@ -35,6 +36,11 @@ interface Props<TData> {
   table: TanstackTable<TData>
   fileName?: string
   iconOnly?: boolean
+  /**
+   * Excel only: rows above the data (logo, report name, period, generated
+   * by...). Built when the user downloads, so it reflects the current filters.
+   */
+  excelHeader?: () => ExcelExportHeader
   /**
    * When set, "All rows" loads every record from the server (all pages, not
    * just the rows on screen) and exports those.
@@ -197,7 +203,7 @@ const buildExportRowsFromRecords = <TData,>(
   return { data, headers, rowCount: records.length }
 }
 
-const downloadBlob =(blob: Blob, fileName: string) => {
+const downloadBlob = (blob: Blob, fileName: string) => {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -208,7 +214,11 @@ const downloadBlob =(blob: Blob, fileName: string) => {
   URL.revokeObjectURL(url)
 }
 
+const EXCEL_TYPE =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
 const TableExport = <TData,>({
+  excelHeader,
   fileName = 'export',
   iconOnly = true,
   loadAllRows,
@@ -283,14 +293,30 @@ const TableExport = <TData,>({
           `${baseName}.csv`,
         )
       } else {
-        const excelBuffer = XLSX.write(workbook, {
-          bookType: 'xlsx',
-          type: 'array',
-        })
+        // Reports: logo and report details above the data (exceljs); any
+        // other table, or if that fails, the plain sheet.
+        let buffer: ArrayBuffer | null = null
+        if (excelHeader) {
+          try {
+            const { buildExcelWithHeader } = await import('./excelReport')
+            buffer = await buildExcelWithHeader(excelHeader(), headers, data)
+          } catch (error) {
+            console.error(
+              'Excel heading failed; exporting the plain sheet',
+              error,
+            )
+          }
+        }
         downloadBlob(
-          new Blob([excelBuffer], {
-            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          }),
+          new Blob(
+            [
+              buffer ??
+                XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }),
+            ],
+            {
+              type: EXCEL_TYPE,
+            },
+          ),
           `${baseName}.xlsx`,
         )
       }

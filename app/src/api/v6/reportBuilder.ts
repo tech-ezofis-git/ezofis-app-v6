@@ -87,7 +87,11 @@ export interface ReportRunResult {
   rowCount: number
   rows: Record<string, string>[]
   totals: Record<string, string> | null
+  /** Agent reports: the run's reference date and, for default reports, its window. */
+  asOfDate?: string
+  generatedAtUtc?: string
   sourceFormId?: string
+  windowDays?: number | null
   workflowId?: string
 }
 
