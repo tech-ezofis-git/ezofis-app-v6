@@ -2,7 +2,6 @@ import { useReactFlow } from '@xyflow/react'
 import { useEffect, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
-import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { generateId } from '../utils/generateId'
 import { NODE_TOOL_TYPE, type NodeToolType } from '../utils/nodeToolTypes'
@@ -413,22 +412,17 @@ const AddNodeMenu = () => {
       toolType: NODE_TOOL_TYPE.CONDITION,
       type: 'highlight',
     },
-    // Sub-workflow is localhost-only until its API is ready.
-    ...(isSubWorkflowEnabled()
-      ? [
-          {
-            bgColor: 'bg-pink-2',
-            category: 'triggers' as const,
-            description: WORKFLOW_CONNECTOR_NODE.subLabel,
-            icon: WORKFLOW_CONNECTOR_NODE.icon,
-            iconColor: WORKFLOW_CONNECTOR_NODE.iconColor,
-            label: 'Workflow Connector',
-            nodeType: 'action' as const,
-            toolType: NODE_TOOL_TYPE.WORKFLOW_CONNECTOR,
-            type: 'highlight' as const,
-          },
-        ]
-      : []),
+    {
+      bgColor: 'bg-pink-2',
+      category: 'triggers' as const,
+      description: WORKFLOW_CONNECTOR_NODE.subLabel,
+      icon: WORKFLOW_CONNECTOR_NODE.icon,
+      iconColor: WORKFLOW_CONNECTOR_NODE.iconColor,
+      label: 'Workflow Connector',
+      nodeType: 'action' as const,
+      toolType: NODE_TOOL_TYPE.WORKFLOW_CONNECTOR,
+      type: 'highlight' as const,
+    },
     {
       bgColor: 'bg-secondary-3',
       category: 'triggers',
@@ -477,14 +471,11 @@ const AddNodeMenu = () => {
       <div className='shrink-0 p-4 pb-2'>
         <div className='relative'>
           <Input
-            className='bg-surface-muted focus:border-primary-8 focus:ring-primary-4 w-full rounded-xl border-transparent py-2.5 text-sm transition-all focus:bg-surface focus:ring-2'
+            className='w-full rounded-xl border-transparent bg-surface-muted py-2.5 text-sm transition-all focus:border-primary-8 focus:bg-surface focus:ring-2 focus:ring-primary-4'
             placeholder='Search apps, tools, or logic...'
             value={search}
             leftSection={
-              <Icon
-                className='text-gray-8 h-4.5 w-4.5'
-                name='lucide:search'
-              />
+              <Icon className='h-4.5 w-4.5 text-gray-8' name='lucide:search' />
             }
             onChange={(val) => setSearch(val)}
           />
@@ -528,7 +519,7 @@ const AddNodeMenu = () => {
           <div className='grid grid-cols-2 gap-8'>
             {/* Integrations Column */}
             <div className='flex flex-col gap-2'>
-              <h3 className='text-gray-8 mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider uppercase'>
+              <h3 className='mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider text-gray-8 uppercase'>
                 <Icon
                   className='text-gray-8/70'
                   height={12}
@@ -556,7 +547,7 @@ const AddNodeMenu = () => {
                       }
                     />
                   </div>
-                  <span className='text-gray-11 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
+                  <span className='text-sm font-medium break-words whitespace-normal text-gray-11 group-hover:text-[var(--primary-9)]'>
                     {item.label}
                   </span>
                 </button>
@@ -565,7 +556,7 @@ const AddNodeMenu = () => {
 
             {/* Triggers Column */}
             <div className='flex flex-col gap-2'>
-              <h3 className='text-gray-8 mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider uppercase'>
+              <h3 className='mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider text-gray-8 uppercase'>
                 <Icon
                   className='text-gray-8/70'
                   height={12}
@@ -589,7 +580,7 @@ const AddNodeMenu = () => {
                       style={{ color: item.iconColor }}
                     />
                   </div>
-                  <span className='text-gray-11 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
+                  <span className='text-sm font-medium break-words whitespace-normal text-gray-11 group-hover:text-[var(--primary-9)]'>
                     {item.label}
                   </span>
                 </button>
@@ -616,7 +607,7 @@ const AddNodeMenu = () => {
                     }
                   />
                 </div>
-                <span className='text-gray-11 text-sm font-medium break-words whitespace-normal group-hover:text-[var(--primary-9)]'>
+                <span className='text-sm font-medium break-words whitespace-normal text-gray-11 group-hover:text-[var(--primary-9)]'>
                   {item.label}
                 </span>
               </button>

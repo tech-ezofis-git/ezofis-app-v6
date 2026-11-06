@@ -1,7 +1,6 @@
 import type { SubProcessRow } from '../types'
 import { useSubProcessesForWorkflow } from '../api/queries'
 import { toSubProcessRow } from '../api/subWorkflowApi'
-import { isSubWorkflowEnabled } from '../featureFlag'
 
 const EMPTY: SubProcessRow[] = []
 
@@ -18,11 +17,7 @@ const useRowSubProcesses = (
   workflowId: number | string | null | undefined,
   row: any,
 ): SubProcessRow[] => {
-  const enabled = isSubWorkflowEnabled()
-  const { data } = useSubProcessesForWorkflow(
-    enabled ? (workflowId ?? undefined) : undefined,
-  )
-  if (!enabled) return EMPTY
+  const { data } = useSubProcessesForWorkflow(workflowId ?? undefined)
   const fromRow = row?.subworkflowTransaction
   if (Array.isArray(fromRow) && fromRow.length > 0)
     return fromRow.map(toSubProcessRow)

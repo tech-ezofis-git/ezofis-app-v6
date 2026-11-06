@@ -7,7 +7,6 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import showToast from '@/components/base/toast/showToast'
-import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import { validateDataSync } from '../../utils/dataIntegrationMapping'
@@ -99,7 +98,7 @@ const BuilderHeader = () => {
 
     // Published Workflow Connector / Initiator steps must point at another
     // workflow.
-    if (isPublished && isSubWorkflowEnabled()) {
+    if (isPublished) {
       const selfId = workflowId === 'new' ? state.workflowId : workflowId
       const connectorErrors = getWorkflowConnectorErrors(getNodes(), selfId)
       const initiatorErrors = getWorkflowInitiatorErrors(getNodes(), selfId)
