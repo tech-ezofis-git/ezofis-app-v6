@@ -1,34 +1,27 @@
 import { useLingui } from '@lingui/react/macro'
-import dayjs from 'dayjs'
-import { useState } from 'react'
-import type { SubWorkflowHistoryRow } from '@/features/sub-workflow'
+import { type ReactNode, useState } from 'react'
+import {
+  isConnectorFinished,
+  type SubWorkflowHistoryRow,
+} from '@/features/sub-workflow'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
-import { parseUtcDate } from '@/utils/utcDate'
 
 interface Props {
   rows: SubWorkflowHistoryRow[]
+  /** Draws one child step in the same format as the request's own history. */
+  renderStep: (row: SubWorkflowHistoryRow, index: number) => ReactNode
 }
-
-const formatDate = (value?: string) => {
-  if (!value) return '—'
-  const parsed = parseUtcDate(value)
-  return parsed ? dayjs(parsed).format('DD-MMM-YYYY hh:mm A') : '—'
-}
-
-const isDone = (status?: string) =>
-  /approve|submit|complet|done/i.test(String(status || ''))
 
 // V5 ProcessHistory connector row: the child request's own steps, collapsed
 // under the parent's connector stage until opened.
-const SubWorkflowHistoryBlock = ({ rows }: Props) => {
+const SubWorkflowHistoryBlock = ({ renderStep, rows }: Props) => {
   const { t } = useLingui()
   const [open, setOpen] = useState(false)
   if (rows.length === 0) return null
   const requestNo = rows[0].requestNo
   const stepCount = rows.length
-  const last = rows[rows.length - 1]
-  const finished = isDone(last.status) && Boolean(last.processedOn)
+  const finished = isConnectorFinished(rows)
 
   return (
     <div className='mt-1.5'>
@@ -59,38 +52,15 @@ const SubWorkflowHistoryBlock = ({ rows }: Props) => {
       </button>
 
       {open && (
-        <div className='animate-in fade-in slide-in-from-top-1 mt-2 overflow-x-auto rounded-lg border border-gray-3 duration-200'>
-          <table className='w-full min-w-[320px] text-left text-[11px]'>
-            <thead className='bg-gray-2 text-gray-10'>
-              <tr>
-                <th className='px-2 py-1.5 font-semibold'>{t`Stage`}</th>
-                <th className='px-2 py-1.5 font-semibold'>{t`User`}</th>
-                <th className='px-2 py-1.5 font-semibold'>{t`Received`}</th>
-                <th className='px-2 py-1.5 font-semibold'>{t`Processed`}</th>
-                <th className='px-2 py-1.5 font-semibold'>{t`Status`}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, i) => (
-                <tr
-                  className='border-t border-gray-3 text-gray-12 transition-colors hover:bg-gray-1'
-                  key={`${row.stage}-${i}`}
-                >
-                  <td className='px-2 py-1.5 font-medium'>{row.stage}</td>
-                  <td className='max-w-[110px] truncate px-2 py-1.5'>
-                    {row.processedBy || row.actionUser || '—'}
-                  </td>
-                  <td className='px-2 py-1.5 whitespace-nowrap'>
-                    {formatDate(row.receivedOn)}
-                  </td>
-                  <td className='px-2 py-1.5 whitespace-nowrap'>
-                    {formatDate(row.processedOn)}
-                  </td>
-                  <td className='px-2 py-1.5'>{row.status || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className='animate-in fade-in slide-in-from-top-1 relative mt-3 flex flex-col gap-4 duration-200'>
+          {rows.length > 1 && (
+            <div className='absolute top-6 bottom-6 left-[15px] z-0 w-0 border-l-[1.5px] border-dotted border-[var(--gray-5)]' />
+          )}
+          {rows.map((row, i) => (
+            <div key={`${row.activityId ?? row.stage}-${i}`}>
+              {renderStep(row, i)}
+            </div>
+          ))}
         </div>
       )}
     </div>

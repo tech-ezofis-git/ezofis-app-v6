@@ -11,7 +11,6 @@ import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
 import {
   hasSubWorkflowSetup,
-  isSubWorkflowEnabled,
   useLinkSubProcess,
   useMainProcess,
   useSubProcesses,
@@ -2164,27 +2163,18 @@ const Request = ({
 
   // Workflow Initiator on the current step: "Initiate - <child>" opens the
   // child's new-request form in place of this request and links the result.
-  // Sub-workflow UI is localhost-only until its API is ready.
-  const subWorkflowEnabled = isSubWorkflowEnabled()
-  const { data: latestWorkflow } = useLatestWorkflow(
-    resolvedWorkflowId,
-    subWorkflowEnabled,
-  )
+  const { data: latestWorkflow } = useLatestWorkflow(resolvedWorkflowId, true)
   const subWorkflow = useSubWorkflowInitiator(
     latestWorkflow,
     currentActivityId,
     {
-      enabled:
-        subWorkflowEnabled &&
-        !hideActions &&
-        canActOnRequest &&
-        !!currentActivityId,
+      enabled: !hideActions && canActOnRequest && !!currentActivityId,
     },
   )
   const linkSubProcess = useLinkSubProcess()
   const [isInitiatingSubWorkflow, setIsInitiatingSubWorkflow] = useState(false)
   // Sub Process tab count, and the parent link when this request is a child.
-  const showSubProcesses = subWorkflowEnabled && isGenericWorkflow
+  const showSubProcesses = isGenericWorkflow
   const linkedProcessId = showSubProcesses ? genericInstanceId : undefined
   const { data: subProcesses } = useSubProcesses(
     resolvedWorkflowId,
@@ -3505,6 +3495,7 @@ const Request = ({
           subProcessCount={
             showSubProcessTab ? (subProcesses?.length ?? 0) : undefined
           }
+          subProcesses={showSubProcessTab ? subProcesses : undefined}
           ticketUserId={
             selectedItem?.userId ||
             request?.userId ||

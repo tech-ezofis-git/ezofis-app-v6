@@ -11,7 +11,6 @@ import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
-import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import {
   getNodeToolType,
   NODE_TOOL_TYPE,
@@ -412,29 +411,27 @@ export default function ManualUserSettingsPanel({
           />
         </SettingsSection>
 
-        {isSubWorkflowEnabled() && (
-          <SettingsSection
-            icon='lucide:git-branch-plus'
-            title='Sub Workflow'
-            variant='premium'
-            isOpen={
-              openSections.subWorkflow ?? Boolean(nodeData.workflowInitiator)
-            }
-            onToggle={() =>
-              setOpenSections((prev) => ({
-                ...prev,
-                subWorkflow: !(
-                  prev.subWorkflow ?? Boolean(nodeData.workflowInitiator)
-                ),
-              }))
-            }
-          >
-            <WorkflowInitiatorTab
-              nodeData={nodeData}
-              updateNodeData={updateNodeData}
-            />
-          </SettingsSection>
-        )}
+        <SettingsSection
+          icon='lucide:git-branch-plus'
+          title='Sub Workflow'
+          variant='premium'
+          isOpen={
+            openSections.subWorkflow ?? Boolean(nodeData.workflowInitiator)
+          }
+          onToggle={() =>
+            setOpenSections((prev) => ({
+              ...prev,
+              subWorkflow: !(
+                prev.subWorkflow ?? Boolean(nodeData.workflowInitiator)
+              ),
+            }))
+          }
+        >
+          <WorkflowInitiatorTab
+            nodeData={nodeData}
+            updateNodeData={updateNodeData}
+          />
+        </SettingsSection>
 
         {getNodeToolType(nodeData) === NODE_TOOL_TYPE.MANUAL_USER && (
           <SettingsSection

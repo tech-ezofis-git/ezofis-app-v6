@@ -1,5 +1,4 @@
 import type { Edge, Node } from '@xyflow/react'
-import { isSubWorkflowEnabled } from '@/features/sub-workflow/featureFlag'
 import {
   INITIATOR_BLOCK_TYPES,
   writeInitiatorSettings,
@@ -379,11 +378,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
 
     // Workflow Initiator (START / INTERNAL_ACTOR): both keys are written
     // together and reset when off or missing a target, as V5 expects.
-    // Localhost-only until the sub-workflow API is ready.
-    if (
-      isSubWorkflowEnabled() &&
-      (INITIATOR_BLOCK_TYPES as readonly string[]).includes(legacyType)
-    ) {
+    if ((INITIATOR_BLOCK_TYPES as readonly string[]).includes(legacyType)) {
       Object.assign(
         settings,
         writeInitiatorSettings(

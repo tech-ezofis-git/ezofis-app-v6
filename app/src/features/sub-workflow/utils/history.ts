@@ -24,6 +24,17 @@ export const getConnectorSteps = (row: HistoryLike): SubWorkflowHistoryRow[] =>
     ? (row.subWorkflowHistory as SubWorkflowHistoryRow[])
     : []
 
+/** True once the child request's own history has reached its Completed step. */
+export const isConnectorFinished = (
+  steps: SubWorkflowHistoryRow[],
+): boolean => {
+  const last = steps.at(-1)
+  if (!last) return false
+  return [last.stage, last.title, last.status].some((v) =>
+    norm(v).includes('complet'),
+  )
+}
+
 /**
  * Attaches connector entries (child request steps) to a request's history:
  * onto the row whose stage/title matches, otherwise as an extra

@@ -27,6 +27,70 @@ export type HistoryRow = {
   title?: string
 }
 
+/** Maps one V6 history flow item to the row the History timeline draws. */
+export const mapHistoryFlow = (item: any, idx: number): HistoryRow => {
+  const milestoneLower = String(
+    item.milestone || item.stageType || item.step || '',
+  ).toLowerCase()
+
+  let stage = item.stageName || item.step || ''
+  let status = item.review || item.milestone || item.step || ''
+  let agentType = undefined
+
+  if (milestoneLower === 'submitted' || milestoneLower === 'start') {
+    stage = 'start'
+    status = 'ingested'
+  } else if (milestoneLower === 'ap_agent') {
+    stage = 'ocr'
+    status = 'extraction'
+    agentType = 'ocr'
+  } else if (milestoneLower === 'verified') {
+    stage = 'validate'
+    status = 'verified'
+  } else if (milestoneLower === 'approved') {
+    stage = 'Approval'
+    status = 'approved'
+  } else if (milestoneLower === 'completed') {
+    stage = 'Completed'
+    status = ''
+  }
+
+  const isApAgentNode =
+    milestoneLower === 'ap_agent' ||
+    milestoneLower === 'ocr' ||
+    String(item.stageType || '').toLowerCase() === 'ap_agent'
+
+  const rawActor =
+    item.actionUser ||
+    item.actionUserName ||
+    item.performedByUserName ||
+    item.modifiedByName ||
+    item.createdByName ||
+    ''
+  const user = isApAgentNode ? 'AI Agent' : rawActor
+
+  return {
+    action: item.action || item.step || '',
+    actionAt: item.occurredAtUtc || null,
+    actionStatus: item.actionStatus ?? 1,
+    actionUser: user || null,
+    actionUserEmail: item.actionUserEmail || item.actionUser || user || null,
+    activityId: item.activityId || `v6-step-${idx}`,
+    agentType,
+    description: item.description || '',
+    performedByUserName: user,
+    processedBy: user || null,
+    processedOn: item.occurredAtUtc || null,
+    receivedOn: item.occurredAtUtc || null,
+    review: item.review || '',
+    stage,
+    stageName: item.stageName || '',
+    stageType: item.stageType || '',
+    status,
+    title: item.title || '',
+  }
+}
+
 export function useHistory(
   workflowId?: number | string,
   instanceId?: number | string,
@@ -56,69 +120,7 @@ export function useHistory(
           : Array.isArray(res.data)
             ? res.data
             : []
-      const mapped: HistoryRow[] = list.map((item: any, idx: number) => {
-        const milestoneLower = String(
-          item.milestone || item.stageType || item.step || '',
-        ).toLowerCase()
-
-        let stage = item.stageName || item.step || ''
-        let status = item.review || item.milestone || item.step || ''
-        let agentType = undefined
-
-        if (milestoneLower === 'submitted' || milestoneLower === 'start') {
-          stage = 'start'
-          status = 'ingested'
-        } else if (milestoneLower === 'ap_agent') {
-          stage = 'ocr'
-          status = 'extraction'
-          agentType = 'ocr'
-        } else if (milestoneLower === 'verified') {
-          stage = 'validate'
-          status = 'verified'
-        } else if (milestoneLower === 'approved') {
-          stage = 'Approval'
-          status = 'approved'
-        } else if (milestoneLower === 'completed') {
-          stage = 'Completed'
-          status = ''
-        }
-
-        const isApAgentNode =
-          milestoneLower === 'ap_agent' ||
-          milestoneLower === 'ocr' ||
-          String(item.stageType || '').toLowerCase() === 'ap_agent'
-
-        const rawActor =
-          item.actionUser ||
-          item.actionUserName ||
-          item.performedByUserName ||
-          item.modifiedByName ||
-          item.createdByName ||
-          ''
-        const user = isApAgentNode ? 'AI Agent' : rawActor
-
-        return {
-          action: item.action || item.step || '',
-          actionAt: item.occurredAtUtc || null,
-          actionStatus: item.actionStatus ?? 1,
-          actionUser: user || null,
-          actionUserEmail:
-            item.actionUserEmail || item.actionUser || user || null,
-          activityId: item.activityId || `v6-step-${idx}`,
-          agentType,
-          description: item.description || '',
-          performedByUserName: user,
-          processedBy: user || null,
-          processedOn: item.occurredAtUtc || null,
-          receivedOn: item.occurredAtUtc || null,
-          review: item.review || '',
-          stage,
-          stageName: item.stageName || '',
-          stageType: item.stageType || '',
-          status,
-          title: item.title || '',
-        }
-      })
+      const mapped: HistoryRow[] = list.map(mapHistoryFlow)
 
       setData(mapped)
     } catch (e) {
