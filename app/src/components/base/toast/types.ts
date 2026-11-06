@@ -8,6 +8,9 @@ export interface Toast {
   // Keep the given variant even for a mandatory-field message (which is
   // otherwise shown as info).
   keepVariant?: boolean
+  // Shows a spinner instead of the colour bar and no close button. Pair with
+  // `autoClose: false` and replace it (same `id`) when the work is done.
+  loading?: boolean
   toastTitle?: string
   variant?: ToastVariant
 }

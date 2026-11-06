@@ -63,6 +63,7 @@ const showToast = ({
   autoClose,
   id,
   keepVariant,
+  loading,
   message,
   toastTitle,
   variant = 'default',
@@ -89,9 +90,10 @@ const showToast = ({
     autoClose: autoClose ?? 4000,
     className: cn(variantConfig.className, 'mt-4'),
     id: toastId,
+    loading,
     message,
     title,
-    withCloseButton: true,
+    withCloseButton: !loading,
   })
 }
 
