@@ -70,7 +70,7 @@ const formatShortAge = (since?: string) => {
  * next step (✓ done · numbered current · upcoming / condition). The current
  * step shows how long the request has been waiting there. A branching next
  * step reads "N routes" and opens a popover naming the next stage for each
- * action.
+ * action. A single route shows that stage's name, with no arrow or popover.
  */
 export default function StageTrail({
   items,
@@ -104,11 +104,14 @@ export default function StageTrail({
         const isCurrent = step.status === 'current'
         const routes = step.isCondition ? step.routes || [] : []
         const routeCount = routes.length
+        // Only a real choice (2+ routes) gets the arrow and the popover; a
+        // single route is just the next stage's name.
+        const hasRouteChoices = routeCount > 1
         const stepLabel =
           routeCount > 1
             ? t`${routeCount} routes`
             : routeCount === 1
-              ? t`1 route`
+              ? routes[0].next.label || step.label
               : step.label
         const showAge = isCurrent && Boolean(age)
         const stepBody = (
@@ -139,7 +142,7 @@ export default function StageTrail({
                 · {t`${age} ago`}
               </span>
             ) : null}
-            {routeCount ? (
+            {hasRouteChoices ? (
               <Icon
                 name='lucide:chevron-down'
                 aria-hidden
@@ -171,7 +174,7 @@ export default function StageTrail({
             {/* Narrow headers keep only the current step; the others return
                 at lg. Each step shrinks and ellipsizes its label instead of
                 pushing the header wider. */}
-            {routeCount ? (
+            {hasRouteChoices ? (
               // Opens on hover / keyboard focus. The popover sits inside this
               // wrapper (its top padding bridges the gap), so moving the
               // pointer from the pill onto it keeps it open.
