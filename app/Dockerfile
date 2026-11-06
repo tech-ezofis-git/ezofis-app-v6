@@ -22,6 +22,10 @@ ENV VITE_BASE_URL=$VITE_BASE_URL \
     VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID \
     VITE_MSAL_CLIENT_ID_DEFAULT=$VITE_MSAL_CLIENT_ID_DEFAULT
 
+# The production bundle needs more than Node's default heap (about 2 GB): the build
+# died with "JavaScript heap out of memory" while rendering chunks.
+ENV NODE_OPTIONS=--max-old-space-size=4096
+
 RUN npm run build
 
 # Stage 2: Serve with NGINX SPA server
