@@ -3,9 +3,9 @@ import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelectBase from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
-import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTime from '@/components/base/inputs/InputTime'
+import SettingSwitchRow from '@/components/base/inputs/SettingSwitchRow'
 import {
   isFileColumnType,
   isTextFillableColumn,
@@ -16,6 +16,7 @@ import {
   setAddressTargets,
 } from '@/pages/form-builder/helpers/tableColumnShortText'
 import type { TableColumn } from './TableColumnSettingsPanel'
+import { settingLabelClass } from './settingLabelClasses'
 
 type ColumnSettingsPatch = Partial<NonNullable<TableColumn['settings']>>
 
@@ -129,9 +130,7 @@ const FILE_TYPE_OPTIONS = [
 ].map((ext) => ({ id: ext, name: ext.toUpperCase() }))
 
 const SectionLabel = ({ children }: { children: string }) => (
-  <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-    {children}
-  </label>
+  <label className={settingLabelClass}>{children}</label>
 )
 
 const sectionClass =
@@ -216,7 +215,7 @@ const TableColumnFormatSettings = ({
         <SectionLabel>File Restrictions</SectionLabel>
         <InputSelectMultiple
           description='Extensions users may upload. Leave empty to allow any file. Type to add another extension.'
-          label='Allowed File Types'
+          label='Allowed file types'
           options={fileTypeOptions}
           placeholder='Select file types'
           value={fileTypeOptions.filter((o) => allowedTypes.includes(o.id))}
@@ -251,26 +250,26 @@ const TableColumnFormatSettings = ({
           value={validation?.maxFileSize ?? ''}
           onChange={(v) => onUpdate({ validation: { maxFileSize: v } })}
         />
-        <InputSwitch
+        <SettingSwitchRow
           checked={specific?.allowMultipleFiles === true}
-          description='Let users attach more than one file in a cell. Each file is checked against the limits above.'
-          label='Allow Multiple Files'
+          help='Let people attach several files here.'
+          title='Allow more than one file'
           onChange={(checked) =>
             onUpdate({ specific: { allowMultipleFiles: checked } })
           }
         />
-        <InputSwitch
+        <SettingSwitchRow
           checked={specific?.fileInStageOnly === true}
-          description='Keep the uploaded file in the stage when the request is initiated.'
-          label='File In Stage Only'
+          help='Keep the uploaded file in the stage when the request is initiated.'
+          title='File In Stage Only'
           onChange={(checked) =>
             onUpdate({ specific: { fileInStageOnly: checked } })
           }
         />
-        <InputSwitch
+        <SettingSwitchRow
           checked={validation?.answerIndicator === 'YES'}
-          description='Show whether this question has been addressed.'
-          label='Answer Status Indicator'
+          help='Show whether this field has been answered yet.'
+          title='Show if answered'
           onChange={(checked) =>
             onUpdate({
               validation: { answerIndicator: checked ? 'YES' : 'NO' },
@@ -280,7 +279,7 @@ const TableColumnFormatSettings = ({
         {dateColumns.length > 0 && (
           <InputSelect
             description='Date column that holds this document’s expiry date.'
-            label='Document Expiry Field'
+            label='Expiry date column'
             options={dateColumns}
             placeholder='Select a date column'
             clearable
@@ -297,6 +296,7 @@ const TableColumnFormatSettings = ({
         )}
         {fillableColumns.length > 0 && (
           <InputSelectMultiple
+            description='Read the uploaded document and fill the columns you pick.'
             label='Fill other columns from the document'
             options={fillableColumns}
             placeholder='Select columns to auto-fill'
@@ -325,10 +325,10 @@ const TableColumnFormatSettings = ({
     return (
       <div className={sectionClass}>
         <SectionLabel>Short Text</SectionLabel>
-        <InputSwitch
+        <SettingSwitchRow
           checked={isAddress}
-          description='Suggest addresses while typing and split the picked address into other columns.'
-          label='Address Field'
+          help='Suggest addresses while typing and split the picked address into other columns.'
+          title='Address Field'
           onChange={(checked) =>
             onUpdate({ specific: { isAddressField: checked } })
           }
@@ -365,10 +365,10 @@ const TableColumnFormatSettings = ({
               Add other text columns to fill address parts into.
             </p>
           ))}
-        <InputSwitch
+        <SettingSwitchRow
           checked={specific?.qrValue === true}
-          description='Show a scan button in the cell to read a QR code or barcode into this column.'
-          label='Read Values From QR'
+          help='Show a scan button that fills this from a QR code or barcode.'
+          title='Read value from a QR code'
           onChange={(checked) => onUpdate({ specific: { qrValue: checked } })}
         />
       </div>
@@ -452,7 +452,8 @@ const TableColumnFormatSettings = ({
           }
         />
         <InputSelect
-          label='Time Limits'
+          description='Limit which times can be picked.'
+          label='Allowed times'
           options={TIME_LIMIT_OPTIONS}
           value={TIME_LIMIT_OPTIONS.find((o) => o.id === limitType) || null}
           onChange={(opt) =>

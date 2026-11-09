@@ -46,11 +46,8 @@ import cn from '@/utils/cn'
 import SettingsSection from '../../../../common/SettingsSection'
 import FormulaBuilder from './FormulaBuilder'
 import MasterPreselectSettings from './MasterPreselectSettings'
+import { settingHeadingClass, settingLabelClass } from './settingLabelClasses'
 import TableColumnSettingsPanel from './TableColumnSettingsPanel'
-
-// One label style for every setting in this panel (the same as the shared inputs).
-const settingLabelClass = cn('block', baseInputClassNames.label)
-const settingHeadingClass = 'mb-2 block text-13 font-semibold text-gray-12'
 
 function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
   return <InputSelectBase searchable wrapOptions {...props} />
@@ -903,10 +900,10 @@ const QuestionSettings = ({
           </button>
         </div>
         <div className='space-y-4 p-4'>
-          <div className='space-y-1'>
-            <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-              Column width
-            </label>
+          <SettingRow
+            help='How wide this column is in the table.'
+            label='Column width'
+          >
             <SegmentedControl
               size='xs'
               value={activeTableColumn.size || 'MEDIUM'}
@@ -922,7 +919,7 @@ const QuestionSettings = ({
                 })
               }
             />
-          </div>
+          </SettingRow>
           <TableColumnSettingsPanel
             column={activeTableColumn}
             masterForms={masterForms}
@@ -3466,8 +3463,8 @@ const QuestionSettings = ({
                       type='button'
                       onClick={() => setShowTableAdvanced(!showTableAdvanced)}
                     >
-                      <span className='text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-                        Row & Export Options
+                      <span className='text-13 font-medium text-gray-11'>
+                        Row & export options
                       </span>
                       <Icon
                         height={14}
