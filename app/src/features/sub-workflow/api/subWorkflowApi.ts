@@ -4,6 +4,7 @@ import { mapHistoryFlow } from '@/pages/requests/hooks/useHistory'
 import type {
   Id,
   MainProcessDetails,
+  SubProcessPreviewField,
   SubProcessRow,
   SubWorkflowHistoryRow,
   SubWorkflowLink,
@@ -26,10 +27,19 @@ const safeParse = (value: string) => {
 
 // These mappers accept the V5 field names (incl. list rows' `subworkflowTransaction`
 // entries) and fall back gracefully.
+const toPreview = (value: unknown): SubProcessPreviewField[] =>
+  (Array.isArray(value) ? value : [])
+    .map((field: any) => ({
+      label: String(field?.label ?? field?.Label ?? '').trim(),
+      value: String(field?.value ?? field?.Value ?? '').trim(),
+    }))
+    .filter((field) => field.value)
+
 export const toSubProcessRow = (row: any): SubProcessRow => ({
   duration: row.duration ?? row.sublastActionDuration,
   flowStatus: row.flowStatus ?? row.subProcessStatus ?? 0,
   lastAction: row.lastAction,
+  preview: toPreview(row.preview ?? row.Preview),
   processId: row.subProcessId ?? row.processId,
   raisedAt: row.raisedAt,
   raisedBy: row.raisedBy,

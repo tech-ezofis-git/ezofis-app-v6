@@ -28,6 +28,11 @@ export interface MainProcessDetails {
   workflowName?: string
 }
 
+export interface SubProcessPreviewField {
+  label: string
+  value: string
+}
+
 /** A child request as shown in the Sub Process panel and list sub-rows. */
 export interface SubProcessRow {
   flowStatus: number | string
@@ -40,6 +45,8 @@ export interface SubProcessRow {
   /** True when the child's current task is assigned to the current user. */
   inbox?: boolean
   lastAction?: string
+  /** The first few filled-in values of the child's own form, in form order. */
+  preview?: SubProcessPreviewField[]
   raisedAt?: string
   raisedBy?: string
   stage?: string
@@ -49,6 +56,8 @@ export type SubProcessStatus = 'completed' | 'forceClosed' | 'running'
 
 /** One child stage inside a parent history row (`subWorkflowHistory[]`). */
 export interface SubWorkflowHistoryRow {
+  requestNo: string
+  stage: string
   action?: string
   actionAt?: string | null
   actionStatus?: number
@@ -61,9 +70,7 @@ export interface SubWorkflowHistoryRow {
   processedBy?: string | null
   processedOn?: string | null
   receivedOn?: string | null
-  requestNo: string
   review?: string
-  stage: string
   stageName?: string
   stageType?: string
   status?: string

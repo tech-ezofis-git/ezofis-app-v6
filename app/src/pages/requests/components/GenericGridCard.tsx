@@ -11,6 +11,7 @@ import { getSubProcessStatus } from '@/features/sub-workflow'
 import useRowSubProcesses from '@/features/sub-workflow/hooks/useRowSubProcesses'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import { formatRunningTime } from '@/pages/requests/utils/formatRunningTime'
 import { isInboxRowOverdue } from '@/pages/requests/utils/inboxItemDisplay'
 import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
 import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
@@ -28,8 +29,6 @@ import GenericStagePill from './GenericStagePill'
 import HoverExpandableText from './HoverExpandableText'
 import SubProcessRows from './sub-workflow/SubProcessRows'
 
-// Matches the "Xh Ym ago" granularity already used in the request-detail
-// History panel, instead of dayjs's coarser "8 hours ago".
 /** Card icon colors for a connection's button color (stage trail colors). */
 const STAGE_TONE: Record<string, { bg: string; text: string }> = {
   green: { bg: 'bg-green-2', text: 'text-green-9' },
@@ -37,25 +36,6 @@ const STAGE_TONE: Record<string, { bg: string; text: string }> = {
   primary: { bg: 'bg-primary-2', text: 'text-primary-9' },
   red: { bg: 'bg-red-2', text: 'text-red-9' },
   secondary: { bg: 'bg-secondary-2', text: 'text-secondary-9' },
-}
-
-const formatRunningTime = (date: any): string => {
-  if (!date) return ''
-  // Bare ISO datetimes from the API are UTC without a Z/offset — parse them
-  // as UTC (parseUtcDate) before diffing, otherwise the browser reads them
-  // as local time and the "ago" value is off by the local UTC offset.
-  const parsed = parseUtcDate(date)
-  if (!parsed) return ''
-  const ms = Math.abs(Date.now() - parsed.getTime())
-  if (Number.isNaN(ms)) return ''
-  const secs = Math.floor(ms / 1000)
-  if (secs < 60) return `${secs}s ago`
-  const mins = Math.floor(secs / 60)
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ${mins % 60}m ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ${hours % 24}h ago`
 }
 
 interface Props {
@@ -512,11 +492,11 @@ const GenericGridCard = ({
                   )}
                 >
                   <Icon
+                    name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
                     className={cn(
                       'size-3',
                       isEnd ? 'text-green-9' : 'text-orange-9',
                     )}
-                    name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
                   />
                   <span>{formatRunningTime(lastActionAt)}</span>
                 </span>

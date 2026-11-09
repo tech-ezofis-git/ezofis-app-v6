@@ -117,7 +117,8 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
             request.FormDataFields,
             cancellationToken);
 
-        var ticketNumber = await _ticketNumbers.AllocateNextAsync(workflow.Id, cancellationToken);
+        var ticketNumber = await _ticketNumbers.AllocateNextAsync(
+            workflow.Id, request.FormDataFields, workflow.FormId, cancellationToken);
 
         var instance = WorkflowInstance.Create(
             tenantId,
