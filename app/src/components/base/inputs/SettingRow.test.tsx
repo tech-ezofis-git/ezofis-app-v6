@@ -136,6 +136,20 @@ describe('SettingSwitchRow', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
+  it('is off when the setting was never saved', () => {
+    renderWithProviders(<SettingSwitchRow title='Required' />)
+
+    expect((screen.getByRole('switch') as HTMLInputElement).checked).toBe(false)
+  })
+
+  it('can be shown disabled without a change handler', () => {
+    renderWithProviders(<SettingSwitchRow title='Street' checked disabled />)
+
+    const control = screen.getByRole('switch') as HTMLInputElement
+    expect(control.checked).toBe(true)
+    expect(control.disabled).toBe(true)
+  })
+
   it('can be found by its title as a switch', () => {
     renderSwitch(true)
 

@@ -2,15 +2,17 @@ import cn from '@/utils/cn'
 import InputSwitch from './InputSwitch'
 
 interface Props {
-  checked: boolean
   title: string
+  /** A setting that was never saved is off. */
+  checked?: boolean
   className?: string
   disabled?: boolean
   /** Replaces the help sentence while it is set. */
   error?: string
   /** One short, plain sentence that explains what the switch does. */
   help?: string
-  onChange: (checked: boolean) => void
+  /** Not needed for a switch that is always disabled. */
+  onChange?: (checked: boolean) => void
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * on the left and the switch on the right. The whole row is clickable.
  */
 const SettingSwitchRow = ({
-  checked,
+  checked = false,
   className,
   disabled,
   error,
