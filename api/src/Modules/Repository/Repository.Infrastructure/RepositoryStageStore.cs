@@ -413,6 +413,43 @@ internal static class RepositoryStageStore
             or "bit" or "bool" or "boolean";
     }
 
+    /// <summary>
+    /// Point a stage row at a replacement file (bulk upload: the TIFF was turned into a PDF).
+    /// Only columns the stage table has are written.
+    /// </summary>
+    public static async Task UpdateFileAsync(
+        NpgsqlConnection connection,
+        string stageTableName,
+        Guid tenantId,
+        Guid stageId,
+        string filePath,
+        string fileName,
+        string contentType,
+        int? fileSize,
+        int? totalPages,
+        CancellationToken cancellationToken)
+    {
+        var columns = await RepositoryItemTableColumns.LoadAsync(connection, stageTableName, cancellationToken);
+        var sets = new List<string> { "file_path = @FilePath", "file_name = @FileName" };
+        if (columns.Contains("file_type")) sets.Add("file_type = @FileType");
+        if (columns.Contains("file_size")) sets.Add("file_size = @FileSize");
+        if (columns.Contains("total_pages") && totalPages is > 0) sets.Add("total_pages = @TotalPages");
+        if (columns.Contains("modified_at_utc")) sets.Add("modified_at_utc = now()");
+
+        var table = RepositorySqlHelper.QualifiedItemsTable(stageTableName);
+        var sql = $"UPDATE {table} SET {string.Join(", ", sets)} WHERE id = @Id AND tenant_id = @TenantId AND is_deleted = false;";
+
+        await using var cmd = new NpgsqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@Id", stageId);
+        cmd.Parameters.AddWithValue("@TenantId", tenantId);
+        cmd.Parameters.AddWithValue("@FilePath", filePath);
+        cmd.Parameters.AddWithValue("@FileName", fileName);
+        cmd.Parameters.AddWithValue("@FileType", contentType);
+        cmd.Parameters.AddWithValue("@FileSize", (object?)fileSize ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@TotalPages", (object?)totalPages ?? DBNull.Value);
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     public static async Task MarkArchivedAsync(
         NpgsqlConnection connection,
         string stageTableName,
