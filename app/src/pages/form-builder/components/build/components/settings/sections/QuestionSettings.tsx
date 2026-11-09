@@ -954,7 +954,7 @@ const QuestionSettings = ({
       <SettingsSection
         icon='lucide:settings-2'
         isOpen={openSetup}
-        title='Field Setup'
+        title='Field setup'
         variant='premium'
         onToggle={() => setOpenSetup(!openSetup)}
       >
@@ -4386,72 +4386,31 @@ const QuestionSettings = ({
           <SettingsSection
             icon='lucide:shield-check'
             isOpen={openValidation}
-            title='Validation Rules'
+            title='Validation rules'
             variant='premium'
             onToggle={() => setOpenValidation(!openValidation)}
           >
             <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
               <div className='space-y-3 rounded-lg border border-accent-soft/10 bg-accent-soft/5 p-2'>
-                <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
-                  <div>
-                    <div className='text-xs font-bold text-gray-10'>
-                      Mandatory
-                    </div>
-                    <div className='text-11 text-gray-9'>
-                      Field cannot be empty
-                    </div>
-                  </div>
-                  <InputSwitch
-                    checked={
-                      activeQuestion.settings.validation.fieldRule ===
-                      'REQUIRED'
-                    }
-                    onChange={(checked) =>
-                      updateNested('validation', {
-                        fieldRule: checked ? 'REQUIRED' : 'OPTIONAL',
-                      })
-                    }
-                  />
-                  {activeQuestion.settings.validation.fieldRule ===
-                    'REQUIRED' && (
-                    <>
-                      <Divider className='border-dashed border-gray-3' />
-                      <div className='flex items-center justify-between gap-3'>
-                        <div>
-                          <div className='text-xs font-medium text-gray-11'>
-                            Answer Indicator
-                          </div>
-                          <div className='text-11 text-gray-9'>
-                            Displays unanswered question prompt to user
-                          </div>
-                        </div>
-                        <InputSwitch
-                          checked={
-                            activeQuestion.settings.validation
-                              .answerIndicator === 'YES' ||
-                            activeQuestion.settings.validation
-                              .answerIndicator === (true as any)
-                          }
-                          onChange={(checked) =>
-                            updateNested('validation', {
-                              answerIndicator: checked ? 'YES' : 'NO',
-                            })
-                          }
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
+                <SettingSwitchRow
+                  help='Field cannot be empty'
+                  title='Mandatory'
+                  checked={
+                    activeQuestion.settings.validation.fieldRule === 'REQUIRED'
+                  }
+                  onChange={(checked) =>
+                    updateNested('validation', {
+                      fieldRule: checked ? 'REQUIRED' : 'OPTIONAL',
+                    })
+                  }
+                />
 
                 {activeQuestion.type === 'MULTIPLE_CHOICE' &&
                   activeQuestion.settings.validation.fieldRule ===
                     'REQUIRED' && (
                     <>
                       <Divider className='border-dashed border-gray-3' />
-                      <div className='space-y-2'>
-                        <label className='block text-[11px] font-bold text-gray-10 uppercase'>
-                          Requirement Mode
-                        </label>
+                      <SettingRow label='How many must be picked'>
                         <SegmentedControl
                           size='xs'
                           fullWidth
@@ -4475,7 +4434,7 @@ const QuestionSettings = ({
                             ? 'User must check all options to proceed (e.g. compliance checklists).'
                             : 'User must check at least one option to proceed.'}
                         </div>
-                      </div>
+                      </SettingRow>
                     </>
                   )}
 
@@ -4542,7 +4501,7 @@ const QuestionSettings = ({
                 activeQuestion.type === 'SINGLE_SELECT') && (
                 <div className='space-y-3'>
                   <div>
-                    <label className='mb-2 block text-13 font-medium text-gray-11'>
+                    <label className={settingLabelClass}>
                       {isNumber
                         ? 'Number Format'
                         : isTime || isDateTime
@@ -4656,25 +4615,29 @@ const QuestionSettings = ({
                 (activeQuestion.settings.validation.contentRule === 'DECIMAL' ||
                   activeQuestion.settings.validation.contentRule ===
                     'BOTH') && (
-                  <NumberInput
-                    label='Decimal Digits'
-                    max={10}
-                    min={0}
-                    size='xs'
-                    value={
-                      activeQuestion.settings.validation.decimalDigits || 0
-                    }
-                    onChange={(v) =>
-                      updateNested('validation', { decimalDigits: v })
-                    }
-                  />
+                  <SettingRow
+                    help='How many digits are allowed after the decimal point.'
+                    label='Decimal places'
+                  >
+                    <NumberInput
+                      max={10}
+                      min={0}
+                      size='xs'
+                      value={
+                        activeQuestion.settings.validation.decimalDigits || 0
+                      }
+                      onChange={(v) =>
+                        updateNested('validation', { decimalDigits: v })
+                      }
+                    />
+                  </SettingRow>
                 )}
               {(isDate || isDateTime) && (
                 <div className='space-y-4'>
-                  <div>
-                    <label className='mb-2 block text-13 font-medium text-gray-11'>
-                      Date Limits
-                    </label>
+                  <SettingRow
+                    help='Limit which dates can be picked.'
+                    label='Allowed dates'
+                  >
                     <InputSelect
                       options={dateLimitOptions}
                       value={
@@ -4689,22 +4652,27 @@ const QuestionSettings = ({
                         updateNested('validation', { dateLimitType: val.id })
                       }
                     />
-                  </div>
+                  </SettingRow>
 
                   {activeQuestion.settings.validation.dateLimitType ===
                     'MIN_DATE' && (
                     <div className='grid grid-cols-2 items-end gap-3'>
-                      <NumberInput
-                        label='Years from Current'
-                        placeholder='0'
-                        size='xs'
-                        value={
-                          activeQuestion.settings.validation.minDateOffset || 0
-                        }
-                        onChange={(v) =>
-                          updateNested('validation', { minDateOffset: v })
-                        }
-                      />
+                      <SettingRow
+                        help='How many years from the current year. Use a negative number for before now.'
+                        label='Years from now'
+                      >
+                        <NumberInput
+                          placeholder='0'
+                          size='xs'
+                          value={
+                            activeQuestion.settings.validation.minDateOffset ||
+                            0
+                          }
+                          onChange={(v) =>
+                            updateNested('validation', { minDateOffset: v })
+                          }
+                        />
+                      </SettingRow>
                       <div className='pb-2 text-11 text-gray-9'>
                         Current date is default min.
                       </div>
@@ -4714,17 +4682,22 @@ const QuestionSettings = ({
                   {activeQuestion.settings.validation.dateLimitType ===
                     'MAX_DATE' && (
                     <div className='grid grid-cols-2 items-end gap-3'>
-                      <NumberInput
-                        label='Years from Current'
-                        placeholder='0'
-                        size='xs'
-                        value={
-                          activeQuestion.settings.validation.maxDateOffset || 0
-                        }
-                        onChange={(v) =>
-                          updateNested('validation', { maxDateOffset: v })
-                        }
-                      />
+                      <SettingRow
+                        help='How many years from the current year. Use a negative number for before now.'
+                        label='Years from now'
+                      >
+                        <NumberInput
+                          placeholder='0'
+                          size='xs'
+                          value={
+                            activeQuestion.settings.validation.maxDateOffset ||
+                            0
+                          }
+                          onChange={(v) =>
+                            updateNested('validation', { maxDateOffset: v })
+                          }
+                        />
+                      </SettingRow>
                       <div className='pb-2 text-11 text-gray-9'>
                         Current date is default max.
                       </div>
@@ -4734,10 +4707,10 @@ const QuestionSettings = ({
                   {activeQuestion.settings.validation.dateLimitType ===
                     'RANGE' && (
                     <div className='grid grid-cols-2 gap-2 rounded-lg border border-gray-3 bg-surface p-3'>
-                      <div>
-                        <label className='mb-1 block text-[10px] font-bold text-gray-10 uppercase'>
-                          Start Date
-                        </label>
+                      <SettingRow
+                        help='The first date people can pick.'
+                        label='Earliest date'
+                      >
                         <input
                           className='w-full rounded border p-1 text-xs'
                           type='date'
@@ -4751,11 +4724,11 @@ const QuestionSettings = ({
                             })
                           }
                         />
-                      </div>
-                      <div>
-                        <label className='mb-1 block text-[10px] font-bold text-gray-10 uppercase'>
-                          End Date
-                        </label>
+                      </SettingRow>
+                      <SettingRow
+                        help='The last date people can pick.'
+                        label='Latest date'
+                      >
                         <input
                           className='w-full rounded border p-1 text-xs'
                           type='date'
@@ -4769,7 +4742,7 @@ const QuestionSettings = ({
                             })
                           }
                         />
-                      </div>
+                      </SettingRow>
                     </div>
                   )}
                 </div>
@@ -4777,10 +4750,10 @@ const QuestionSettings = ({
 
               {isTime && (
                 <div className='space-y-4'>
-                  <div>
-                    <label className='mb-2 block text-13 font-medium text-gray-11'>
-                      Time Limits
-                    </label>
+                  <SettingRow
+                    help='Limit which times can be picked.'
+                    label='Allowed times'
+                  >
                     <InputSelect
                       options={timeLimitOptions}
                       value={
@@ -4795,22 +4768,27 @@ const QuestionSettings = ({
                         updateNested('validation', { timeLimitType: val.id })
                       }
                     />
-                  </div>
+                  </SettingRow>
 
                   {activeQuestion.settings.validation.timeLimitType ===
                     'MIN_TIME' && (
                     <div className='grid grid-cols-2 items-end gap-3'>
-                      <NumberInput
-                        label='Hours from Current'
-                        placeholder='0'
-                        size='xs'
-                        value={
-                          activeQuestion.settings.validation.minTimeOffset || 0
-                        }
-                        onChange={(v) =>
-                          updateNested('validation', { minTimeOffset: v })
-                        }
-                      />
+                      <SettingRow
+                        help='How many hours from the current time. Use a negative number for before now.'
+                        label='Hours from now'
+                      >
+                        <NumberInput
+                          placeholder='0'
+                          size='xs'
+                          value={
+                            activeQuestion.settings.validation.minTimeOffset ||
+                            0
+                          }
+                          onChange={(v) =>
+                            updateNested('validation', { minTimeOffset: v })
+                          }
+                        />
+                      </SettingRow>
                       <div className='pb-2 text-11 text-gray-9'>
                         Current time is default min.
                       </div>
@@ -4820,17 +4798,22 @@ const QuestionSettings = ({
                   {activeQuestion.settings.validation.timeLimitType ===
                     'MAX_TIME' && (
                     <div className='grid grid-cols-2 items-end gap-3'>
-                      <NumberInput
-                        label='Hours from Current'
-                        placeholder='0'
-                        size='xs'
-                        value={
-                          activeQuestion.settings.validation.maxTimeOffset || 0
-                        }
-                        onChange={(v) =>
-                          updateNested('validation', { maxTimeOffset: v })
-                        }
-                      />
+                      <SettingRow
+                        help='How many hours from the current time. Use a negative number for before now.'
+                        label='Hours from now'
+                      >
+                        <NumberInput
+                          placeholder='0'
+                          size='xs'
+                          value={
+                            activeQuestion.settings.validation.maxTimeOffset ||
+                            0
+                          }
+                          onChange={(v) =>
+                            updateNested('validation', { maxTimeOffset: v })
+                          }
+                        />
+                      </SettingRow>
                       <div className='pb-2 text-11 text-gray-9'>
                         Current time is default max.
                       </div>
@@ -4840,10 +4823,10 @@ const QuestionSettings = ({
                   {activeQuestion.settings.validation.timeLimitType ===
                     'RANGE' && (
                     <div className='grid grid-cols-2 gap-2 rounded-lg border border-gray-3 bg-surface p-3'>
-                      <div>
-                        <label className='mb-1 block text-[10px] font-bold text-gray-10 uppercase'>
-                          Start Time
-                        </label>
+                      <SettingRow
+                        help='The first time people can pick.'
+                        label='Earliest time'
+                      >
                         <input
                           className='w-full rounded border p-1 text-xs'
                           type='time'
@@ -4857,11 +4840,11 @@ const QuestionSettings = ({
                             })
                           }
                         />
-                      </div>
-                      <div>
-                        <label className='mb-1 block text-[10px] font-bold text-gray-10 uppercase'>
-                          End Time
-                        </label>
+                      </SettingRow>
+                      <SettingRow
+                        help='The last time people can pick.'
+                        label='Latest time'
+                      >
                         <input
                           className='w-full rounded border p-1 text-xs'
                           type='time'
@@ -4875,7 +4858,7 @@ const QuestionSettings = ({
                             })
                           }
                         />
-                      </div>
+                      </SettingRow>
                     </div>
                   )}
                 </div>
@@ -4883,10 +4866,10 @@ const QuestionSettings = ({
 
               {isNumber && !isDate ? (
                 <div className='space-y-3'>
-                  <div>
-                    <label className='mb-2 block text-13 font-medium text-gray-11'>
-                      Value Range Mode
-                    </label>
+                  <SettingRow
+                    help='Limit numbers to a range: a minimum, a maximum, or both.'
+                    label='Allowed number range'
+                  >
                     <InputSelect
                       options={rangeOptions}
                       value={
@@ -4900,22 +4883,70 @@ const QuestionSettings = ({
                         val && updateNested('validation', { rangeType: val.id })
                       }
                     />
-                  </div>
+                  </SettingRow>
 
                   <div className='grid grid-cols-2 gap-3'>
+                    <SettingRow
+                      help='Numbers below this are refused.'
+                      label='Lowest number allowed'
+                    >
+                      <NumberInput
+                        size='xs'
+                        disabled={
+                          activeQuestion.settings.validation.rangeType ===
+                          'MIN_FLEX_MAX_FIXED'
+                        }
+                        placeholder={
+                          activeQuestion.settings.validation.rangeType ===
+                          'MIN_FLEX_MAX_FIXED'
+                            ? 'Flexible'
+                            : '0'
+                        }
+                        value={
+                          Number(activeQuestion.settings.validation.minimum) ||
+                          undefined
+                        }
+                        onChange={(v) =>
+                          updateNested('validation', { minimum: v })
+                        }
+                      />
+                    </SettingRow>
+                    <SettingRow
+                      help='Numbers above this are refused.'
+                      label='Highest number allowed'
+                    >
+                      <NumberInput
+                        size='xs'
+                        disabled={
+                          activeQuestion.settings.validation.rangeType ===
+                          'MIN_FIXED_MAX_FLEX'
+                        }
+                        placeholder={
+                          activeQuestion.settings.validation.rangeType ===
+                          'MIN_FIXED_MAX_FLEX'
+                            ? 'Flexible'
+                            : '100'
+                        }
+                        value={
+                          Number(activeQuestion.settings.validation.maximum) ||
+                          undefined
+                        }
+                        onChange={(v) =>
+                          updateNested('validation', { maximum: v })
+                        }
+                      />
+                    </SettingRow>
+                  </div>
+                </div>
+              ) : isNumber || isCurrency ? (
+                <div className='grid grid-cols-2 gap-3'>
+                  <SettingRow
+                    help='Numbers below this are refused.'
+                    label='Lowest number allowed'
+                  >
                     <NumberInput
-                      label='Minimum'
+                      placeholder='0'
                       size='xs'
-                      disabled={
-                        activeQuestion.settings.validation.rangeType ===
-                        'MIN_FLEX_MAX_FIXED'
-                      }
-                      placeholder={
-                        activeQuestion.settings.validation.rangeType ===
-                        'MIN_FLEX_MAX_FIXED'
-                          ? 'Flexible'
-                          : '0'
-                      }
                       value={
                         Number(activeQuestion.settings.validation.minimum) ||
                         undefined
@@ -4924,19 +4955,14 @@ const QuestionSettings = ({
                         updateNested('validation', { minimum: v })
                       }
                     />
+                  </SettingRow>
+                  <SettingRow
+                    help='Numbers above this are refused.'
+                    label='Highest number allowed'
+                  >
                     <NumberInput
-                      label='Maximum'
+                      placeholder='1000000'
                       size='xs'
-                      disabled={
-                        activeQuestion.settings.validation.rangeType ===
-                        'MIN_FIXED_MAX_FLEX'
-                      }
-                      placeholder={
-                        activeQuestion.settings.validation.rangeType ===
-                        'MIN_FIXED_MAX_FLEX'
-                          ? 'Flexible'
-                          : '100'
-                      }
                       value={
                         Number(activeQuestion.settings.validation.maximum) ||
                         undefined
@@ -4945,45 +4971,27 @@ const QuestionSettings = ({
                         updateNested('validation', { maximum: v })
                       }
                     />
-                  </div>
-                </div>
-              ) : isNumber || isCurrency ? (
-                <div className='grid grid-cols-2 gap-3'>
-                  <NumberInput
-                    label='Min Value'
-                    placeholder='0'
-                    size='xs'
-                    value={
-                      Number(activeQuestion.settings.validation.minimum) ||
-                      undefined
-                    }
-                    onChange={(v) => updateNested('validation', { minimum: v })}
-                  />
-                  <NumberInput
-                    label='Max Value'
-                    placeholder='1000000'
-                    size='xs'
-                    value={
-                      Number(activeQuestion.settings.validation.maximum) ||
-                      undefined
-                    }
-                    onChange={(v) => updateNested('validation', { maximum: v })}
-                  />
+                  </SettingRow>
                   {isCurrency && (
                     <div className='col-span-2'>
-                      <NumberInput
-                        description='Number of decimal places (e.g. 2 for 0.00)'
-                        label='Decimal Precision'
-                        max={4}
-                        min={0}
-                        size='xs'
-                        value={
-                          activeQuestion.settings.specific.decimalPrecision || 2
-                        }
-                        onChange={(v) =>
-                          updateNested('specific', { decimalPrecision: v })
-                        }
-                      />
+                      <SettingRow
+                        help='How many digits are allowed after the decimal point.'
+                        label='Decimal places'
+                      >
+                        <NumberInput
+                          description='Number of decimal places (e.g. 2 for 0.00)'
+                          max={4}
+                          min={0}
+                          size='xs'
+                          value={
+                            activeQuestion.settings.specific.decimalPrecision ||
+                            2
+                          }
+                          onChange={(v) =>
+                            updateNested('specific', { decimalPrecision: v })
+                          }
+                        />
+                      </SettingRow>
                     </div>
                   )}
                 </div>
@@ -5081,24 +5089,29 @@ const QuestionSettings = ({
                   </div>
 
                   <div className='grid grid-cols-2 items-start gap-3'>
-                    <NumberInput
-                      label='Max File Size (MB)'
-                      placeholder='5'
-                      classNames={{
-                        input: baseInputClassNames.input,
-                        label: baseInputClassNames.label,
-                      }}
-                      value={
-                        Number(
-                          activeQuestion.settings.validation.maxFileSize,
-                        ) || undefined
-                      }
-                      onChange={(v) =>
-                        updateNested('validation', { maxFileSize: v })
-                      }
-                    />
+                    <SettingRow
+                      help='Files bigger than this are refused. Leave empty for no limit.'
+                      label='Largest file allowed (MB)'
+                    >
+                      <NumberInput
+                        placeholder='5'
+                        classNames={{
+                          input: baseInputClassNames.input,
+                          label: baseInputClassNames.label,
+                        }}
+                        value={
+                          Number(
+                            activeQuestion.settings.validation.maxFileSize,
+                          ) || undefined
+                        }
+                        onChange={(v) =>
+                          updateNested('validation', { maxFileSize: v })
+                        }
+                      />
+                    </SettingRow>
                     <InputSelect
-                      label='Expiry Field'
+                      description="The date field that holds the document's expiry date."
+                      label='Expiry date field'
                       placeholder='Select Date Field'
                       options={allQuestions
                         .filter(
@@ -5132,7 +5145,7 @@ const QuestionSettings = ({
                   <div className='space-y-1.5'>
                     <InputSelectMultiple
                       // description='Fields to auto-fill from this document via AI OCR. OCR only runs on upload when at least one field is assigned.'
-                      label='Auto-fill from Document'
+                      label='Fill from an uploaded document'
                       options={assignOtherControlsOptions}
                       placeholder='Select fields to auto-fill from OCR'
                       clearable
@@ -5160,10 +5173,10 @@ const QuestionSettings = ({
                   <div className='flex items-center justify-between'>
                     <div>
                       <div className='text-xs font-medium text-gray-11'>
-                        Conditional Mandatory Rules
+                        Make other fields required when…
                       </div>
                       <div className='text-11 text-gray-9'>
-                        Make other controls required when this field matches a
+                        Make other fields required when this field matches a
                         value
                       </div>
                     </div>
@@ -5279,10 +5292,10 @@ const QuestionSettings = ({
                               }}
                             />
                           )}
-                          <div>
-                            <label className='mb-1 block text-[11px] font-medium text-gray-11'>
-                              Make these controls REQUIRED:
-                            </label>
+                          <SettingRow
+                            help='These fields must be filled in when the rule matches.'
+                            label='Make these fields required:'
+                          >
                             <InputSelectMultiple
                               placeholder='Select target controls'
                               options={allQuestions
@@ -5315,7 +5328,7 @@ const QuestionSettings = ({
                                 })
                               }}
                             />
-                          </div>
+                          </SettingRow>
                         </div>
                       ))}
                     </div>
@@ -5327,10 +5340,10 @@ const QuestionSettings = ({
                   <div className='flex items-center justify-between'>
                     <div>
                       <div className='text-xs font-medium text-gray-11'>
-                        Conditional Read-Only Rules
+                        Lock other fields when…
                       </div>
                       <div className='text-11 text-gray-9'>
-                        Lock other controls based on this field value
+                        Lock other fields based on this field value
                       </div>
                     </div>
                     <button
@@ -5469,10 +5482,10 @@ const QuestionSettings = ({
                               }}
                             />
                           )}
-                          <div>
-                            <label className='mb-1 block text-[11px] font-medium text-gray-11'>
-                              Lock these controls (READ-ONLY):
-                            </label>
+                          <SettingRow
+                            help="These fields can't be changed when the rule matches."
+                            label='Lock these fields:'
+                          >
                             <InputSelectMultiple
                               placeholder='Select target controls'
                               options={allQuestions
@@ -5505,7 +5518,7 @@ const QuestionSettings = ({
                                 })
                               }}
                             />
-                          </div>
+                          </SettingRow>
                         </div>
                       ))}
                     </div>
@@ -5517,10 +5530,10 @@ const QuestionSettings = ({
                   <div className='flex items-center justify-between'>
                     <div>
                       <div className='text-xs font-medium text-gray-11'>
-                        Conditional Enable / Show Rules
+                        Show other fields when…
                       </div>
                       <div className='text-11 text-gray-9'>
-                        Show other controls when this field matches a value
+                        Show other fields when this field matches a value
                       </div>
                     </div>
                     <button
@@ -5634,10 +5647,10 @@ const QuestionSettings = ({
                               }}
                             />
                           )}
-                          <div>
-                            <label className='mb-1 block text-[11px] font-medium text-gray-11'>
-                              Show these controls:
-                            </label>
+                          <SettingRow
+                            help='These fields appear when the rule matches.'
+                            label='Show these fields:'
+                          >
                             <InputSelectMultiple
                               placeholder='Select controls to show'
                               options={allQuestions
@@ -5670,7 +5683,7 @@ const QuestionSettings = ({
                                 })
                               }}
                             />
-                          </div>
+                          </SettingRow>
                         </div>
                       ))}
                     </div>
@@ -6302,14 +6315,15 @@ const QuestionSettings = ({
         <SettingsSection
           icon='lucide:palette'
           isOpen={openAppearance}
-          title='Appearance & Icons'
+          title='Appearance'
           variant='premium'
           onToggle={() => setOpenAppearance(!openAppearance)}
         >
           <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
             <div className='grid grid-cols-2 gap-3'>
               <InputText
-                label='Prefix Icon'
+                description='A small icon shown in front of the box.'
+                label='Icon before the value'
                 placeholder='lucide:user'
                 value={activeQuestion.settings.specific.prefixIcon || ''}
                 leftSection={
@@ -6326,7 +6340,8 @@ const QuestionSettings = ({
                 }
               />
               <InputText
-                label='Suffix Icon'
+                description='A small icon shown after the box.'
+                label='Icon after the value'
                 placeholder='lucide:info'
                 value={activeQuestion.settings.specific.suffixIcon || ''}
                 rightSection={
@@ -6346,7 +6361,8 @@ const QuestionSettings = ({
 
             {!isNumber && !isDate && !isDateTime && !isSelect && (
               <InputText
-                label='Input Mask'
+                description='Format typed text automatically, for example (999) 999-9999.'
+                label='Input pattern'
                 placeholder='e.g. (###) ###-####'
                 value={activeQuestion.settings.specific.inputMask || ''}
                 onChange={(val: string) =>
@@ -6355,10 +6371,10 @@ const QuestionSettings = ({
               />
             )}
 
-            <div>
-              <label className='mb-2 block text-13 font-medium text-gray-11'>
-                Visual Style
-              </label>
+            <SettingRow
+              help='How the input box looks: outlined, filled or minimal.'
+              label='Box style'
+            >
               <SegmentedControl
                 className='w-full border border-gray-3 bg-surface'
                 size='xs'
@@ -6370,15 +6386,15 @@ const QuestionSettings = ({
                 ]}
                 onChange={(v) => updateNested('specific', { variant: v })}
               />
-            </div>
+            </SettingRow>
 
             {isDivider && (
               <div className='space-y-4 pt-2'>
                 <Divider className='border-gray-3' />
-                <div>
-                  <label className='mb-2 block text-13 font-medium tracking-tight text-gray-11 uppercase'>
-                    Divider Style
-                  </label>
+                <SettingRow
+                  help='Choose how the divider line looks.'
+                  label='Line style'
+                >
                   <SegmentedControl
                     className='border border-gray-3 bg-surface'
                     size='xs'
@@ -6396,27 +6412,19 @@ const QuestionSettings = ({
                       updateNested('specific', { dividerType: val })
                     }
                   />
-                </div>
+                </SettingRow>
               </div>
             )}
 
             {!isDivider && !isCalculated && (
-              <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
-                <div>
-                  <div className='text-xs font-bold text-gray-13'>
-                    Read Only
-                  </div>
-                  <div className='text-11 text-gray-9'>
-                    User cannot edit this field
-                  </div>
-                </div>
-                <InputSwitch
-                  checked={activeQuestion.settings.general.readOnly || false}
-                  onChange={(checked) =>
-                    updateNested('general', { readOnly: checked })
-                  }
-                />
-              </div>
+              <SettingSwitchRow
+                checked={activeQuestion.settings.general.readOnly || false}
+                help='User cannot edit this field'
+                title='Read Only'
+                onChange={(checked) =>
+                  updateNested('general', { readOnly: checked })
+                }
+              />
             )}
           </div>
         </SettingsSection>
@@ -6441,31 +6449,21 @@ const QuestionSettings = ({
           </div>
 
           <div className='space-y-2'>
-            <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
-              <div className='text-xs font-semibold text-gray-11'>
-                Pre-fill from URL
-              </div>
-              <InputSwitch
-                checked={
-                  activeQuestion.settings.specific.prefillFromUrl || false
-                }
-                onChange={(checked) =>
-                  updateNested('specific', { prefillFromUrl: checked })
-                }
-              />
-            </div>
+            <SettingSwitchRow
+              checked={activeQuestion.settings.specific.prefillFromUrl || false}
+              title='Pre-fill from URL'
+              onChange={(checked) =>
+                updateNested('specific', { prefillFromUrl: checked })
+              }
+            />
 
-            <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
-              <div className='text-xs font-semibold text-gray-11'>
-                Unique Value Check
-              </div>
-              <InputSwitch
-                checked={activeQuestion.settings.specific.uniqueCheck || false}
-                onChange={(checked) =>
-                  updateNested('specific', { uniqueCheck: checked })
-                }
-              />
-            </div>
+            <SettingSwitchRow
+              checked={activeQuestion.settings.specific.uniqueCheck || false}
+              title='Unique Value Check'
+              onChange={(checked) =>
+                updateNested('specific', { uniqueCheck: checked })
+              }
+            />
           </div>
         </div>
       </SettingsSection>
@@ -6475,15 +6473,15 @@ const QuestionSettings = ({
         <SettingsSection
           icon='lucide:split'
           isOpen={openLogic}
-          title='Field Logic'
+          title='Show or hide this field'
           variant='premium'
           onToggle={() => setOpenLogic(!openLogic)}
         >
           <div className='animate-in fade-in slide-in-from-bottom-2 space-y-3 duration-300'>
             {logicRules.length === 0 ? (
               <div className='rounded-xl border border-gray-2 bg-surface p-4 text-center'>
-                <div className='mb-1 text-sm font-semibold text-gray-9'>
-                  Visibility Logic
+                <div className='mb-1 text-13 font-medium text-gray-11'>
+                  No rules yet
                 </div>
                 <div className='mb-3 text-[11px] text-gray-9'>
                   Set rules to show or hide this field based on other responses.
@@ -6614,7 +6612,7 @@ const QuestionSettings = ({
                       </div>
 
                       <div className='flex items-center gap-2 border-t border-dashed border-gray-3 pt-2'>
-                        <span className='text-[10px] font-bold tracking-wider text-gray-9 uppercase'>
+                        <span className='text-13 font-medium text-gray-11'>
                           Then
                         </span>
                         <div className='flex-1'>
