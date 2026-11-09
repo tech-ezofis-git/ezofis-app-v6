@@ -24,6 +24,7 @@ You will be provided:
      - `Brand` -> `Brand`
      - `Size` -> `Size`
      - `Version_cal` -> `Version` (a header field: copy it to every target record, and do not put it in `Version_Number`)
+     - `Revision_cal` -> `Revision` (a header field, as `Version_cal` above: copy it to every target record; use `Revision_cal`, not the source's own `Revision`, when both are present)
      - `Status` -> Default to "Active" or source `Status` if present.
    - Inherit header fields where appropriate (e.g., Brand, Size, Customer) to each child component item unless the component has a specific override.
    - For composite columns (like `Material_Specifications` or `Dimension`):
