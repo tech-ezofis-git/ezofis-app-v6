@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Npgsql;
 using SaaSApp.Workflow.Application.Contracts;
+using SaaSApp.Workflow.Application.Workflows;
 
 namespace SaaSApp.Workflow.Infrastructure.Services;
 
@@ -94,6 +95,7 @@ public sealed class WorkflowTableCreator : IWorkflowTableCreator
             GenerateWorkflowInstanceSlasTableScript(suffix),
             GenerateWorkflowInstanceUserStateTableScript(suffix),
             GenerateLegacyTransactionTableScript(suffix),
+            GenerateFinishedEndTransactionIndexScript(suffix),
             GenerateProcessFormTableScript(suffix),
             GenerateProcessAddonTableScript(suffix),
             GenerateCommentsTableScript(suffix),
@@ -636,6 +638,19 @@ CREATE TABLE IF NOT EXISTS workflow.workflow_instance_user_state_{suffix} (
 );
 CREATE INDEX IF NOT EXISTS ix_workflow_instance_user_state_{suffix}_workflow_instance_id_user_id ON workflow.workflow_instance_user_state_{suffix} (workflow_instance_id, user_id);";
     }
+
+    /// <summary>
+    /// Instances whose workflow finished (WorkflowStepTransitionHelper.FinishedEndRowSql). The predicate
+    /// matches that SQL exactly, so the Completed/Sent mailbox checks are index-only scans instead of
+    /// reading the transaction heap. Only for new workflows (empty tables): existing large tables get it
+    /// from db/scripts with CREATE INDEX CONCURRENTLY, never from a request path.
+    /// </summary>
+    private static string GenerateFinishedEndTransactionIndexScript(string suffix) => $@"
+CREATE INDEX IF NOT EXISTS ix_transaction_{suffix.Replace("-", "_")}_finished_end_instance
+    ON workflow.transaction_{suffix} (workflow_instance_id)
+    WHERE is_deleted = false
+      AND UPPER(TRIM(COALESCE(stage_type, ''))) = 'END'
+      AND COALESCE(TRIM(review), '') <> '{WorkflowStepTransitionHelper.ReinitiateReview}';";
 
     private static string GenerateLegacyTransactionTableScript(string suffix)
     {
