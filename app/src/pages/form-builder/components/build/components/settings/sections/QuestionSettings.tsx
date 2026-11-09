@@ -154,6 +154,15 @@ const QuestionSettings = ({
   const panels = useFormStore((state) => state.panels)
   const allQuestions = (panels ?? []).flatMap((p) => p.fields ?? [])
 
+  // The other date fields on the form: what a date field can copy its date from.
+  const dateFieldOptions = allQuestions
+    .filter(
+      (q) =>
+        q.id !== activeQuestion.id &&
+        (q.type === 'DATE' || q.type === 'DATE_TIME'),
+    )
+    .map((q) => ({ id: q.id, name: q.label || 'Untitled field' }))
+
   const currentRepoId = activeQuestion.settings.specific.repositoryId || ''
 
   const { data: repositories = [] } = useQuery({
@@ -707,11 +716,11 @@ const QuestionSettings = ({
   const renderMasterFillConfig = () => (
     <div className='space-y-3 rounded-lg border border-gray-3 bg-surface p-3'>
       <div>
-        <label className='mb-1 block text-xs font-medium text-gray-11'>
-          Parent Field
+        <label className={settingLabelClass}>
+          Field that picks the master row
         </label>
         <InputSelect
-          placeholder='Field that selects the master row'
+          placeholder='The field that picks the master row'
           options={allQuestions
             .filter((q) => q.id !== activeQuestion.id)
             .map((q) => ({
@@ -737,13 +746,13 @@ const QuestionSettings = ({
           }
         />
       </div>
-      <div>
-        <label className='mb-1 block text-xs font-medium text-gray-11'>
-          Master Table
-        </label>
+      <SettingRow
+        help='The master form this comes from. A master form holds reference data like vendors or customers.'
+        label='Master form'
+      >
         <InputSelect
           options={masterForms}
-          placeholder='Select master form'
+          placeholder='Select a master form'
           value={
             masterForms.find(
               (f: any) => String(f.id) === String(currentMasterFormId),
@@ -756,14 +765,14 @@ const QuestionSettings = ({
             })
           }
         />
-      </div>
-      <div>
-        <label className='mb-1 block text-xs font-medium text-gray-11'>
-          Column
-        </label>
+      </SettingRow>
+      <SettingRow
+        help='The column of the master form whose value fills this field.'
+        label='Master column to copy'
+      >
         <InputSelect
           options={masterColumns}
-          placeholder='Master column to bind'
+          placeholder='Select a master column'
           value={
             masterColumns.find(
               (c: any) =>
@@ -776,17 +785,17 @@ const QuestionSettings = ({
             })
           }
         />
-      </div>
+      </SettingRow>
     </div>
   )
 
   const renderParentFieldFillConfig = (allowedTypes: string[]) => (
     <div>
-      <label className='mb-1 block text-xs font-medium text-gray-11'>
-        Parent Field
+      <label className={settingLabelClass}>
+        Copy the answer from another field
       </label>
       <InputSelect
-        placeholder='Copy value from this field'
+        placeholder='Select the field to copy from'
         options={allQuestions
           .filter(
             (q) => q.id !== activeQuestion.id && allowedTypes.includes(q.type),
@@ -1619,7 +1628,10 @@ const QuestionSettings = ({
 
                 <Divider className='border-dashed border-gray-3' />
 
-                <SettingRow label='Currency Parent Field'>
+                <SettingRow
+                  help='The currency follows the answer in the field you pick.'
+                  label='Take the currency from another field'
+                >
                   <InputSelect
                     placeholder='Inherit currency from...'
                     value={null}
@@ -1877,7 +1889,10 @@ const QuestionSettings = ({
                     {/* Cascading Parent Field (shown ONLY when Same Master is ON / YES) */}
                     {Boolean(activeQuestion.settings.specific.isSameMaster) && (
                       <div className='space-y-3 border-t border-gray-2 pt-3'>
-                        <SettingRow label='Parent Field Filter (Cascading)'>
+                        <SettingRow
+                          help="Choose a field. The choices here change based on that field's answer."
+                          label='Options depend on another field'
+                        >
                           <InputSelect
                             placeholder='Select the field this depends on'
                             options={allQuestions
@@ -2139,7 +2154,10 @@ const QuestionSettings = ({
                           }}
                         />
                       </SettingRow>
-                      <SettingRow label='Parent Field Filter (Cascading)'>
+                      <SettingRow
+                        help="Choose a field. The choices here change based on that field's answer."
+                        label='Options depend on another field'
+                      >
                         <InputSelect
                           placeholder='Select the field this depends on'
                           options={allQuestions
@@ -2273,7 +2291,10 @@ const QuestionSettings = ({
                       </SettingRow>
                     )}
 
-                    <SettingRow label='Parent Field Filter (Cascading)'>
+                    <SettingRow
+                      help="Choose a field. The choices here change based on that field's answer."
+                      label='Options depend on another field'
+                    >
                       <InputSelect
                         placeholder='Select the field this depends on'
                         options={allQuestions
@@ -2711,7 +2732,10 @@ const QuestionSettings = ({
 
                     <Divider className='border-dashed border-gray-3' />
 
-                    <SettingRow label='Cascading Filter (Parent)'>
+                    <SettingRow
+                      help="Choose a field. The choices here change based on that field's answer."
+                      label='Options depend on another field'
+                    >
                       {(() => {
                         const cascadeOptions = [
                           { id: 'none', name: 'No Filter' },
@@ -3210,18 +3234,34 @@ const QuestionSettings = ({
                     {activeQuestion.settings.specific.dateDefaultValueType ===
                       'PARENT_FIELD' && (
                       <div className='space-y-3 rounded-lg border border-gray-2 bg-surface p-3'>
-                        <label className={settingLabelClass}>
-                          Parent Date Link
-                        </label>
-                        <InputSelect
-                          placeholder='Select the field to copy from'
-                          value={null}
-                          options={[
-                            { id: '1', name: 'Field: Request Date' },
-                            { id: '2', name: 'Field: Submission Date' },
-                          ]}
-                          onChange={() => {}}
-                        />
+                        <SettingRow
+                          help='The date follows the date in the field you pick.'
+                          label='Copy the answer from another field'
+                        >
+                          <InputSelect
+                            options={dateFieldOptions}
+                            placeholder='Select the field to copy from'
+                            value={
+                              dateFieldOptions.find(
+                                (o) =>
+                                  o.id ===
+                                  (activeQuestion.settings.specific
+                                    .parentDateFieldId ||
+                                    // older forms only have this name
+                                    (
+                                      activeQuestion.settings.specific as {
+                                        parentDateField?: string
+                                      }
+                                    ).parentDateField),
+                              ) || null
+                            }
+                            onChange={(val) =>
+                              updateNested('specific', {
+                                parentDateFieldId: val?.id || '',
+                              })
+                            }
+                          />
+                        </SettingRow>
                         <div className='flex items-center gap-2'>
                           <SettingRow
                             help='Move the copied date forward by this many days. Use a negative number to go back.'
@@ -3737,7 +3777,10 @@ const QuestionSettings = ({
                           {activeQuestion.settings.specific.fillValueType ===
                             'MASTER' && (
                             <div className='space-y-3 rounded-lg border border-gray-3 bg-surface p-3'>
-                              <SettingRow label='Parent Field'>
+                              <SettingRow
+                                help='The answer in this field decides which master row is used.'
+                                label='Field that picks the master row'
+                              >
                                 <InputSelect
                                   placeholder='The field that picks the master row'
                                   options={allQuestions
@@ -5975,11 +6018,11 @@ const QuestionSettings = ({
                   Cascading Dependent Lookup
                 </div>
                 <div>
-                  <label className='mb-1 block text-xs font-medium text-gray-11'>
-                    Parent Field Filter
+                  <label className={settingLabelClass}>
+                    Options depend on another field
                   </label>
                   <InputSelect
-                    placeholder='Select Parent Field'
+                    placeholder='Select the field this depends on'
                     options={allQuestions
                       .filter((q) => q.id !== activeQuestion.id)
                       .map((q) => ({ id: q.id, name: q.label }))}

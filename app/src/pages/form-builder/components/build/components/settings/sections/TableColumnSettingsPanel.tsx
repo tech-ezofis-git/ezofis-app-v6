@@ -487,7 +487,7 @@ const TableColumnSettingsPanel = ({
                 />
 
                 <label className={settingLabelClass}>
-                  Filter by column (cascade, optional)
+                  Options depend on another column
                 </label>
                 <InputSelect
                   options={cascadeOptions}
@@ -568,7 +568,7 @@ const TableColumnSettingsPanel = ({
                   }
                 />
                 <label className={settingLabelClass}>
-                  Filter by column (cascade, optional)
+                  Options depend on another column
                 </label>
                 <InputSelect
                   options={cascadeOptions}
