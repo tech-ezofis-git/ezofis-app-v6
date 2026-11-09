@@ -828,6 +828,8 @@ const RequestsPage = () => {
 
   // While counts reload, the header keeps showing the previous ones.
   const [isRefreshingCounts, setIsRefreshingCounts] = useState(false)
+  // Workflow whose counts were last requested; a late reply for another one is dropped.
+  const countsWorkflowIdRef = useRef<string | null>(null)
   const refreshInstanceCounts = useCallback(
     async (workflowId: string, wfDetailOverride?: any) => {
       setIsRefreshingCounts(true)
@@ -845,7 +847,9 @@ const RequestsPage = () => {
   const loadSelectedWorkflow = useCallback(
     async (workflowId: string, workflowName?: string) => {
       setWorkflowLoadStatus('loading')
+      countsWorkflowIdRef.current = workflowId
       if (String(workflowId).toLowerCase() === 'procurement') {
+        setIsRefreshingCounts(false)
         setSelectedWorkflow({
           flowJson: '',
           formJson: '',
@@ -862,21 +866,31 @@ const RequestsPage = () => {
         setIsLoading(false)
         return
       }
+      // Tab counts load alongside but must not hold up the list: on a workflow
+      // with a large Completed mailbox the counts take far longer than the
+      // Inbox/Sent page itself, and the list only starts once the workflow is set.
+      setIsRefreshingCounts(true)
+      void workflowsApiV6
+        .getInstanceCount(workflowId)
+        .then((countRes) => {
+          if (countsWorkflowIdRef.current !== workflowId) return
+          if (countRes?.data) {
+            applyInstanceCount(countRes.data)
+          } else {
+            setMetaData({
+              completedCount: '0',
+              inboxCount: '0',
+              sentCount: '0',
+            })
+          }
+        })
+        .finally(() => {
+          if (countsWorkflowIdRef.current === workflowId) {
+            setIsRefreshingCounts(false)
+          }
+        })
       try {
-        const [loaded, countRes] = await Promise.all([
-          loadOverviewWorkflow(workflowId, workflowName),
-          workflowsApiV6.getInstanceCount(workflowId),
-        ])
-
-        if (countRes?.data) {
-          applyInstanceCount(countRes.data)
-        } else {
-          setMetaData({
-            completedCount: '0',
-            inboxCount: '0',
-            sentCount: '0',
-          })
-        }
+        const loaded = await loadOverviewWorkflow(workflowId, workflowName)
 
         // After a reload the default workflow can finish loading while a
         // request from another workflow is open; keep that request's copy.
