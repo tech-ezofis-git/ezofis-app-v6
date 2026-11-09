@@ -331,6 +331,25 @@ const QuestionSettings = ({
     },
   })
 
+  // Only the connections that really exist. (A made-up "Main Production
+  // Connector" and "Staging Integration Connector" used to be offered when there
+  // were none, which let someone pick a connection that does not exist.)
+  const connectionOptions = connectors.map((c: any) => ({
+    id: String(c.id),
+    name: c.name || c.connectorName || c.providerCode || `Connection ${c.id}`,
+  }))
+
+  // The outside data lookup is an admin feature that only choice-type fields can use.
+  // A field that already has lookup settings saved keeps showing it, so nothing
+  // saved becomes impossible to reach.
+  const lookupSaved = activeQuestion.settings.lookupSettings
+  const hasLookupSettings = Boolean(
+    lookupSaved?.hubName ||
+    lookupSaved?.columnNameInAPI ||
+    lookupSaved?.connectionType ||
+    (lookupSaved?.connectionId && String(lookupSaved.connectionId) !== '0'),
+  )
+
   // Options available for the activeQuestion (e.g. Master form options or Custom options)
   const isMasterSource =
     activeQuestion.settings.specific.optionsType === 'MASTER' ||
@@ -5730,317 +5749,279 @@ const QuestionSettings = ({
         )}
 
       {/* 4. DATA LOOKUP SECTION */}
-      {!isDivider &&
-        (isShortText ||
-          isLongText ||
-          isNumber ||
-          isDate ||
-          isTime ||
-          isDateTime ||
-          isSelect) && (
-          <SettingsSection
-            icon='lucide:database'
-            isOpen={openLookup}
-            title='Data Lookup (Integration)'
-            variant='premium'
-            onToggle={() => setOpenLookup(!openLookup)}
-          >
-            <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
-              <div>
-                <label className='mb-2 block text-13 font-medium text-gray-11'>
-                  Connection Type
-                </label>
-                <InputSelect
-                  placeholder='Select protocol'
-                  options={[
+      {!isDivider && (isSelect || hasLookupSettings) && (
+        <SettingsSection
+          icon='lucide:database'
+          isOpen={openLookup}
+          title='Outside data lookup (for admins)'
+          variant='premium'
+          onToggle={() => setOpenLookup(!openLookup)}
+        >
+          <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
+            <SettingRow
+              help='How to reach the outside data.'
+              label='Connection type'
+            >
+              <InputSelect
+                placeholder='Select connection type'
+                options={[
+                  { id: 'API', name: 'RESTful API' },
+                  { id: 'SQL', name: 'Internal SQL Database' },
+                  { id: 'ORACLE', name: 'Oracle DB' },
+                  { id: 'GOOGLE_SHEETS', name: 'Google Sheets API' },
+                  { id: 'SALESFORCE', name: 'Salesforce API' },
+                ]}
+                value={
+                  [
                     { id: 'API', name: 'RESTful API' },
                     { id: 'SQL', name: 'Internal SQL Database' },
                     { id: 'ORACLE', name: 'Oracle DB' },
                     { id: 'GOOGLE_SHEETS', name: 'Google Sheets API' },
                     { id: 'SALESFORCE', name: 'Salesforce API' },
-                  ]}
-                  value={
-                    [
-                      { id: 'API', name: 'RESTful API' },
-                      { id: 'SQL', name: 'Internal SQL Database' },
-                      { id: 'ORACLE', name: 'Oracle DB' },
-                      { id: 'GOOGLE_SHEETS', name: 'Google Sheets API' },
-                      { id: 'SALESFORCE', name: 'Salesforce API' },
-                    ].find(
-                      (o) =>
-                        o.id ===
-                        activeQuestion.settings.lookupSettings?.connectionType,
-                    ) || null
-                  }
-                  onChange={(val) =>
-                    val &&
-                    updateNested('lookupSettings', { connectionType: val.id })
-                  }
-                />
-              </div>
-
-              <div>
-                <label className='mb-2 block text-13 font-medium text-gray-11'>
-                  Lookup Connection Credential
-                </label>
-                <InputSelect
-                  placeholder='Select connection credential'
-                  options={
-                    connectors.length > 0
-                      ? connectors.map((c: any) => ({
-                          id: String(c.id),
-                          name:
-                            c.name ||
-                            c.connectorName ||
-                            c.providerCode ||
-                            `Connection ${c.id}`,
-                        }))
-                      : [
-                          { id: '1', name: 'Main Production Connector' },
-                          { id: '2', name: 'Staging Integration Connector' },
-                        ]
-                  }
-                  value={
-                    (connectors.length > 0
-                      ? connectors.map((c: any) => ({
-                          id: String(c.id),
-                          name:
-                            c.name ||
-                            c.connectorName ||
-                            c.providerCode ||
-                            `Connection ${c.id}`,
-                        }))
-                      : [
-                          { id: '1', name: 'Main Production Connector' },
-                          { id: '2', name: 'Staging Integration Connector' },
-                        ]
-                    ).find(
-                      (o) =>
-                        o.id ===
-                        String(
-                          activeQuestion.settings.lookupSettings?.connectionId,
-                        ),
-                    ) || null
-                  }
-                  onChange={(val) =>
-                    val &&
-                    updateNested('lookupSettings', {
-                      connectionId: val.id,
-                    })
-                  }
-                />
-              </div>
-
-              <InputText
-                label='Hub Name / Function Endpoint'
-                placeholder='e.g. get_customer_details or /api/v1/lookup'
-                value={activeQuestion.settings.lookupSettings?.hubName || ''}
-                onChange={(val: string) =>
-                  updateNested('lookupSettings', { hubName: val })
+                  ].find(
+                    (o) =>
+                      o.id ===
+                      activeQuestion.settings.lookupSettings?.connectionType,
+                  ) || null
+                }
+                onChange={(val) =>
+                  val &&
+                  updateNested('lookupSettings', { connectionType: val.id })
                 }
               />
+            </SettingRow>
 
-              <div className='space-y-3 rounded-xl border border-gray-3 bg-surface p-3'>
-                <div className='text-xs font-bold text-gray-12'>
-                  Column Mappings
-                </div>
-                <InputText
-                  label='Primary Name Column (columnNameInAPI)'
-                  placeholder='e.g. display_name'
-                  value={
-                    activeQuestion.settings.lookupSettings?.columnNameInAPI ||
-                    ''
-                  }
-                  onChange={(val: string) =>
-                    updateNested('lookupSettings', { columnNameInAPI: val })
-                  }
-                />
-                <InputText
-                  label='Secondary Name Column (secondaryName)'
-                  placeholder='e.g. subtitle, description'
-                  value={
-                    activeQuestion.settings.lookupSettings?.secondaryName || ''
-                  }
-                  onChange={(val: string) =>
-                    updateNested('lookupSettings', { secondaryName: val })
-                  }
-                />
-                <InputText
-                  label='Reference Key Column (columnName)'
-                  placeholder='e.g. id, code, key'
-                  value={
-                    activeQuestion.settings.lookupSettings?.columnName || ''
-                  }
-                  onChange={(val: string) =>
-                    updateNested('lookupSettings', { columnName: val })
-                  }
-                />
+            <SettingRow
+              help='Pick the saved login used to reach the outside data.'
+              label='Saved connection login'
+            >
+              <InputSelect
+                options={connectionOptions}
+                placeholder={
+                  connectionOptions.length > 0
+                    ? 'Select saved login'
+                    : 'No saved connections yet'
+                }
+                value={
+                  connectionOptions.find(
+                    (o) =>
+                      o.id ===
+                      String(
+                        activeQuestion.settings.lookupSettings?.connectionId,
+                      ),
+                  ) || null
+                }
+                onChange={(val) =>
+                  val &&
+                  updateNested('lookupSettings', {
+                    connectionId: val.id,
+                  })
+                }
+              />
+            </SettingRow>
+
+            <InputText
+              description='The name of the service or function that returns the list.'
+              label='Service or function name'
+              placeholder='e.g. get_customer_details'
+              value={activeQuestion.settings.lookupSettings?.hubName || ''}
+              onChange={(val: string) =>
+                updateNested('lookupSettings', { hubName: val })
+              }
+            />
+
+            <div className='space-y-3 rounded-xl border border-gray-3 bg-surface p-3'>
+              <div className='text-xs font-bold text-gray-12'>
+                Column Mappings
+              </div>
+              <InputText
+                description='The column from the outside service whose value is shown as the name of each item.'
+                label='Name column'
+                placeholder='e.g. display_name'
+                value={
+                  activeQuestion.settings.lookupSettings?.columnNameInAPI || ''
+                }
+                onChange={(val: string) =>
+                  updateNested('lookupSettings', { columnNameInAPI: val })
+                }
+              />
+              <InputText
+                description='Optional column shown as a smaller second line for each item.'
+                label='Second-line column'
+                placeholder='e.g. subtitle, description'
+                value={
+                  activeQuestion.settings.lookupSettings?.secondaryName || ''
+                }
+                onChange={(val: string) =>
+                  updateNested('lookupSettings', { secondaryName: val })
+                }
+              />
+              <InputText
+                description='The column whose value is saved when someone picks an item, for example id or code.'
+                label='Value column'
+                placeholder='e.g. id or code'
+                value={activeQuestion.settings.lookupSettings?.columnName || ''}
+                onChange={(val: string) =>
+                  updateNested('lookupSettings', { columnName: val })
+                }
+              />
+            </div>
+
+            {/* Sync Fields for API Input Parameters */}
+            <div className='space-y-2.5 border-t border-gray-3 pt-3'>
+              <div className='flex items-center justify-between'>
+                <label className={settingLabelClass}>
+                  Send these answers to the service
+                </label>
+                <button
+                  className='flex cursor-pointer items-center gap-1 text-[10px] font-bold text-accent-primary hover:underline'
+                  type='button'
+                  onClick={() => {
+                    const current =
+                      activeQuestion.settings.lookupSettings
+                        ?.syncFieldsForAPI || []
+                    updateNested('lookupSettings', {
+                      syncFieldsForAPI: [
+                        ...current,
+                        { apiParam: '', formField: '' },
+                      ],
+                    })
+                  }}
+                >
+                  <Icon height={10} name='lucide:plus' width={10} />
+                  Add Parameter Sync
+                </button>
               </div>
 
-              {/* Sync Fields for API Input Parameters */}
-              <div className='space-y-2.5 border-t border-gray-3 pt-3'>
-                <div className='flex items-center justify-between'>
-                  <label className='block text-xs font-bold text-gray-11'>
-                    Sync Input Fields (Form Field &rarr; API Param)
-                  </label>
-                  <button
-                    className='flex cursor-pointer items-center gap-1 text-[10px] font-bold text-accent-primary hover:underline'
-                    type='button'
-                    onClick={() => {
-                      const current =
-                        activeQuestion.settings.lookupSettings
-                          ?.syncFieldsForAPI || []
-                      updateNested('lookupSettings', {
-                        syncFieldsForAPI: [
-                          ...current,
-                          { apiParam: '', formField: '' },
-                        ],
-                      })
-                    }}
-                  >
-                    <Icon height={10} name='lucide:plus' width={10} />
-                    Add Parameter Sync
-                  </button>
-                </div>
-
-                {(
-                  activeQuestion.settings.lookupSettings?.syncFieldsForAPI || []
-                ).map((sync, sIdx) => (
-                  <div className='flex items-center gap-2' key={sIdx}>
-                    <div className='flex-1'>
-                      <InputSelect
-                        placeholder='Form Field'
-                        options={allQuestions
+              {(
+                activeQuestion.settings.lookupSettings?.syncFieldsForAPI || []
+              ).map((sync, sIdx) => (
+                <div className='flex items-center gap-2' key={sIdx}>
+                  <div className='flex-1'>
+                    <InputSelect
+                      placeholder='Form Field'
+                      options={allQuestions
+                        .filter((q) => q.id !== activeQuestion.id)
+                        .map((q) => ({ id: q.id, name: q.label }))}
+                      value={
+                        allQuestions
                           .filter((q) => q.id !== activeQuestion.id)
-                          .map((q) => ({ id: q.id, name: q.label }))}
-                        value={
-                          allQuestions
-                            .filter((q) => q.id !== activeQuestion.id)
-                            .map((q) => ({ id: q.id, name: q.label }))
-                            .find((q) => q.id === sync.formField) || null
+                          .map((q) => ({ id: q.id, name: q.label }))
+                          .find((q) => q.id === sync.formField) || null
+                      }
+                      onChange={(val) => {
+                        const current = [
+                          ...(activeQuestion.settings.lookupSettings
+                            ?.syncFieldsForAPI || []),
+                        ]
+                        current[sIdx] = {
+                          ...current[sIdx],
+                          formField: val?.id ? String(val.id) : '',
                         }
-                        onChange={(val) => {
-                          const current = [
-                            ...(activeQuestion.settings.lookupSettings
-                              ?.syncFieldsForAPI || []),
-                          ]
-                          current[sIdx] = {
-                            ...current[sIdx],
-                            formField: val?.id ? String(val.id) : '',
-                          }
-                          updateNested('lookupSettings', {
-                            syncFieldsForAPI: current,
-                          })
-                        }}
-                      />
-                    </div>
-                    <span className='text-xs font-bold text-gray-9'>
-                      &rarr;
-                    </span>
-                    <div className='flex-1'>
-                      <InputText
-                        placeholder='API Parameter'
-                        value={sync.apiParam || ''}
-                        onChange={(val: string) => {
-                          const current = [
-                            ...(activeQuestion.settings.lookupSettings
-                              ?.syncFieldsForAPI || []),
-                          ]
-                          current[sIdx] = {
-                            ...current[sIdx],
-                            apiParam: val,
-                          }
-                          updateNested('lookupSettings', {
-                            syncFieldsForAPI: current,
-                          })
-                        }}
-                      />
-                    </div>
-                    <IconButton
-                      color='red'
-                      icon='lucide:trash-2'
-                      size='xs'
-                      variant='ghost'
-                      onClick={() => {
-                        const current = (
-                          activeQuestion.settings.lookupSettings
-                            ?.syncFieldsForAPI || []
-                        ).filter((_, idx) => idx !== sIdx)
                         updateNested('lookupSettings', {
                           syncFieldsForAPI: current,
                         })
                       }}
                     />
                   </div>
-                ))}
-              </div>
-
-              {/* Cascading Lookup Dependent Conditions */}
-              <div className='space-y-3 border-t border-gray-3 pt-3'>
-                <div className='text-xs font-bold text-gray-12'>
-                  Cascading Dependent Lookup
-                </div>
-                <div>
-                  <label className={settingLabelClass}>
-                    Options depend on another field
-                  </label>
-                  <InputSelect
-                    placeholder='Select the field this depends on'
-                    options={allQuestions
-                      .filter((q) => q.id !== activeQuestion.id)
-                      .map((q) => ({ id: q.id, name: q.label }))}
-                    value={
-                      allQuestions
-                        .filter((q) => q.id !== activeQuestion.id)
-                        .map((q) => ({ id: q.id, name: q.label }))
-                        .find(
-                          (q) =>
-                            q.id ===
-                            activeQuestion.settings.lookupSettings?.parentField,
-                        ) || null
-                    }
-                    onChange={(val) => {
+                  <span className='text-xs font-bold text-gray-9'>&rarr;</span>
+                  <div className='flex-1'>
+                    <InputText
+                      placeholder='Name the service expects'
+                      value={sync.apiParam || ''}
+                      onChange={(val: string) => {
+                        const current = [
+                          ...(activeQuestion.settings.lookupSettings
+                            ?.syncFieldsForAPI || []),
+                        ]
+                        current[sIdx] = {
+                          ...current[sIdx],
+                          apiParam: val,
+                        }
+                        updateNested('lookupSettings', {
+                          syncFieldsForAPI: current,
+                        })
+                      }}
+                    />
+                  </div>
+                  <IconButton
+                    color='red'
+                    icon='lucide:trash-2'
+                    size='xs'
+                    variant='ghost'
+                    onClick={() => {
+                      const current = (
+                        activeQuestion.settings.lookupSettings
+                          ?.syncFieldsForAPI || []
+                      ).filter((_, idx) => idx !== sIdx)
                       updateNested('lookupSettings', {
-                        parentField: val?.id || '',
+                        syncFieldsForAPI: current,
                       })
                     }}
                   />
                 </div>
-                <InputText
-                  label='Mapping Field Key'
-                  placeholder='e.g. parent_id'
-                  value={
-                    activeQuestion.settings.lookupSettings?.mappingField || ''
-                  }
-                  onChange={(val: string) =>
-                    updateNested('lookupSettings', { mappingField: val })
-                  }
-                />
-                <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
-                  <div>
-                    <div className='text-xs font-bold text-gray-12'>
-                      Same Connection Context
-                    </div>
-                    <div className='text-11 text-gray-9'>
-                      Inherit target connection from parent field lookup
-                    </div>
-                  </div>
-                  <InputSwitch
-                    checked={
-                      activeQuestion.settings.lookupSettings
-                        ?.hasSameConnection || false
-                    }
-                    onChange={(checked) =>
-                      updateNested('lookupSettings', {
-                        hasSameConnection: checked,
-                      })
-                    }
-                  />
-                </div>
-              </div>
+              ))}
             </div>
-          </SettingsSection>
-        )}
+
+            {/* Cascading Lookup Dependent Conditions */}
+            <div className='space-y-3 border-t border-gray-3 pt-3'>
+              <div className='text-xs font-bold text-gray-12'>
+                Cascading Dependent Lookup
+              </div>
+              <div>
+                <label className={settingLabelClass}>
+                  Options depend on another field
+                </label>
+                <InputSelect
+                  placeholder='Select the field this depends on'
+                  options={allQuestions
+                    .filter((q) => q.id !== activeQuestion.id)
+                    .map((q) => ({ id: q.id, name: q.label }))}
+                  value={
+                    allQuestions
+                      .filter((q) => q.id !== activeQuestion.id)
+                      .map((q) => ({ id: q.id, name: q.label }))
+                      .find(
+                        (q) =>
+                          q.id ===
+                          activeQuestion.settings.lookupSettings?.parentField,
+                      ) || null
+                  }
+                  onChange={(val) => {
+                    updateNested('lookupSettings', {
+                      parentField: val?.id || '',
+                    })
+                  }}
+                />
+              </div>
+              <InputText
+                description='The name the outside service uses for the value taken from the other field, for example parent_id.'
+                label='Name the service expects'
+                placeholder='e.g. parent_id'
+                value={
+                  activeQuestion.settings.lookupSettings?.mappingField || ''
+                }
+                onChange={(val: string) =>
+                  updateNested('lookupSettings', { mappingField: val })
+                }
+              />
+              <SettingSwitchRow
+                help="Use the same connection as the other field's lookup."
+                title='Use the same connection'
+                checked={
+                  activeQuestion.settings.lookupSettings?.hasSameConnection ||
+                  false
+                }
+                onChange={(checked) =>
+                  updateNested('lookupSettings', {
+                    hasSameConnection: checked,
+                  })
+                }
+              />
+            </div>
+          </div>
+        </SettingsSection>
+      )}
 
       {/* SEARCH FIELD (LOOKUP / AUTO-SYNC) SECTION */}
       {isSearchableSupported && (
@@ -6458,14 +6439,14 @@ const QuestionSettings = ({
       <SettingsSection
         icon='lucide:zap'
         isOpen={openAdvanced}
-        title='Developer & Advanced'
+        title='Advanced (for admins)'
         variant='premium'
         onToggle={() => setOpenAdvanced(!openAdvanced)}
       >
         <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
           <div className='rounded-lg border border-gray-3 bg-surface p-3'>
             <div className='mb-1 text-xs font-bold tracking-wider text-gray-11 uppercase'>
-              Field ID / Key
+              Field ID (for developers)
             </div>
             <div className='font-mono text-xs break-all text-gray-9'>
               {activeQuestion.id}
