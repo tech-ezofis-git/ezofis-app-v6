@@ -32,6 +32,10 @@ import { classNames as baseInputClassNames } from '@/components/base/inputs/shar
 import SortableContainer from '@/components/base/sortable/SortableContainer'
 import SortableItem from '@/components/base/sortable/SortableItem'
 import {
+  editingRightsPatch,
+  getEditingRights,
+} from '@/pages/form-builder/helpers/editingRights'
+import {
   CONVERTIBLE_TYPES,
   convertQuestionType,
   FIELD_TYPE_LABELS,
@@ -562,10 +566,12 @@ const QuestionSettings = ({
         ]
 
   const visibilityOptions = [
-    { id: 'NORMAL', name: 'Normal (Editable)' },
-    { id: 'READ_ONLY', name: 'Read Only (Visible but locked)' },
-    { id: 'HIDDEN', name: 'Disable (Hidden from UI)' },
+    { id: 'NORMAL', name: 'Editable' },
+    { id: 'READ_ONLY', name: 'View only' },
+    { id: 'HIDDEN', name: 'Hidden' },
   ]
+
+  const editingRights = getEditingRights(activeQuestion.settings.general)
 
   // Same names on every field type (saved sizes are unchanged).
   const sizeOptions = [
@@ -1195,66 +1201,23 @@ const QuestionSettings = ({
 
               <Divider className='border-gray-3' />
 
-              {(isShortText ||
-                isLongText ||
-                isNumber ||
-                isDate ||
-                isTime ||
-                isDateTime ||
-                isSelect) && (
-                <SettingRow label='Visibility State'>
-                  <InputSelect
-                    options={visibilityOptions}
-                    placeholder='Normal, Read Only...'
-                    value={
-                      visibilityOptions.find(
-                        (o) =>
-                          o.id === activeQuestion.settings.general.visibility,
-                      ) || visibilityOptions[0]
-                    }
-                    onChange={(val) =>
-                      val && updateNested('general', { visibility: val.id })
-                    }
-                  />
-                </SettingRow>
-              )}
-
-              {!isShortText &&
-                !isLongText &&
-                !isNumber &&
-                !isDate &&
-                !isTime &&
-                !isDateTime &&
-                !isSelect && (
-                  <div className='grid grid-cols-2 gap-2'>
-                    <div className='flex flex-col gap-2 rounded-xl border border-gray-3 bg-surface p-3'>
-                      <div className='text-xs font-bold text-gray-13'>
-                        Read Only
-                      </div>
-                      <InputSwitch
-                        checked={
-                          activeQuestion.settings.general.readOnly || false
-                        }
-                        onChange={(checked) =>
-                          updateNested('general', { readOnly: checked })
-                        }
-                      />
-                    </div>
-                    <div className='flex flex-col gap-2 rounded-xl border border-gray-3 bg-surface p-3'>
-                      <div className='text-xs font-bold text-gray-13'>
-                        Hidden Field
-                      </div>
-                      <InputSwitch
-                        checked={
-                          activeQuestion.settings.general.hidden || false
-                        }
-                        onChange={(checked) =>
-                          updateNested('general', { hidden: checked })
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
+              <SettingRow
+                help='Choose whether people can edit this field, only see it, or not see it at all.'
+                label='Can users change this field?'
+              >
+                <InputSelect
+                  options={visibilityOptions}
+                  placeholder='Editable'
+                  value={
+                    visibilityOptions.find((o) => o.id === editingRights) ||
+                    visibilityOptions[0]
+                  }
+                  onChange={(val) =>
+                    val &&
+                    updateNested('general', editingRightsPatch(String(val.id)))
+                  }
+                />
+              </SettingRow>
             </div>
           )}
         </div>
@@ -6486,17 +6449,6 @@ const QuestionSettings = ({
                   />
                 </SettingRow>
               </div>
-            )}
-
-            {!isDivider && !isCalculated && (
-              <SettingSwitchRow
-                checked={activeQuestion.settings.general.readOnly || false}
-                help='User cannot edit this field'
-                title='Read Only'
-                onChange={(checked) =>
-                  updateNested('general', { readOnly: checked })
-                }
-              />
             )}
           </div>
         </SettingsSection>

@@ -321,23 +321,24 @@ const TableColumnSettingsPanel = ({
       />
 
       <InputSelect
-        label='Visibility'
+        description='Choose whether people can edit this column, only see it, or not see it at all.'
+        label='Can users change this column?'
         options={[
-          { id: 'NORMAL', name: 'Normal (Editable)' },
-          { id: 'READ_ONLY', name: 'Read Only (Visible but locked)' },
-          { id: 'DISABLE', name: 'Disable (Grayed out)' },
-          { id: 'HIDDEN', name: 'Hidden (Not shown in table)' },
+          { id: 'NORMAL', name: 'Editable' },
+          { id: 'READ_ONLY', name: 'View only' },
+          { id: 'DISABLE', name: 'Grayed out' },
+          { id: 'HIDDEN', name: 'Hidden (not shown in the table)' },
         ]}
         value={
           {
-            DISABLE: { id: 'DISABLE', name: 'Disable (Grayed out)' },
-            HIDDEN: { id: 'HIDDEN', name: 'Hidden (Not shown in table)' },
-            NORMAL: { id: 'NORMAL', name: 'Normal (Editable)' },
+            DISABLE: { id: 'DISABLE', name: 'Grayed out' },
+            HIDDEN: { id: 'HIDDEN', name: 'Hidden (not shown in the table)' },
+            NORMAL: { id: 'NORMAL', name: 'Editable' },
             READ_ONLY: {
               id: 'READ_ONLY',
-              name: 'Read Only (Visible but locked)',
+              name: 'View only',
             },
-          }[visibility] || { id: 'NORMAL', name: 'Normal (Editable)' }
+          }[visibility] || { id: 'NORMAL', name: 'Editable' }
         }
         onChange={(opt) =>
           onUpdate({
