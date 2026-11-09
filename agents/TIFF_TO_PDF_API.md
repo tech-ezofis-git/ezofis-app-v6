@@ -4,8 +4,9 @@ Scanned TIFF files (single or multi-page, fax included) are turned into **search
 each page keeps its scanned image and gets an invisible OCR text layer, so the PDF can be
 searched (Ctrl+F) and its text selected or copied in any PDF viewer.
 
-It is used by **bulk upload**: a TIFF is converted before the usual OCR → index → archive
-steps, so the PDF is what gets indexed and archived. It is a plain endpoint on the agents
+It is used by **bulk upload** and **single-file upload**: the PDF is what gets stored,
+indexed and archived. OCR (the index fields) still reads the **original TIFF** with the
+normal OCR engine, so field quality does not change. It is a plain endpoint on the agents
 service, not a separate agent.
 
 | Part | Where |
@@ -14,6 +15,7 @@ service, not a separate agent.
 | Endpoint | `POST /api/agents/convert/tiff-to-pdf` (`agents/app/main.py`) |
 | API client | `api/src/Modules/Repository/Repository.Infrastructure/Services/TiffPdfConverterClient.cs` |
 | Bulk upload hook | `RepositoryUploadIndexService.ProcessBulkOcrForStageAsync` |
+| Single upload hook | `RepositoryUploadIndexService.UploadWithOcrAsync` (both overloads) |
 
 ---
 
@@ -75,10 +77,29 @@ and `pymupdf` (already in `requirements.txt`). Pillow (already present) is used 
 
 ---
 
-## 2. Bulk upload flow (API)
+## 2. Upload flows (API)
 
-Nothing changes for callers of bulk upload. When a staged file is a TIFF, the background OCR
-job converts it first:
+Nothing changes for callers. TIFFs are recognised by name (`.tif` / `.tiff`) or type
+(`image/tiff`).
+
+**Why OCR reads the TIFF, not the PDF:** when the OCR service gets a PDF that already has
+usable text, it reuses that text instead of running its own engine. The PDF's text layer is
+Tesseract's, so OCR on the PDF would mean Tesseract quality for the index fields. Reading the
+original TIFF keeps the normal engine (PaddleOCR) for the fields; the PDF's text layer is only
+for searching inside the PDF.
+
+### 2a. Single-file upload (Upload screen, one file)
+
+1. `POST /api/uploadAndIndex/uploadForOcr`: OCR on the **TIFF**, as before; returns the fields.
+2. `POST /api/uploadAndIndex/uploadWithOcr`: the TIFF is converted and the **PDF** is staged
+   (`scan.pdf`, `application/pdf`) with the OCR fields and text.
+3. `PUT index/{id}/fields`, `PUT index/{id}`: the **PDF** is archived.
+
+The conversion runs inside step 2, so that request takes about 1–1.5 s longer per page.
+
+### 2b. Bulk upload
+
+When a staged file is a TIFF, the background OCR job converts it first:
 
 1. **Upload** `POST /api/uploadAndIndex/bulkUpload`: files are staged (status Queued /
    PendingOCR) and a Hangfire OCR job is queued, as before.
@@ -87,7 +108,7 @@ job converts it first:
      `POST {agents}/api/agents/convert/tiff-to-pdf`, saves the PDF in the monitor storage,
      points the stage row at it (`file_path`, `file_name` → `.pdf`, `file_type` →
      `application/pdf`, `file_size`, `total_pages`) and deletes the TIFF.
-   - OCR and field extraction then run on the **PDF**, exactly as for any PDF.
+   - OCR and field extraction then run on the **original TIFF** bytes (see above).
    - Other file types are unchanged.
 3. **Index**: the indexing screen shows the PDF (`POST index/all`, `load/{id}`).
 4. **Archive** `PUT /api/uploadAndIndex/index/{id}`: the **PDF** is archived with the index
@@ -98,7 +119,10 @@ TIFF** and continues: OCR, indexing and archiving still work on the TIFF, so an 
 fails because of the conversion. A retried job does not convert twice (the stage row is
 already a PDF).
 
-The archive keeps only the PDF; the original TIFF is removed after the conversion.
+In both flows the archive keeps only the PDF; the original TIFF is not stored.
+
+Not covered: uploads that skip staging (`POST /api/repositories/{id}/items/upload`,
+`…/upload-archive`, workflow attachments) still store TIFFs as uploaded.
 
 ### Settings (`appsettings` → `Agents`)
 
@@ -126,7 +150,8 @@ The API waits up to 15 minutes for one conversion (long multi-page TIFFs).
 
 - `agents/tests/test_tiff_pdf.py`: multi-page TIFF → one PDF page per TIFF page at the right
   size; G4 fax TIFF gets a searchable text layer; bad input rejected; endpoint returns a PDF
-  with the headers, and 400 for a non-TIFF.
+  with the headers, and 400 for a non-TIFF (uses the `client` fixture from `conftest.py`,
+  which fakes the database, so it runs in CI without Postgres).
 - `api/tests/Api.Tests/TiffPdfConverterTests.cs`: TIFF detection, PDF file name, converter
   URL from `ChatUrl`, the client posts the file and language and reads the PDF and headers,
   agent errors and non-PDF replies, the on/off switch.

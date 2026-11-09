@@ -179,13 +179,17 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
         await fileStream.CopyToAsync(buffer, cancellationToken);
         buffer.Position = 0;
 
+        // OCR already ran on the uploaded file (uploadForOcr); a TIFF is stored and archived as a searchable PDF.
+        var staged = await TiffToPdfForStagingAsync(buffer, fileName, contentType, cancellationToken);
+        await using var stagedStream = new MemoryStream(staged.Data, writable: false);
+
         var upload = await UploadAsync(
             repositoryId,
             tenantId,
-            buffer,
-            fileName,
-            contentType,
-            fileSize,
+            stagedStream,
+            staged.FileName,
+            staged.ContentType,
+            staged.Converted ? staged.Data.Length : fileSize,
             fieldsJson: null,
             userId,
             cancellationToken);
@@ -276,13 +280,16 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
 
         // fieldsJson here is an OCR hint list (name,TYPE), not pre-filled values.
         // Stage first without values; OCR results are written to the stage row below.
+        // A TIFF is stored as a searchable PDF; OCR below still reads the original TIFF.
+        var staged = await TiffToPdfForStagingAsync(buffer, fileName, contentType, cancellationToken);
+        await using var stagedStream = new MemoryStream(staged.Data, writable: false);
         var upload = await UploadAsync(
             repositoryId,
             tenantId,
-            buffer,
-            fileName,
-            contentType,
-            fileSize,
+            stagedStream,
+            staged.FileName,
+            staged.ContentType,
+            staged.Converted ? staged.Data.Length : fileSize,
             fieldsJson: null,
             userId,
             cancellationToken);
@@ -1210,19 +1217,15 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
         await source.CopyToAsync(buffer, cancellationToken);
         buffer.Position = 0;
 
-        // TIFF -> searchable PDF first, so the PDF is what gets OCR'd, indexed and archived.
+        // TIFF -> searchable PDF: the PDF is what gets indexed and archived. OCR below still reads
+        // the original TIFF, so field extraction quality is unchanged (the PDF's own text layer is
+        // Tesseract's; the OCR service would otherwise reuse it instead of its engine).
         var ocrFileName = row.FileName;
         if (_tiffPdf.IsEnabled && RepositoryTiffFiles.IsTiff(row.FileName, row.FileType))
         {
-            var pdf = await TryReplaceStagedTiffWithPdfAsync(
+            await TryReplaceStagedTiffWithPdfAsync(
                 connection, repo, tenantId, repositoryId, stageId, row, buffer.ToArray(), providerCode, cancellationToken);
-            if (pdf != null)
-            {
-                buffer.SetLength(0);
-                await buffer.WriteAsync(pdf.Value.Pdf, cancellationToken);
-                buffer.Position = 0;
-                ocrFileName = pdf.Value.FileName;
-            }
+            buffer.Position = 0;
         }
 
         try
@@ -1299,6 +1302,36 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
                 userId,
                 cancellationToken);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Single-file upload (uploadWithOcr): the bytes to stage. A TIFF becomes a searchable PDF
+    /// (agents service); anything else, or a failed conversion, is staged as uploaded.
+    /// </summary>
+    private async Task<(byte[] Data, string FileName, string? ContentType, bool Converted)> TiffToPdfForStagingAsync(
+        MemoryStream upload,
+        string fileName,
+        string? contentType,
+        CancellationToken cancellationToken)
+    {
+        var data = upload.ToArray();
+        upload.Position = 0;
+        if (!_tiffPdf.IsEnabled || !RepositoryTiffFiles.IsTiff(fileName, contentType))
+            return (data, fileName, contentType, false);
+        try
+        {
+            var converted = await _tiffPdf.ConvertAsync(data, fileName, cancellationToken);
+            var pdfName = RepositoryTiffFiles.PdfFileName(fileName);
+            _logger.LogInformation(
+                "Upload: TIFF {TiffName} converted to {PdfName} ({Pages} page(s), {Searchable} searchable).",
+                fileName, pdfName, converted.Pages, converted.SearchablePages);
+            return (converted.Pdf, pdfName, "application/pdf", true);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "Upload: TIFF to PDF failed for {FileName}; staging the TIFF.", fileName);
+            return (data, fileName, contentType, false);
         }
     }
 

@@ -63,21 +63,17 @@ def test_is_tiff_by_header_or_name():
     assert not is_tiff(b"%PDF-1.7", "doc.pdf")
 
 
-def test_endpoint_returns_pdf():
-    from fastapi.testclient import TestClient
-
-    from app.main import app
-
+def test_endpoint_returns_pdf(client):
+    # `client` (conftest.py) starts the app with a fake database, as CI has no Postgres.
     tiff = _multipage_tiff(["HELLO", "WORLD"])
-    with TestClient(app) as client:
-        r = client.post("/api/agents/convert/tiff-to-pdf",
-                        files={"file": ("scan.tiff", tiff, "image/tiff")}, data={"ocr": "false"})
-        assert r.status_code == 200, r.text
-        assert r.headers["content-type"] == "application/pdf"
-        assert r.headers["x-page-count"] == "2"
-        assert r.content[:5] == b"%PDF-"
-        assert 'filename="scan.pdf"' in r.headers["content-disposition"]
+    r = client.post("/api/agents/convert/tiff-to-pdf",
+                    files={"file": ("scan.tiff", tiff, "image/tiff")}, data={"ocr": "false"})
+    assert r.status_code == 200, r.text
+    assert r.headers["content-type"] == "application/pdf"
+    assert r.headers["x-page-count"] == "2"
+    assert r.content[:5] == b"%PDF-"
+    assert 'filename="scan.pdf"' in r.headers["content-disposition"]
 
-        bad = client.post("/api/agents/convert/tiff-to-pdf",
-                          files={"file": ("doc.pdf", b"%PDF-1.7", "application/pdf")})
-        assert bad.status_code == 400
+    bad = client.post("/api/agents/convert/tiff-to-pdf",
+                      files={"file": ("doc.pdf", b"%PDF-1.7", "application/pdf")})
+    assert bad.status_code == 400
