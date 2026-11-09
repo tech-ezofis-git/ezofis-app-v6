@@ -572,9 +572,9 @@ const QuestionSettings = ({
   ]
 
   const dateDefaultOptions = [
-    { id: 'CUSTOM', name: 'Fixed Date (Calendar)' },
-    { id: 'TODAY', name: 'Current / Request Date' },
-    { id: 'PARENT_FIELD', name: 'Inherit from Parent Field' },
+    { id: 'CUSTOM', name: 'A fixed date' },
+    { id: 'TODAY', name: "Today's date" },
+    { id: 'PARENT_FIELD', name: 'Copy from another field' },
   ]
 
   const dateLimitOptions = [
@@ -585,9 +585,9 @@ const QuestionSettings = ({
   ]
 
   const timeDefaultOptions = [
-    { id: 'CUSTOM', name: 'Fixed Time (Clock)' },
-    { id: 'NOW', name: 'Current / Request Time' },
-    { id: 'NONE', name: 'None (Start Empty)' },
+    { id: 'CUSTOM', name: 'A fixed time' },
+    { id: 'NOW', name: 'The current time' },
+    { id: 'NONE', name: 'Empty' },
   ]
 
   const timeLimitOptions = [
@@ -623,20 +623,23 @@ const QuestionSettings = ({
   ]
 
   const selectDefaultValueOptions = [
-    { id: 'STATIC', name: 'Fixed Option' },
-    { id: 'DYNAMIC', name: 'Dynamic (e.g. Current User)' },
-    { id: 'NONE', name: 'None' },
+    { id: 'STATIC', name: 'A fixed choice' },
+    {
+      id: 'DYNAMIC',
+      name: 'Filled in automatically (for example the current user)',
+    },
+    { id: 'NONE', name: 'Empty' },
   ]
 
   const fillValueOptions = [
-    { id: 'CUSTOM', name: 'Custom' },
-    { id: 'AUTO_GENERATE', name: 'Auto Generate' },
+    { id: 'CUSTOM', name: 'A fixed value' },
+    { id: 'AUTO_GENERATE', name: 'Generated automatically' },
     { id: 'USER_EMAIL', name: "Logged in user's email" },
     { id: 'USER_NAME', name: "Logged in user's first name" },
     { id: 'LOGIN_NAME', name: "Logged in user's name" },
     { id: 'CURRENT_YEAR', name: 'Current year' },
-    { id: 'MASTER', name: 'Use values from a master table' },
-    { id: 'ASSIGN_PARENT_FIELD', name: 'Use values from another field' },
+    { id: 'MASTER', name: 'From a master form' },
+    { id: 'ASSIGN_PARENT_FIELD', name: 'Copy from another field' },
     { id: 'REQUEST_NO', name: 'Use value from workflow Request No' },
   ]
 
@@ -654,8 +657,8 @@ const QuestionSettings = ({
   const isFillCustom = !hasFillSource || fillSourceType === 'CUSTOM'
 
   const fillSourceOptions = [
-    { id: 'MASTER', name: 'Use values from a master table' },
-    { id: 'ASSIGN_PARENT_FIELD', name: 'Use values from another field' },
+    { id: 'MASTER', name: 'From a master form' },
+    { id: 'ASSIGN_PARENT_FIELD', name: 'Copy from another field' },
     { id: 'CUSTOM', name: 'Custom' },
   ]
 
@@ -1044,7 +1047,8 @@ const QuestionSettings = ({
             !isSelect &&
             !isCalculated && (
               <InputText
-                label='Default Value'
+                description='What this field shows when the form first opens.'
+                label='Starting value'
                 placeholder='No default'
                 value={localDefaultValue}
                 onBlur={() =>
@@ -1189,10 +1193,7 @@ const QuestionSettings = ({
                 isTime ||
                 isDateTime ||
                 isSelect) && (
-                <div>
-                  <label className='mb-2 block text-13 font-medium text-gray-11'>
-                    Visibility State
-                  </label>
+                <SettingRow label='Visibility State'>
                   <InputSelect
                     options={visibilityOptions}
                     placeholder='Normal, Read Only...'
@@ -1206,7 +1207,7 @@ const QuestionSettings = ({
                       val && updateNested('general', { visibility: val.id })
                     }
                   />
-                </div>
+                </SettingRow>
               )}
 
               {!isShortText &&
@@ -1298,7 +1299,10 @@ const QuestionSettings = ({
           <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
             {isShortText && (
               <div className='space-y-4'>
-                <SettingRow label='Fill Value'>
+                <SettingRow
+                  help='Choose how this starts: empty, a fixed value, today, or copied from another field.'
+                  label='Start with'
+                >
                   <InputSelect
                     options={fillValueOptions}
                     placeholder='How this field is pre-filled'
@@ -1319,7 +1323,8 @@ const QuestionSettings = ({
                 {(activeQuestion.settings.specific.fillValueType ||
                   'CUSTOM') === 'CUSTOM' && (
                   <InputText
-                    label='Custom Default Value'
+                    description='The text this field starts with.'
+                    label='Starting text'
                     placeholder='Static text to pre-fill'
                     value={
                       activeQuestion.settings.specific.customDefaultValue || ''
@@ -1528,7 +1533,8 @@ const QuestionSettings = ({
             {isCountryCode && (
               <div className='space-y-4'>
                 <InputText
-                  label='Default Dialing Prefix'
+                  description='The phone country code shown first, for example +91.'
+                  label='Starting country code'
                   placeholder='e.g. +971'
                   value={
                     activeQuestion.settings.specific.defaultCountryCode || ''
@@ -1920,7 +1926,10 @@ const QuestionSettings = ({
                     )}
 
                     <div className='space-y-3 border-t border-gray-2 pt-3'>
-                      <SettingRow label='Dynamic Default Value'>
+                      <SettingRow
+                        help='Pick which item from the list starts selected.'
+                        label='Starting value from the list'
+                      >
                         <InputSelect
                           placeholder='Select dynamic default'
                           options={[
@@ -2289,7 +2298,10 @@ const QuestionSettings = ({
                       />
                     </SettingRow>
 
-                    <SettingRow label='Fill Value (Default)'>
+                    <SettingRow
+                      help='Choose how this starts: empty, a fixed value, today, or copied from another field.'
+                      label='Start with'
+                    >
                       <InputSelect
                         placeholder='Select dynamic default'
                         options={[
@@ -2449,7 +2461,10 @@ const QuestionSettings = ({
                     />
 
                     {/* Custom Default Value Picker */}
-                    <SettingRow label='Default Value'>
+                    <SettingRow
+                      help='What this field shows when the form first opens.'
+                      label='Starting value'
+                    >
                       <InputSelect
                         placeholder='Select default value (Optional)'
                         options={[
@@ -2772,7 +2787,10 @@ const QuestionSettings = ({
                       />
                     )}
 
-                    <SettingRow label='Default Selection Mode'>
+                    <SettingRow
+                      help='Pick which choice is selected when the form first opens, or none.'
+                      label='Choice that starts selected'
+                    >
                       <InputSelect
                         options={selectDefaultValueOptions}
                         placeholder='Initial value mode'
@@ -2796,7 +2814,8 @@ const QuestionSettings = ({
                         {isCurrency ? (
                           <div className='grid grid-cols-2 gap-2'>
                             <InputText
-                              label='Default Currency'
+                              description='The currency shown first.'
+                              label='Starting currency'
                               placeholder='USD'
                               value={
                                 (
@@ -2814,7 +2833,10 @@ const QuestionSettings = ({
                                 })
                               }
                             />
-                            <SettingRow label='Default Amount'>
+                            <SettingRow
+                              help='The amount this field starts with.'
+                              label='Starting amount'
+                            >
                               <NumberInput
                                 placeholder='0.00'
                                 value={
@@ -3091,7 +3113,10 @@ const QuestionSettings = ({
                         />
                       </div>
                     ) : (
-                      <SettingRow label='Default Value'>
+                      <SettingRow
+                        help='What this field shows when the form first opens.'
+                        label='Starting value'
+                      >
                         <NumberInput
                           placeholder='Enter starting value'
                           size='xs'
@@ -3137,7 +3162,10 @@ const QuestionSettings = ({
 
                 {isFillCustom && (
                   <>
-                    <SettingRow label='Default Value Mode'>
+                    <SettingRow
+                      help='Choose how the starting value is set: empty, a fixed value, today, or copied from another field.'
+                      label='Start with'
+                    >
                       <InputSelect
                         options={dateDefaultOptions}
                         placeholder='Select mode'
@@ -3162,9 +3190,7 @@ const QuestionSettings = ({
                       'CUSTOM' && (
                       <div className='rounded-lg border border-gray-3 bg-surface p-3'>
                         <label className={settingLabelClass}>
-                          {isDateTime
-                            ? 'Pick Fixed Date & Time'
-                            : 'Pick Fixed Date'}
+                          {isDateTime ? 'Fixed date and time' : 'Fixed date'}
                         </label>
                         <input
                           className='w-full rounded border border-gray-3 bg-surface px-2 py-1 text-sm outline-none focus:border-primary-8'
@@ -3231,7 +3257,10 @@ const QuestionSettings = ({
 
             {isTime && (
               <div className='space-y-4'>
-                <SettingRow label='Default Value Mode'>
+                <SettingRow
+                  help='Choose how the starting value is set: empty, a fixed value, today, or copied from another field.'
+                  label='Start with'
+                >
                   <InputSelect
                     options={timeDefaultOptions}
                     placeholder='Select mode'
@@ -3301,7 +3330,10 @@ const QuestionSettings = ({
 
             {isTextBuilder && (
               <div className='space-y-4'>
-                <SettingRow label='Default Content'>
+                <SettingRow
+                  help='The text this field starts with.'
+                  label='Starting text'
+                >
                   <InputRichText
                     minHeight={120}
                     value={activeQuestion.settings.specific.defaultValue || ''}

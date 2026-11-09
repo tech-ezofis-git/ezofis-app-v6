@@ -183,7 +183,7 @@ const TableColumnFormatSettings = ({
         )}
         <InputText
           description='Shown when the cell has no currency yet. Leave empty to keep the plain $ prefix.'
-          label='Default Currency'
+          label='Starting currency'
           placeholder='USD'
           value={specific?.defaultCurrency || ''}
           onChange={(value: string) =>

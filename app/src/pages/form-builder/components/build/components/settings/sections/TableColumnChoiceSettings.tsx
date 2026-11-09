@@ -74,7 +74,7 @@ const TableColumnChoiceSettings = ({ column, onUpdate }: Props) => {
       <label className={settingLabelClass}>Choice options</label>
       <InputSelect
         description='Pre-fills new rows with the signed-in user’s details.'
-        label='Fill Value'
+        label='Start with'
         options={FILL_VALUE_OPTIONS}
         value={FILL_VALUE_OPTIONS.find((o) => o.id === fillValue) || null}
         onChange={(opt) =>

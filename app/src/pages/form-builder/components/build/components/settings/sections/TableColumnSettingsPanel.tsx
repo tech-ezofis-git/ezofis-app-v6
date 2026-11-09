@@ -659,7 +659,7 @@ const TableColumnSettingsPanel = ({
       {!isCalculated && !showOptions && (
         <div className='space-y-2'>
           <InputSelect
-            label={hasFillSync ? 'Fill Value' : 'Default Value'}
+            label={hasFillSync ? 'Start with' : 'Starting value'}
             options={
               hasFillSync
                 ? FILL_SYNC_VALUE_TYPE_OPTIONS
