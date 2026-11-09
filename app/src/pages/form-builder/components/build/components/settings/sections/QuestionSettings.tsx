@@ -26,6 +26,8 @@ import InputSelectBase from '@/components/base/inputs/InputSelect'
 import InputSelectMultipleBase from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
+import SettingRow from '@/components/base/inputs/SettingRow'
+import SettingSwitchRow from '@/components/base/inputs/SettingSwitchRow'
 import { classNames as baseInputClassNames } from '@/components/base/inputs/shared/constants'
 import SortableContainer from '@/components/base/sortable/SortableContainer'
 import SortableItem from '@/components/base/sortable/SortableItem'
@@ -555,10 +557,11 @@ const QuestionSettings = ({
     { id: 'HIDDEN', name: 'Disable (Hidden from UI)' },
   ]
 
+  // Same names on every field type (saved sizes are unchanged).
   const sizeOptions = [
-    { id: 'col-4', name: 'Small (33%)' },
-    { id: 'col-6', name: 'Medium (50%)' },
-    { id: 'col-12', name: 'Large (100%)' },
+    { id: 'col-12', name: 'Full width' },
+    { id: 'col-6', name: 'Half' },
+    { id: 'col-4', name: 'One third' },
   ]
 
   const rangeOptions = [
@@ -827,9 +830,7 @@ const QuestionSettings = ({
 
   const handleUpdateTableColumnSettings = (
     colId: string,
-    settingsPatch: NonNullable<
-      (typeof tableColumns)[number]['settings']
-    >,
+    settingsPatch: NonNullable<(typeof tableColumns)[number]['settings']>,
   ) => {
     const col = tableColumns.find((c) => c.id === colId)
     if (!col) return
@@ -920,13 +921,13 @@ const QuestionSettings = ({
           </div>
           <TableColumnSettingsPanel
             column={activeTableColumn}
+            masterForms={masterForms}
             formFields={allQuestions.filter(
               (q) =>
                 q.id !== activeQuestion.id &&
                 q.type !== 'TABLE' &&
                 q.type !== 'DYNAMIC_TABLE',
             )}
-            masterForms={masterForms}
             repositories={repositories.map((r: any) => ({
               id: String(r.id),
               name: r.name,
@@ -956,7 +957,8 @@ const QuestionSettings = ({
         <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
           {/* Primary controls - the ones edited most often */}
           <InputText
-            label='Field Label'
+            description='The name people see for this field.'
+            label='Field name'
             placeholder='e.g. What is your name?'
             value={localLabel}
             onBlur={() =>
@@ -967,30 +969,30 @@ const QuestionSettings = ({
 
           {isConvertibleType(activeQuestion.type) &&
             !activeQuestion.notEditable && (
-            <div>
-              <label className='mb-2 block text-13 font-medium text-gray-11'>
-                Field Type
-              </label>
-              <InputSelect
-                options={CONVERTIBLE_TYPES.map((t) => ({
-                  id: t,
-                  name: FIELD_TYPE_LABELS[t] ?? t,
-                }))}
-                value={{
-                  id: activeQuestion.type,
-                  name:
-                    FIELD_TYPE_LABELS[activeQuestion.type] ??
-                    activeQuestion.type,
-                }}
-                onChange={(val) =>
-                  val &&
-                  updateQuestion(activeQuestion.id, (q: Question) =>
-                    convertQuestionType(q, val.id as QuestionType),
-                  )
-                }
-              />
-            </div>
-          )}
+              <SettingRow
+                help='Change what kind of field this is.'
+                label='Field type'
+              >
+                <InputSelect
+                  options={CONVERTIBLE_TYPES.map((t) => ({
+                    id: t,
+                    name: FIELD_TYPE_LABELS[t] ?? t,
+                  }))}
+                  value={{
+                    id: activeQuestion.type,
+                    name:
+                      FIELD_TYPE_LABELS[activeQuestion.type] ??
+                      activeQuestion.type,
+                  }}
+                  onChange={(val) =>
+                    val &&
+                    updateQuestion(activeQuestion.id, (q: Question) =>
+                      convertQuestionType(q, val.id as QuestionType),
+                    )
+                  }
+                />
+              </SettingRow>
+            )}
 
           <Tooltip label={activeQuestion.id} position='top' withArrow>
             <button
@@ -1013,7 +1015,8 @@ const QuestionSettings = ({
 
           {!isCalculated && (
             <InputText
-              label='Placeholder'
+              description='Grey example text shown inside an empty box.'
+              label='Placeholder text'
               value={localPlaceholder}
               placeholder={
                 isNumber
@@ -1050,48 +1053,23 @@ const QuestionSettings = ({
               />
             )}
 
-          <div>
-            <label className='mb-2 block text-13 font-medium text-gray-11'>
-              Field Width
-            </label>
+          <SettingRow
+            help='How much of the row this field takes: one third, half, or full width.'
+            label='Field width'
+          >
             <InputSelect
+              options={sizeOptions}
               placeholder='Select width'
-              options={
-                isLongText ||
-                isNumber ||
-                isDate ||
-                isTime ||
-                isDateTime ||
-                isSelect
-                  ? sizeOptions
-                  : [
-                      { id: 'col-12', name: '100% Full Width' },
-                      { id: 'col-6', name: '50% Half Width' },
-                      { id: 'col-4', name: '33% Column' },
-                    ]
-              }
               value={
-                (isLongText ||
-                isNumber ||
-                isDate ||
-                isTime ||
-                isDateTime ||
-                isSelect
-                  ? sizeOptions
-                  : [
-                      { id: 'col-12', name: '100% Full Width' },
-                      { id: 'col-6', name: '50% Half Width' },
-                      { id: 'col-4', name: '33% Column' },
-                    ]
-                ).find(
+                sizeOptions.find(
                   (o) => o.id === activeQuestion.settings.general.size,
-                ) || { id: 'col-12', name: '100% Full Width' }
+                ) || sizeOptions[0]
               }
               onChange={(val) =>
                 val && updateNested('general', { size: val.id })
               }
             />
-          </div>
+          </SettingRow>
 
           {/* Secondary controls - collapsed by default */}
           <button
@@ -1099,8 +1077,8 @@ const QuestionSettings = ({
             type='button'
             onClick={() => setShowMoreSetup(!showMoreSetup)}
           >
-            <span className='text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-              More Options
+            <span className='text-13 font-medium text-gray-11'>
+              More options
             </span>
             <Icon
               height={14}
@@ -1124,8 +1102,9 @@ const QuestionSettings = ({
                 isSelect ||
                 isTable) && (
                 <InputText
-                  label='Display Label (Internal)'
-                  placeholder='Alternative visual name'
+                  description='Leave empty to show the field name.'
+                  label='Name shown on the form'
+                  placeholder='A different name to show users'
                   value={activeQuestion.displayLabel || ''}
                   onChange={(val: string) =>
                     updateQuestion(activeQuestion.id, { displayLabel: val })
@@ -1133,22 +1112,19 @@ const QuestionSettings = ({
                 />
               )}
 
-              <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
-                <div className='text-xs font-semibold text-gray-10'>
-                  Hide Label
-                </div>
-                <InputSwitch
-                  checked={activeQuestion.settings.general.hideLabel || false}
-                  onChange={(checked: boolean) =>
-                    updateNested('general', { hideLabel: checked })
-                  }
-                />
-              </div>
+              <SettingSwitchRow
+                checked={activeQuestion.settings.general.hideLabel || false}
+                help="Don't show the field name above this field."
+                title='Hide the field name'
+                onChange={(checked: boolean) =>
+                  updateNested('general', { hideLabel: checked })
+                }
+              />
 
-              <div>
-                <label className='mb-2 block text-13 font-medium text-gray-11'>
-                  Help Text / Description
-                </label>
+              <SettingRow
+                help='Shown under the field so people know what to enter.'
+                label='Instruction under the field'
+              >
                 <div className='relative'>
                   <textarea
                     className='min-h-[80px] w-full resize-none rounded-md border border-gray-3 bg-surface px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
@@ -1160,7 +1136,7 @@ const QuestionSettings = ({
                     onChange={(e) => setLocalDesc(e.target.value)}
                   />
                 </div>
-              </div>
+              </SettingRow>
 
               {(isShortText ||
                 isLongText ||
@@ -1171,8 +1147,9 @@ const QuestionSettings = ({
                 isSelect ||
                 isTable) && (
                 <InputText
-                  label='Tooltip (Hover Text)'
-                  placeholder='Explanation on hover'
+                  description='Text shown when someone hovers over the ? icon.'
+                  label='Hint on hover'
+                  placeholder='e.g. You can find this on your invoice'
                   value={activeQuestion.settings.general.tooltip || ''}
                   onChange={(val: string) =>
                     updateNested('general', { tooltip: val })
@@ -1187,27 +1164,19 @@ const QuestionSettings = ({
                 isTime ||
                 isDateTime ||
                 isSelect) && (
-                <div className='flex items-center justify-between gap-3 rounded-lg border border-gray-3 bg-surface px-3 py-2.5 shadow-xs transition-colors hover:border-primary-5'>
-                  <div>
-                    <div className='text-xs font-bold text-gray-13'>
-                      Answer Status Indicator
-                    </div>
-                    <div className='text-11 text-gray-9'>
-                      Track progress for this field
-                    </div>
-                  </div>
-                  <InputSwitch
-                    checked={
-                      activeQuestion.settings.specific.showStatusIndicator ||
-                      false
-                    }
-                    onChange={(checked) =>
-                      updateNested('specific', {
-                        showStatusIndicator: checked,
-                      })
-                    }
-                  />
-                </div>
+                <SettingSwitchRow
+                  help='Show whether this field has been answered yet.'
+                  title='Show if answered'
+                  checked={
+                    activeQuestion.settings.specific.showStatusIndicator ||
+                    false
+                  }
+                  onChange={(checked) =>
+                    updateNested('specific', {
+                      showStatusIndicator: checked,
+                    })
+                  }
+                />
               )}
 
               <Divider className='border-gray-3' />
@@ -3542,8 +3511,8 @@ const QuestionSettings = ({
                                   </div>
                                   <div className='w-full'>
                                     <InputSelect
-                                      wrapOptions={false}
                                       options={TABLE_COLUMN_TYPE_OPTIONS}
+                                      wrapOptions={false}
                                       value={
                                         TABLE_COLUMN_TYPE_OPTIONS.find(
                                           (o) =>
