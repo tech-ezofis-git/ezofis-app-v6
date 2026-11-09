@@ -21,6 +21,7 @@ import {
 } from '@/api/v6/folder/folder'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InputLabel from '@/components/base/inputs/InputLabel'
 import InputRichText from '@/components/base/inputs/InputRichText'
 import InputSelectBase from '@/components/base/inputs/InputSelect'
 import InputSelectMultipleBase from '@/components/base/inputs/InputSelectMultiple'
@@ -498,7 +499,7 @@ const QuestionSettings = ({
     { id: 'HIDE', name: 'Hide' },
     { id: 'ENABLE', name: 'Enable' },
     { id: 'DISABLE', name: 'Disable' },
-    { id: 'REQUIRE', name: 'Make Required' },
+    { id: 'REQUIRE', name: 'Make required' },
   ]
 
   const isShortText = activeQuestion.type === 'SHORT_TEXT'
@@ -4447,8 +4448,8 @@ const QuestionSettings = ({
             <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
               <div className='space-y-3 rounded-lg border border-accent-soft/10 bg-accent-soft/5 p-2'>
                 <SettingSwitchRow
-                  help='Field cannot be empty'
-                  title='Mandatory'
+                  help='Users must fill this in before they can submit.'
+                  title='Required'
                   checked={
                     activeQuestion.settings.validation.fieldRule === 'REQUIRED'
                   }
@@ -6033,10 +6034,10 @@ const QuestionSettings = ({
           onToggle={() => setOpenSearchField(!openSearchField)}
         >
           <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
-            <div>
-              <label className='mb-1.5 block text-13 font-medium text-gray-11'>
-                Search Field (Lookup)
-              </label>
+            <SettingRow
+              help='When the user types, look for a match in earlier entries or a master form and fill other fields.'
+              label='Match this field against other data'
+            >
               <SegmentedControl
                 size='xs'
                 fullWidth
@@ -6053,14 +6054,14 @@ const QuestionSettings = ({
                   updateNested('specific', { isSearchField: val })
                 }
               />
-            </div>
+            </SettingRow>
 
             {activeQuestion.settings.specific.isSearchField === 'YES' && (
               <div className='space-y-4 rounded-lg border border-border-default bg-surface p-3.5'>
-                <div>
-                  <label className='mb-1.5 block text-xs font-medium text-gray-11'>
-                    Same Form
-                  </label>
+                <SettingRow
+                  help='Yes: match earlier entries of this same form. No: match a master form.'
+                  label="Use this form's earlier entries"
+                >
                   <SegmentedControl
                     size='xs'
                     fullWidth
@@ -6077,16 +6078,17 @@ const QuestionSettings = ({
                       updateNested('specific', { hasSameForm: val })
                     }
                   />
-                </div>
+                </SettingRow>
 
                 {activeQuestion.settings.specific.hasSameForm === 'YES' ||
                 !activeQuestion.settings.specific.hasSameForm ? (
-                  <div>
-                    <label className='mb-1 block text-xs font-medium text-gray-11'>
-                      Form Sync Field *
-                    </label>
+                  <SettingRow
+                    help='When a match is found in earlier entries of this form, these fields are filled.'
+                    label='Fields to fill from earlier entries'
+                    required
+                  >
                     <InputSelectMultiple
-                      placeholder='Select form fields to sync'
+                      placeholder='Select the fields to fill'
                       options={allQuestions
                         .filter(
                           (q) =>
@@ -6123,16 +6125,17 @@ const QuestionSettings = ({
                       Matches previous entries of current form and populates
                       selected fields.
                     </div>
-                  </div>
+                  </SettingRow>
                 ) : (
                   <div className='space-y-4'>
-                    <div>
-                      <label className='mb-1 block text-xs font-medium text-gray-11'>
-                        Forms *
-                      </label>
+                    <SettingRow
+                      help='The master form to look up. A master form holds reference data like vendors or customers.'
+                      label='Master form'
+                      required
+                    >
                       <InputSelect
                         options={masterForms}
-                        placeholder='Select Master Form'
+                        placeholder='Select a master form'
                         value={
                           masterForms.find(
                             (f: any) =>
@@ -6150,15 +6153,16 @@ const QuestionSettings = ({
                           })
                         }
                       />
-                    </div>
+                    </SettingRow>
 
-                    <div>
-                      <label className='mb-1 block text-xs font-medium text-gray-11'>
-                        Master Form Search Match Field *
-                      </label>
+                    <SettingRow
+                      help='The master field that is compared with what the user types.'
+                      label='Master field to match'
+                      required
+                    >
                       <InputSelect
                         options={searchMasterFields}
-                        placeholder='Select Master Field'
+                        placeholder='Select a master column'
                         value={
                           searchMasterFields.find(
                             (col: any) =>
@@ -6175,13 +6179,15 @@ const QuestionSettings = ({
                           })
                         }
                       />
-                    </div>
+                    </SettingRow>
 
                     <div className='space-y-2.5 border-t border-border-default pt-3'>
                       <div className='flex items-center justify-between'>
-                        <label className='block text-xs font-bold text-gray-11'>
-                          Form Fields Sync *
-                        </label>
+                        <InputLabel
+                          className={settingLabelClass}
+                          label='Fields to fill from the match'
+                          required
+                        />
                         <button
                           className='flex cursor-pointer items-center gap-1 text-[10px] font-bold text-accent-primary hover:underline'
                           type='button'
@@ -6237,10 +6243,10 @@ const QuestionSettings = ({
                           </div>
 
                           <div className='space-y-2'>
-                            <div>
-                              <label className='mb-1 block text-[11px] font-medium text-gray-11'>
-                                Current Form Field
-                              </label>
+                            <SettingRow
+                              help='The field on this form that is matched or filled.'
+                              label='Field on this form'
+                            >
                               <InputSelect
                                 placeholder='Select Form Field'
                                 options={allQuestions
@@ -6278,7 +6284,7 @@ const QuestionSettings = ({
                                   })
                                 }}
                               />
-                            </div>
+                            </SettingRow>
 
                             <div className='flex items-center gap-1.5 py-0.5 text-accent-primary'>
                               <Icon
@@ -6293,7 +6299,7 @@ const QuestionSettings = ({
                             <div>
                               <InputSelect
                                 options={searchMasterFields}
-                                placeholder='Select Master Field'
+                                placeholder='Select a master column'
                                 value={
                                   searchMasterFields.find(
                                     (col: any) => col.id === row.masterField,
