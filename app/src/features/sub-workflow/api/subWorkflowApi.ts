@@ -122,11 +122,19 @@ export const subWorkflowApi = {
   },
 
   /**
-   * Children of every request in a workflow, keyed by parent process id, for
-   * the inbox list. Live list rows carry `subworkflowTransaction` (V5), so
-   * nothing extra is fetched here.
+   * Children of the requests on one page of a workflow's list, keyed by
+   * parent process id. One call for the whole page.
    */
-  getSubProcessesForWorkflow: async (
-    _workflowId: Id,
-  ): Promise<Record<string, SubProcessRow[]>> => ({}),
+  getSubProcessesForRows: async (
+    workflowId: Id,
+    processIds: Id[],
+  ): Promise<Record<string, SubProcessRow[]>> => {
+    if (processIds.length === 0) return {}
+    const data = await requestApi.getSubWorkflowBatch(workflowId, processIds)
+    const result: Record<string, SubProcessRow[]> = {}
+    for (const [parentId, rows] of Object.entries(data ?? {})) {
+      result[parentId] = asArray(rows).map(toSubProcessRow)
+    }
+    return result
+  },
 }
