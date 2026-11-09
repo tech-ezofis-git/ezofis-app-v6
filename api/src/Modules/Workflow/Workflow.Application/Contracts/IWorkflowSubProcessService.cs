@@ -19,6 +19,13 @@ public interface IWorkflowSubProcessService
     Task<IReadOnlyList<WorkflowSubProcessRowDto>> GetChildrenAsync(
         Guid tenantId, Guid userId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Children of many requests of one workflow in a single call (the inbox list), keyed by parent
+    /// process id. Parents without children are left out. Limited to workflows the user can access.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<WorkflowSubProcessRowDto>>> GetChildrenBatchAsync(
+        Guid tenantId, Guid userId, Guid workflowId, IReadOnlyCollection<Guid> processIds, CancellationToken cancellationToken = default);
+
     /// <summary>The request's parent as a list of zero or one, limited to workflows the user can access.</summary>
     Task<IReadOnlyList<WorkflowMainProcessDto>> GetParentAsync(
         Guid tenantId, Guid userId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default);
@@ -40,7 +47,12 @@ public sealed record WorkflowSubProcessRowDto(
     string? Stage,
     string? LastAction,
     DateTime? RaisedAt,
-    long? Duration);
+    long? Duration,
+    string? RaisedBy = null,
+    IReadOnlyList<WorkflowSubProcessPreviewFieldDto>? Preview = null);
+
+/// <summary>One of the child request's own form values, for the inbox preview line.</summary>
+public sealed record WorkflowSubProcessPreviewFieldDto(string Label, string Value);
 
 /// <summary>A parent request. Field names match the V5 <c>GET workflow/getDetailsforMainworkflow</c> rows.</summary>
 public sealed record WorkflowMainProcessDto(
