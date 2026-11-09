@@ -49,6 +49,28 @@ public class WorkflowSubProcessControllerTests
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
+    [Fact]
+    public async Task Batch_returns_ok_for_a_page_of_ids()
+    {
+        var controller = CreateController(new StubSubProcesses(null));
+
+        var result = await controller.GetChildrenBatch(
+            Guid.NewGuid(), new WorkflowSubProcessBatchRequest([Guid.NewGuid(), Guid.NewGuid()]), CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Batch_rejects_more_than_100_ids()
+    {
+        var controller = CreateController(new StubSubProcesses(null));
+        var ids = Enumerable.Range(0, 101).Select(_ => Guid.NewGuid()).ToList();
+
+        var result = await controller.GetChildrenBatch(Guid.NewGuid(), new WorkflowSubProcessBatchRequest(ids), CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
     private static WorkflowSubProcessController CreateController(IWorkflowSubProcessService service)
     {
         var user = new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", Guid.NewGuid().ToString())], "test"));
@@ -76,6 +98,11 @@ public class WorkflowSubProcessControllerTests
         public Task<IReadOnlyList<WorkflowSubProcessRowDto>> GetChildrenAsync(
             Guid tenantId, Guid userId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+
+        public Task<IReadOnlyDictionary<Guid, IReadOnlyList<WorkflowSubProcessRowDto>>> GetChildrenBatchAsync(
+            Guid tenantId, Guid userId, Guid workflowId, IReadOnlyCollection<Guid> processIds, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, IReadOnlyList<WorkflowSubProcessRowDto>>>(
+                processIds.ToDictionary(id => id, _ => (IReadOnlyList<WorkflowSubProcessRowDto>)[]));
 
         public Task<IReadOnlyList<WorkflowMainProcessDto>> GetParentAsync(
             Guid tenantId, Guid userId, Guid workflowId, Guid processId, CancellationToken cancellationToken = default) =>

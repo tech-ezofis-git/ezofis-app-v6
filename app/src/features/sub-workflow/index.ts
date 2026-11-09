@@ -6,3 +6,8 @@ export * from './utils/history'
 export * from './utils/permissions'
 export * from './utils/prefill'
 export * from './utils/status'
+export {
+  SubProcessListContext,
+  useSubProcessList,
+} from './hooks/SubProcessListContext'
+export { getRowProcessId } from './hooks/useRowSubProcesses'

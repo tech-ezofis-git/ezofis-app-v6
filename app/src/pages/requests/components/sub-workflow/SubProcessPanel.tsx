@@ -92,6 +92,13 @@ const SubProcessPanel = ({ processId, workflowId, onClose }: Props) => {
                 {meta.join(' · ')}
               </span>
             )}
+            {row.preview?.length ? (
+              <span className='mt-0.5 block truncate text-xs text-gray-11'>
+                {row.preview
+                  .map((f) => (f.label ? `${f.label}: ${f.value}` : f.value))
+                  .join(' · ')}
+              </span>
+            ) : null}
           </span>
         </button>
       </li>

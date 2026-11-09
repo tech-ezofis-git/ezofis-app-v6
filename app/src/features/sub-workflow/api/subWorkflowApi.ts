@@ -4,6 +4,7 @@ import { mapHistoryFlow } from '@/pages/requests/hooks/useHistory'
 import type {
   Id,
   MainProcessDetails,
+  SubProcessPreviewField,
   SubProcessRow,
   SubWorkflowHistoryRow,
   SubWorkflowLink,
@@ -26,10 +27,19 @@ const safeParse = (value: string) => {
 
 // These mappers accept the V5 field names (incl. list rows' `subworkflowTransaction`
 // entries) and fall back gracefully.
+const toPreview = (value: unknown): SubProcessPreviewField[] =>
+  (Array.isArray(value) ? value : [])
+    .map((field: any) => ({
+      label: String(field?.label ?? field?.Label ?? '').trim(),
+      value: String(field?.value ?? field?.Value ?? '').trim(),
+    }))
+    .filter((field) => field.value)
+
 export const toSubProcessRow = (row: any): SubProcessRow => ({
   duration: row.duration ?? row.sublastActionDuration,
   flowStatus: row.flowStatus ?? row.subProcessStatus ?? 0,
   lastAction: row.lastAction,
+  preview: toPreview(row.preview ?? row.Preview),
   processId: row.subProcessId ?? row.processId,
   raisedAt: row.raisedAt,
   raisedBy: row.raisedBy,
@@ -122,11 +132,19 @@ export const subWorkflowApi = {
   },
 
   /**
-   * Children of every request in a workflow, keyed by parent process id, for
-   * the inbox list. Live list rows carry `subworkflowTransaction` (V5), so
-   * nothing extra is fetched here.
+   * Children of the requests on one page of a workflow's list, keyed by
+   * parent process id. One call for the whole page.
    */
-  getSubProcessesForWorkflow: async (
-    _workflowId: Id,
-  ): Promise<Record<string, SubProcessRow[]>> => ({}),
+  getSubProcessesForRows: async (
+    workflowId: Id,
+    processIds: Id[],
+  ): Promise<Record<string, SubProcessRow[]>> => {
+    if (processIds.length === 0) return {}
+    const data = await requestApi.getSubWorkflowBatch(workflowId, processIds)
+    const result: Record<string, SubProcessRow[]> = {}
+    for (const [parentId, rows] of Object.entries(data ?? {})) {
+      result[parentId] = asArray(rows).map(toSubProcessRow)
+    }
+    return result
+  },
 }
