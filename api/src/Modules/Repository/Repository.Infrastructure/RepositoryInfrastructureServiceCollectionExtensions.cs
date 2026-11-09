@@ -19,6 +19,8 @@ public static class RepositoryInfrastructureServiceCollectionExtensions
         services.Configure<RepositorySignRequestOptions>(configuration.GetSection(RepositorySignRequestOptions.SectionName));
         services.Configure<RepositoryPythonAssistantOptions>(configuration.GetSection(RepositoryPythonAssistantOptions.SectionName));
         services.AddHttpClient<IOcrExtractionService, OcrExtractionService>();
+        // TIFF -> searchable PDF (bulk upload); OCR of a long multi-page TIFF takes minutes.
+        services.AddHttpClient<ITiffPdfConverter, TiffPdfConverterClient>(client => client.Timeout = TimeSpan.FromMinutes(15));
         services.AddHttpClient<IRepositoryAiSummaryService, RepositoryAiSummaryService>();
         services.AddHttpClient(nameof(RepositoryPythonAssistantClient), (sp, client) =>
         {
