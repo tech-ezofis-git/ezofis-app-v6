@@ -36,6 +36,11 @@ import {
   extractDueDate,
   getCompletedOutcome,
 } from '@/pages/requests/utils/inboxItemDisplay'
+import {
+  getRowProcessId,
+  SubProcessListContext,
+  useSubProcessesForRows,
+} from '@/features/sub-workflow'
 import { isAccountsPayableWorkflow } from '@/pages/requests/utils/workflow.utils'
 import { getWorkflowAiInsightText } from '@/pages/requests/utils/workflowAiInsight'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
@@ -1438,6 +1443,22 @@ const GridView = <TData,>({
 
   const rawWorkflowData = requestStore((state) => state.rawWorkflowData)
 
+  // Sub-processes of the requests on this page: one call, shared by all cards.
+  const pageProcessIds = useMemo(
+    () =>
+      data
+        .flatMap((group: any) =>
+          Array.isArray(group.items) ? group.items : [],
+        )
+        .map((row: any) => getRowProcessId(row))
+        .filter(Boolean),
+    [data],
+  )
+  const { data: subProcessesByParent } = useSubProcessesForRows(
+    workflow?.id,
+    isAccountsPayableWorkflow(workflow) ? [] : pageProcessIds,
+  )
+
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(
     new Set(),
   )
@@ -1771,7 +1792,7 @@ const GridView = <TData,>({
   }
 
   return (
-    <>
+    <SubProcessListContext.Provider value={subProcessesByParent ?? {}}>
       <div className='flex h-full flex-col overflow-hidden'>
         {/* Temporarily hidden: Invoices group header */}
         <div className='sticky top-0 z-20 hidden items-center justify-between border-b border-[var(--gray-2)] bg-surface/70 py-1 pr-4 pl-7 backdrop-blur-sm'>
@@ -1956,7 +1977,7 @@ const GridView = <TData,>({
         userId='dummy'
         onClose={() => setSelectedFile(null)}
       />
-    </>
+    </SubProcessListContext.Provider>
   )
 }
 

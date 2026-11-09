@@ -224,7 +224,7 @@ public sealed class LegacyWorkflowTransactionService : ILegacyWorkflowTransactio
                 ? rnEl.GetString()
                 : null;
             referenceNumber = string.IsNullOrWhiteSpace(referenceNumber)
-                ? await _ticketNumbers.AllocateNextAsync(workflowId, cancellationToken).ConfigureAwait(false)
+                ? await _ticketNumbers.AllocateNextAsync(workflowId, cancellationToken: cancellationToken).ConfigureAwait(false)
                 : referenceNumber.Trim();
 
             var newWorkflowInstanceId = Guid.NewGuid();

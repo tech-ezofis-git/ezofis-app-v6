@@ -14,11 +14,82 @@ public sealed class WorkflowSubProcessService : IWorkflowSubProcessService
 {
     private readonly ITenantContext _tenantContext;
     private readonly IWorkflowSecurityService _workflowSecurity;
+    private readonly IUserEmailLookup? _userEmails;
+    private readonly IWorkflowLegacyMailboxSyncService? _mailboxSync;
+    private readonly IWorkflowEzfbFormDataLoader? _formDataLoader;
+    private readonly IFormJsonStorageService? _formJsonStorage;
 
-    public WorkflowSubProcessService(ITenantContext tenantContext, IWorkflowSecurityService workflowSecurity)
+    public WorkflowSubProcessService(
+        ITenantContext tenantContext,
+        IWorkflowSecurityService workflowSecurity,
+        IUserEmailLookup? userEmails = null,
+        IWorkflowLegacyMailboxSyncService? mailboxSync = null,
+        IWorkflowEzfbFormDataLoader? formDataLoader = null,
+        IFormJsonStorageService? formJsonStorage = null)
     {
         _tenantContext = tenantContext;
         _workflowSecurity = workflowSecurity;
+        _userEmails = userEmails;
+        _mailboxSync = mailboxSync;
+        _formDataLoader = formDataLoader;
+        _formJsonStorage = formJsonStorage;
+    }
+
+    // Who raised a child and its form values are looked up once per page, not once per row.
+    private sealed class PreviewCache
+    {
+        public Dictionary<string, string?> FormJson { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<Guid, string?> Emails { get; } = [];
+    }
+
+    private async Task<WorkflowSubProcessRowDto> ToRowAsync(
+        Guid workflowId, Guid processId, LinkedRequest request, DateTime now, PreviewCache cache, CancellationToken cancellationToken)
+    {
+        string? raisedBy = null;
+        IReadOnlyList<WorkflowSubProcessPreviewFieldDto>? preview = null;
+        try
+        {
+            if (_userEmails is not null && request.RaisedByUserId is { } userId && userId != Guid.Empty)
+            {
+                if (!cache.Emails.TryGetValue(userId, out raisedBy))
+                {
+                    var emails = await _userEmails.GetEmailsAsync([userId], cancellationToken);
+                    cache.Emails[userId] = raisedBy = emails.TryGetValue(userId, out var email) ? email : null;
+                }
+            }
+
+            if (_mailboxSync is not null && _formDataLoader is not null && _formJsonStorage is not null)
+            {
+                var identity = await _mailboxSync.TryGetProcessFormIdentityAsync(workflowId, processId, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(identity?.FormId) && identity?.FormEntryId is { } entryId && entryId != Guid.Empty)
+                {
+                    var formId = identity.Value.FormId!;
+                    if (!cache.FormJson.TryGetValue(formId, out var formJson))
+                        cache.FormJson[formId] = formJson = await _formJsonStorage.GetFormJsonAsync(formId, cancellationToken);
+
+                    var values = await WorkflowFormFieldValues.ResolveAsync(
+                        _formDataLoader, formId, entryId, null, null, null, cancellationToken);
+                    preview = WorkflowSubProcessPreview.Build(formJson, values);
+                }
+            }
+        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The preview is a nicety: a child whose form can't be read still shows its summary.
+        }
+
+        return new WorkflowSubProcessRowDto(
+            processId,
+            workflowId,
+            request.WorkflowName,
+            request.RequestNo,
+            WorkflowSubProcessRules.ToFlowStatus(request.Status),
+            request.Stage,
+            request.LastAction,
+            request.RaisedAtUtc,
+            WorkflowSubProcessRules.ToDurationSeconds(request.LastActivityAtUtc, now),
+            raisedBy,
+            preview);
     }
 
     public async Task<WorkflowSubProcessLinkDto> LinkAsync(
@@ -102,6 +173,7 @@ public sealed class WorkflowSubProcessService : IWorkflowSubProcessService
         }
 
         var access = new Dictionary<Guid, bool>();
+        var cache = new PreviewCache();
         var now = DateTime.UtcNow;
         var rows = new List<WorkflowSubProcessRowDto>(children.Count);
         foreach (var child in children)
@@ -113,19 +185,62 @@ public sealed class WorkflowSubProcessService : IWorkflowSubProcessService
             if (request is null)
                 continue;
 
-            rows.Add(new WorkflowSubProcessRowDto(
-                child.ProcessId,
-                child.WorkflowId,
-                request.WorkflowName,
-                request.RequestNo,
-                WorkflowSubProcessRules.ToFlowStatus(request.Status),
-                request.Stage,
-                request.LastAction,
-                request.RaisedAtUtc,
-                WorkflowSubProcessRules.ToDurationSeconds(request.LastActivityAtUtc, now)));
+            rows.Add(await ToRowAsync(child.WorkflowId, child.ProcessId, request, now, cache, cancellationToken));
         }
 
         return rows;
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<WorkflowSubProcessRowDto>>> GetChildrenBatchAsync(
+        Guid tenantId, Guid userId, Guid workflowId, IReadOnlyCollection<Guid> processIds, CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<Guid, IReadOnlyList<WorkflowSubProcessRowDto>>();
+        if (processIds.Count == 0)
+            return result;
+
+        await using var connection = new NpgsqlConnection(RequireConnection());
+        await connection.OpenAsync(cancellationToken);
+        if (!await LinksTableExistsAsync(connection, cancellationToken))
+            return result;
+
+        var links = new List<(Guid ParentId, Guid WorkflowId, Guid ProcessId)>();
+        const string sql = """
+            SELECT main_process_id, sub_workflow_id, sub_process_id
+            FROM workflow.sub_process_links
+            WHERE tenant_id = @TenantId AND main_workflow_id = @WorkflowId AND main_process_id = ANY(@ProcessIds)
+            ORDER BY created_at_utc;
+            """;
+        await using (var cmd = new NpgsqlCommand(sql, connection))
+        {
+            cmd.Parameters.AddWithValue("@TenantId", tenantId);
+            cmd.Parameters.AddWithValue("@WorkflowId", workflowId);
+            cmd.Parameters.AddWithValue("@ProcessIds", processIds.ToArray());
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                links.Add((reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2)));
+        }
+
+        var access = new Dictionary<Guid, bool>();
+        var cache = new PreviewCache();
+        var now = DateTime.UtcNow;
+        var grouped = new Dictionary<Guid, List<WorkflowSubProcessRowDto>>();
+        foreach (var link in links)
+        {
+            if (!await CanAccessAsync(access, link.WorkflowId, userId, cancellationToken))
+                continue;
+
+            var request = await LoadRequestAsync(connection, tenantId, link.WorkflowId, link.ProcessId, cancellationToken);
+            if (request is null)
+                continue;
+
+            if (!grouped.TryGetValue(link.ParentId, out var rows))
+                grouped[link.ParentId] = rows = [];
+            rows.Add(await ToRowAsync(link.WorkflowId, link.ProcessId, request, now, cache, cancellationToken));
+        }
+
+        foreach (var (parentId, rows) in grouped)
+            result[parentId] = rows;
+        return result;
     }
 
     public async Task<IReadOnlyList<WorkflowMainProcessDto>> GetParentAsync(
@@ -220,7 +335,7 @@ public sealed class WorkflowSubProcessService : IWorkflowSubProcessService
 
         var sql = $"""
             SELECT i.workflow_name, i.reference_number, i.status, i.created_at_utc,
-                   latest.stage_name, latest.created_at, action.review
+                   latest.stage_name, latest.created_at, action.review, starter.created_by
             FROM {instancesTable} i
             LEFT JOIN LATERAL (
                 SELECT t.stage_name, t.created_at
@@ -236,6 +351,13 @@ public sealed class WorkflowSubProcessService : IWorkflowSubProcessService
                 ORDER BY t.id DESC
                 LIMIT 1
             ) action ON true
+            LEFT JOIN LATERAL (
+                SELECT t.created_by
+                FROM {transactionTable} t
+                WHERE t.workflow_instance_id = i.id AND t.is_deleted = false
+                ORDER BY t.id ASC
+                LIMIT 1
+            ) starter ON true
             WHERE i.id = @ProcessId AND i.tenant_id = @TenantId;
             """;
         await using var cmd = new NpgsqlCommand(sql, connection);
@@ -252,7 +374,8 @@ public sealed class WorkflowSubProcessService : IWorkflowSubProcessService
             reader.GetDateTime(3),
             reader.IsDBNull(4) ? null : reader.GetString(4),
             reader.IsDBNull(5) ? null : reader.GetDateTime(5),
-            reader.IsDBNull(6) ? null : reader.GetString(6));
+            reader.IsDBNull(6) ? null : reader.GetString(6),
+            reader.IsDBNull(7) ? null : reader.GetGuid(7));
     }
 
     private string RequireConnection() =>
@@ -301,5 +424,6 @@ public sealed class WorkflowSubProcessService : IWorkflowSubProcessService
         DateTime RaisedAtUtc,
         string? Stage,
         DateTime? LastActivityAtUtc,
-        string? LastAction);
+        string? LastAction,
+        Guid? RaisedByUserId = null);
 }

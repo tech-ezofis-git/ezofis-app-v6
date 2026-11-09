@@ -16,6 +16,8 @@ namespace SaaSApp.Api.Controllers;
 [Authorize(Policy = AuthorizationPolicies.TenantUser)]
 public sealed class WorkflowSubProcessController : ControllerBase
 {
+    private const int MaxBatchSize = 100;
+
     private readonly IWorkflowSubProcessService _subProcesses;
     private readonly ITenantProvider _tenantProvider;
 
@@ -31,6 +33,21 @@ public sealed class WorkflowSubProcessController : ControllerBase
     public async Task<IActionResult> GetChildren(Guid workflowId, Guid processId, CancellationToken cancellationToken)
     {
         var rows = await _subProcesses.GetChildrenAsync(RequireTenantId(), RequireUserId(), workflowId, processId, cancellationToken);
+        return Ok(rows);
+    }
+
+    /// <summary>Children of many requests of one workflow (the inbox list), keyed by parent process id.</summary>
+    [HttpPost("subWorkflow/{workflowId:guid}/batch")]
+    [ProducesResponseType(typeof(IReadOnlyDictionary<Guid, IReadOnlyList<WorkflowSubProcessRowDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetChildrenBatch(
+        Guid workflowId, [FromBody] WorkflowSubProcessBatchRequest? body, CancellationToken cancellationToken)
+    {
+        var ids = body?.ProcessIds?.Where(id => id != Guid.Empty).Distinct().ToList() ?? [];
+        if (ids.Count > MaxBatchSize)
+            return BadRequest(new { error = $"At most {MaxBatchSize} process ids per request." });
+
+        var rows = await _subProcesses.GetChildrenBatchAsync(RequireTenantId(), RequireUserId(), workflowId, ids, cancellationToken);
         return Ok(rows);
     }
 
@@ -89,3 +106,6 @@ public sealed class WorkflowSubProcessController : ControllerBase
         return Guid.TryParse(raw, out var id) ? id : throw new InvalidOperationException("User id is required.");
     }
 }
+
+/// <summary>Body of the list-level children lookup.</summary>
+public sealed record WorkflowSubProcessBatchRequest(IReadOnlyList<Guid>? ProcessIds);

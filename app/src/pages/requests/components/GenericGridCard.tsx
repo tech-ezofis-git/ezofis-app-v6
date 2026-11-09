@@ -7,9 +7,11 @@ import Skeleton from '@/components/base/Skeleton'
 import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+import { getSubProcessStatus } from '@/features/sub-workflow'
 import useRowSubProcesses from '@/features/sub-workflow/hooks/useRowSubProcesses'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import { formatRunningTime } from '@/pages/requests/utils/formatRunningTime'
 import { isInboxRowOverdue } from '@/pages/requests/utils/inboxItemDisplay'
 import { resolveApAgentJobMessage } from '@/pages/requests/utils/resolveApAgentJobMessage'
 import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
@@ -27,8 +29,6 @@ import GenericStagePill from './GenericStagePill'
 import HoverExpandableText from './HoverExpandableText'
 import SubProcessRows from './sub-workflow/SubProcessRows'
 
-// Matches the "Xh Ym ago" granularity already used in the request-detail
-// History panel, instead of dayjs's coarser "8 hours ago".
 /** Card icon colors for a connection's button color (stage trail colors). */
 const STAGE_TONE: Record<string, { bg: string; text: string }> = {
   green: { bg: 'bg-green-2', text: 'text-green-9' },
@@ -36,25 +36,6 @@ const STAGE_TONE: Record<string, { bg: string; text: string }> = {
   primary: { bg: 'bg-primary-2', text: 'text-primary-9' },
   red: { bg: 'bg-red-2', text: 'text-red-9' },
   secondary: { bg: 'bg-secondary-2', text: 'text-secondary-9' },
-}
-
-const formatRunningTime = (date: any): string => {
-  if (!date) return ''
-  // Bare ISO datetimes from the API are UTC without a Z/offset — parse them
-  // as UTC (parseUtcDate) before diffing, otherwise the browser reads them
-  // as local time and the "ago" value is off by the local UTC offset.
-  const parsed = parseUtcDate(date)
-  if (!parsed) return ''
-  const ms = Math.abs(Date.now() - parsed.getTime())
-  if (Number.isNaN(ms)) return ''
-  const secs = Math.floor(ms / 1000)
-  if (secs < 60) return `${secs}s ago`
-  const mins = Math.floor(secs / 60)
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ${mins % 60}m ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ${hours % 24}h ago`
 }
 
 interface Props {
@@ -83,6 +64,18 @@ const GenericGridCard = ({
   // Child requests (sub-workflow), expandable under the card.
   const subProcesses = useRowSubProcesses(workflow?.id, row)
   const [showSubProcesses, setShowSubProcesses] = useState(false)
+  // The chip shows how many sub-processes were created. Its colour follows
+  // progress: purple while none is finished, orange while some are, green once
+  // all are.
+  const finishedSubProcesses = subProcesses.filter(
+    (row) => getSubProcessStatus(row) !== 'running',
+  ).length
+  const subProcessTone =
+    subProcesses.length > 0 && finishedSubProcesses === subProcesses.length
+      ? 'bg-green-1 text-green-11 ring-1 ring-green-3 hover:bg-green-2'
+      : finishedSubProcesses > 0
+        ? 'bg-orange-1 text-orange-11 ring-1 ring-orange-3 hover:bg-orange-2'
+        : 'bg-primary-2 text-primary-11 hover:bg-primary-3'
   const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
   const isSidebarOpen = isPlaygroundOpen || isAskAIOpen
@@ -311,208 +304,213 @@ const GenericGridCard = ({
 
   return (
     <div className='flex w-full flex-col'>
-    <div
-      className='group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-gray-3 bg-surface p-3.5 transition-all hover:border-primary-4 hover:shadow-sm'
-      onClick={() => onRowClick(row, 'Overview')}
-    >
       <div
-        className={cn(
-          'flex size-9 shrink-0 items-center justify-center rounded-full',
-          isJobProcessing
-            ? 'bg-orange-2'
-            : stageTone?.bg || (isTerminal ? 'bg-green-2' : 'bg-orange-2'),
-        )}
+        className='group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-gray-3 bg-surface p-3.5 transition-all hover:border-primary-4 hover:shadow-sm'
+        onClick={() => onRowClick(row, 'Overview')}
       >
-        <Icon
+        <div
           className={cn(
-            'size-4',
-            isJobProcessing && 'animate-spin text-orange-9',
-            !isJobProcessing &&
-              (stageTone?.text ||
-                (isTerminal ? 'text-green-9' : 'text-orange-9')),
-          )}
-          name={
+            'flex size-9 shrink-0 items-center justify-center rounded-full',
             isJobProcessing
-              ? 'tabler:loader-2'
-              : isTerminal
-                ? 'tabler:check'
-                : 'tabler:clock'
-          }
+              ? 'bg-orange-2'
+              : stageTone?.bg || (isTerminal ? 'bg-green-2' : 'bg-orange-2'),
+          )}
+        >
+          <Icon
+            className={cn(
+              'size-4',
+              isJobProcessing && 'animate-spin text-orange-9',
+              !isJobProcessing &&
+                (stageTone?.text ||
+                  (isTerminal ? 'text-green-9' : 'text-orange-9')),
+            )}
+            name={
+              isJobProcessing
+                ? 'tabler:loader-2'
+                : isTerminal
+                  ? 'tabler:check'
+                  : 'tabler:clock'
+            }
+          />
+        </div>
+
+        <div className='min-w-0 flex-1 overflow-hidden'>
+          {/* Left Side: Request Number + Current Stage Pill next to Request Number */}
+          <div className='group/inv flex min-w-0 flex-nowrap items-center gap-2.5'>
+            {isTitleLoading ? (
+              <Skeleton className='h-4 w-28 shrink-0' />
+            ) : (
+              <h3
+                className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
+                style={{ fontWeight: 500 }}
+              >
+                {requestNo}
+              </h3>
+            )}
+            <GenericStagePill
+              color={color}
+              currentLabel={currentLabel}
+              isTerminal={isTerminal}
+              previousLabel={previousLabel}
+            />
+            {subProcesses.length > 0 ? (
+              <button
+                aria-expanded={showSubProcesses}
+                title={t`${subProcesses.length} sub-processes, ${finishedSubProcesses} finished`}
+                type='button'
+                className={cn(
+                  'inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-all duration-200 active:scale-95',
+                  subProcessTone,
+                )}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowSubProcesses((open) => !open)
+                }}
+              >
+                <Icon className='size-3' name='tabler:sitemap' />
+                {subProcesses.length}
+                <Icon
+                  name='tabler:chevron-down'
+                  className={cn(
+                    'size-3 transition-transform duration-200',
+                    showSubProcesses && 'rotate-180',
+                  )}
+                />
+              </button>
+            ) : null}
+            {/* Due date before today (same rule as the Overdue filter). */}
+            {!isTerminal && isInboxRowOverdue(row) ? (
+              <span className='inline-flex shrink-0 items-center gap-1 rounded-md border border-red-3 bg-red-1 px-2 py-0.5 text-[11px] font-semibold text-red-11'>
+                <Icon className='size-3' name='tabler:alert-circle' />
+                Overdue
+              </span>
+            ) : null}
+          </div>
+
+          {previewChips.length > 0 && (
+            <div className='mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 overflow-hidden'>
+              {previewChips.map((chip, idx) => (
+                <span
+                  className='flex max-w-full min-w-0 items-center gap-1.5'
+                  key={chip.id}
+                >
+                  {idx > 0 && <span className='shrink-0 text-gray-6'>·</span>}
+                  <div className='min-w-0 truncate text-11 font-medium text-gray-10'>
+                    {chip.text}
+                  </div>
+                </span>
+              ))}
+            </div>
+          )}
+          {isJobProcessing && jobMessage ? (
+            <div className='mt-0.5 truncate text-12 font-semibold text-[var(--orange-9)]'>
+              {jobMessage}
+            </div>
+          ) : null}
+          {/* AI Insight stacked inside left column when playground/chat/sidebar is open */}
+          {aiInsight && isSidebarOpen && (
+            <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[10px] font-medium text-[var(--primary-9)]'>
+              <AiBrandIcon
+                className='size-3.5 shrink-0'
+                variant='outline-purple'
+              />
+              <HoverExpandableText
+                className='text-[10px] font-medium text-[var(--primary-9)] italic'
+                expandStyle='inline'
+                maxLines={2}
+                normalMaxWidthClass='max-w-[180px]'
+                text={aiInsight}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* AI Insight Line - Centered in middle of row (visible ONLY when sidebar is closed) */}
+        {aiInsight && !isSidebarOpen && (
+          <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
+            <div className='flex min-w-0 items-center gap-1.5'>
+              <AiBrandIcon
+                className='size-3.5 shrink-0 text-[var(--primary-9)]'
+                variant='outline-purple'
+              />
+              <HoverExpandableText
+                className='text-[11px] font-medium text-[var(--gray-11)] italic'
+                expandStyle='inline'
+                maxLines={2}
+                normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
+                text={aiInsight}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Right Side: Raised By & Date + Running Time from Last Action */}
+        <div className='hidden shrink-0 items-center gap-5 text-12 md:flex'>
+          <div className='flex flex-col items-end gap-0.5 text-right'>
+            {raisedBy && raisedBy !== '-' && (
+              <Tooltip content={`Raised By: ${raisedBy}`} position='bottom'>
+                <div className='flex items-center gap-1.5 font-medium text-gray-11'>
+                  <Icon className='size-3.5 text-gray-8' name='tabler:user' />
+                  <span className='max-w-[150px] truncate'>{raisedBy}</span>
+                </div>
+              </Tooltip>
+            )}
+            {startedAt && (
+              <Tooltip
+                content={`Raised Date: ${dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}`}
+                position='bottom'
+              >
+                <div className='flex items-center gap-1 text-11 text-gray-9'>
+                  <Icon className='size-3 text-gray-7' name='tabler:calendar' />
+                  <span>
+                    {dayjs(parseUtcDate(startedAt)).format(
+                      'DD-MMM-YYYY hh:mm A',
+                    )}
+                  </span>
+                </div>
+              </Tooltip>
+            )}
+          </div>
+
+          <div className='flex flex-col items-end gap-0.5 text-right'>
+            {lastActionAt && (
+              <Tooltip
+                position='bottom'
+                content={
+                  lastActionBy && lastActionBy !== '-'
+                    ? `Last action by ${lastActionBy}`
+                    : 'Time running from last action'
+                }
+              >
+                {/* Finished (END block) requests show their time in green */}
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-11 font-semibold',
+                    isEnd
+                      ? 'border-green-3 bg-green-1 text-green-11'
+                      : 'border-orange-3 bg-orange-1 text-orange-11',
+                  )}
+                >
+                  <Icon
+                    name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
+                    className={cn(
+                      'size-3',
+                      isEnd ? 'text-green-9' : 'text-orange-9',
+                    )}
+                  />
+                  <span>{formatRunningTime(lastActionAt)}</span>
+                </span>
+              </Tooltip>
+            )}
+          </div>
+        </div>
+
+        <Icon
+          className='size-4 shrink-0 text-gray-6 transition-colors group-hover:text-gray-9'
+          name='tabler:chevron-right'
         />
       </div>
-
-      <div className='min-w-0 flex-1 overflow-hidden'>
-        {/* Left Side: Request Number + Current Stage Pill next to Request Number */}
-        <div className='group/inv flex min-w-0 flex-nowrap items-center gap-2.5'>
-          {isTitleLoading ? (
-            <Skeleton className='h-4 w-28 shrink-0' />
-          ) : (
-            <h3
-              className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
-              style={{ fontWeight: 500 }}
-            >
-              {requestNo}
-            </h3>
-          )}
-          <GenericStagePill
-            color={color}
-            currentLabel={currentLabel}
-            isTerminal={isTerminal}
-            previousLabel={previousLabel}
-          />
-          {subProcesses.length > 0 ? (
-            <button
-              aria-expanded={showSubProcesses}
-              className='inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-primary-2 px-2 py-0.5 text-[11px] font-semibold text-primary-11 transition-all duration-200 hover:bg-primary-3 active:scale-95'
-              title={t`Show sub-processes`}
-              type='button'
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowSubProcesses((open) => !open)
-              }}
-            >
-              <Icon className='size-3' name='tabler:sitemap' />
-              {subProcesses.length}
-              <Icon
-                name='tabler:chevron-down'
-                className={cn(
-                  'size-3 transition-transform duration-200',
-                  showSubProcesses && 'rotate-180',
-                )}
-              />
-            </button>
-          ) : null}
-          {/* Due date before today (same rule as the Overdue filter). */}
-          {!isTerminal && isInboxRowOverdue(row) ? (
-            <span className='inline-flex shrink-0 items-center gap-1 rounded-md border border-red-3 bg-red-1 px-2 py-0.5 text-[11px] font-semibold text-red-11'>
-              <Icon className='size-3' name='tabler:alert-circle' />
-              Overdue
-            </span>
-          ) : null}
-        </div>
-
-        {previewChips.length > 0 && (
-          <div className='mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 overflow-hidden'>
-            {previewChips.map((chip, idx) => (
-              <span
-                className='flex max-w-full min-w-0 items-center gap-1.5'
-                key={chip.id}
-              >
-                {idx > 0 && <span className='shrink-0 text-gray-6'>·</span>}
-                <div className='min-w-0 truncate text-11 font-medium text-gray-10'>
-                  {chip.text}
-                </div>
-              </span>
-            ))}
-          </div>
-        )}
-        {isJobProcessing && jobMessage ? (
-          <div className='mt-0.5 truncate text-12 font-semibold text-[var(--orange-9)]'>
-            {jobMessage}
-          </div>
-        ) : null}
-        {/* AI Insight stacked inside left column when playground/chat/sidebar is open */}
-        {aiInsight && isSidebarOpen && (
-          <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[10px] font-medium text-[var(--primary-9)]'>
-            <AiBrandIcon
-              className='size-3.5 shrink-0'
-              variant='outline-purple'
-            />
-            <HoverExpandableText
-              className='text-[10px] font-medium text-[var(--primary-9)] italic'
-              expandStyle='inline'
-              maxLines={2}
-              normalMaxWidthClass='max-w-[180px]'
-              text={aiInsight}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* AI Insight Line - Centered in middle of row (visible ONLY when sidebar is closed) */}
-      {aiInsight && !isSidebarOpen && (
-        <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
-          <div className='flex min-w-0 items-center gap-1.5'>
-            <AiBrandIcon
-              className='size-3.5 shrink-0 text-[var(--primary-9)]'
-              variant='outline-purple'
-            />
-            <HoverExpandableText
-              className='text-[11px] font-medium text-[var(--gray-11)] italic'
-              expandStyle='inline'
-              maxLines={2}
-              normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
-              text={aiInsight}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Right Side: Raised By & Date + Running Time from Last Action */}
-      <div className='hidden shrink-0 items-center gap-5 text-12 md:flex'>
-        <div className='flex flex-col items-end gap-0.5 text-right'>
-          {raisedBy && raisedBy !== '-' && (
-            <Tooltip content={`Raised By: ${raisedBy}`} position='bottom'>
-              <div className='flex items-center gap-1.5 font-medium text-gray-11'>
-                <Icon className='size-3.5 text-gray-8' name='tabler:user' />
-                <span className='max-w-[150px] truncate'>{raisedBy}</span>
-              </div>
-            </Tooltip>
-          )}
-          {startedAt && (
-            <Tooltip
-              content={`Raised Date: ${dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}`}
-              position='bottom'
-            >
-              <div className='flex items-center gap-1 text-11 text-gray-9'>
-                <Icon className='size-3 text-gray-7' name='tabler:calendar' />
-                <span>
-                  {dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}
-                </span>
-              </div>
-            </Tooltip>
-          )}
-        </div>
-
-        <div className='flex flex-col items-end gap-0.5 text-right'>
-          {lastActionAt && (
-            <Tooltip
-              position='bottom'
-              content={
-                lastActionBy && lastActionBy !== '-'
-                  ? `Last action by ${lastActionBy}`
-                  : 'Time running from last action'
-              }
-            >
-              {/* Finished (END block) requests show their time in green */}
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-11 font-semibold',
-                  isEnd
-                    ? 'border-green-3 bg-green-1 text-green-11'
-                    : 'border-orange-3 bg-orange-1 text-orange-11',
-                )}
-              >
-                <Icon
-                  className={cn(
-                    'size-3',
-                    isEnd ? 'text-green-9' : 'text-orange-9',
-                  )}
-                  name={isEnd ? 'tabler:circle-check' : 'tabler:clock'}
-                />
-                <span>{formatRunningTime(lastActionAt)}</span>
-              </span>
-            </Tooltip>
-          )}
-        </div>
-      </div>
-
-      <Icon
-        className='size-4 shrink-0 text-gray-6 transition-colors group-hover:text-gray-9'
-        name='tabler:chevron-right'
-      />
-    </div>
-    {showSubProcesses && <SubProcessRows rows={subProcesses} />}
+      {showSubProcesses && <SubProcessRows rows={subProcesses} />}
     </div>
   )
 }
