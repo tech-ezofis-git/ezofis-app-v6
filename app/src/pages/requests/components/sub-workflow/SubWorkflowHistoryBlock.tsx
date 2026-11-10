@@ -1,10 +1,10 @@
 import { useLingui } from '@lingui/react/macro'
 import { type ReactNode, useState } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import {
   isConnectorFinished,
   type SubWorkflowHistoryRow,
 } from '@/features/sub-workflow'
-import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 
 interface Props {
@@ -27,7 +27,7 @@ const SubWorkflowHistoryBlock = ({ renderStep, rows }: Props) => {
     <div className='mt-1.5'>
       <button
         aria-expanded={open}
-        className='inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-3 bg-gray-1 px-2 py-1 text-11 font-semibold text-gray-11 transition-all duration-200 hover:border-primary-5 hover:bg-primary-1 hover:text-primary-11 active:scale-95'
+        className='inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-md border border-gray-3 bg-gray-1 px-2 py-1 text-11 font-semibold text-gray-11 transition-all duration-200 hover:border-primary-5 hover:bg-primary-1 hover:text-primary-11 active:scale-95'
         type='button'
         onClick={() => setOpen((v) => !v)}
       >
@@ -45,16 +45,18 @@ const SubWorkflowHistoryBlock = ({ renderStep, rows }: Props) => {
             finished ? 'text-green-9' : 'text-orange-9',
           )}
         />
-        {requestNo}
-        <span className='font-medium text-gray-9'>
+        <span className='min-w-0 truncate' title={requestNo}>
+          {requestNo}
+        </span>
+        <span className='shrink-0 font-medium text-gray-9'>
           · {t`${stepCount} steps`}
         </span>
       </button>
 
       {open && (
-        <div className='animate-in fade-in slide-in-from-top-1 relative mt-3 flex flex-col gap-4 duration-200'>
+        <div className='animate-in fade-in slide-in-from-top-1 relative mt-3 ml-1 flex flex-col gap-3.5 border-l-2 border-primary-3 pl-4 duration-200'>
           {rows.length > 1 && (
-            <div className='absolute top-6 bottom-6 left-[15px] z-0 w-0 border-l-[1.5px] border-dotted border-[var(--gray-5)]' />
+            <div className='absolute top-5 bottom-5 left-[calc(1rem+13px)] z-0 w-0 border-l-[1.5px] border-dotted border-[var(--gray-5)]' />
           )}
           {rows.map((row, i) => (
             <div key={`${row.activityId ?? row.stage}-${i}`}>

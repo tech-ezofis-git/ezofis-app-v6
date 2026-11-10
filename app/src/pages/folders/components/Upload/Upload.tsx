@@ -26,6 +26,7 @@ import BaseButton from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import Icon from '@/components/base/icon/Icon'
+import { getDateFieldDefault } from '@/pages/requests/utils/repoFolderMetadata'
 import InfoCard from '@/components/base/InfoCard'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputDate from '@/components/base/inputs/InputDate'
@@ -827,6 +828,35 @@ const applyFilenamePreFill = (
   return next
 }
 
+// Year / Month fields start as today's year and month (when the field's
+// options allow it); OCR or the user can still change them. Only empty
+// fields are filled.
+const applyDateFieldDefaults = (
+  values: Record<string, string>,
+  repositoryFields: RepositoryField[],
+) => {
+  let next = values
+  repositoryFields.forEach((field) => {
+    const fieldKey = getFieldKey(field)
+    if (String(values[fieldKey] ?? '').trim()) return
+    const value = getDateFieldDefault(field)
+    if (!value) return
+    if (next === values) next = { ...values }
+    next[fieldKey] = value
+  })
+  return next
+}
+
+const applyFieldPreFills = (
+  values: Record<string, string>,
+  repositoryFields: RepositoryField[],
+  fileName?: string,
+) =>
+  applyDateFieldDefaults(
+    applyFilenamePreFill(values, repositoryFields, fileName),
+    repositoryFields,
+  )
+
 const mapOcrResponseToFieldValues = (
   response: unknown,
   repositoryFields: RepositoryField[],
@@ -834,7 +864,7 @@ const mapOcrResponseToFieldValues = (
 ) => {
   const result = getInitialValues(repositoryFields)
   if (!response || typeof response !== 'object') {
-    return applyFilenamePreFill(result, repositoryFields, fileName)
+    return applyFieldPreFills(result, repositoryFields, fileName)
   }
 
   const ocrFieldMap = extractOcrFieldMap(response)
@@ -890,7 +920,7 @@ const mapOcrResponseToFieldValues = (
     }
   })
 
-  return applyFilenamePreFill(result, repositoryFields, fileName)
+  return applyFieldPreFills(result, repositoryFields, fileName)
 }
 
 const createQueueEntry = (
@@ -902,7 +932,7 @@ const createQueueEntry = (
   createdAt: new Date().toISOString(),
   exportStatus: 'idle',
   fieldStatuses: {},
-  fieldValues: applyFilenamePreFill(
+  fieldValues: applyFieldPreFills(
     getInitialValues(repositoryFields),
     repositoryFields,
     file.name,
@@ -2335,6 +2365,12 @@ export default function Upload({
               }
             })
           }
+          // OCR replaces the queued values, so Year / Month start from today
+          // again when OCR didn't find them (not tagged as OCR-extracted).
+          Object.assign(
+            fieldValues,
+            applyDateFieldDefaults(fieldValues, repositoryFields),
+          )
 
           // Stage the file using uploadWithOcr carrying forward any extracted OCR data,
           // or the raw field hints if OCR extraction was empty / failed.

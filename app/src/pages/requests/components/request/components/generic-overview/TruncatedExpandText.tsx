@@ -13,8 +13,8 @@ type TruncatedExpandTextProps = {
    */
   fit?: boolean
   /**
-   * Ellipsis when the text does not fit; on hover / focus the same text
-   * wraps in place over as many lines as it needs (no tooltip or overlay).
+   * Ellipsis when the text does not fit; on hover the full text shows in a
+   * white popup (same look as the routes popup).
    */
   hoverExpand?: boolean
   /**
@@ -86,19 +86,26 @@ const TruncatedExpandText = ({
   }
 
   if (hoverExpand) {
-    // No overlay: on hover / focus the same element un-truncates and wraps,
-    // so the full value shows in the header row itself.
     return (
-      <Tag
-        ref={textRef}
-        tabIndex={overflowing ? 0 : undefined}
-        className={cn(
-          'block max-w-full min-w-0 truncate leading-snug outline-none hover:break-words hover:whitespace-normal focus-visible:break-words focus-visible:whitespace-normal',
-          className,
-        )}
+      <Tooltip
+        className='block max-w-full min-w-0 shrink overflow-hidden'
+        color='white'
+        content={fullValue}
+        disabled={!overflowing}
+        position='bottom-start'
+        width={fullValue.length > 60 ? TOOLTIP_MAX_WIDTH : undefined}
       >
-        {fullValue}
-      </Tag>
+        <Tag
+          ref={textRef}
+          tabIndex={overflowing ? 0 : undefined}
+          className={cn(
+            'block max-w-full min-w-0 truncate leading-snug outline-none',
+            className,
+          )}
+        >
+          {fullValue}
+        </Tag>
+      </Tooltip>
     )
   }
 

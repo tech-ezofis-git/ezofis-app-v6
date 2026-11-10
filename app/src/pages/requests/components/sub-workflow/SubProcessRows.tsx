@@ -112,9 +112,16 @@ const SubProcessRows = ({ rows }: Props) => {
 
                 <span className='min-w-0 flex-1 overflow-hidden'>
                   <span className='flex min-w-0 flex-nowrap items-center gap-2.5'>
-                    <span className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover/sub:text-[var(--primary-9)] group-hover/sub:underline'>
-                      {row.requestNo}
-                    </span>
+                    <Tooltip
+                      className='min-w-0 shrink'
+                      color='white'
+                      content={row.requestNo}
+                      position='bottom-start'
+                    >
+                      <span className='min-w-0 truncate text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover/sub:text-[var(--primary-9)] group-hover/sub:underline'>
+                        {row.requestNo}
+                      </span>
+                    </Tooltip>
                     {pill ? (
                       <span
                         className={cn(
@@ -126,9 +133,16 @@ const SubProcessRows = ({ rows }: Props) => {
                       </span>
                     ) : null}
                     {row.subWorkflowName ? (
-                      <span className='min-w-0 truncate text-11 text-gray-9'>
-                        {row.subWorkflowName}
-                      </span>
+                      <Tooltip
+                        className='min-w-0 shrink'
+                        color='white'
+                        content={row.subWorkflowName}
+                        position='bottom-start'
+                      >
+                        <span className='min-w-0 truncate text-11 text-gray-9'>
+                          {row.subWorkflowName}
+                        </span>
+                      </Tooltip>
                     ) : null}
                   </span>
                   {row.preview?.length ? (

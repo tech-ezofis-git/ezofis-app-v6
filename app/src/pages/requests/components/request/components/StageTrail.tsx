@@ -6,12 +6,12 @@ import type {
   StageRoute,
   StageTrailItem,
 } from '@/pages/requests/utils/workflow.utils'
+import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import {
   getSubProcessStatus,
   SUB_PROCESS_STATUS_META,
 } from '@/features/sub-workflow'
-import Icon from '@/components/base/icon/Icon'
-import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 import { formatUtcToLocalDateTime, parseUtcDate } from '@/utils/utcDate'
 
@@ -239,7 +239,7 @@ export default function StageTrail({
                       initial={{ opacity: 0, scale: 0.95, y: 10 }}
                       role='dialog'
                     >
-                      <div className='w-[320px] rounded-xl border border-[var(--gray-3)] bg-surface/95 p-4 shadow-2xl backdrop-blur-md'>
+                      <div className='w-[380px] max-w-[90vw] rounded-xl border border-[var(--gray-3)] bg-surface/95 p-4 shadow-2xl backdrop-blur-md'>
                         <div className='mb-3 flex items-center gap-2 border-b border-[var(--gray-2)] pb-2.5'>
                           <Icon
                             className='size-4 text-[var(--primary-9)]'
@@ -276,9 +276,22 @@ export default function StageTrail({
                                     name='lucide:arrow-right'
                                     aria-hidden
                                   />
+                                  {route.next.isSubWorkflow ? (
+                                    <span
+                                      className='inline-flex shrink-0 items-center gap-1 rounded-full border border-purple-4 bg-purple-3 px-1.5 py-px text-[10px] font-semibold text-purple-11'
+                                      title={t`Starts a sub-process`}
+                                    >
+                                      <Icon
+                                        className='size-3'
+                                        name='tabler:sitemap'
+                                      />
+                                      {t`Sub-process`}
+                                    </span>
+                                  ) : null}
                                   <span
+                                    title={route.next.label}
                                     className={cn(
-                                      'truncate',
+                                      'min-w-0 flex-1 truncate',
                                       route.next.isEnd
                                         ? 'font-semibold text-green-11'
                                         : 'font-medium text-[var(--gray-12)]',
@@ -337,7 +350,7 @@ export default function StageTrail({
                       initial={{ opacity: 0, scale: 0.95, y: 10 }}
                       role='dialog'
                     >
-                      <div className='w-[320px] rounded-xl border border-[var(--gray-3)] bg-surface/95 p-4 shadow-2xl backdrop-blur-md'>
+                      <div className='w-[380px] max-w-[90vw] rounded-xl border border-[var(--gray-3)] bg-surface/95 p-4 shadow-2xl backdrop-blur-md'>
                         <div className='mb-3 flex items-center gap-2 border-b border-[var(--gray-2)] pb-2.5'>
                           <Icon
                             className='size-4 text-[var(--primary-9)]'
@@ -357,23 +370,30 @@ export default function StageTrail({
                                 key={String(row.processId)}
                               >
                                 <Icon
+                                  name={meta.icon}
                                   className={cn(
                                     'size-4 shrink-0',
                                     SUB_STATUS_TEXT[meta.color],
                                   )}
-                                  name={meta.icon}
                                 />
-                                <span className='shrink-0 font-semibold text-[var(--gray-13)]'>
-                                  {row.requestNo}
+                                <span className='flex min-w-0 flex-1 flex-col'>
+                                  <span
+                                    className='truncate font-semibold text-[var(--gray-13)]'
+                                    title={row.requestNo}
+                                  >
+                                    {row.requestNo}
+                                  </span>
+                                  {row.subWorkflowName ? (
+                                    <span className='truncate text-[11px] text-[var(--gray-10)]'>
+                                      {row.subWorkflowName}
+                                    </span>
+                                  ) : null}
                                 </span>
                                 <Icon
                                   className='size-3.5 shrink-0 text-gray-8'
                                   name='lucide:arrow-right'
                                   aria-hidden
                                 />
-                                <span className='truncate font-medium text-[var(--gray-12)]'>
-                                  {row.subWorkflowName}
-                                </span>
                               </li>
                             )
                           })}

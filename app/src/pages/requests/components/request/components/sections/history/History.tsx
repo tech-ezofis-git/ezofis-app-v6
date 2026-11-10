@@ -234,13 +234,13 @@ const renderChildStep = (row: HistoryRow) => {
     <div className='relative flex items-start gap-3'>
       <div
         className={cn(
-          'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm',
+          'relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--gray-3)] bg-surface shadow-sm',
           config.bulletBg,
         )}
       >
-        <Icon className='size-4' name={config.icon} />
+        <Icon className='size-3.5' name={config.icon} />
       </div>
-      <div className='flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5'>
+      <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
         <div className='text-13 leading-snug font-semibold text-gray-13'>
           {title}
         </div>
@@ -449,10 +449,8 @@ export default function History({
 
   // Sub-workflow connector steps: each linked child's own history is read
   // and shown under the parent.
-  const { data: connectorEntries } = useSubWorkflowHistory(
-    workflowId,
-    instanceId || processId,
-  )
+  const { data: connectorEntries, isLoading: isConnectorLoading } =
+    useSubWorkflowHistory(workflowId, instanceId || processId, enabled)
   const displayFlows = useMemo(
     () => attachConnectorHistory(baseFlows, connectorEntries),
     [baseFlows, connectorEntries],
@@ -746,6 +744,12 @@ export default function History({
               </div>
             )
           })}
+          {isConnectorLoading && (
+            <div className='flex items-center gap-2 pl-14 text-11 font-medium text-gray-9'>
+              <Icon className='size-3.5 animate-spin' name='tabler:loader-2' />
+              {t`Loading sub-process history...`}
+            </div>
+          )}
         </div>
       </div>
     </div>
