@@ -29,6 +29,7 @@ import { Route as StoriesTabsRouteImport } from './routes/stories/tabs'
 import { Route as StoriesTableRouteImport } from './routes/stories/table'
 import { Route as StoriesStepperRouteImport } from './routes/stories/stepper'
 import { Route as StoriesSkeletonRouteImport } from './routes/stories/skeleton'
+import { Route as StoriesSettingRowRouteImport } from './routes/stories/setting-row'
 import { Route as StoriesScrollAreaRouteImport } from './routes/stories/scroll-area'
 import { Route as StoriesPopoverRouteImport } from './routes/stories/popover'
 import { Route as StoriesPaginationRouteImport } from './routes/stories/pagination'
@@ -200,6 +201,11 @@ const StoriesStepperRoute = StoriesStepperRouteImport.update({
 const StoriesSkeletonRoute = StoriesSkeletonRouteImport.update({
   id: '/skeleton',
   path: '/skeleton',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesSettingRowRoute = StoriesSettingRowRouteImport.update({
+  id: '/setting-row',
+  path: '/setting-row',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 const StoriesScrollAreaRoute = StoriesScrollAreaRouteImport.update({
@@ -640,6 +646,7 @@ export interface FileRoutesByFullPath {
   '/stories/pagination': typeof StoriesPaginationRoute
   '/stories/popover': typeof StoriesPopoverRoute
   '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/setting-row': typeof StoriesSettingRowRoute
   '/stories/skeleton': typeof StoriesSkeletonRoute
   '/stories/stepper': typeof StoriesStepperRoute
   '/stories/table': typeof StoriesTableRoute
@@ -732,6 +739,7 @@ export interface FileRoutesByTo {
   '/stories/pagination': typeof StoriesPaginationRoute
   '/stories/popover': typeof StoriesPopoverRoute
   '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/setting-row': typeof StoriesSettingRowRoute
   '/stories/skeleton': typeof StoriesSkeletonRoute
   '/stories/stepper': typeof StoriesStepperRoute
   '/stories/table': typeof StoriesTableRoute
@@ -828,6 +836,7 @@ export interface FileRoutesById {
   '/stories/pagination': typeof StoriesPaginationRoute
   '/stories/popover': typeof StoriesPopoverRoute
   '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/setting-row': typeof StoriesSettingRowRoute
   '/stories/skeleton': typeof StoriesSkeletonRoute
   '/stories/stepper': typeof StoriesStepperRoute
   '/stories/table': typeof StoriesTableRoute
@@ -923,6 +932,7 @@ export interface FileRouteTypes {
     | '/stories/pagination'
     | '/stories/popover'
     | '/stories/scroll-area'
+    | '/stories/setting-row'
     | '/stories/skeleton'
     | '/stories/stepper'
     | '/stories/table'
@@ -1015,6 +1025,7 @@ export interface FileRouteTypes {
     | '/stories/pagination'
     | '/stories/popover'
     | '/stories/scroll-area'
+    | '/stories/setting-row'
     | '/stories/skeleton'
     | '/stories/stepper'
     | '/stories/table'
@@ -1110,6 +1121,7 @@ export interface FileRouteTypes {
     | '/stories/pagination'
     | '/stories/popover'
     | '/stories/scroll-area'
+    | '/stories/setting-row'
     | '/stories/skeleton'
     | '/stories/stepper'
     | '/stories/table'
@@ -1296,6 +1308,13 @@ declare module '@tanstack/react-router' {
       path: '/skeleton'
       fullPath: '/stories/skeleton'
       preLoaderRoute: typeof StoriesSkeletonRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/setting-row': {
+      id: '/stories/setting-row'
+      path: '/setting-row'
+      fullPath: '/stories/setting-row'
+      preLoaderRoute: typeof StoriesSettingRowRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
     '/stories/scroll-area': {
@@ -1939,6 +1958,7 @@ interface StoriesRouteRouteChildren {
   StoriesPaginationRoute: typeof StoriesPaginationRoute
   StoriesPopoverRoute: typeof StoriesPopoverRoute
   StoriesScrollAreaRoute: typeof StoriesScrollAreaRoute
+  StoriesSettingRowRoute: typeof StoriesSettingRowRoute
   StoriesSkeletonRoute: typeof StoriesSkeletonRoute
   StoriesStepperRoute: typeof StoriesStepperRoute
   StoriesTableRoute: typeof StoriesTableRoute
@@ -1990,6 +2010,7 @@ const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
   StoriesPaginationRoute: StoriesPaginationRoute,
   StoriesPopoverRoute: StoriesPopoverRoute,
   StoriesScrollAreaRoute: StoriesScrollAreaRoute,
+  StoriesSettingRowRoute: StoriesSettingRowRoute,
   StoriesSkeletonRoute: StoriesSkeletonRoute,
   StoriesStepperRoute: StoriesStepperRoute,
   StoriesTableRoute: StoriesTableRoute,
