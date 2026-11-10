@@ -370,7 +370,13 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     portal.loginType === 'applicationLogin' && !session?.accessToken
 
   if (!session || needsApplicationLogin) {
-    return <PortalLogin portal={portal} onAuthenticated={handleAuthenticated} />
+    return (
+      <PortalLogin
+        portal={portal}
+        portalOwnerId={readPortalJsonIdsFromUrl().userId}
+        onAuthenticated={handleAuthenticated}
+      />
+    )
   }
 
   const lastActionLabel = selectedSubmission

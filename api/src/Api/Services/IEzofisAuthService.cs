@@ -54,6 +54,16 @@ public interface IEzofisAuthService
         string provider,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Issues an API access token for a portal visitor who was already verified against the portal's master form.
+    /// The visitor becomes (or stays) an ExternalUser of the tenant. An email that belongs to a real tenant user
+    /// (any role other than ExternalUser) is refused, so a master record can never sign in as staff or an admin.
+    /// </summary>
+    Task<LoginResult> IssuePortalAccessTokenAsync(
+        Guid tenantId,
+        string email,
+        CancellationToken cancellationToken = default);
+
     /// <summary>After a correct sign-invite OTP, issue the same API access token as share login.</summary>
     Task<LoginResult> CompleteSignInviteOtpAsync(
         string inviteToken,

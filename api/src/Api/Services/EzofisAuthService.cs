@@ -269,6 +269,31 @@ public sealed class EzofisAuthService : IEzofisAuthService
         return await IssueGuestAccessTokenAsync(verified.TenantId, verified.Email, cancellationToken);
     }
 
+    public async Task<LoginResult> IssuePortalAccessTokenAsync(
+        Guid tenantId,
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        if (tenantId == Guid.Empty)
+            throw new ArgumentException("TenantId is required.");
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email is required.");
+
+        var guest = await _guestProvisioning.EnsureGuestUserAsync(tenantId, email, externalOnly: true, cancellationToken);
+        if (!string.Equals(guest.Role, SaaSApp.Users.Domain.Entities.User.RoleExternalUser, StringComparison.OrdinalIgnoreCase))
+        {
+            // The email belongs to a real tenant user: they must use Application Sign-in instead.
+            throw new UnauthorizedAccessException("This account must sign in with Application Sign-in.");
+        }
+
+        var normalized = email.Trim().ToLowerInvariant();
+        return new LoginSuccess(
+            guest.UserId,
+            GenerateJwt(guest.UserId, normalized, email.Trim(), guest.Role, tenantId),
+            "Bearer",
+            (int)AccessTokenExpiry.TotalSeconds);
+    }
+
     private async Task<LoginSuccess> IssueGuestAccessTokenAsync(
         Guid tenantId,
         string email,
