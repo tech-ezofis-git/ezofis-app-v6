@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Npgsql;
 using NpgsqlTypes;
 using SaaSApp.Repository.Application.Contracts;
@@ -18,6 +19,20 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
     private const string InstanceIdGuard = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
     private static string TryCastInstanceId(string column) =>
         $"(CASE WHEN {column} ~ '{InstanceIdGuard}' THEN {column}::uuid ELSE NULL END)";
+
+    private static readonly Regex InstanceIdGuardPattern = new(
+        @"([A-Za-z_][A-Za-z0-9_.]*) ~ '" + Regex.Escape(InstanceIdGuard) + "'",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// PostgreSQL 16+ has pg_input_is_valid, about 3x cheaper per row than the regex guard. That
+    /// matters when the guard runs on every row of a large mailbox (e.g. 240k Completed tickets).
+    /// It only accepts strings that cast to uuid, so the CASE still never fails. Older servers keep the regex.
+    /// </summary>
+    private static string AdaptUuidGuards(NpgsqlConnection connection, string sql) =>
+        connection.PostgreSqlVersion.Major >= 16
+            ? InstanceIdGuardPattern.Replace(sql, "pg_input_is_valid($1, 'uuid')")
+            : sql;
 
     private readonly ITenantContext _tenantContext;
     private readonly IWorkflowEzfbFormDataLoader _formDataLoader;
@@ -150,9 +165,15 @@ public sealed class WorkflowLegacyMailboxQueryService : IWorkflowLegacyMailboxQu
             return new LegacyMailboxListResult(items, -1, page, pageSize, TableExists: true);
         }
 
-        var countSql = BuildCountSql(tableFull, whereSql, latestOnlyPerInstance);
-        var totalCount = await ExecuteCountAsync(connection, countSql, parameters, cancellationToken);
-        var pageItems = await ReadListPageAsync(connection, dataSql, parameters, offset, pageSize, cancellationToken);
+        // The latest-per-instance list SQL returns the total itself (one pass over the filter instead
+        // of two). It cannot when the page is empty (offset past the end) or the SQL has no total.
+        var (pageItems, listedTotal) = await ReadListPageWithTotalAsync(
+            connection, dataSql, parameters, offset, pageSize, cancellationToken);
+        var totalCount = listedTotal
+            ?? (pageItems.Count == 0 && offset == 0
+                ? 0
+                : await ExecuteCountAsync(
+                    connection, BuildCountSql(tableFull, whereSql, latestOnlyPerInstance), parameters, cancellationToken));
         await EnrichFormDataAsync(connection, pageItems, cancellationToken);
         await EnrichRepositoryItemAsync(pageItems, cancellationToken);
         await EnrichAiInsightsAsync(
@@ -346,7 +367,7 @@ WITH mailbox_ranked AS (
 SELECT id, workflow_instance_id, activity_id, transaction_created_at, created_at_utc
 FROM mailbox_ranked
 WHERE mailbox_rn = 1;";
-            await using var cmd = new NpgsqlCommand(sql, connection) { CommandTimeout = 120 };
+            await using var cmd = new NpgsqlCommand(AdaptUuidGuards(connection, sql), connection) { CommandTimeout = 120 };
             foreach (var p in filter.Parameters)
                 cmd.Parameters.Add(CloneParameter(p));
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
@@ -491,6 +512,22 @@ EXISTS (
     {
         var controlsByForm = new Dictionary<string, List<FormControlSlot>>(StringComparer.OrdinalIgnoreCase);
         var allControlsByForm = new Dictionary<string, List<FormControlNode>>(StringComparer.OrdinalIgnoreCase);
+
+        // Rows without stored form_data (e.g. migrated tickets) read it from the form's ezfb table:
+        // one batch per form for the whole page, not about 5 round trips per row.
+        var loadedFormData = new Dictionary<(string FormId, Guid EntryId), string>();
+        foreach (var group in items
+                     .Where(r => string.IsNullOrWhiteSpace(r.FormData) && !string.IsNullOrWhiteSpace(r.FormId))
+                     .Select(r => (FormId: r.FormId!, EntryId: Guid.TryParse(r.FormEntryId, out var id) ? id : Guid.Empty))
+                     .Where(x => x.EntryId != Guid.Empty)
+                     .GroupBy(x => x.FormId, StringComparer.OrdinalIgnoreCase))
+        {
+            var batch = await _formDataLoader.LoadFormDataJsonBatchAsync(
+                group.Key, group.Select(x => x.EntryId).Distinct().ToArray(), deleted: false, cancellationToken);
+            foreach (var (entryId, json) in batch)
+                loadedFormData[(group.Key.ToLowerInvariant(), entryId)] = json;
+        }
+
         for (var i = 0; i < items.Count; i++)
         {
             var row = items[i];
@@ -500,7 +537,7 @@ EXISTS (
                 && Guid.TryParse(row.FormEntryId, out var entryId)
                 && entryId != Guid.Empty)
             {
-                formData = await _formDataLoader.LoadFormDataJsonAsync(row.FormId, entryId, cancellationToken);
+                formData = loadedFormData.GetValueOrDefault((row.FormId.ToLowerInvariant(), entryId));
             }
 
             if (string.IsNullOrWhiteSpace(row.FormId))
@@ -854,7 +891,7 @@ EXISTS (
         var keepStageRows = KeepMjbStageRows(request.WorkflowId);
         var (whereSql, parameters) = BuildUserFilter(request, kind, transactionTable, transactionTableExists, keepStageRows);
         var countSql = BuildCountSql(tableFull, whereSql, latestOnlyPerInstance: !keepStageRows);
-        await using var cmd = new NpgsqlCommand(countSql, connection);
+        await using var cmd = new NpgsqlCommand(AdaptUuidGuards(connection, countSql), connection) { CommandTimeout = 120 };
         foreach (var p in parameters)
             cmd.Parameters.Add(CloneParameter(p));
 
@@ -1255,26 +1292,33 @@ ORDER BY m.transaction_created_at DESC, m.id DESC
 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
         }
 
+        // Rank only the key columns (wide columns like form_data would be sorted for every matching
+        // row, spilling to disk on big mailboxes), page, then read the full rows for the page only.
+        // total_count is the number of tickets (rank-1 rows) before paging, so the list does not
+        // need a second pass over the same filter to count (see TotalCountColumn).
         return $@"
 WITH mailbox_ranked AS (
     SELECT
-        m.*,
+        m.id,
+        m.transaction_created_at,
         ROW_NUMBER() OVER (
             PARTITION BY m.workflow_instance_id
             ORDER BY m.transaction_created_at DESC, m.id DESC) AS mailbox_rn
     FROM {tableFull} m
     WHERE {whereSql}
 ),
-page_rows AS (
-    SELECT m.*
-    FROM mailbox_ranked m
-    WHERE m.mailbox_rn = 1
-    ORDER BY m.transaction_created_at DESC, m.id DESC
+page_keys AS (
+    SELECT r.id, COUNT(*) OVER () AS total_count
+    FROM mailbox_ranked r
+    WHERE r.mailbox_rn = 1
+    ORDER BY r.transaction_created_at DESC, r.id DESC
     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY
 )
 SELECT
-{selectColumns}
-FROM page_rows m
+{selectColumns},
+    pk.total_count
+FROM page_keys pk
+JOIN {tableFull} m ON m.id = pk.id
 {currentStageJoin}
 {viewerJoin}
 {agentJoin}
@@ -1287,13 +1331,26 @@ ORDER BY m.transaction_created_at DESC, m.id DESC;";
         List<NpgsqlParameter> parameters,
         CancellationToken cancellationToken)
     {
-        await using var countCmd = new NpgsqlCommand(countSql, connection) { CommandTimeout = 120 };
+        await using var countCmd = new NpgsqlCommand(AdaptUuidGuards(connection, countSql), connection) { CommandTimeout = 120 };
         foreach (var p in parameters)
             countCmd.Parameters.Add(CloneParameter(p));
         return Convert.ToInt32(await countCmd.ExecuteScalarAsync(cancellationToken));
     }
 
+    /// <summary>Column after the mapped row columns, present only on the latest-per-instance list SQL.</summary>
+    private const string TotalCountColumn = "total_count";
+
     private static async Task<List<LegacyMailboxRowDto>> ReadListPageAsync(
+        NpgsqlConnection connection,
+        string dataSql,
+        List<NpgsqlParameter> parameters,
+        int offset,
+        int pageSize,
+        CancellationToken cancellationToken) =>
+        (await ReadListPageWithTotalAsync(connection, dataSql, parameters, offset, pageSize, cancellationToken)).Items;
+
+    /// <summary>Total is the SQL's total_count column, or null when it has none or the page is empty.</summary>
+    private static async Task<(List<LegacyMailboxRowDto> Items, int? Total)> ReadListPageWithTotalAsync(
         NpgsqlConnection connection,
         string dataSql,
         List<NpgsqlParameter> parameters,
@@ -1302,15 +1359,28 @@ ORDER BY m.transaction_created_at DESC, m.id DESC;";
         CancellationToken cancellationToken)
     {
         var items = new List<LegacyMailboxRowDto>();
-        await using var cmd = new NpgsqlCommand(dataSql, connection) { CommandTimeout = 120 };
+        int? total = null;
+        await using var cmd = new NpgsqlCommand(AdaptUuidGuards(connection, dataSql), connection) { CommandTimeout = 120 };
         foreach (var p in parameters)
             cmd.Parameters.Add(CloneParameter(p));
         cmd.Parameters.AddWithValue("@Offset", offset);
         cmd.Parameters.AddWithValue("@PageSize", pageSize);
         await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        var totalOrdinal = -1;
+        for (var i = 0; i < reader.FieldCount; i++)
+        {
+            if (string.Equals(reader.GetName(i), TotalCountColumn, StringComparison.OrdinalIgnoreCase))
+                totalOrdinal = i;
+        }
+
         while (await reader.ReadAsync(cancellationToken))
+        {
             items.Add(MapRow(reader));
-        return items;
+            if (totalOrdinal >= 0 && total is null && !reader.IsDBNull(totalOrdinal))
+                total = Convert.ToInt32(reader.GetValue(totalOrdinal));
+        }
+
+        return (items, total);
     }
 
     private static async Task<(string TableName, string TableFull, bool Exists)> ResolveMailboxTableAsync(

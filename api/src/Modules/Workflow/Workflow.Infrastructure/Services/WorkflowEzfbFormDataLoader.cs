@@ -331,8 +331,20 @@ WHERE item_id = ANY(@ItemIds) AND {DeletedFilter(deleted)};";
         string formId,
         CancellationToken cancellationToken)
     {
+        // ALTER takes an ACCESS EXCLUSIVE lock even when the column exists, and this runs on every
+        // mailbox page: only issue it when the column is really missing (the check takes no lock).
         await using (var alterCmd = new NpgsqlCommand(
-            """ALTER TABLE dbo."wFormControl" ADD COLUMN IF NOT EXISTS "columnName" varchar(200) NULL;""",
+            """
+            DO $do$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_attribute
+                    WHERE attrelid = 'dbo."wFormControl"'::regclass AND attname = 'columnName' AND NOT attisdropped) THEN
+                    ALTER TABLE dbo."wFormControl" ADD COLUMN IF NOT EXISTS "columnName" varchar(200) NULL;
+                END IF;
+            END
+            $do$;
+            """,
             connection))
             await alterCmd.ExecuteNonQueryAsync(cancellationToken);
 

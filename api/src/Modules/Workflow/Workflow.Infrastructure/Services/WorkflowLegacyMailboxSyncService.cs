@@ -60,6 +60,54 @@ public sealed class WorkflowLegacyMailboxSyncService : IWorkflowLegacyMailboxSyn
             workflowId, transactionRowId, connection, formOverride: null, cancellationToken, inboxAction, ownerMailboxCopy);
     }
 
+    private static readonly string[] AssigneeColumns = ["user_ids", "group_ids", "dynamic_user_ids"];
+
+    /// <summary>
+    /// Adds the assignee columns only when one is missing. Runs on every inbox list, so it must not
+    /// issue ALTER TABLE each time: ALTER takes an ACCESS EXCLUSIVE lock even when the columns exist,
+    /// which queues every other read of the transaction table behind any long-running query.
+    /// The catalog check takes no table lock. Returns false when the transaction table does not exist.
+    /// </summary>
+    private static async Task<bool> EnsureAssigneeColumnsAsync(
+        NpgsqlConnection connection,
+        string transactionTable,
+        CancellationToken cancellationToken)
+    {
+        await using (var check = new NpgsqlCommand(
+            """
+            SELECT to_regclass(@Table) IS NOT NULL,
+                   (SELECT COUNT(*)::int FROM pg_attribute
+                    WHERE attrelid = to_regclass(@Table) AND attname = ANY(@Columns) AND NOT attisdropped)
+            """,
+            connection))
+        {
+            check.Parameters.AddWithValue("@Table", transactionTable);
+            check.Parameters.AddWithValue("@Columns", AssigneeColumns);
+            await using var reader = await check.ExecuteReaderAsync(cancellationToken);
+            await reader.ReadAsync(cancellationToken);
+            if (!reader.GetBoolean(0))
+                return false;
+            if (reader.GetInt32(1) == AssigneeColumns.Length)
+                return true;
+        }
+
+        await using (var alter = new NpgsqlCommand(
+            string.Concat(AssigneeColumns.Select(c => $"ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS {c} text NULL; ")),
+            connection))
+        {
+            try
+            {
+                await alter.ExecuteNonQueryAsync(cancellationToken);
+            }
+            catch (PostgresException ex) when (ex.SqlState == "42P01")
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public async Task EnsureConfiguredAssigneesAsync(Guid workflowId, CancellationToken cancellationToken = default)
     {
         var connectionString = _tenantContext.ConnectionString;
@@ -71,19 +119,8 @@ public sealed class WorkflowLegacyMailboxSyncService : IWorkflowLegacyMailboxSyn
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
 
-        await using (var alter = new NpgsqlCommand(
-            $"ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS user_ids text NULL; ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS group_ids text NULL; ALTER TABLE {transactionTable} ADD COLUMN IF NOT EXISTS dynamic_user_ids text NULL;",
-            connection))
-        {
-            try
-            {
-                await alter.ExecuteNonQueryAsync(cancellationToken);
-            }
-            catch (PostgresException ex) when (ex.SqlState == "42P01")
-            {
-                return;
-            }
-        }
+        if (!await EnsureAssigneeColumnsAsync(connection, transactionTable, cancellationToken))
+            return;
 
         var openRows = new List<(int Id, string? ActivityId, string? UserIds)>();
         // A row escalated to a group (group_ids holds its id) keeps the group's members, not the stage's users.
