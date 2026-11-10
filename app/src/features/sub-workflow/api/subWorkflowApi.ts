@@ -80,10 +80,14 @@ export const subWorkflowApi = {
   getHistory: async (
     workflowId: Id,
     processId: Id,
+    /** Children already loaded elsewhere (header, list); skips a round trip. */
+    knownChildren?: SubProcessRow[],
   ): Promise<
     { stage: string; subWorkflowHistory: SubWorkflowHistoryRow[] }[]
   > => {
-    const children = await subWorkflowApi.getSubProcesses(workflowId, processId)
+    const children =
+      knownChildren ??
+      (await subWorkflowApi.getSubProcesses(workflowId, processId))
     const entries = await Promise.all(
       children.map(async (child) => {
         const res = await workflowsApiV6.getInstanceHistory(

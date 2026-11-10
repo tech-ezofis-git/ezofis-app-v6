@@ -188,6 +188,34 @@ export function validateFieldValue(
     return { error: errors[0], errors, isValid: false }
   }
 
+  // A table the user left untouched shows one blank row, but that row is not
+  // stored, so the per-row loop below would never see it. Its mandatory
+  // columns still have to be filled, so report them here.
+  if (
+    isEmpty &&
+    (runtimeType === 'TABLE' || runtimeType === 'DYNAMIC_TABLE')
+  ) {
+    const cols = field.settings?.specific?.tableColumns || []
+    for (const col of cols) {
+      if (
+        col.settings?.general?.visibility === 'HIDDEN' ||
+        ['CALCULATED', 'COUNTER', 'LABEL'].includes(col.type)
+      ) {
+        continue
+      }
+      const isColRequired =
+        col.settings?.validation?.fieldRule === 'REQUIRED' ||
+        col.isRequired ||
+        col.required
+      if (isColRequired) {
+        errors.push(
+          `Row 1: ${getEffectiveColumnLabel(col)} is required and cannot be empty`,
+        )
+      }
+    }
+    if (errors.length > 0) return { error: errors[0], errors, isValid: false }
+  }
+
   // If empty and not required, no further format/range errors apply
   if (isEmpty) {
     return { errors: [], isValid: true }

@@ -18,13 +18,16 @@ interface Props {
   zIndex?: number
 }
 
-type TooltipColor = 'gray' | 'primary' | 'secondary' | 'red'
+type TooltipColor = 'gray' | 'primary' | 'secondary' | 'red' | 'white'
 
 const colorClassName: Record<TooltipColor, string> = {
   gray: 'bg-gray-12 text-gray-0',
   primary: 'bg-primary-9',
   red: 'bg-red-9',
   secondary: 'bg-secondary-9',
+  // Light card, same look as the routes popup.
+  white:
+    'rounded-xl border border-gray-3 bg-surface px-3 py-2 text-[13px] font-medium !text-gray-13 shadow-2xl',
 }
 
 const Tooltip = ({
@@ -42,7 +45,7 @@ const Tooltip = ({
   zIndex = 1000000,
 }: Props) => {
   const _className = cn(
-    'rounded px-2 py-1 text-xs text-white',
+    color !== 'white' && 'rounded px-2 py-1 text-xs text-white',
     colorClassName[color],
   )
 
@@ -60,8 +63,8 @@ const Tooltip = ({
       openDelay={openDelay}
       position={position}
       w={width}
+      withArrow={color !== 'white'}
       zIndex={zIndex}
-      withArrow
       classNames={{
         tooltip: _className,
       }}

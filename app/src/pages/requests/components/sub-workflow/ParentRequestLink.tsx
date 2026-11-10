@@ -20,6 +20,7 @@ const ParentRequestLink = ({ parent }: Props) => {
 
   return (
     <Tooltip
+      color='white'
       content={t`Sub-process of ${parentRequestNo} (${workflowName})`}
       position='bottom'
     >
