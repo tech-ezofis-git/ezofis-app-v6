@@ -80,14 +80,14 @@ export const ALL_FIELDS: FieldType[] = [
   {
     description: 'Phone number field',
     icon: 'lucide:phone',
-    label: 'Phone',
+    label: 'Phone Number',
     section: 'tier1',
     type: 'PHONE_NUMBER',
   },
   {
-    description: 'Select from list',
+    description: 'Dropdown list, pick one',
     icon: 'lucide:list-todo',
-    label: 'Dropdown',
+    label: 'Single Select',
     section: 'tier1',
     type: 'SINGLE_SELECT',
   },

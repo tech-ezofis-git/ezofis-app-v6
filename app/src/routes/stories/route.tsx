@@ -54,6 +54,10 @@ const MENU_GROUPS = [
     ],
   },
   {
+    group: 'Settings',
+    items: [{ label: 'Setting Row', to: '/stories/setting-row' }],
+  },
+  {
     group: 'Data Display',
     items: [
       { label: 'Alert', to: '/stories/Alert' },

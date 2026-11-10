@@ -1,7 +1,8 @@
 import type { ComponentProps } from 'react'
 import InputSelectBase from '@/components/base/inputs/InputSelect'
-import InputSwitch from '@/components/base/inputs/InputSwitch'
+import SettingSwitchRow from '@/components/base/inputs/SettingSwitchRow'
 import type { TableColumn } from './TableColumnSettingsPanel'
+import { settingLabelClass } from './settingLabelClasses'
 
 type ColumnSettingsPatch = Partial<NonNullable<TableColumn['settings']>>
 type DefaultValueType = NonNullable<
@@ -70,12 +71,10 @@ const TableColumnChoiceSettings = ({ column, onUpdate }: Props) => {
 
   return (
     <div className={sectionClass}>
-      <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-        Choice Settings
-      </label>
+      <label className={settingLabelClass}>Choice options</label>
       <InputSelect
         description='Pre-fills new rows with the signed-in user’s details.'
-        label='Fill Value'
+        label='Start with'
         options={FILL_VALUE_OPTIONS}
         value={FILL_VALUE_OPTIONS.find((o) => o.id === fillValue) || null}
         onChange={(opt) =>
@@ -86,24 +85,24 @@ const TableColumnChoiceSettings = ({ column, onUpdate }: Props) => {
           })
         }
       />
-      <InputSwitch
+      <SettingSwitchRow
         checked={specific?.allowToAddNewOptions === true}
-        description='Let users type a value that is not in the list.'
-        label='Allow Users To Add New Options'
+        help='People can type a value that is not in the list.'
+        title='Let users add their own choices'
         onChange={(checked) =>
           onUpdate({ specific: { allowToAddNewOptions: checked } })
         }
       />
-      <InputSwitch
+      <SettingSwitchRow
         checked={specific?.qrValue === true}
-        description='Show a scan button that picks the option matching a QR code or barcode.'
-        label='Read Values From QR'
+        help='Show a scan button that fills this from a QR code or barcode.'
+        title='Read value from a QR code'
         onChange={(checked) => onUpdate({ specific: { qrValue: checked } })}
       />
-      <InputSwitch
+      <SettingSwitchRow
         checked={yearBased}
-        description='Replaces the option list with years: the last 10, this year and next.'
-        label='Option Type: Year-Based'
+        help='Replace the choices with years: the last 10, this year and next.'
+        title='Year choices'
         onChange={(checked) =>
           onUpdate({
             specific: {
@@ -133,7 +132,8 @@ const TableColumnChoiceSettings = ({ column, onUpdate }: Props) => {
         />
       )}
       <InputSelect
-        label='Content Rule'
+        description='Limit what can be typed in this column, for example numbers only.'
+        label='Type of text allowed'
         options={CONTENT_RULE_OPTIONS}
         value={CONTENT_RULE_OPTIONS.find((o) => o.id === contentRule) || null}
         onChange={(opt) =>

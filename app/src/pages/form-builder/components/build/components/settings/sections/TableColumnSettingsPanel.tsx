@@ -9,15 +9,16 @@ import { getRepositoryItemFilterFields } from '@/api/v6/folder/folder'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
 import InputSelectBase from '@/components/base/inputs/InputSelect'
-import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import SettingSwitchRow from '@/components/base/inputs/SettingSwitchRow'
 import { FILL_SYNC_COLUMN_TYPES } from '@/pages/form-builder/helpers/tableColumnFillSync'
 import {
   extractFormFieldChoices,
   getColumnOptionsSource,
 } from '@/pages/form-builder/helpers/tableColumnOptions'
 import FormulaBuilder from './FormulaBuilder'
+import { settingLabelClass } from './settingLabelClasses'
 import TableColumnAiSettings from './TableColumnAiSettings'
 import TableColumnChoiceSettings from './TableColumnChoiceSettings'
 import TableColumnFormatSettings from './TableColumnFormatSettings'
@@ -309,7 +310,8 @@ const TableColumnSettingsPanel = ({
   return (
     <div className='animate-in fade-in slide-in-from-top-1 space-y-3 duration-200'>
       <InputText
-        label='Display Label'
+        description='Leave empty to show the column name.'
+        label='Name shown on the form'
         placeholder='Alternative header shown to end-users'
         value={displayLabel}
         onChange={(value: string) =>
@@ -318,23 +320,24 @@ const TableColumnSettingsPanel = ({
       />
 
       <InputSelect
-        label='Visibility'
+        description='Choose whether people can edit this column, only see it, or not see it at all.'
+        label='Can users change this column?'
         options={[
-          { id: 'NORMAL', name: 'Normal (Editable)' },
-          { id: 'READ_ONLY', name: 'Read Only (Visible but locked)' },
-          { id: 'DISABLE', name: 'Disable (Grayed out)' },
-          { id: 'HIDDEN', name: 'Hidden (Not shown in table)' },
+          { id: 'NORMAL', name: 'Editable' },
+          { id: 'READ_ONLY', name: 'View only' },
+          { id: 'DISABLE', name: 'Grayed out' },
+          { id: 'HIDDEN', name: 'Hidden (not shown in the table)' },
         ]}
         value={
           {
-            DISABLE: { id: 'DISABLE', name: 'Disable (Grayed out)' },
-            HIDDEN: { id: 'HIDDEN', name: 'Hidden (Not shown in table)' },
-            NORMAL: { id: 'NORMAL', name: 'Normal (Editable)' },
+            DISABLE: { id: 'DISABLE', name: 'Grayed out' },
+            HIDDEN: { id: 'HIDDEN', name: 'Hidden (not shown in the table)' },
+            NORMAL: { id: 'NORMAL', name: 'Editable' },
             READ_ONLY: {
               id: 'READ_ONLY',
-              name: 'Read Only (Visible but locked)',
+              name: 'View only',
             },
-          }[visibility] || { id: 'NORMAL', name: 'Normal (Editable)' }
+          }[visibility] || { id: 'NORMAL', name: 'Editable' }
         }
         onChange={(opt) =>
           onUpdate({
@@ -344,15 +347,16 @@ const TableColumnSettingsPanel = ({
       />
 
       <InputText
-        label='Tooltip'
-        placeholder='Info shown beside the column header'
+        description='Text shown when someone hovers over the ? icon.'
+        label='Hint on hover'
+        placeholder='Hint shown on hover'
         value={tooltip}
         onChange={(value: string) => onUpdate({ general: { tooltip: value } })}
       />
 
-      <InputSwitch
+      <SettingSwitchRow
         checked={isRequired}
-        label='Required'
+        title='Required'
         onChange={(checked) =>
           onUpdate({
             validation: { fieldRule: checked ? 'REQUIRED' : 'OPTIONAL' },
@@ -361,7 +365,8 @@ const TableColumnSettingsPanel = ({
       />
 
       <InputText
-        label='Placeholder'
+        description='Grey example text shown inside an empty box.'
+        label='Placeholder text'
         placeholder='e.g. Enter value...'
         value={placeholder}
         onChange={(value: string) =>
@@ -372,7 +377,8 @@ const TableColumnSettingsPanel = ({
       {showOptions && (
         <>
           <InputSelect
-            label='Separate options using'
+            description='How your typed choices are separated: a new line or a comma.'
+            label='Separate choices with'
             options={SEPARATOR_OPTIONS}
             value={SEPARATOR_OPTIONS.find((o) => o.id === separator) || null}
             onChange={(opt) =>
@@ -404,8 +410,8 @@ const TableColumnSettingsPanel = ({
           />
 
           <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-            <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-              Options Source
+            <label className={settingLabelClass}>
+              Where the choices come from
             </label>
             <InputRadioGroup
               options={optionsSourceRadio}
@@ -435,9 +441,7 @@ const TableColumnSettingsPanel = ({
 
             {optionsSource === 'LOOKUP' ? (
               <>
-                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-                  Lookup
-                </label>
+                <label className={settingLabelClass}>Lookup</label>
                 <InputSelect
                   options={repositories}
                   placeholder='Select a repository'
@@ -482,11 +486,11 @@ const TableColumnSettingsPanel = ({
                   }
                 />
 
-                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-                  Filter by column (cascade, optional)
+                <label className={settingLabelClass}>
+                  Options depend on another column
                 </label>
                 <InputSelect
-                  placeholder='No cascade — show all options'
+                  placeholder='Does not depend on another column'
                   clearable
                   options={cascadeOptions}
                   value={
@@ -508,12 +512,10 @@ const TableColumnSettingsPanel = ({
               </>
             ) : optionsSource === 'MASTER' ? (
               <>
-                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-                  Master Table
-                </label>
+                <label className={settingLabelClass}>Master form</label>
                 <InputSelect
                   options={masterForms}
-                  placeholder='Select a master table'
+                  placeholder='Select a master form'
                   value={
                     masterForms.find((f) => String(f.id) === masterFormId) ||
                     null
@@ -550,25 +552,26 @@ const TableColumnSettingsPanel = ({
                     })
                   }
                 />
-                <InputSwitch
+                <SettingSwitchRow
                   checked={showAllData}
-                  label='List all data when parent is empty'
+                  help='While the column this one depends on is empty, show every choice.'
+                  title='Show all choices until the other column is filled'
                   onChange={(checked) =>
                     onUpdate({ specific: { showAllData: checked } })
                   }
                 />
-                <InputSwitch
+                <SettingSwitchRow
                   checked={column.settings?.specific?.isSameMaster === true}
-                  label='Same Master'
+                  title='Same Master'
                   onChange={(checked) =>
                     onUpdate({ specific: { isSameMaster: checked } })
                   }
                 />
-                <label className='mt-1 block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-                  Filter by column (cascade, optional)
+                <label className={settingLabelClass}>
+                  Options depend on another column
                 </label>
                 <InputSelect
-                  placeholder='No cascade — show all options'
+                  placeholder='Does not depend on another column'
                   clearable
                   options={cascadeOptions}
                   value={
@@ -594,7 +597,8 @@ const TableColumnSettingsPanel = ({
               </p>
             ) : optionsSource === 'PREDEFINED' ? (
               <InputSelect
-                label='Predefined list'
+                description='Fill the choices from a built-in list.'
+                label='Built-in list'
                 options={PREDEFINED_TYPE_OPTIONS}
                 value={
                   PREDEFINED_TYPE_OPTIONS.find(
@@ -620,9 +624,7 @@ const TableColumnSettingsPanel = ({
 
       {isCalculated && (
         <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-          <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-            Formula (uses this row&apos;s other columns)
-          </label>
+          <label className={settingLabelClass}>Formula</label>
           <FormulaBuilder
             activeQuestion={pseudoQuestion}
             fields={pseudoSiblingFields}
@@ -635,12 +637,10 @@ const TableColumnSettingsPanel = ({
 
       {isCalculated && (
         <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-          <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-            Validation
-          </label>
+          <label className={settingLabelClass}>Rules</label>
           <InputSelect
             description='Integer rounds the calculated result to a whole number; Decimal keeps decimals.'
-            label='Content Rule'
+            label='Type of text allowed'
             options={CALCULATED_RULE_OPTIONS}
             value={
               CALCULATED_RULE_OPTIONS.find((o) => o.id === calculatedRule) ||
@@ -656,7 +656,7 @@ const TableColumnSettingsPanel = ({
       {!isCalculated && !showOptions && (
         <div className='space-y-2'>
           <InputSelect
-            label={hasFillSync ? 'Fill Value' : 'Default Value'}
+            label={hasFillSync ? 'Start with' : 'Starting value'}
             options={
               hasFillSync
                 ? FILL_SYNC_VALUE_TYPE_OPTIONS
@@ -688,9 +688,10 @@ const TableColumnSettingsPanel = ({
           {isFillMaster && (
             <>
               <InputSelect
-                label='Master Table'
+                description='The master form this comes from. A master form holds reference data like vendors or customers.'
+                label='Master form'
                 options={masterForms}
-                placeholder='Select a master table'
+                placeholder='Select a master form'
                 value={
                   masterForms.find((f) => String(f.id) === masterFormId) || null
                 }
@@ -704,8 +705,9 @@ const TableColumnSettingsPanel = ({
                 }
               />
               <InputSelect
+                description='The master form column whose value fills this column.'
                 disabled={!masterFormId}
-                label='Master column to fill'
+                label='Master column to copy'
                 options={fillMasterColumns}
                 placeholder={
                   masterFormId
@@ -735,10 +737,10 @@ const TableColumnSettingsPanel = ({
             </>
           )}
           {isDateColumn && (
-            <InputSwitch
+            <SettingSwitchRow
               checked={column.settings?.specific?.qrValue === true}
-              description='Show a scan button in the cell to read a date from a QR code or barcode.'
-              label='Read Values From QR'
+              help='Show a scan button that fills this from a QR code or barcode.'
+              title='Read value from a QR code'
               onChange={(checked) =>
                 onUpdate({ specific: { qrValue: checked } })
               }
@@ -760,10 +762,10 @@ const TableColumnSettingsPanel = ({
       )}
 
       {isSummable && (
-        <InputSwitch
+        <SettingSwitchRow
           checked={showColumnTotal}
-          description='Include this column in the table footer sum (when the table-level "Show Totals" setting is on)'
-          label='Show column total'
+          help="Add this column to the table's total row (when table totals are on)."
+          title='Show a total for this column'
           onChange={(checked) =>
             onUpdate({ specific: { showColumnTotal: checked } })
           }
@@ -772,11 +774,10 @@ const TableColumnSettingsPanel = ({
 
       {isValidatable && (
         <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-          <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-            Validation
-          </label>
+          <label className={settingLabelClass}>Rules</label>
           <InputSelect
-            label='Content Rule'
+            description='Limit what can be typed in this column, for example numbers only.'
+            label='Type of text allowed'
             options={
               column.type === 'NUMBER' || column.type === 'COUNTER'
                 ? CONTENT_RULE_OPTIONS.filter((o) =>
@@ -829,9 +830,7 @@ const TableColumnSettingsPanel = ({
 
       {isNumericColumn && (
         <div className='space-y-2 rounded-lg border border-dashed border-gray-3 p-2.5'>
-          <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-            Number Format
-          </label>
+          <label className={settingLabelClass}>Whole number or decimal</label>
           <InputNumber
             description='Amount the up/down arrow keys change the value by. Leave empty for the default.'
             label='Step'
@@ -839,15 +838,16 @@ const TableColumnSettingsPanel = ({
             value={step}
             onChange={(v) => onUpdate({ specific: { step: v } })}
           />
-          <InputSwitch
+          <SettingSwitchRow
             checked={column.settings?.specific?.qrValue === true}
-            description='Show a scan button in the cell to read a number from a QR code or barcode.'
-            label='Read Values From QR'
+            help='Show a scan button that fills this from a QR code or barcode.'
+            title='Read value from a QR code'
             onChange={(checked) => onUpdate({ specific: { qrValue: checked } })}
           />
           <div className='grid grid-cols-2 gap-2'>
             <InputText
-              label='Prefix'
+              description='Shown in front of what people type, for example $.'
+              label='Text before the value'
               placeholder='e.g. $'
               value={prefixLabel}
               onChange={(value: string) =>
@@ -855,7 +855,8 @@ const TableColumnSettingsPanel = ({
               }
             />
             <InputText
-              label='Suffix'
+              description='Shown after what people type, for example kg.'
+              label='Text after the value'
               placeholder='e.g. kg'
               value={suffixLabel}
               onChange={(value: string) =>
