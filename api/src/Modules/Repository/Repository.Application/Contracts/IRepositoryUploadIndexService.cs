@@ -44,6 +44,22 @@ public interface IRepositoryUploadIndexService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Writes caller-provided OCR metadata onto an already-staged file (the second half of
+    /// <see cref="UploadWithOcrAsync"/>). Used when a large upload completes.
+    /// </summary>
+    Task<UploadWithOcrResult> ApplyStagedUploadMetadataAsync(
+        Guid repositoryId,
+        Guid tenantId,
+        Guid stageId,
+        string fileName,
+        string? contentType,
+        string? metadataJson,
+        string? ocrJson,
+        string? ocrText,
+        Guid? userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Promote a staged monitor file into repository archive (items table + blob) using stage field data.
     /// When the repository's resolved naming field (see RepositoryArchiveFileNameResolver) has no value
     /// from the stage row or OCR, <paramref name="namingFieldFallback"/> fills it -- e.g. the workflow

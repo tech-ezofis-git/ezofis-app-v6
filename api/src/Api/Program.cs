@@ -348,7 +348,12 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()
             .AllowAnyHeader()
             // The viewer skips its own masking when the file was redacted on the server.
-            .WithExposedHeaders("X-Pii-Redacted");
+            // Accept-Ranges / Content-Range let pdf.js load large PDFs page by page (HTTP Range)
+            // when the app and API are on different origins.
+            .WithExposedHeaders("X-Pii-Redacted", "Accept-Ranges", "Content-Range", "Content-Length")
+            // Let browsers reuse the preflight: the PDF viewer and chunked uploads make many
+            // cross-origin requests, and each uncached preflight costs a full round trip.
+            .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
     });
 });
 

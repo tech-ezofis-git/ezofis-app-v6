@@ -25,5 +25,17 @@ public interface IRepositoryFileStorage
         string storageProviderCode,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Copies a stored file to <paramref name="destinationRelativePath"/> inside the same storage,
+    /// without streaming the bytes through the API (server-side blob copy / local file copy).
+    /// Used when exporting large staged files. Returns the destination relative path.
+    /// </summary>
+    Task<string> CopyAsync(
+        Guid tenantId,
+        string sourceRelativePath,
+        string destinationRelativePath,
+        string storageProviderCode,
+        CancellationToken cancellationToken = default);
+
     bool CanRead(string storageProviderCode);
 }

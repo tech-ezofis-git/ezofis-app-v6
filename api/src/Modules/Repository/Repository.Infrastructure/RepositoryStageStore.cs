@@ -52,7 +52,9 @@ internal static class RepositoryStageStore
         int? fileSize,
         IReadOnlyDictionary<string, string>? fieldValues,
         Guid? userId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string stageStatus = "Uploaded",
+        string status = "Pending")
     {
         var stageId = Guid.NewGuid();
         var table = RepositorySqlHelper.QualifiedItemsTable(repo.StageTableName);
@@ -85,8 +87,8 @@ internal static class RepositoryStageStore
         Add("FileName", "@FileName", fileName);
         Add("FileType", "@FileType", contentType);
         Add("FileSize", "@FileSize", fileSize);
-        Add("StageStatus", "@StageStatus", "Uploaded");
-        Add("Status", "@Status", "Pending");
+        Add("StageStatus", "@StageStatus", stageStatus);
+        Add("Status", "@Status", status);
         Add("CreatedBy", "@CreatedBy", userId);
 
         var fieldIndex = 0;
@@ -417,6 +419,73 @@ internal static class RepositoryStageStore
     /// Point a stage row at a replacement file (bulk upload: the TIFF was turned into a PDF).
     /// Only columns the stage table has are written.
     /// </summary>
+    /// <summary>Stage status of a large upload whose chunks are still arriving (row exists, file does not).</summary>
+    public const string UploadingStageStatus = "Uploading";
+
+    /// <summary>Sets status / stage_status only (no field or OCR changes).</summary>
+    public static async Task SetStatusAsync(
+        NpgsqlConnection connection,
+        string stageTableName,
+        Guid tenantId,
+        Guid stageId,
+        string status,
+        string stageStatus,
+        CancellationToken cancellationToken)
+    {
+        var columns = await RepositoryItemTableColumns.LoadAsync(connection, stageTableName, cancellationToken);
+        var sets = new List<string> { "status = @Status", "stage_status = @StageStatus" };
+        if (columns.Contains("modified_at_utc")) sets.Add("modified_at_utc = now()");
+
+        var table = RepositorySqlHelper.QualifiedItemsTable(stageTableName);
+        var sql = $"UPDATE {table} SET {string.Join(", ", sets)} WHERE id = @Id AND tenant_id = @TenantId AND is_deleted = false;";
+
+        await using var cmd = new NpgsqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@Id", stageId);
+        cmd.Parameters.AddWithValue("@TenantId", tenantId);
+        cmd.Parameters.AddWithValue("@Status", status);
+        cmd.Parameters.AddWithValue("@StageStatus", stageStatus);
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Soft-deletes this user's large uploads that never finished and started before
+    /// <paramref name="olderThanUtc"/>. Returns their file paths so storage leftovers can be removed.
+    /// </summary>
+    public static async Task<IReadOnlyList<string>> AbandonStaleUploadsAsync(
+        NpgsqlConnection connection,
+        string stageTableName,
+        Guid tenantId,
+        Guid repositoryId,
+        Guid userId,
+        DateTime olderThanUtc,
+        CancellationToken cancellationToken)
+    {
+        var table = RepositorySqlHelper.QualifiedItemsTable(stageTableName);
+        var sql = $"""
+            UPDATE {table}
+            SET is_deleted = true, stage_status = 'Deleted', status = 'DELETED'
+            WHERE tenant_id = @TenantId AND repository_id = @RepositoryId AND created_by = @CreatedBy
+              AND is_deleted = false AND stage_status = '{UploadingStageStatus}' AND created_at_utc < @OlderThan
+            RETURNING file_path;
+            """;
+
+        await using var cmd = new NpgsqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@TenantId", tenantId);
+        cmd.Parameters.AddWithValue("@RepositoryId", repositoryId);
+        cmd.Parameters.AddWithValue("@CreatedBy", userId);
+        cmd.Parameters.AddWithValue("@OlderThan", olderThanUtc);
+
+        var paths = new List<string>();
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            if (!reader.IsDBNull(0))
+                paths.Add(reader.GetString(0));
+        }
+
+        return paths;
+    }
+
     public static async Task UpdateFileAsync(
         NpgsqlConnection connection,
         string stageTableName,
@@ -515,7 +584,8 @@ internal static class RepositoryStageStore
         var table = RepositorySqlHelper.QualifiedItemsTable(repo.StageTableName);
         var where = includeDeleted
             ? "tenant_id = @TenantId AND repository_id = @RepositoryId AND created_by = @CreatedBy"
-            : "tenant_id = @TenantId AND repository_id = @RepositoryId AND created_by = @CreatedBy AND is_deleted = false AND COALESCE(status, '') <> 'ARCHIVED'";
+            // Large uploads still in progress have a row but no file yet: keep them out of Draft Files.
+            : $"tenant_id = @TenantId AND repository_id = @RepositoryId AND created_by = @CreatedBy AND is_deleted = false AND COALESCE(status, '') <> 'ARCHIVED' AND COALESCE(stage_status, '') <> '{UploadingStageStatus}'";
 
         var countSql = $"SELECT COUNT(*) FROM {table} WHERE {where};";
         await using var countCmd = new NpgsqlCommand(countSql, connection);

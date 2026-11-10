@@ -69,6 +69,22 @@ internal sealed class RepositoryFileStorageRouter : IRepositoryFileStorage
         throw new NotSupportedException($"Storage provider '{storageProviderCode}' is not implemented.");
     }
 
+    public Task<string> CopyAsync(
+        Guid tenantId,
+        string sourceRelativePath,
+        string destinationRelativePath,
+        string storageProviderCode,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsEzofis(storageProviderCode) && _blobStorage.IsConfigured)
+            return _blobFiles.CopyAsync(tenantId, sourceRelativePath, destinationRelativePath, storageProviderCode, cancellationToken);
+
+        if (IsEzofis(storageProviderCode))
+            return _localFiles.CopyAsync(tenantId, sourceRelativePath, destinationRelativePath, storageProviderCode, cancellationToken);
+
+        throw new NotSupportedException($"Storage provider '{storageProviderCode}' is not implemented.");
+    }
+
     public bool CanRead(string storageProviderCode) =>
         IsEzofis(storageProviderCode) && (_blobStorage.IsConfigured || _localFiles.CanRead(storageProviderCode));
 

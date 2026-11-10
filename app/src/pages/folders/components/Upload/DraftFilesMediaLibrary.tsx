@@ -10,14 +10,14 @@ import Skeleton from '@/components/base/Skeleton'
 import Tooltip from '@/components/base/Tooltip'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import cn from '@/utils/cn'
+import type { QueuedUploadFile } from './uploadQueueTypes'
 import DraftAttachmentFields, {
   type DraftRepositoryField,
   RequiredProgressPie,
 } from './DraftAttachmentFields'
 import PdfThumbnail from './PdfThumbnail'
-import WordThumbnail from './WordThumbnail'
-import type { QueuedUploadFile } from './uploadQueueTypes'
 import { formatCreatedAt } from './UploadQueueFileCard'
+import WordThumbnail from './WordThumbnail'
 
 type DraftFilesMediaLibraryProps = {
   allSelected: boolean
@@ -63,8 +63,16 @@ const STATUS_TONE: Record<
     dot: 'bg-orange-9',
     track: 'bg-orange-3',
   },
-  blue: { badge: 'bg-blue-2 text-blue-11', dot: 'bg-blue-9', track: 'bg-blue-3' },
-  gray: { badge: 'bg-gray-3 text-gray-11', dot: 'bg-gray-8', track: 'bg-gray-4' },
+  blue: {
+    badge: 'bg-blue-2 text-blue-11',
+    dot: 'bg-blue-9',
+    track: 'bg-blue-3',
+  },
+  gray: {
+    badge: 'bg-gray-3 text-gray-11',
+    dot: 'bg-gray-8',
+    track: 'bg-gray-4',
+  },
   green: {
     badge: 'bg-green-2 text-green-11',
     dot: 'bg-green-9',
@@ -197,43 +205,6 @@ const FileTypeIcon = ({ fileName }: { fileName: string }) => {
   )
 }
 
-function formatBytes(bytes: number, decimals = 1) {
-  if (!bytes || bytes === 0) return '0 B'
-  const k = 1024
-  const dm = decimals < 0 ? 0 : decimals
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
-}
-
-/** Formats card footer date ("Today, 12:01" if today, otherwise "5-Oct-2026"). */
-function formatCardDate(
-  value?: string,
-  t?: ReturnType<typeof useLingui>['t'],
-) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    const full = formatCreatedAt(value)
-    return full
-      ? full.replace(/\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?$/, '').trim()
-      : ''
-  }
-  const isToday = date.toDateString() === new Date().toDateString()
-  if (isToday) {
-    const time = date.toLocaleTimeString([], {
-      hour: '2-digit',
-      hour12: false,
-      minute: '2-digit',
-    })
-    return t ? t`Today, ${time}` : `Today, ${time}`
-  }
-  const day = date.getDate()
-  const month = date.toLocaleDateString([], { month: 'short' })
-  const year = date.getFullYear()
-  return `${day}-${month}-${year}`
-}
-
 export default function DraftFilesMediaLibrary({
   allSelected,
   entries,
@@ -344,53 +315,50 @@ export default function DraftFilesMediaLibrary({
         } else {
           acc.queued += 1
         }
-      }
-      else if (entry.status === 'error') acc.failed += 1
+      } else if (entry.status === 'error') acc.failed += 1
       else acc.other += 1
       return acc
     },
     { extracting: 0, failed: 0, other: 0, queued: 0, ready: 0, uploading: 0 },
   )
-  const progressSegments = (
-    [
-      {
-        count: statusCounts.ready,
-        key: 'ready',
-        label: t`ready`,
-        tone: 'green' as StatusTone,
-      },
-      {
-        count: statusCounts.extracting,
-        key: 'extracting',
-        label: t`extracting`,
-        tone: 'blue' as StatusTone,
-      },
-      {
-        count: statusCounts.uploading,
-        key: 'uploading',
-        label: t`uploading`,
-        tone: 'violet' as StatusTone,
-      },
-      {
-        count: statusCounts.queued,
-        key: 'queued',
-        label: t`queued`,
-        tone: 'gray' as StatusTone,
-      },
-      {
-        count: statusCounts.failed,
-        key: 'failed',
-        label: t`failed`,
-        tone: 'red' as StatusTone,
-      },
-      {
-        count: statusCounts.other,
-        key: 'other',
-        label: t`other`,
-        tone: 'gray' as StatusTone,
-      },
-    ]
-  ).filter((segment) => segment.count > 0)
+  const progressSegments = [
+    {
+      count: statusCounts.ready,
+      key: 'ready',
+      label: t`ready`,
+      tone: 'green' as StatusTone,
+    },
+    {
+      count: statusCounts.extracting,
+      key: 'extracting',
+      label: t`extracting`,
+      tone: 'blue' as StatusTone,
+    },
+    {
+      count: statusCounts.uploading,
+      key: 'uploading',
+      label: t`uploading`,
+      tone: 'violet' as StatusTone,
+    },
+    {
+      count: statusCounts.queued,
+      key: 'queued',
+      label: t`queued`,
+      tone: 'gray' as StatusTone,
+    },
+    {
+      count: statusCounts.failed,
+      key: 'failed',
+      label: t`failed`,
+      tone: 'red' as StatusTone,
+    },
+    {
+      count: statusCounts.other,
+      key: 'other',
+      label: t`other`,
+      tone: 'gray' as StatusTone,
+    },
+  ].filter((segment) => segment.count > 0)
   const { extracting, ready, uploading } = statusCounts
   const inProgressCount = extracting + uploading
   const finishedCount = primaryCount - inProgressCount
@@ -500,7 +468,7 @@ export default function DraftFilesMediaLibrary({
     'grid grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-3'
 
   const selectAllControls = (
-    <div className='flex min-w-0 items-center gap-2 ml-2'>
+    <div className='ml-2 flex min-w-0 items-center gap-2'>
       <InputCheckbox
         aria-label={t`Select all files`}
         checked={allSelected}
@@ -540,7 +508,6 @@ export default function DraftFilesMediaLibrary({
   const searchControl = (
     <div className='w-full max-w-xs sm:w-72'>
       <InputText
-        leftSection={<Icon className='size-4 text-primary-11' name='lucide:search' />}
         leftSectionWidth={28}
         placeholder={t`Search media`}
         value={search}
@@ -548,6 +515,9 @@ export default function DraftFilesMediaLibrary({
           input: '!pl-8',
           section: 'bg-primary-4 text-primary-11',
         }}
+        leftSection={
+          <Icon className='size-4 text-primary-11' name='lucide:search' />
+        }
         onChange={(value) => setSearch(String(value ?? ''))}
       />
     </div>
@@ -556,9 +526,7 @@ export default function DraftFilesMediaLibrary({
   const renderCard = (entry: QueuedUploadFile) => {
     const selected = selectedIds.includes(entry.id)
     const isCurrent = entry.id === focusedId
-    const requiredFields = repositoryFields.filter(
-      (field) => field.isMandatory,
-    )
+    const requiredFields = repositoryFields.filter((field) => field.isMandatory)
     const requiredFilled = requiredFields.filter((field) => {
       const raw = String(
         entry.fieldValues[field.sqlColumnName || field.id] ?? '',
@@ -569,8 +537,7 @@ export default function DraftFilesMediaLibrary({
     }).length
     const requiredTotal = requiredFields.length
     const requiredDone =
-      requiredFields.length === 0 ||
-      requiredFilled === requiredFields.length
+      requiredFields.length === 0 || requiredFilled === requiredFields.length
     const status = getCardStatus(entry, requiredDone, t)
     const fileUrl = entry.previewUrl
     const previewFailed = failedPreviewIds.has(entry.id)
@@ -579,11 +546,9 @@ export default function DraftFilesMediaLibrary({
     )
     const showPdfThumb = isPdfFile(entry.fileName) && !previewFailed
     const pdfSourceId = entry.stageFileId || null
-    const showWordThumb =
-      isWordFile(entry.fileName) && !previewFailed
+    const showWordThumb = isWordFile(entry.fileName) && !previewFailed
     const wordSourceId = entry.stageFileId || null
-    const canSelect =
-      entry.status !== 'indexing' && entry.status !== 'indexed'
+    const canSelect = entry.status !== 'indexing' && entry.status !== 'indexed'
     const fileTypeFallback = (
       <div className='flex h-full w-full items-center justify-center px-2'>
         <FileTypeIcon fileName={entry.fileName} />
@@ -672,11 +637,11 @@ export default function DraftFilesMediaLibrary({
               )
             ) : (
               <span
+                title={status.label}
                 className={cn(
                   'inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap',
                   STATUS_TONE[status.tone].badge,
                 )}
-                title={status.label}
               >
                 <span
                   className={cn(
@@ -706,40 +671,40 @@ export default function DraftFilesMediaLibrary({
           <div
             className={cn(
               'h-full w-full origin-center transition-transform duration-300 ease-out group-hover/card:scale-105',
-              selected &&
-                !isCurrent &&
-                'brightness-105 grayscale-[0.45]',
+              selected && !isCurrent && 'brightness-105 grayscale-[0.45]',
             )}
           >
-          {showImage ? (
-            <img
-              alt={entry.fileName}
-              className='h-full w-full object-cover'
-              src={fileUrl || undefined}
-              onError={() => markPreviewFailed(entry.id)}
-            />
-          ) : showPdfThumb ? (
-            <PdfThumbnail
-              cacheKey={entry.id}
-              fallback={fileTypeFallback}
-              fileName={entry.fileName}
-              fileUrl={fileUrl || undefined}
-              priority={primarySet.has(entry.id)}
-              stageFileId={pdfSourceId || undefined}
-            />
-          ) : showWordThumb ? (
-            <WordThumbnail
-              fallback={fileTypeFallback}
-              fileName={entry.fileName}
-              fileUrl={fileUrl || undefined}
-              priority={primarySet.has(entry.id)}
-              stageFileId={wordSourceId || undefined}
-            />
-          ) : !fileUrl && isImageFile(entry.fileName) ? (
-            <Skeleton className='h-full w-full rounded-none' />
-          ) : (
-            fileTypeFallback
-          )}
+            {showImage ? (
+              <img
+                alt={entry.fileName}
+                className='h-full w-full object-cover'
+                src={fileUrl || undefined}
+                onError={() => markPreviewFailed(entry.id)}
+              />
+            ) : showPdfThumb ? (
+              <PdfThumbnail
+                cacheKey={entry.id}
+                fallback={fileTypeFallback}
+                file={entry.file}
+                fileName={entry.fileName}
+                fileSize={entry.fileSize}
+                fileUrl={fileUrl || undefined}
+                priority={primarySet.has(entry.id)}
+                stageFileId={pdfSourceId || undefined}
+              />
+            ) : showWordThumb ? (
+              <WordThumbnail
+                fallback={fileTypeFallback}
+                fileName={entry.fileName}
+                fileUrl={fileUrl || undefined}
+                priority={primarySet.has(entry.id)}
+                stageFileId={wordSourceId || undefined}
+              />
+            ) : !fileUrl && isImageFile(entry.fileName) ? (
+              <Skeleton className='h-full w-full rounded-none' />
+            ) : (
+              fileTypeFallback
+            )}
           </div>
           <div
             className={cn(
@@ -804,8 +769,7 @@ export default function DraftFilesMediaLibrary({
           {(() => {
             const sizeLabel =
               entry.fileSize > 0 ? formatBytes(entry.fileSize) : '—'
-            const createdLabel =
-              formatCardDate(entry.createdAt, t) || '—'
+            const createdLabel = formatCardDate(entry.createdAt, t) || '—'
             const extIcon = getFileIcon(entry.fileName)
 
             return (
@@ -813,7 +777,7 @@ export default function DraftFilesMediaLibrary({
                 <div className='flex min-w-0 items-center gap-1.5'>
                   <Icon className='size-4 shrink-0' name={extIcon} />
                   <p
-                    className='min-w-0 flex-1 truncate text-12 font-semibold leading-snug text-gray-12 group-hover/card:whitespace-normal group-hover/card:break-all'
+                    className='min-w-0 flex-1 truncate text-12 leading-snug font-semibold text-gray-12 group-hover/card:break-all group-hover/card:whitespace-normal'
                     title={entry.fileName}
                   >
                     {entry.fileName}
@@ -878,246 +842,287 @@ export default function DraftFilesMediaLibrary({
       )}
 
       <div className='flex min-h-0 flex-1'>
-      <div
-        className={cn(
-          'ez-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto bg-surface',
-          fullPage ? 'px-5 pt-1 pb-4' : 'rounded-xl border border-gray-3 p-3',
-        )}
-      >
-        {hasPrimarySection ? (
-          <div className='flex flex-col gap-3 pt-2'>
-            {/* Current upload */}
-            <div className='animate-in fade-in flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-primary-3 bg-primary-1 px-4 py-2.5 duration-300'>
-              <span className='text-13 font-semibold text-gray-12'>
-                {t`Current upload`}
-                <span className='font-normal text-gray-10'>
-                  {' '}
-                  · {t`${primaryCount} files`}
-                  {uploadStartedLabel ? ` · ${uploadStartedLabel}` : ''}
-                </span>
-              </span>
-
-              {isStartingUpload ? (
-                <>
-                  <div className='h-2 w-36 overflow-hidden rounded-full bg-primary-3 sm:w-44'>
-                    <motion.div
-                      animate={{ x: ['-40%', '260%'] }}
-                      className='h-full w-2/5 rounded-full bg-primary-9'
-                      transition={{
-                        duration: 1.2,
-                        ease: 'easeInOut',
-                        repeat: Infinity,
-                      }}
-                    />
-                  </div>
-                  <span className='text-12 text-gray-11'>
-                    {t`${primaryCount} queued`}
-                  </span>
-                </>
-              ) : (
-                <>
-                  {/* Inline segmented progress bar */}
-                  <div
-                    aria-label={t`Upload status`}
-                    className='flex h-2 w-36 gap-0.5 overflow-hidden rounded-full bg-gray-3 sm:w-44'
-                    role='img'
-                  >
-                    {progressSegments.map((segment) => (
-                      <motion.span
-                        animate={{ flexGrow: segment.count }}
-                        initial={{ flexGrow: 0 }}
-                        key={segment.key}
-                        title={`${segment.label}: ${segment.count}`}
-                        transition={{ duration: 0.5, ease: 'easeOut' }}
-                        className={cn(
-                          'relative h-full min-w-1.5 basis-0 overflow-hidden transition-opacity hover:opacity-80',
-                          STATUS_TONE[segment.tone].dot,
-                        )}
-                      >
-                        {segment.key === 'extracting' ||
-                        segment.key === 'uploading' ? (
-                          <motion.span
-                            animate={{ x: ['-100%', '300%'] }}
-                            className='absolute inset-y-0 w-1/3 bg-surface/35'
-                            transition={{
-                              duration: 1.4,
-                              ease: 'easeInOut',
-                              repeat: Infinity,
-                            }}
-                          />
-                        ) : null}
-                      </motion.span>
-                    ))}
-                  </div>
-
-                  {/* Inline status breakdown: "2 ready · 1 extracting · 1 uploading · 1 queued" */}
-                  <div className='flex flex-wrap items-center gap-x-2 text-12 text-gray-11'>
-                    {progressSegments.map((segment, index) => (
-                      <span
-                        className='inline-flex items-center gap-1.5'
-                        key={segment.key}
-                      >
-                        {index > 0 ? (
-                          <span className='text-gray-7'>·</span>
-                        ) : null}
-                        <span>
-                          <span className='font-semibold text-gray-12'>
-                            {segment.count}
-                          </span>{' '}
-                          {segment.label}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {isStartingUpload ? (
-              <div className={gridClassName}>
-                {primaryEntries.map((entry) => (
-                  <DraftCardSkeleton key={entry.id} />
-                ))}
-              </div>
-            ) : primaryEntries.length > 0 ? (
-              <div className={gridClassName}>
-                {primaryEntries.map(renderCard)}
-              </div>
-            ) : (
-              <p className='px-3 py-6 text-center text-13 font-medium text-gray-10'>
-                {t`No files match your search.`}
-              </p>
-            )}
-
-
-            {/* Earlier drafts: loaded only on request, below this upload. */}
-            <div className='mt-2 flex items-center gap-2 rounded-lg border border-gray-3 bg-gray-1 px-3 py-2'>
-              <button
-                aria-expanded={otherDraftsState === 'loaded' && !earlierCollapsed}
-                className='flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left'
-                type='button'
-                onClick={() => {
-                  if (otherDraftsState === 'hidden') onShowOtherDrafts?.()
-                  else if (otherDraftsState === 'loaded')
-                    setEarlierCollapsed((prev) => !prev)
-                }}
-              >
-                <Icon
-                  name='lucide:chevron-right'
-                  className={cn(
-                    'size-4 shrink-0 text-gray-9 transition-transform duration-200',
-                    otherDraftsState === 'loaded' &&
-                      !earlierCollapsed &&
-                      'rotate-90',
-                  )}
-                />
-                <span className='truncate text-13 font-semibold text-gray-12'>
-                  {t`Earlier drafts`}
+        <div
+          className={cn(
+            'ez-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto bg-surface',
+            fullPage ? 'px-5 pt-1 pb-4' : 'rounded-xl border border-gray-3 p-3',
+          )}
+        >
+          {hasPrimarySection ? (
+            <div className='flex flex-col gap-3 pt-2'>
+              {/* Current upload */}
+              <div className='animate-in fade-in flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-primary-3 bg-primary-1 px-4 py-2.5 duration-300'>
+                <span className='text-13 font-semibold text-gray-12'>
+                  {t`Current upload`}
                   <span className='font-normal text-gray-10'>
                     {' '}
-                    · {t`${earlierCount} not exported`}
+                    · {t`${primaryCount} files`}
+                    {uploadStartedLabel ? ` · ${uploadStartedLabel}` : ''}
                   </span>
                 </span>
-                {otherDraftsState === 'loaded' && olderThanWeekCount > 0 ? (
-                  <span className='shrink-0 rounded-full bg-orange-2 px-2 py-0.5 text-[11px] font-semibold text-orange-11'>
-                    {t`${olderThanWeekCount} older than 7 days`}
-                  </span>
-                ) : null}
-              </button>
-              {otherDraftsState === 'hidden' ? (
-                <BaseButton
-                  color='gray'
-                  label={t`Show earlier drafts`}
-                  size='xs'
-                  variant='outline'
-                  onClick={onShowOtherDrafts}
-                />
-              ) : otherDraftsState === 'loading' ? (
-                <span className='inline-flex items-center gap-1.5 text-12 text-gray-10'>
-                  <Icon className='size-3.5 animate-spin' name='lucide:loader-2' />
-                  {t`Loading…`}
-                </span>
-              ) : (
-                <span className='shrink-0 text-12 text-gray-9'>
-                  {t`Oldest first`}
-                </span>
-              )}
-            </div>
 
-            {otherDraftsState === 'loaded' && !earlierCollapsed ? (
-              otherEntriesOldestFirst.length > 0 ? (
-                <div
-                  className={cn(gridClassName, 'animate-in fade-in duration-300')}
-                >
-                  {otherEntriesOldestFirst.map(renderCard)}
+                {isStartingUpload ? (
+                  <>
+                    <div className='h-2 w-36 overflow-hidden rounded-full bg-primary-3 sm:w-44'>
+                      <motion.div
+                        animate={{ x: ['-40%', '260%'] }}
+                        className='h-full w-2/5 rounded-full bg-primary-9'
+                        transition={{
+                          duration: 1.2,
+                          ease: 'easeInOut',
+                          repeat: Infinity,
+                        }}
+                      />
+                    </div>
+                    <span className='text-12 text-gray-11'>
+                      {t`${primaryCount} queued`}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    {/* Inline segmented progress bar */}
+                    <div
+                      aria-label={t`Upload status`}
+                      className='flex h-2 w-36 gap-0.5 overflow-hidden rounded-full bg-gray-3 sm:w-44'
+                      role='img'
+                    >
+                      {progressSegments.map((segment) => (
+                        <motion.span
+                          animate={{ flexGrow: segment.count }}
+                          initial={{ flexGrow: 0 }}
+                          key={segment.key}
+                          title={`${segment.label}: ${segment.count}`}
+                          transition={{ duration: 0.5, ease: 'easeOut' }}
+                          className={cn(
+                            'relative h-full min-w-1.5 basis-0 overflow-hidden transition-opacity hover:opacity-80',
+                            STATUS_TONE[segment.tone].dot,
+                          )}
+                        >
+                          {segment.key === 'extracting' ||
+                          segment.key === 'uploading' ? (
+                            <motion.span
+                              animate={{ x: ['-100%', '300%'] }}
+                              className='absolute inset-y-0 w-1/3 bg-surface/35'
+                              transition={{
+                                duration: 1.4,
+                                ease: 'easeInOut',
+                                repeat: Infinity,
+                              }}
+                            />
+                          ) : null}
+                        </motion.span>
+                      ))}
+                    </div>
+
+                    {/* Inline status breakdown: "2 ready · 1 extracting · 1 uploading · 1 queued" */}
+                    <div className='flex flex-wrap items-center gap-x-2 text-12 text-gray-11'>
+                      {progressSegments.map((segment, index) => (
+                        <span
+                          className='inline-flex items-center gap-1.5'
+                          key={segment.key}
+                        >
+                          {index > 0 ? (
+                            <span className='text-gray-7'>·</span>
+                          ) : null}
+                          <span>
+                            <span className='font-semibold text-gray-12'>
+                              {segment.count}
+                            </span>{' '}
+                            {segment.label}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {isStartingUpload ? (
+                <div className={gridClassName}>
+                  {primaryEntries.map((entry) => (
+                    <DraftCardSkeleton key={entry.id} />
+                  ))}
+                </div>
+              ) : primaryEntries.length > 0 ? (
+                <div className={gridClassName}>
+                  {primaryEntries.map(renderCard)}
                 </div>
               ) : (
-                <p className='px-3 pb-4 text-center text-13 font-medium text-gray-10'>
-                  {t`No earlier draft files.`}
+                <p className='px-3 py-6 text-center text-13 font-medium text-gray-10'>
+                  {t`No files match your search.`}
                 </p>
-              )
-            ) : null}
-          </div>
-        ) : filtered.length === 0 ? (
-          <p className='px-3 py-10 text-center text-13 font-medium text-gray-10'>
-            {entries.length === 0
-              ? t`No draft files yet.`
-              : t`No files match your search.`}
-          </p>
-        ) : (
-          <div className={gridClassName}>
-            {filtered.map(renderCard)}
-          </div>
-        )}
-      </div>
-      {focused || entries.length > 0 ? (
-        <aside className='flex w-[340px] shrink-0 flex-col border-l border-gray-3 bg-surface xl:w-[380px]'>
-          {!focused ? (
-            <div className='animate-in fade-in flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center duration-300'>
-              <span className='mb-1 flex size-10 items-center justify-center rounded-full bg-gray-2 text-gray-9'>
-                <Icon className='size-5' name='lucide:scan-text' />
-              </span>
-              <p className='text-13 font-semibold text-gray-12'>
-                {t`Extracted Data`}
-              </p>
-              <p className='max-w-[240px] text-12 leading-relaxed text-gray-10'>
-                {readyIdsKey
-                  ? t`Select a file to view its extracted data.`
-                  : t`Fields appear here as soon as the first file finishes extracting.`}
-              </p>
+              )}
+
+              {/* Earlier drafts: loaded only on request, below this upload. */}
+              <div className='mt-2 flex items-center gap-2 rounded-lg border border-gray-3 bg-gray-1 px-3 py-2'>
+                <button
+                  className='flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left'
+                  type='button'
+                  aria-expanded={
+                    otherDraftsState === 'loaded' && !earlierCollapsed
+                  }
+                  onClick={() => {
+                    if (otherDraftsState === 'hidden') onShowOtherDrafts?.()
+                    else if (otherDraftsState === 'loaded')
+                      setEarlierCollapsed((prev) => !prev)
+                  }}
+                >
+                  <Icon
+                    name='lucide:chevron-right'
+                    className={cn(
+                      'size-4 shrink-0 text-gray-9 transition-transform duration-200',
+                      otherDraftsState === 'loaded' &&
+                        !earlierCollapsed &&
+                        'rotate-90',
+                    )}
+                  />
+                  <span className='truncate text-13 font-semibold text-gray-12'>
+                    {t`Earlier drafts`}
+                    <span className='font-normal text-gray-10'>
+                      {' '}
+                      · {t`${earlierCount} not exported`}
+                    </span>
+                  </span>
+                  {otherDraftsState === 'loaded' && olderThanWeekCount > 0 ? (
+                    <span className='shrink-0 rounded-full bg-orange-2 px-2 py-0.5 text-[11px] font-semibold text-orange-11'>
+                      {t`${olderThanWeekCount} older than 7 days`}
+                    </span>
+                  ) : null}
+                </button>
+                {otherDraftsState === 'hidden' ? (
+                  <BaseButton
+                    color='gray'
+                    label={t`Show earlier drafts`}
+                    size='xs'
+                    variant='outline'
+                    onClick={onShowOtherDrafts}
+                  />
+                ) : otherDraftsState === 'loading' ? (
+                  <span className='inline-flex items-center gap-1.5 text-12 text-gray-10'>
+                    <Icon
+                      className='size-3.5 animate-spin'
+                      name='lucide:loader-2'
+                    />
+                    {t`Loading…`}
+                  </span>
+                ) : (
+                  <span className='shrink-0 text-12 text-gray-9'>
+                    {t`Oldest first`}
+                  </span>
+                )}
+              </div>
+
+              {otherDraftsState === 'loaded' && !earlierCollapsed ? (
+                otherEntriesOldestFirst.length > 0 ? (
+                  <div
+                    className={cn(
+                      gridClassName,
+                      'animate-in fade-in duration-300',
+                    )}
+                  >
+                    {otherEntriesOldestFirst.map(renderCard)}
+                  </div>
+                ) : (
+                  <p className='px-3 pb-4 text-center text-13 font-medium text-gray-10'>
+                    {t`No earlier draft files.`}
+                  </p>
+                )
+              ) : null}
             </div>
+          ) : filtered.length === 0 ? (
+            <p className='px-3 py-10 text-center text-13 font-medium text-gray-10'>
+              {entries.length === 0
+                ? t`No draft files yet.`
+                : t`No files match your search.`}
+            </p>
           ) : (
-            <DraftAttachmentFields
-              key={focused.id}
-              exportDisabled={
-                focused.status !== 'ready' ||
-                Boolean(missingMandatoryById[focused.id])
-              }
-              exportLoading={
-                focused.status === 'indexing' ||
-                focused.exportStatus === 'exporting'
-              }
-              fieldStatuses={focused.fieldStatuses}
-              fieldValues={focused.fieldValues}
-              fields={repositoryFields}
-              fileName={focused.fileName}
-              ocrExtractedValues={focused.ocrExtractedValues}
-              rawOcrJson={focused.rawOcrJson}
-              isAnalyzing={
-                focused.status === 'analyzing' || focused.status === 'queued'
-              }
-              onExport={() => onExport?.(focused.id)}
-              onFieldChange={(fieldKey, value) =>
-                onFieldChange?.(focused.id, fieldKey, value)
-              }
-              onRegenerate={
-                onRegenerate ? () => onRegenerate(focused.id) : undefined
-              }
-            />
+            <div className={gridClassName}>{filtered.map(renderCard)}</div>
           )}
-        </aside>
-      ) : null}
+        </div>
+        {focused || entries.length > 0 ? (
+          <aside className='flex w-[340px] shrink-0 flex-col border-l border-gray-3 bg-surface xl:w-[380px]'>
+            {!focused ? (
+              <div className='animate-in fade-in flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center duration-300'>
+                <span className='mb-1 flex size-10 items-center justify-center rounded-full bg-gray-2 text-gray-9'>
+                  <Icon className='size-5' name='lucide:scan-text' />
+                </span>
+                <p className='text-13 font-semibold text-gray-12'>
+                  {t`Extracted Data`}
+                </p>
+                <p className='max-w-[240px] text-12 leading-relaxed text-gray-10'>
+                  {readyIdsKey
+                    ? t`Select a file to view its extracted data.`
+                    : t`Fields appear here as soon as the first file finishes extracting.`}
+                </p>
+              </div>
+            ) : (
+              <DraftAttachmentFields
+                fields={repositoryFields}
+                fieldStatuses={focused.fieldStatuses}
+                fieldValues={focused.fieldValues}
+                fileName={focused.fileName}
+                key={focused.id}
+                ocrExtractedValues={focused.ocrExtractedValues}
+                rawOcrJson={focused.rawOcrJson}
+                exportDisabled={
+                  focused.status !== 'ready' ||
+                  Boolean(missingMandatoryById[focused.id])
+                }
+                exportLoading={
+                  focused.status === 'indexing' ||
+                  focused.exportStatus === 'exporting'
+                }
+                isAnalyzing={
+                  focused.status === 'analyzing' || focused.status === 'queued'
+                }
+                onExport={() => onExport?.(focused.id)}
+                onFieldChange={(fieldKey, value) =>
+                  onFieldChange?.(focused.id, fieldKey, value)
+                }
+                onRegenerate={
+                  onRegenerate ? () => onRegenerate(focused.id) : undefined
+                }
+              />
+            )}
+          </aside>
+        ) : null}
       </div>
     </div>
   )
+}
+
+function formatBytes(bytes: number, decimals = 1) {
+  if (!bytes || bytes === 0) return '0 B'
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}
+
+/** Formats card footer date ("Today, 12:01" if today, otherwise "5-Oct-2026"). */
+function formatCardDate(value?: string, t?: ReturnType<typeof useLingui>['t']) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    const full = formatCreatedAt(value)
+    return full
+      ? full
+          .replace(/\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?$/, '')
+          .trim()
+      : ''
+  }
+  const isToday = date.toDateString() === new Date().toDateString()
+  if (isToday) {
+    const time = date.toLocaleTimeString([], {
+      hour: '2-digit',
+      hour12: false,
+      minute: '2-digit',
+    })
+    return t ? t`Today, ${time}` : `Today, ${time}`
+  }
+  const day = date.getDate()
+  const month = date.toLocaleDateString([], { month: 'short' })
+  const year = date.getFullYear()
+  return `${day}-${month}-${year}`
 }

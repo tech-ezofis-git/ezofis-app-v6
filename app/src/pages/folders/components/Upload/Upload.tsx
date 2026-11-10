@@ -16,9 +16,11 @@ import {
   bulkUpload,
   deleteStagedFiles,
   fetchStageFileBlob,
+  getStageFilePreviewSource,
   indexStageFile,
   listStagedFiles,
   loadStageFile,
+  probeStageFileSize,
   updateStageFileFields,
   uploadWithOcr,
 } from '@/api/v6/uploadAndIndex'
@@ -38,6 +40,17 @@ import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { UPLOAD_GUIDE } from '@/constants/pageGuides'
+import { buildOcrPreview } from '@/lib/largeUpload/buildOcrPreview'
+import {
+  formatBytes,
+  isLargeUploadFile,
+  LARGE_UPLOAD_MAX_BYTES,
+} from '@/lib/largeUpload/constants'
+import { LargeFileUploader } from '@/lib/largeUpload/LargeFileUploader'
+import {
+  clearResumeRecord,
+  fileFingerprint as largeUploadFingerprint,
+} from '@/lib/largeUpload/resumeStore'
 import cn from '@/utils/cn'
 import type { DynamicRepositoryColumn } from '../../api/folderApi'
 import type { QueuedFileStatus, QueuedUploadFile } from './uploadQueueTypes'
@@ -46,7 +59,6 @@ import {
   isImage,
   isPdf,
   isSupportedDocument,
-  MAX_SIZE,
 } from '../../../requests/components/request/components/newrequest/utils'
 import {
   findSelectedOption,
@@ -65,6 +77,7 @@ import {
 import { RequiredProgressPie } from './DraftAttachmentFields'
 import DraftFilesMediaLibrary from './DraftFilesMediaLibrary'
 import { DeleteFileDialog, LeaveFileDialog } from './FileExitDialogs'
+import LargeUploadProgressBar from './LargeUploadProgressBar'
 import TableFieldInput from './TableFieldInput'
 import UploadQueueFileCard, { formatCreatedAt } from './UploadQueueFileCard'
 import { useBulkUploadJobPolling } from './useBulkUploadJobPolling'
@@ -119,9 +132,7 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='text-purple-11 font-semibold'>
-            "{name}":{' '}
-          </span>
+          <span className='font-semibold text-purple-11'>"{name}": </span>
         )}
         <span className='text-gray-9 italic'>null</span>
         {!isLast && <span className='text-gray-8'>,</span>}
@@ -134,13 +145,9 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='text-purple-11 font-semibold'>
-            "{name}":{' '}
-          </span>
+          <span className='font-semibold text-purple-11'>"{name}": </span>
         )}
-        <span className='text-blue-11 font-semibold'>
-          {String(data)}
-        </span>
+        <span className='font-semibold text-blue-11'>{String(data)}</span>
         {!isLast && <span className='text-gray-8'>,</span>}
       </div>
     )
@@ -151,13 +158,9 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='text-purple-11 font-semibold'>
-            "{name}":{' '}
-          </span>
+          <span className='font-semibold text-purple-11'>"{name}": </span>
         )}
-        <span className='text-yellow-11 font-medium'>
-          {data}
-        </span>
+        <span className='font-medium text-yellow-11'>{data}</span>
         {!isLast && <span className='text-gray-8'>,</span>}
       </div>
     )
@@ -168,9 +171,7 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5 break-all'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='text-purple-11 font-semibold'>
-            "{name}":{' '}
-          </span>
+          <span className='font-semibold text-purple-11'>"{name}": </span>
         )}
         <span className='text-green-11'>"{data}"</span>
         {!isLast && <span className='text-gray-8'>,</span>}
@@ -202,9 +203,7 @@ function JsonNode({ data, isLast = true, name }: JsonNodeProps) {
         </button>
 
         {name !== undefined && (
-          <span className='text-purple-11 font-semibold'>
-            "{name}":{' '}
-          </span>
+          <span className='font-semibold text-purple-11'>"{name}": </span>
         )}
 
         <span className='font-bold text-[var(--gray-12)]'>{openBracket}</span>
@@ -438,11 +437,7 @@ const parseFieldDateValue = (value: unknown): Date | null => {
 
   const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw)
   if (iso) {
-    const date = new Date(
-      Number(iso[1]),
-      Number(iso[2]) - 1,
-      Number(iso[3]),
-    )
+    const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
     return Number.isNaN(date.getTime()) ? null : date
   }
 
@@ -1004,6 +999,43 @@ const isPlayablePreviewUrl = (url: string | null | undefined) => {
   )
 }
 
+interface LargeStagePreview {
+  fileSize: number
+  previewHeaders: Record<string, string> | null
+  previewTooLarge: boolean
+  previewUrl: string | null
+}
+
+/**
+ * Large staged files are never downloaded whole for preview. PDFs stream page by page from the API
+ * (HTTP Range + auth headers, see DocumentPreviewViewer); other large files show "preview not
+ * available". Returns null for normal-size files, which are downloaded as before.
+ * Files over 2 GB have no stored size, so an unknown size is read with a 1-byte Range request.
+ */
+const planLargeStagePreview = async (
+  stageFileId: string,
+  fileName: string,
+  knownSize: number,
+): Promise<LargeStagePreview | null> => {
+  const size = knownSize > 0 ? knownSize : await probeStageFileSize(stageFileId)
+  if (size === null || !isLargeUploadFile(size)) return null
+  if (/\.pdf$/i.test(fileName)) {
+    const { httpHeaders, url } = getStageFilePreviewSource(stageFileId)
+    return {
+      fileSize: size,
+      previewHeaders: httpHeaders,
+      previewTooLarge: false,
+      previewUrl: url,
+    }
+  }
+  return {
+    fileSize: size,
+    previewHeaders: null,
+    previewTooLarge: true,
+    previewUrl: null,
+  }
+}
+
 const isUsableFileBlob = (blob: Blob | null | undefined) => {
   if (!blob || blob.size < 5) return false
   const type = (blob.type || '').toLowerCase()
@@ -1040,10 +1072,7 @@ const typedPreviewBlob = (blob: Blob, fileName: string) => {
 
 const readStageFileUrl = (summary: StageFileSummary): string | null => {
   const raw =
-    summary.fileUrl ??
-    summary.url ??
-    summary.previewUrl ??
-    summary.downloadUrl
+    summary.fileUrl ?? summary.url ?? summary.previewUrl ?? summary.downloadUrl
   if (typeof raw !== 'string' || !raw.trim()) return null
   const value = raw.trim()
   // API returns `/api/uploadAndIndex/files/{id}` — not usable without auth headers.
@@ -1213,10 +1242,10 @@ const mergeDraftWithLocalUpload = (
     ...(serverSettled
       ? {}
       : {
-        backendStatus: local.backendStatus ?? base.backendStatus,
-        jobId: local.jobId ?? base.jobId,
-        status: local.jobId ? local.status : base.status,
-      }),
+          backendStatus: local.backendStatus ?? base.backendStatus,
+          jobId: local.jobId ?? base.jobId,
+          status: local.jobId ? local.status : base.status,
+        }),
   }
 }
 
@@ -1257,98 +1286,6 @@ const writeIntelligentUploadEnabled = (scopeId: string, enabled: boolean) => {
   } catch {
     // Cache is unavailable in private browsing.
   }
-}
-
-/** Cycles the three upload highlights in one card. */
-function UploadFeatureHighlight() {
-  const { t } = useLingui()
-  const items = useMemo(
-    () => [
-      {
-        color: 'text-orange-9 bg-orange-2',
-        icon: 'tabler:bolt',
-        sub: t`Process documents faster with our agentic pipeline`,
-        title: t`Lightning Fast`,
-      },
-      {
-        color: 'text-primary-11 bg-primary-3',
-        icon: 'tabler:sparkles',
-        sub: t`Industry-leading extraction accuracy and field precision`,
-        title: t`100% Accuracy`,
-      },
-      {
-        color: 'text-green-11 bg-green-2',
-        icon: 'tabler:clock',
-        sub: t`Support for PDF, images, and scanned documents`,
-        title: t`Any Format`,
-      },
-    ],
-    [t],
-  )
-  const [index, setIndex] = useState(0)
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setIndex((current) => (current + 1) % items.length)
-    }, 3500)
-    return () => window.clearInterval(timer)
-  }, [items.length])
-
-  const item = items[index]
-
-  return (
-    <AnimateEntrancePop className='h-full' delay={0.08}>
-      <div className='group flex h-full w-full flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-5 hover:shadow-md'>
-        <AnimatePresence mode='wait'>
-          <motion.div
-            key={item.icon}
-            animate={{ opacity: 1, y: 0 }}
-            className='flex flex-1 flex-col items-start'
-            exit={{ opacity: 0, y: -8 }}
-            initial={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-          >
-            <div className='flex items-center gap-2'>
-              <div
-                className={cn(
-                  'flex size-7 shrink-0 items-center justify-center rounded-md',
-                  item.color,
-                )}
-              >
-                {item.icon === 'tabler:sparkles' ? (
-                  <AiBrandIcon className='size-4' variant='outline-purple' />
-                ) : (
-                  <Icon className='size-4' name={item.icon} />
-                )}
-              </div>
-              <h4 className='text-13 font-semibold tracking-tight text-gray-13'>
-                {item.title}
-              </h4>
-            </div>
-            <p className='mt-2 line-clamp-2 text-xs leading-snug font-medium text-gray-10'>
-              {item.sub}
-            </p>
-          </motion.div>
-        </AnimatePresence>
-        <div className='mt-auto flex items-center justify-center gap-1.5 pt-3'>
-          {items.map((entry, dotIndex) => (
-            <button
-              key={entry.icon}
-              aria-label={entry.title}
-              className={cn(
-                'h-1.5 rounded-full transition-all duration-300',
-                dotIndex === index
-                  ? 'w-5 bg-primary-9'
-                  : 'w-1.5 bg-gray-5 hover:bg-gray-7',
-              )}
-              type='button'
-              onClick={() => setIndex(dotIndex)}
-            />
-          ))}
-        </div>
-      </div>
-    </AnimateEntrancePop>
-  )
 }
 
 export default function Upload({
@@ -1448,7 +1385,8 @@ export default function Upload({
       setIsLoadingDraftCount(true)
       try {
         const drafts = await collectDraftStageFiles(activeRepositoryId)
-        if (!cancelled) setDraftCounts(countDraftGroups(drafts, repositoryFields))
+        if (!cancelled)
+          setDraftCounts(countDraftGroups(drafts, repositoryFields))
       } catch {
         if (!cancelled) {
           setDraftCounts(emptyDraftCounts)
@@ -1493,8 +1431,7 @@ export default function Upload({
         let changed = false
         const next = prev.map((entry) => {
           if (entry.id !== id) return entry
-          const patchValue =
-            typeof patch === 'function' ? patch(entry) : patch
+          const patchValue = typeof patch === 'function' ? patch(entry) : patch
           if (!patchValue || Object.keys(patchValue).length === 0) return entry
           changed = true
           return {
@@ -1531,7 +1468,9 @@ export default function Upload({
       queue
         .filter(
           (entry) =>
-            Boolean(entry.stageFileId) && !isPlayablePreviewUrl(entry.previewUrl),
+            Boolean(entry.stageFileId) &&
+            !entry.previewTooLarge &&
+            !isPlayablePreviewUrl(entry.previewUrl),
         )
         .map((entry) => entry.id)
         .sort()
@@ -1560,7 +1499,7 @@ export default function Upload({
           // Avoid tight-retrying the same failed id inside one drain pass.
           const softFailedThisPass = new Set<string>()
 
-          for (; ;) {
+          for (;;) {
             if (!viewingDraftsRef.current && !openFileIdRef.current) break
 
             const focusId = focusedDraftIdRef.current
@@ -1570,6 +1509,7 @@ export default function Upload({
                 Boolean(entry.stageFileId) &&
                 !/\.pdf$/i.test(entry.fileName || '') &&
                 !/\.docx$/i.test(entry.fileName || '') &&
+                !entry.previewTooLarge &&
                 !isPlayablePreviewUrl(entry.previewUrl) &&
                 !draftPreviewLoadIdsRef.current.has(entry.id) &&
                 !draftPreviewInFlightRef.current.has(entry.id) &&
@@ -1633,6 +1573,16 @@ export default function Upload({
                   draftPreviewInFlightRef.current.add(entry.id)
                   draftPreviewAttemptsRef.current.set(entry.id, attempts + 1)
                   try {
+                    const largePlan = await planLargeStagePreview(
+                      stageId,
+                      entry.fileName || '',
+                      entry.fileSize,
+                    )
+                    if (largePlan) {
+                      updateEntry(entry.id, largePlan)
+                      draftPreviewLoadIdsRef.current.add(entry.id)
+                      continue
+                    }
                     const blob = await fetchStageFileBlob(stageId)
                     if (isUsableFileBlob(blob)) {
                       const fileName = entry.fileName || 'file'
@@ -1778,8 +1728,8 @@ export default function Upload({
           const formJson = res.data.formJson
           const fieldsArray = Array.isArray(formJson?.panels)
             ? formJson.panels.flatMap((panel: any) =>
-              Array.isArray(panel?.fields) ? panel.fields : [],
-            )
+                Array.isArray(panel?.fields) ? panel.fields : [],
+              )
             : Array.isArray(formJson?.fields)
               ? formJson.fields
               : Array.isArray(formJson?.components)
@@ -1801,14 +1751,14 @@ export default function Upload({
 
           newLabels[repoField] = fieldDef
             ? `${formName} - ${String(
-              fieldDef.displayLabel ||
-              fieldDef.label ||
-              fieldDef.name ||
-              fieldDef.title ||
-              fieldDef.id ||
-              fieldDef.key ||
-              formFieldId,
-            )}`
+                fieldDef.displayLabel ||
+                  fieldDef.label ||
+                  fieldDef.name ||
+                  fieldDef.title ||
+                  fieldDef.id ||
+                  fieldDef.key ||
+                  formFieldId,
+              )}`
             : `${formName} - ${formFieldId}`
         })
 
@@ -1979,6 +1929,15 @@ export default function Upload({
   )
 
   const isAnalyzing = deriveOcrStatus(activeEntry) === 'analyzing'
+  const activeUploadProgress = activeEntry?.uploadProgress
+  const activeUploadPercent =
+    activeUploadProgress?.phase === 'uploading'
+      ? Math.floor(
+          (activeUploadProgress.loaded /
+            Math.max(1, activeUploadProgress.total)) *
+            100,
+        )
+      : null
   const isExporting = activeEntry?.exportStatus === 'exporting'
   const isFieldsPhase =
     deriveOcrStatus(activeEntry) === 'complete' &&
@@ -2092,7 +2051,8 @@ export default function Upload({
         )
         const next = sessionEntries.map((entry) => ({
           ...entry,
-          previewUrl: entry.previewUrl ?? previous.get(entry.id)?.previewUrl ?? null,
+          previewUrl:
+            entry.previewUrl ?? previous.get(entry.id)?.previewUrl ?? null,
         }))
         setSessionUploadIds(next.map((entry) => entry.id))
         setOtherDraftsState('hidden')
@@ -2188,7 +2148,8 @@ export default function Upload({
               entries.find(
                 (entry) =>
                   entry.id === local.id ||
-                  (local.stageFileId && entry.stageFileId === local.stageFileId),
+                  (local.stageFileId &&
+                    entry.stageFileId === local.stageFileId),
               ) ?? null,
           )
           .find((entry): entry is QueuedUploadFile => Boolean(entry))
@@ -2264,6 +2225,160 @@ export default function Upload({
     }
   }, [activeRepositoryId, repositoryFields, t])
 
+  // Large files (over LARGE_UPLOAD_THRESHOLD_BYTES, up to 10 GB): chunked, resumable upload
+  // straight to storage, while OCR reads only the first pages. See src/lib/largeUpload.
+  const stageLargeFile = useCallback(
+    async (
+      entry: QueuedUploadFile & { file: File },
+      activeRepositoryId: string,
+      ocrFields: string[],
+      options: { openOnSuccess: boolean },
+    ) => {
+      const { file } = entry
+      const fileName = file.name
+      const controller = new AbortController()
+      uploadAbortControllersRef.current.set(entry.id, controller)
+      updateEntry(entry.id, {
+        errorMessage: undefined,
+        ocrStatus: 'analyzing',
+        status: 'analyzing',
+        uploadProgress: {
+          bytesPerSecond: 0,
+          etaSeconds: Number.NaN,
+          loaded: 0,
+          phase: 'preparing',
+          total: file.size,
+        },
+      })
+
+      const uploader = new LargeFileUploader({
+        file,
+        repositoryId: activeRepositoryId,
+        onProgress: (progress) =>
+          updateEntry(entry.id, { uploadProgress: progress }),
+        onSession: (session) =>
+          updateEntry(entry.id, { largeUploadFileId: session.fileId }),
+      })
+
+      // OCR of the first pages runs while the file uploads.
+      const ocrTask = (async () => {
+        try {
+          const { previewFile, totalPages } = await buildOcrPreview(
+            file,
+            controller.signal,
+          )
+          if (!previewFile) return { data: null, totalPages }
+          const { data, error } = await uploadForOcr(
+            activeRepositoryId,
+            previewFile,
+            ocrFields,
+            controller.signal,
+          )
+          if (error) {
+            console.warn('[largeUpload] OCR on first pages failed:', error)
+          }
+          return { data: error ? null : data, totalPages }
+        } catch (error) {
+          if (controller.signal.aborted) throw error
+          console.warn('[largeUpload] Could not prepare OCR preview:', error)
+          return { data: null, totalPages: undefined }
+        }
+      })()
+      // The upload may fail first; its error is the one reported.
+      ocrTask.catch(() => undefined)
+
+      try {
+        await uploader.upload(controller.signal)
+        const { data, totalPages } = await ocrTask
+
+        const ocrExtractedValues: Record<string, string> = {}
+        const fieldValues: Record<string, string> = {}
+        if (data?.ocrFieldList && Array.isArray(data.ocrFieldList)) {
+          data.ocrFieldList.forEach((field: OcrFieldResult) => {
+            const matchedRepoField = repositoryFields.find(
+              (f) =>
+                f.name === field.name ||
+                f.sqlColumnName === field.name ||
+                f.name?.toLowerCase() === field.name?.toLowerCase(),
+            )
+            if (!matchedRepoField) return
+            const key = getFieldKey(matchedRepoField)
+            const nextValue = isBlankFieldValue(field.value)
+              ? ''
+              : String(field.value ?? '')
+            ocrExtractedValues[key] = nextValue
+            fieldValues[key] = nextValue
+          })
+        }
+
+        const result = await uploader.complete(
+          {
+            metadata: data?.ocrFieldList?.length
+              ? JSON.stringify(data.ocrFieldList)
+              : undefined,
+            ocrJson:
+              typeof data?.ocrJson === 'string'
+                ? data.ocrJson
+                : data?.ocrJson
+                  ? JSON.stringify(data.ocrJson)
+                  : undefined,
+            ocrText: data?.ocrText || undefined,
+            totalPages,
+          },
+          controller.signal,
+        )
+        if (controller.signal.aborted) return
+
+        updateEntry(entry.id, {
+          backendStatus: 'OCR',
+          errorMessage: undefined,
+          fieldStatuses: mapOcrResponseToFieldStatuses(data, repositoryFields),
+          fieldValues,
+          largeUploadFileId: null,
+          masterSyncedValues: fieldValues,
+          ocrExtractedValues,
+          ocrStatus: data ? 'complete' : 'idle',
+          rawOcrJson: data?.ocrJson || data?.ocrResult || null,
+          rawOcrText: data?.ocrText || '',
+          stageFileId: result.fileId || uploader.fileId,
+          status: 'ready',
+          uploadProgress: null,
+        })
+        lastSavedValuesRef.current.set(entry.id, JSON.stringify(fieldValues))
+        const fileSizeLabel = formatBytes(file.size)
+        showToast({
+          message: t`${fileName} uploaded (${fileSizeLabel}).`,
+          variant: 'success',
+        })
+        if (options.openOnSuccess) setOpenFileId(entry.id)
+        void onSuccess?.()
+      } catch (error) {
+        const name = (error as { name?: string })?.name
+        if (
+          controller.signal.aborted ||
+          name === 'AbortError' ||
+          name === 'CanceledError'
+        ) {
+          return
+        }
+        const message = error instanceof Error ? error.message : String(error)
+        updateEntry(entry.id, {
+          errorMessage: t`Upload stopped: ${message}. Retry continues from where it stopped.`,
+          ocrStatus: 'error',
+          status: 'error',
+          uploadProgress: null,
+        })
+        showToast({
+          message: t`Failed to upload ${fileName}.`,
+          variant: 'error',
+        })
+      } finally {
+        uploadAbortControllersRef.current.delete(entry.id)
+      }
+    },
+    [onSuccess, repositoryFields, setOpenFileId, t, updateEntry],
+  )
+
   // Batches every newly-added 'queued' entry into a single bulkUpload call
   // (one network call per drop/selection, not one per file) and stores the
   // returned stageFileId/jobId on each entry so the poller (below) can pick
@@ -2274,15 +2389,31 @@ export default function Upload({
       activeRepositoryId: string,
       options?: { openDraftsOnSuccess?: boolean },
     ) => {
-      const filesToStage = entries.filter(
+      const withFiles = entries.filter(
         (entry): entry is QueuedUploadFile & { file: File } =>
           Boolean(entry.file),
       )
-      if (!filesToStage.length || !activeRepositoryId) return
+      if (!withFiles.length || !activeRepositoryId) return
 
       const ocrFields = repositoryFields
         .map((field) => formatOcrFieldDescriptor(field))
         .filter(Boolean)
+
+      // Large files: chunked upload + OCR of the first pages, one file at a time each.
+      const largeEntries = withFiles.filter((entry) =>
+        isLargeUploadFile(entry.file.size),
+      )
+      largeEntries.forEach((entry) => {
+        void stageLargeFile(entry, activeRepositoryId, ocrFields, {
+          openOnSuccess:
+            !options?.openDraftsOnSuccess && withFiles.length === 1,
+        })
+      })
+
+      const filesToStage = withFiles.filter(
+        (entry) => !isLargeUploadFile(entry.file.size),
+      )
+      if (!filesToStage.length) return
 
       if (filesToStage.length === 1) {
         const singleEntry = filesToStage[0]
@@ -2515,6 +2646,7 @@ export default function Upload({
       openDraftFilesView,
       repositoryFields,
       setOpenFileId,
+      stageLargeFile,
       t,
       updateEntry,
     ],
@@ -2550,22 +2682,41 @@ export default function Upload({
         ? entry.previewUrl
         : null
       let fileObj = entry.file
+      let largePlan: LargeStagePreview | null = null
       if (!previewUrl && entry.stageFileId) {
-        const blob = await fetchStageFileBlob(entry.stageFileId)
-        if (isUsableFileBlob(blob)) {
-          fileObj = new File([blob!], data.name || entry.fileName, {
-            type: blob!.type || 'application/pdf',
-          })
-          previewUrl = URL.createObjectURL(blob!)
+        largePlan = await planLargeStagePreview(
+          entry.stageFileId,
+          data.name || entry.fileName,
+          typeof data.size === 'number' ? data.size : entry.fileSize,
+        )
+        if (largePlan) {
+          previewUrl = largePlan.previewUrl
+        } else {
+          const blob = await fetchStageFileBlob(entry.stageFileId)
+          if (isUsableFileBlob(blob)) {
+            fileObj = new File([blob!], data.name || entry.fileName, {
+              type: blob!.type || 'application/pdf',
+            })
+            previewUrl = URL.createObjectURL(blob!)
+          }
         }
       }
 
       updateEntry(entry.id, {
+        ...(largePlan
+          ? {
+              previewHeaders: largePlan.previewHeaders,
+              previewTooLarge: largePlan.previewTooLarge,
+            }
+          : {}),
         fieldStatuses,
         fieldValues: mappedValues,
         file: fileObj,
         fileName: data.name || entry.fileName,
-        fileSize: typeof data.size === 'number' ? data.size : entry.fileSize,
+        fileSize:
+          typeof data.size === 'number' && data.size > 0
+            ? data.size
+            : (largePlan?.fileSize ?? entry.fileSize),
         ocrExtractedValues: mappedValues,
         ocrStatus: 'complete',
         previewUrl,
@@ -2664,9 +2815,16 @@ export default function Upload({
       const activeRepositoryId = String(
         repositoryId || repositoryData?.id || '',
       )
-      if (entry.stageFileId && activeRepositoryId) {
+      // A large upload still in progress has a server id but no stage file yet.
+      const serverFileId = entry.stageFileId || entry.largeUploadFileId
+      if (entry.file && entry.largeUploadFileId && activeRepositoryId) {
+        clearResumeRecord(
+          largeUploadFingerprint(entry.file, activeRepositoryId),
+        )
+      }
+      if (serverFileId && activeRepositoryId) {
         const { error } = await deleteStagedFiles({
-          fileIds: [entry.stageFileId],
+          fileIds: [serverFileId],
           repositoryId: activeRepositoryId,
         })
         if (error) {
@@ -2755,17 +2913,21 @@ export default function Upload({
 
   const handleInvoiceFiles = (fileList: FileList | File[] | null) => {
     const files = Array.from(fileList ?? [])
+    // Files above the large-upload threshold go up in chunks (up to 10 GB).
     const validFiles = files.filter(
-      (file) => isSupportedDocument(file) && file.size <= MAX_SIZE,
+      (file) =>
+        isSupportedDocument(file) &&
+        file.size > 0 &&
+        file.size <= LARGE_UPLOAD_MAX_BYTES,
     )
 
     if (!validFiles.length && files.length > 0) {
-      const tooLarge = files.some((file) => file.size > MAX_SIZE)
+      const tooLarge = files.some((file) => file.size > LARGE_UPLOAD_MAX_BYTES)
       const invalidType = files.some((file) => !isSupportedDocument(file))
 
       showToast({
         message: tooLarge
-          ? t`File is too large. Max size is 50MB.`
+          ? t`File is too large. Max size is 10 GB.`
           : invalidType
             ? t`Invalid file type. Please upload a supported document.`
             : t`No valid files selected.`,
@@ -2775,8 +2937,20 @@ export default function Upload({
       return
     }
 
+    if (validFiles.length < files.length && validFiles.length > 0) {
+      showToast({
+        message: t`Some files were skipped: unsupported type or larger than 10 GB.`,
+        variant: 'info',
+      })
+    }
+
     if (validFiles.length) {
-      if (useIntelligentUpload && onIntelligentUpload) {
+      // Intelligent Upload sends whole files to the classifier; large files use the chunked path.
+      if (
+        useIntelligentUpload &&
+        onIntelligentUpload &&
+        !validFiles.some((file) => isLargeUploadFile(file.size))
+      ) {
         onIntelligentUpload(validFiles)
         resetInput()
         return
@@ -2921,8 +3095,15 @@ export default function Upload({
         )
 
         const fallbackFile = initialFiles?.[0]
-        const blob = await fetchStageFileBlob(stageId)
-        let previewUrl: string | null = null
+        const largePlan = fallbackFile
+          ? null
+          : await planLargeStagePreview(
+              stageId,
+              data.name || '',
+              typeof data.size === 'number' ? data.size : 0,
+            )
+        const blob = largePlan ? null : await fetchStageFileBlob(stageId)
+        let previewUrl: string | null = largePlan?.previewUrl ?? null
         let fileObj: File | null = fallbackFile || null
         if (blob) {
           fileObj = new File([blob], data.name || 'file', { type: blob.type })
@@ -2940,7 +3121,10 @@ export default function Upload({
           fieldValues: mappedValues,
           file: fileObj,
           fileName: data.name,
-          fileSize: typeof data.size === 'number' ? data.size : 0,
+          fileSize:
+            typeof data.size === 'number' && data.size > 0
+              ? data.size
+              : (largePlan?.fileSize ?? 0),
           focusedFieldKey: null,
           id: `staged-${data.id || stageId}`,
           isSyncing: false,
@@ -2948,6 +3132,8 @@ export default function Upload({
           masterSyncedValues: {},
           ocrExtractedValues: mappedValues,
           ocrStatus: 'complete',
+          previewHeaders: largePlan?.previewHeaders ?? null,
+          previewTooLarge: largePlan?.previewTooLarge ?? false,
           previewUrl,
           rawOcrJson:
             Array.isArray(ocrJson) && ocrJson.length === 0 && data.fields
@@ -3270,8 +3456,8 @@ export default function Upload({
         badStatuses.length === 1
           ? t`This file has expired with date ${dateLabel}. Do you want to export?`
           : t`This file still has expired or invalid fields (${badStatuses
-            .map((item) => `${item.fieldName}: ${item.status}`)
-            .join(', ')}). Do you want to export?`
+              .map((item) => `${item.fieldName}: ${item.status}`)
+              .join(', ')}). Do you want to export?`
 
       pendingExpiredExportRef.current = { id, options }
       setExpiredExportDescription(description)
@@ -3366,9 +3552,7 @@ export default function Upload({
     const fieldStatus = activeEntry
       ? resolveVisibleOcrFieldStatus(field, activeEntry)
       : ''
-    const statusTone = fieldStatus
-      ? getOcrFieldStatusTone(fieldStatus)
-      : null
+    const statusTone = fieldStatus ? getOcrFieldStatusTone(fieldStatus) : null
     const statusToneClass = statusTone
       ? OCR_FIELD_STATUS_TONE_CLASS[statusTone]
       : null
@@ -3477,17 +3661,17 @@ export default function Upload({
     const fromOcr =
       !isBlankFieldValue(value) &&
       normalizeComparableFieldValue(value) ===
-      normalizeComparableFieldValue(activeOcrExtractedValues[fieldKey])
+        normalizeComparableFieldValue(activeOcrExtractedValues[fieldKey])
     const missingRequired =
       required && !isAnalyzing && isBlankFieldValue(value) && !fieldStatus
 
     const fieldClassName = cn(
       'w-full',
       missingRequired &&
-      '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
+        '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
       isSyncField &&
-      !missingRequired &&
-      '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
+        !missingRequired &&
+        '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
     )
 
     const renderSuggestionCapsule = () => {
@@ -3577,15 +3761,15 @@ export default function Upload({
       const selectedOption = findSelectedOption(options, textVal)
       const effectiveOptions =
         selectedOption &&
-          !options.some(
-            (o) =>
-              String(o.value ?? '').toLowerCase() ===
+        !options.some(
+          (o) =>
+            String(o.value ?? '').toLowerCase() ===
               String(selectedOption.value ?? '').toLowerCase() ||
-              String(o.name).toLowerCase() ===
+            String(o.name).toLowerCase() ===
               selectedOption.name.toLowerCase() ||
-              String(o.id).toLowerCase() ===
+            String(o.id).toLowerCase() ===
               String(selectedOption.id).toLowerCase(),
-          )
+        )
           ? [...options, selectedOption]
           : options
 
@@ -3650,10 +3834,10 @@ export default function Upload({
           value={toTextValue(value)}
           type={
             fieldType === 'decimal' ||
-              fieldType === 'number' ||
-              fieldType === 'int' ||
-              fieldType === 'integer' ||
-              fieldType === 'currency'
+            fieldType === 'number' ||
+            fieldType === 'int' ||
+            fieldType === 'integer' ||
+            fieldType === 'currency'
               ? 'number'
               : 'text'
           }
@@ -3671,8 +3855,8 @@ export default function Upload({
             ? cn('rounded-xl border p-3', statusToneClass.panel)
             : undefined,
           missingRequired &&
-          !statusToneClass &&
-          '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
+            !statusToneClass &&
+            '[&_button]:!border-orange-7 [&_input]:!border-orange-7 [&_textarea]:!border-orange-7',
         )}
       >
         <div className='flex items-center justify-between gap-2'>
@@ -3689,7 +3873,10 @@ export default function Upload({
             {fromOcr ? (
               <Tooltip content={t`Extracted by OCR`} position='top'>
                 <span className='inline-flex'>
-                  <Icon className='size-3.5 text-primary-11' name='tabler:scan' />
+                  <Icon
+                    className='size-3.5 text-primary-11'
+                    name='tabler:scan'
+                  />
                 </span>
               </Tooltip>
             ) : null}
@@ -3764,8 +3951,17 @@ export default function Upload({
 
       if (!entry.restoredFromServer) return
       if (loadedStageFileIdsRef.current.has(entry.stageFileId)) {
-        if (!isPlayablePreviewUrl(entry.previewUrl)) {
+        if (!isPlayablePreviewUrl(entry.previewUrl) && !entry.previewTooLarge) {
           void (async () => {
+            const largePlan = await planLargeStagePreview(
+              entry.stageFileId as string,
+              entry.fileName || '',
+              entry.fileSize,
+            )
+            if (largePlan) {
+              updateEntry(entry.id, largePlan)
+              return
+            }
             const blob = await fetchStageFileBlob(entry.stageFileId as string)
             if (!isUsableFileBlob(blob)) return
             const fileName = entry.fileName || 'file'
@@ -3813,8 +4009,7 @@ export default function Upload({
   const allVisibleSelected =
     draftListForSelection.length > 0 &&
     selectedVisibleCount === draftListForSelection.length
-  const someVisibleSelected =
-    selectedVisibleCount > 0 && !allVisibleSelected
+  const someVisibleSelected = selectedVisibleCount > 0 && !allVisibleSelected
   const selectedExportableCount = selectedVisibleEntries.filter((entry) =>
     isDraftReadyForExport(entry, repositoryFields),
   ).length
@@ -3931,8 +4126,7 @@ export default function Upload({
       ? earlierDraftsTotal
       : 0)
   const draftNavIndex = draftQueue.findIndex((entry) => entry.id === openFileId)
-  const previousDraft =
-    draftNavIndex > 0 ? draftQueue[draftNavIndex - 1] : null
+  const previousDraft = draftNavIndex > 0 ? draftQueue[draftNavIndex - 1] : null
   const nextDraft =
     draftNavIndex >= 0 && draftNavIndex < draftQueue.length - 1
       ? draftQueue[draftNavIndex + 1]
@@ -3969,13 +4163,13 @@ export default function Upload({
               return (
                 <button
                   key={tab.id}
+                  type='button'
                   className={cn(
                     'relative flex shrink-0 items-center pb-3 text-sm font-semibold whitespace-nowrap transition-colors',
                     isSelected
                       ? 'text-[var(--gray-13)]'
                       : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                   )}
-                  type='button'
                   onClick={() => {
                     setQueueListTab(tab.id)
                     setSelectedDraftIds([])
@@ -4033,10 +4227,7 @@ export default function Upload({
             draftQueue.map((entry) => [
               entry.id,
               entry.status === 'ready'
-                ? hasMissingMandatoryFields(
-                  entry.fieldValues,
-                  repositoryFields,
-                )
+                ? hasMissingMandatoryFields(entry.fieldValues, repositoryFields)
                 : entry.status !== 'indexed',
             ]),
           )}
@@ -4052,7 +4243,6 @@ export default function Upload({
           onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
           onBulkExport={() => setBulkExportConfirmOpen(true)}
           onExport={handleExportQueuedFile}
-          onShowOtherDrafts={() => void loadOtherDrafts()}
           onFieldChange={(entryId, fieldKey, value) => {
             updateEntry(entryId, (entry) => {
               if (String(entry.fieldValues?.[fieldKey] ?? '') === value) {
@@ -4070,7 +4260,6 @@ export default function Upload({
           onOpen={handleOpenQueuedFile}
           onRegenerate={handleRetryOcr}
           onRemove={handleRemoveFromQueue}
-          onToggleSelect={toggleDraftSelection}
           onSelectAll={(checked) => {
             const visibleIds = draftQueue.map((entry) => entry.id)
             setSelectedDraftIds((prev) =>
@@ -4079,6 +4268,8 @@ export default function Upload({
                 : prev.filter((id) => !visibleIds.includes(id)),
             )
           }}
+          onShowOtherDrafts={() => void loadOtherDrafts()}
+          onToggleSelect={toggleDraftSelection}
         />
       ) : null}
 
@@ -4102,13 +4293,13 @@ export default function Upload({
                 entry={entry}
                 isOpen={entry.id === openFileId}
                 key={entry.id}
+                selected={selectedDraftIds.includes(entry.id)}
+                showCheckbox={false}
+                showExport={false}
                 missingMandatoryFields={hasMissingMandatoryFields(
                   entry.fieldValues,
                   repositoryFields,
                 )}
-                selected={selectedDraftIds.includes(entry.id)}
-                showCheckbox={false}
-                showExport={false}
                 onExport={handleExportQueuedFile}
                 onOpen={handleOpenQueuedFile}
                 onRemove={handleRemoveFromQueue}
@@ -4168,15 +4359,17 @@ export default function Upload({
             />
             <AnimateSlideUp className='shrink-0 space-y-0.5 text-center'>
               <h1 className='text-xl font-bold tracking-tight text-gray-13'>
-                {t`Upload`}{' '}
-                <span className='text-primary-9'>{t`Files`}</span>
+                {t`Upload`} <span className='text-primary-9'>{t`Files`}</span>
               </h1>
               <p className='mx-auto max-w-xl text-12 font-medium text-gray-10'>
                 {t`Upload documents securely, assign metadata, and organize files within your repository for efficient search and management.`}
               </p>
             </AnimateSlideUp>
 
-            <AnimateSlideUp className='relative z-10 w-full shrink-0' delay={0.1}>
+            <AnimateSlideUp
+              className='relative z-10 w-full shrink-0'
+              delay={0.1}
+            >
               <div className='group relative overflow-hidden rounded-xl border border-gray-3 bg-surface p-1.5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md'>
                 <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
                   <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-[var(--primary-2)]/20 to-transparent' />
@@ -4225,7 +4418,7 @@ export default function Upload({
                       )}
                     </h2>
                     <p className='mt-1 text-12 font-medium text-gray-9'>
-                      {t`PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB each`}
+                      {t`PDF, Word, Excel, PowerPoint, Images & Documents · Max 10 GB each`}
                     </p>
                   </div>
                   {useIntelligentUpload ? (
@@ -4238,8 +4431,8 @@ export default function Upload({
                         t`Suggest Folder`,
                       ].map((label) => (
                         <span
-                          key={label}
                           className='rounded-full border border-primary-5 bg-surface px-2.5 py-0.5 text-11 font-medium text-gray-12'
+                          key={label}
                         >
                           {label}
                         </span>
@@ -4278,9 +4471,7 @@ export default function Upload({
                     ref={invoiceInputRef}
                     type='file'
                     multiple
-                    onChange={(event) =>
-                      handleInvoiceFiles(event.target.files)
-                    }
+                    onChange={(event) => handleInvoiceFiles(event.target.files)}
                   />
                 </div>
               </div>
@@ -4293,7 +4484,10 @@ export default function Upload({
                 <div className='flex h-full flex-col rounded-xl border border-gray-3 bg-surface p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-5 hover:shadow-md'>
                   <div className='flex items-center gap-2'>
                     <div className='flex size-7 shrink-0 items-center justify-center rounded-md bg-primary-3 text-primary-11'>
-                      <AiBrandIcon className='size-4' variant='outline-purple' />
+                      <AiBrandIcon
+                        className='size-4'
+                        variant='outline-purple'
+                      />
                     </div>
                     <h4 className='text-13 font-semibold tracking-tight text-gray-13'>
                       {t`OCR Agent`}
@@ -4320,7 +4514,7 @@ export default function Upload({
 
                   {draftCounts.processingName ? (
                     <div className='mt-2 flex min-h-5 w-full min-w-0 items-center gap-2'>
-                      <span className='min-w-0 flex-1 truncate text-left text-xs font-medium text-gray-12 animate-pulse'>
+                      <span className='min-w-0 flex-1 animate-pulse truncate text-left text-xs font-medium text-gray-12'>
                         {draftCounts.processingName}
                       </span>
                       <Icon
@@ -4352,7 +4546,10 @@ export default function Upload({
                       <span className='font-semibold'>
                         {isLoadingDraftCount
                           ? '…'
-                          : Math.max(draftCounts.total - draftCounts.inQueue, 0)}
+                          : Math.max(
+                              draftCounts.total - draftCounts.inQueue,
+                              0,
+                            )}
                       </span>
                     </div>
                     <div className='flex w-full items-center justify-between gap-3 text-xs text-gray-12'>
@@ -4368,8 +4565,15 @@ export default function Upload({
 
                   <div className='mt-auto flex w-full items-center justify-between border-t border-gray-3/80 pt-3'>
                     <span className='inline-flex items-center gap-1.5 text-12 font-medium text-gray-11'>
-                      <Icon className='size-3.5 text-primary-9' name='tabler:cpu' />
-                      <span>{draftCounts.inQueue > 0 ? t`Processing active` : t`Agent ready`}</span>
+                      <Icon
+                        className='size-3.5 text-primary-9'
+                        name='tabler:cpu'
+                      />
+                      <span>
+                        {draftCounts.inQueue > 0
+                          ? t`Processing active`
+                          : t`Agent ready`}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -4436,7 +4640,10 @@ export default function Upload({
                       <span className='underline-offset-2 group-hover:underline'>
                         {t`Open draft files`}
                       </span>
-                      <Icon className='size-3.5 transition-transform duration-300 group-hover:translate-x-0.5' name='lucide:arrow-right' />
+                      <Icon
+                        className='size-3.5 transition-transform duration-300 group-hover:translate-x-0.5'
+                        name='lucide:arrow-right'
+                      />
                     </span>
                   </div>
                 </button>
@@ -4458,17 +4665,13 @@ export default function Upload({
     <AnimateFadeIn
       className={cn(
         'relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden',
-        isDraftFullPage
-          ? 'bg-surface'
-          : 'bg-surface-muted px-4 pt-2 pb-3',
+        isDraftFullPage ? 'bg-surface' : 'bg-surface-muted px-4 pt-2 pb-3',
       )}
     >
       <div
         className={cn(
           'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden',
-          isDraftFullPage
-            ? 'gap-0'
-            : 'mx-auto max-w-7xl gap-3',
+          isDraftFullPage ? 'gap-0' : 'mx-auto max-w-7xl gap-3',
         )}
       >
         <input
@@ -4611,7 +4814,9 @@ export default function Upload({
 
                           {isAnalysisStep && isAnalyzing ? (
                             <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
-                              {t`Analyzing document...`}
+                              {activeUploadPercent === null
+                                ? t`Analyzing document...`
+                                : t`Uploading ${activeUploadPercent}%...`}
                             </span>
                           ) : null}
 
@@ -4650,7 +4855,8 @@ export default function Upload({
                       disabled={!previousDraft}
                       type='button'
                       onClick={() => {
-                        if (previousDraft) handleOpenQueuedFile(previousDraft.id)
+                        if (previousDraft)
+                          handleOpenQueuedFile(previousDraft.id)
                       }}
                     >
                       <Icon className='size-4' name='lucide:chevron-left' />
@@ -4681,7 +4887,10 @@ export default function Upload({
                       <FileText size={18} />
                     </div>
                     <div className='min-w-0'>
-                      <Tooltip content={activeEntry.fileName} position='bottom-start'>
+                      <Tooltip
+                        content={activeEntry.fileName}
+                        position='bottom-start'
+                      >
                         <h2 className='truncate text-base font-bold text-[var(--gray-13)]'>
                           {activeEntry.fileName}
                         </h2>
@@ -4694,7 +4903,8 @@ export default function Upload({
                       </p>
                     </div>
                   </div>
-                  {isFieldsPhase && !isExporting &&
+                  {isFieldsPhase &&
+                    !isExporting &&
                     (() => {
                       const requiredTotal = repositoryFields.filter(
                         (field) => field.isMandatory,
@@ -4714,7 +4924,10 @@ export default function Upload({
                           position='top'
                         >
                           <span className='flex size-4 shrink-0 items-center justify-center text-green-9'>
-                            <Icon className='size-4' name='lucide:circle-check' />
+                            <Icon
+                              className='size-4'
+                              name='lucide:circle-check'
+                            />
                           </span>
                         </Tooltip>
                       ) : (
@@ -4747,29 +4960,31 @@ export default function Upload({
                   <DocumentPreviewViewer
                     fileBlob={activeEntry.file}
                     fileName={activeEntry.fileName}
+                    highlightTerms={highlightTerms}
+                    httpHeaders={activeEntry.previewHeaders ?? undefined}
+                    showScanOverlay={isAnalyzing}
+                    enableHighlight
                     fileUrl={
                       isPlayablePreviewUrl(activeEntry.previewUrl)
                         ? activeEntry.previewUrl
                         : null
                     }
-                    highlightTerms={highlightTerms}
-                    isPdf={
-                      activeEntry.file
-                        ? isPdf(activeEntry.file)
-                        : /\.pdf$/i.test(activeEntry.fileName || '')
-                    }
-                    showScanOverlay={isAnalyzing}
-                    enableHighlight
                     isImage={
                       activeEntry.file
                         ? isImage(activeEntry.file)
                         : /\.(bmp|jpeg|jpg|png|svg|tif|tiff|webp)$/i.test(
-                          activeEntry.fileName || '',
-                        )
+                            activeEntry.fileName || '',
+                          )
                     }
                     isLoading={
+                      !activeEntry.previewTooLarge &&
                       !isPlayablePreviewUrl(activeEntry.previewUrl) &&
                       Boolean(activeEntry.stageFileId)
+                    }
+                    isPdf={
+                      activeEntry.file
+                        ? isPdf(activeEntry.file)
+                        : /\.pdf$/i.test(activeEntry.fileName || '')
                     }
                   />
                 </div>
@@ -4819,17 +5034,26 @@ export default function Upload({
                         {ENABLE_INDEXING_AUTOSAVE &&
                           (autoSaveStatus === 'saving' ? (
                             <span className='inline-flex animate-pulse items-center gap-1 rounded-full border border-primary-7 bg-primary-2 px-2.5 py-0.5 text-[11px] font-medium text-primary-11'>
-                              <Icon className='size-3 animate-spin text-primary-9' name='tabler:loader-2' />
+                              <Icon
+                                className='size-3 animate-spin text-primary-9'
+                                name='tabler:loader-2'
+                              />
                               <span>{t`Saving...`}</span>
                             </span>
                           ) : autoSaveStatus === 'saved' ? (
                             <span className='inline-flex items-center gap-1 rounded-full border border-green-6 bg-green-2 px-2.5 py-0.5 text-[11px] font-medium text-green-11'>
-                              <Icon className='size-3 text-green-9' name='lucide:check' />
+                              <Icon
+                                className='size-3 text-green-9'
+                                name='lucide:check'
+                              />
                               <span>{t`Saved`}</span>
                             </span>
                           ) : autoSaveStatus === 'error' ? (
                             <span className='inline-flex items-center gap-1 rounded-full border border-red-6 bg-red-2 px-2.5 py-0.5 text-[11px] font-medium text-red-11'>
-                              <Icon className='size-3 text-red-9' name='lucide:alert-circle' />
+                              <Icon
+                                className='size-3 text-red-9'
+                                name='lucide:alert-circle'
+                              />
                               <span>{t`Save failed`}</span>
                             </span>
                           ) : null)}
@@ -4898,6 +5122,12 @@ export default function Upload({
                       <p className='text-sm font-medium text-[var(--gray-11)]'>
                         {t`Extracting fields from document...`}
                       </p>
+                      {activeEntry.uploadProgress ? (
+                        <LargeUploadProgressBar
+                          className='w-full max-w-sm px-6'
+                          progress={activeEntry.uploadProgress}
+                        />
+                      ) : null}
                     </div>
                   ) : null}
 
@@ -4944,9 +5174,9 @@ export default function Upload({
                         <div className='flex h-full flex-col'>
                           {requiredTotal > 0 ? (
                             <InfoCard
-                              size='sm'
                               className='mb-3 shrink-0 rounded-xl'
                               description=''
+                              size='sm'
                               variant={requiredDone ? 'success' : 'warning'}
                               title={
                                 requiredDone
@@ -4998,11 +5228,11 @@ export default function Upload({
                                   description: sameStatus
                                     ? joinNames(items.map((item) => item.name))
                                     : items
-                                      .map(
-                                        (item) =>
-                                          `${item.name}: ${item.status}`,
-                                      )
-                                      .join('. '),
+                                        .map(
+                                          (item) =>
+                                            `${item.name}: ${item.status}`,
+                                        )
+                                        .join('. '),
                                   title: sameStatus
                                     ? items[0].status
                                     : t`Review these fields`,
@@ -5015,9 +5245,9 @@ export default function Upload({
                               <div className='mb-3 flex shrink-0 flex-col gap-2'>
                                 {cards.map((card) => (
                                   <InfoCard
-                                    size='sm'
                                     description={card.description}
                                     key={card.variant}
+                                    size='sm'
                                     title={card.title}
                                     variant={card.variant}
                                   />
@@ -5196,5 +5426,97 @@ export default function Upload({
         }}
       />
     </AnimateFadeIn>
+  )
+}
+
+/** Cycles the three upload highlights in one card. */
+function UploadFeatureHighlight() {
+  const { t } = useLingui()
+  const items = useMemo(
+    () => [
+      {
+        color: 'text-orange-9 bg-orange-2',
+        icon: 'tabler:bolt',
+        sub: t`Process documents faster with our agentic pipeline`,
+        title: t`Lightning Fast`,
+      },
+      {
+        color: 'text-primary-11 bg-primary-3',
+        icon: 'tabler:sparkles',
+        sub: t`Industry-leading extraction accuracy and field precision`,
+        title: t`100% Accuracy`,
+      },
+      {
+        color: 'text-green-11 bg-green-2',
+        icon: 'tabler:clock',
+        sub: t`Support for PDF, images, and scanned documents`,
+        title: t`Any Format`,
+      },
+    ],
+    [t],
+  )
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setIndex((current) => (current + 1) % items.length)
+    }, 3500)
+    return () => window.clearInterval(timer)
+  }, [items.length])
+
+  const item = items[index]
+
+  return (
+    <AnimateEntrancePop className='h-full' delay={0.08}>
+      <div className='group flex h-full w-full flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-5 hover:shadow-md'>
+        <AnimatePresence mode='wait'>
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            className='flex flex-1 flex-col items-start'
+            exit={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: 8 }}
+            key={item.icon}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          >
+            <div className='flex items-center gap-2'>
+              <div
+                className={cn(
+                  'flex size-7 shrink-0 items-center justify-center rounded-md',
+                  item.color,
+                )}
+              >
+                {item.icon === 'tabler:sparkles' ? (
+                  <AiBrandIcon className='size-4' variant='outline-purple' />
+                ) : (
+                  <Icon className='size-4' name={item.icon} />
+                )}
+              </div>
+              <h4 className='text-13 font-semibold tracking-tight text-gray-13'>
+                {item.title}
+              </h4>
+            </div>
+            <p className='mt-2 line-clamp-2 text-xs leading-snug font-medium text-gray-10'>
+              {item.sub}
+            </p>
+          </motion.div>
+        </AnimatePresence>
+        <div className='mt-auto flex items-center justify-center gap-1.5 pt-3'>
+          {items.map((entry, dotIndex) => (
+            <button
+              aria-label={entry.title}
+              key={entry.icon}
+              type='button'
+              className={cn(
+                'h-1.5 rounded-full transition-all duration-300',
+                dotIndex === index
+                  ? 'w-5 bg-primary-9'
+                  : 'w-1.5 bg-gray-5 hover:bg-gray-7',
+              )}
+              onClick={() => setIndex(dotIndex)}
+            />
+          ))}
+        </div>
+      </div>
+    </AnimateEntrancePop>
   )
 }
