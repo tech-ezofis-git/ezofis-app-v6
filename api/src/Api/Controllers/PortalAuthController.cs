@@ -61,6 +61,28 @@ public sealed class PortalAuthController : ControllerBase
         RunAsync(async tenantId => Ok(await _masterLogin.VerifyOtpAsync(
             tenantId, request.PortalOwnerId, request.PortalId, request.Username, request.Otp, cancellationToken)));
 
+    /// <summary>Email with OTP, step 1: email a one-time code to the visitor's address.</summary>
+    [HttpPost("email-otp/send")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public Task<IActionResult> SendEmailOtp([FromBody] PortalEmailOtpSendRequest request, CancellationToken cancellationToken) =>
+        RunAsync(async tenantId =>
+        {
+            await _masterLogin.SendEmailOtpAsync(tenantId, request.PortalOwnerId, request.PortalId, request.Email, cancellationToken);
+            return NoContent();
+        });
+
+    /// <summary>Email with OTP, step 2: check the code and sign in as a portal visitor (ExternalUser).</summary>
+    [HttpPost("email-otp/verify")]
+    [ProducesResponseType(typeof(PortalMasterLoginResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public Task<IActionResult> VerifyEmailOtp([FromBody] PortalEmailOtpVerifyRequest request, CancellationToken cancellationToken) =>
+        RunAsync(async tenantId => Ok(await _masterLogin.VerifyEmailOtpAsync(
+            tenantId, request.PortalOwnerId, request.PortalId, request.Email, request.Otp, cancellationToken)));
+
     private async Task<IActionResult> RunAsync(Func<Guid, Task<IActionResult>> action)
     {
         var tenantId = _tenantProvider.GetTenantId();
@@ -96,3 +118,7 @@ public sealed record PortalMasterPasswordRequest(Guid PortalOwnerId, int PortalI
 public sealed record PortalMasterOtpSendRequest(Guid PortalOwnerId, int PortalId, string Username);
 
 public sealed record PortalMasterOtpVerifyRequest(Guid PortalOwnerId, int PortalId, string Username, string Otp);
+
+public sealed record PortalEmailOtpSendRequest(Guid PortalOwnerId, int PortalId, string Email);
+
+public sealed record PortalEmailOtpVerifyRequest(Guid PortalOwnerId, int PortalId, string Email, string Otp);
