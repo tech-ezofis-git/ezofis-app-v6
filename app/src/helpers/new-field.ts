@@ -1,3 +1,5 @@
+import { getFieldTypeName } from './fieldTypeNames'
+
 export const generateId = () => {
   try {
     return crypto.randomUUID()
@@ -25,7 +27,8 @@ export const getField = (fieldType: string) => {
     label:
       fieldType.toLowerCase() === 'text_builder'
         ? 'Paragraph'
-        : toTitleCase(fieldType.replace(/_/g, ' ')),
+        : (getFieldTypeName(fieldType) ??
+          toTitleCase(fieldType.replace(/_/g, ' '))),
     type: fieldType.toUpperCase(),
     settings: {
       aiSettings: {

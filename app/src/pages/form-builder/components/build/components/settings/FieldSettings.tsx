@@ -2,6 +2,7 @@ import { Badge } from '@mantine/core'
 import { useEffect, useRef, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import { getFieldTypeName } from '@/helpers/fieldTypeNames'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import GeneralSettings from './sections/GeneralSettings'
 import QuestionSettings from './sections/QuestionSettings'
@@ -176,7 +177,8 @@ const SettingsHeader = ({
                   size='xs'
                   variant='filled'
                 >
-                  {activeQuestion.type.replace(/_/g, ' ')}
+                  {getFieldTypeName(activeQuestion.type) ??
+                    activeQuestion.type.replace(/_/g, ' ')}
                 </Badge>
               </div>
               <Icon

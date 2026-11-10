@@ -5,11 +5,12 @@ import InputCheckboxGroup from '@/components/base/inputs/InputCheckboxGroup'
 import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
 import InputSelectBase from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
-import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
+import SettingSwitchRow from '@/components/base/inputs/SettingSwitchRow'
 import { isFileColumnType } from '@/pages/form-builder/helpers/tableColumnFiles'
 import { extractFormFieldChoices } from '@/pages/form-builder/helpers/tableColumnOptions'
 import type { TableColumn } from './TableColumnSettingsPanel'
+import { settingLabelClass } from './settingLabelClasses'
 
 type ColumnSettingsPatch = Partial<NonNullable<TableColumn['settings']>>
 
@@ -85,9 +86,7 @@ function InputSelect(props: ComponentProps<typeof InputSelectBase>) {
 }
 
 const SectionLabel = ({ children }: { children: string }) => (
-  <label className='block text-[11px] font-bold tracking-wider text-gray-10 uppercase'>
-    {children}
-  </label>
+  <label className={settingLabelClass}>{children}</label>
 )
 
 /**
@@ -154,7 +153,7 @@ const TableColumnAiSettings = ({
         <div className='space-y-2'>
           <InputSelect
             options={masterForms}
-            placeholder='Select a master table'
+            placeholder='Select a master form'
             value={
               masterForms.find((f) => String(f.id) === masterFormId) || null
             }
@@ -261,10 +260,10 @@ const TableColumnAiSettings = ({
           }
         />
       )}
-      <InputSwitch
+      <SettingSwitchRow
         checked={column.settings?.validation?.verificationRequired === true}
-        description='Requires a manual review to ensure the accuracy of the provided information.'
-        label='Manual Verification Required'
+        help='A person must review this value before it is accepted.'
+        title='Needs a person to check'
         onChange={(checked) =>
           onUpdate({ validation: { verificationRequired: checked } })
         }
