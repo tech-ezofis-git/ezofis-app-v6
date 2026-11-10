@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -14,6 +15,7 @@ public sealed class WorkflowSecurityService : IWorkflowSecurityService
     private readonly ITenantContext _tenantContext;
     private readonly ICurrentUserProvider _currentUserProvider;
     private readonly ILogger<WorkflowSecurityService> _logger;
+    private readonly IWorkflowJsonStorageService? _jsonStorage;
     private readonly string _pilotEmail;
     private Guid _unrestrictedCacheUserId;
     private bool? _unrestrictedCache;
@@ -22,8 +24,10 @@ public sealed class WorkflowSecurityService : IWorkflowSecurityService
         ITenantContext tenantContext,
         ICurrentUserProvider currentUserProvider,
         ILogger<WorkflowSecurityService> logger,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        IWorkflowJsonStorageService? jsonStorage = null)
     {
+        _jsonStorage = jsonStorage;
         _tenantContext = tenantContext;
         _currentUserProvider = currentUserProvider;
         _logger = logger;
@@ -305,6 +309,11 @@ public sealed class WorkflowSecurityService : IWorkflowSecurityService
         if (string.IsNullOrEmpty(connectionString) || userId == Guid.Empty || workflowId == Guid.Empty)
             return false;
 
+        // Start block "Portal Users" switch: portal visitors (ExternalUser) may use the workflow.
+        if (await IsExternalUserAsync(userId, cancellationToken)
+            && await StartAllowsPortalUsersAsync(workflowId, cancellationToken))
+            return true;
+
         const string sql = """
             SELECT 1
             FROM workflow."Workflows" w
@@ -535,5 +544,64 @@ public sealed class WorkflowSecurityService : IWorkflowSecurityService
         _unrestrictedCacheUserId = userId;
         _unrestrictedCache = unrestricted;
         return unrestricted;
+    }
+
+    private async Task<bool> IsExternalUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var connectionString = _tenantContext.ConnectionString;
+        if (string.IsNullOrEmpty(connectionString) || userId == Guid.Empty)
+            return false;
+        try
+        {
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var cmd = new NpgsqlCommand(
+                "SELECT \"Role\" FROM users.\"Users\" WHERE \"Id\" = @UserId AND \"IsDeleted\" = false LIMIT 1",
+                connection);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            var role = await cmd.ExecuteScalarAsync(cancellationToken) as string;
+            return string.Equals(role, "ExternalUser", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (PostgresException)
+        {
+            return false;
+        }
+    }
+
+    private async Task<bool> StartAllowsPortalUsersAsync(Guid workflowId, CancellationToken cancellationToken)
+    {
+        if (_jsonStorage is null)
+            return false;
+        try
+        {
+            var json = await _jsonStorage.GetWorkflowJsonAsync(workflowId, cancellationToken);
+            if (string.IsNullOrWhiteSpace(json))
+                return false;
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("workflowJson", out var wrapped)
+                && wrapped.ValueKind == JsonValueKind.Object)
+                root = wrapped;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("blocks", out var blocks)
+                || blocks.ValueKind != JsonValueKind.Array)
+                return false;
+            foreach (var block in blocks.EnumerateArray())
+            {
+                if (!block.TryGetProperty("type", out var type)
+                    || !string.Equals(type.GetString(), "START", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (block.TryGetProperty("settings", out var settings)
+                    && settings.ValueKind == JsonValueKind.Object
+                    && settings.TryGetProperty("allowPortalUsers", out var flag)
+                    && flag.ValueKind == JsonValueKind.True)
+                    return true;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+        return false;
     }
 }
