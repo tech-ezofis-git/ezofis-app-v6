@@ -14,6 +14,84 @@ from psycopg2 import sql
 
 logger = logging.getLogger("orchestrator.dynamic_db_executor")
 
+# Natural keys of a master catalog row, tried before the LLM's own match_criteria.
+CODE_COLUMNS = ("Material_Code", "Product_Code", "Item_Code", "Code")
+
+_BLANK_TEXT = {"", "null", "none", "nan", "n/a"}
+
+
+def _is_blank(value: Any) -> bool:
+    """True for values that must never overwrite master data (None, '', 'null', whitespace)."""
+    return value is None or (isinstance(value, str) and value.strip().lower() in _BLANK_TEXT)
+
+
+def _normalize_key(value: Any) -> str:
+    """Match value as compared in SQL: whitespace runs collapsed, trimmed, lower-cased."""
+    return " ".join(str(value).split()).lower()
+
+
+def _find_master_row(cur, table_name: str, phys_cols: Dict[str, Any], criteria: Dict[str, Any]) -> Optional[str]:
+    """item_id of the active row matching every criteria column (case/whitespace-insensitive)."""
+    where_clauses = []
+    where_vals = []
+    for col, val in criteria.items():
+        where_clauses.append(sql.SQL(
+            "lower(btrim(regexp_replace({}::text, '[[:space:]]+', ' ', 'g'))) = %s"
+        ).format(sql.Identifier(col)))
+        where_vals.append(_normalize_key(val))
+
+    if "is_deleted" in phys_cols:
+        where_clauses.append(sql.SQL("(is_deleted = false OR is_deleted IS NULL)"))
+    order = sql.SQL(" ORDER BY modified_at DESC NULLS LAST") if "modified_at" in phys_cols else sql.SQL("")
+
+    check_query = sql.SQL("SELECT item_id::text FROM dbo.{} WHERE {}{} LIMIT 1;").format(
+        sql.Identifier(table_name),
+        sql.SQL(" AND ").join(where_clauses),
+        order,
+    )
+    cur.execute(check_query, where_vals)
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
+def _resolve_existing_master_row(
+    cur,
+    table_name: str,
+    phys_cols: Dict[str, Any],
+    criteria: Dict[str, Any],
+    fields: Dict[str, Any],
+) -> Tuple[Optional[str], Optional[str]]:
+    """Finds the master row for one plan item. Returns (item_id, mis-mapped column).
+
+    The code column (Material_Code, ...) is the row's natural key, so it is tried first; then the
+    LLM's match_criteria; then each criteria value against the code columns, which catches a code
+    the LLM put under a description column (e.g. {"Material": "PMC228"}). That column is returned
+    so the caller does not copy the code into it.
+    """
+    code_cols = [c for c in CODE_COLUMNS if c in phys_cols]
+
+    for col in code_cols:
+        value = fields.get(col, criteria.get(col))
+        if not _is_blank(value):
+            found = _find_master_row(cur, table_name, phys_cols, {col: value})
+            if found:
+                return found, None
+
+    if criteria:
+        found = _find_master_row(cur, table_name, phys_cols, criteria)
+        if found:
+            return found, None
+
+    for crit_col, value in criteria.items():
+        if crit_col in code_cols:
+            continue
+        for col in code_cols:
+            found = _find_master_row(cur, table_name, phys_cols, {col: value})
+            if found:
+                return found, crit_col
+
+    return None, None
+
 
 def execute_form_sync_transaction(
     conn,
@@ -86,40 +164,29 @@ def execute_form_sync_transaction(
                 match_criteria = plan_item.get("match_criteria", {})
                 fields = plan_item.get("fields", {})
 
-                # Filter fields against target table columns
+                # Filter fields against target table columns. Blank values are dropped so a sync
+                # never wipes data already on the master row (or inserts empty columns).
                 filtered_fields = {
                     k: v for k, v in fields.items()
-                    if k in target_phys_cols and v is not None
+                    if k in target_phys_cols and not _is_blank(v)
                 }
 
                 # Filter match criteria against target table columns
                 valid_criteria = {
                     k: v for k, v in match_criteria.items()
-                    if k in target_phys_cols and v is not None
+                    if k in target_phys_cols and not _is_blank(v)
                 }
 
-                existing_target_id = None
-                if valid_criteria:
-                    # Check if matching record exists
-                    where_clauses = []
-                    where_vals = []
-                    for col, val in valid_criteria.items():
-                        where_clauses.append(sql.SQL("{} = %s").format(sql.Identifier(col)))
-                        where_vals.append(val)
-
-                    if "is_deleted" in target_phys_cols:
-                        where_clauses.append(sql.SQL("is_deleted = false"))
-
-                    check_query = sql.SQL(
-                        "SELECT item_id::text FROM dbo.{} WHERE {} LIMIT 1;"
-                    ).format(
-                        sql.Identifier(target_table_name),
-                        sql.SQL(" AND ").join(where_clauses)
+                existing_target_id, mismapped_col = _resolve_existing_master_row(
+                    cur, target_table_name, target_phys_cols, valid_criteria, filtered_fields
+                )
+                if mismapped_col:
+                    logger.warning(
+                        "Form sync matched %s by code but the plan put the code under %s; not writing it there.",
+                        existing_target_id,
+                        mismapped_col,
                     )
-                    cur.execute(check_query, where_vals)
-                    row = cur.fetchone()
-                    if row:
-                        existing_target_id = row[0]
+                    filtered_fields.pop(mismapped_col, None)
 
                 if existing_target_id:
                     # UPDATE existing master record

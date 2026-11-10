@@ -25,7 +25,10 @@ You will be provided:
      - `Size` -> `Size`
      - `Version_cal` -> `Version` (a header field: copy it to every target record, and do not put it in `Version_Number`)
      - `Revision_cal` -> `Revision` (a header field, as `Version_cal` above: copy it to every target record; use `Revision_cal`, not the source's own `Revision`, when both are present)
+     - `New_Version` / `New Version` -> `Version` (when present it is the version to record; it wins over the master's current `Version`)
      - `Status` -> Default to "Active" or source `Status` if present.
+   - A product/material code (e.g. `PMC228`, `BTL-001`) goes ONLY in `Material_Code`. Never put a code into `Material` (that column holds the material itself, e.g. "PP", "HDPE").
+   - Omit a target column when the source has no value for it. Never output empty strings or null: a missing value must leave the master's existing value untouched.
    - Inherit header fields where appropriate (e.g., Brand, Size, Customer) to each child component item unless the component has a specific override.
    - For composite columns (like `Material_Specifications` or `Dimension`):
      - If the target has `Material_Specifications` and the slot has attributes like Material, Colour, Finishing, Cap Type, etc., combine them into a clean readable string (e.g. "Material: HDPE, Colour: Forest Green, Finishing: Matte").
@@ -35,6 +38,7 @@ You will be provided:
 3. MATCH CRITERIA (UNIQUE IDENTIFIERS):
    - For each target record, provide `match_criteria` identifying the natural unique key (e.g., `{"Material_Code": "BTL-005"}`).
    - This criteria is used to check if the item already exists in the database to perform an UPDATE or INSERT.
+   - When the target has `Material_Code`, `match_criteria` MUST be exactly `{"Material_Code": "<code>"}`. Never match on descriptive columns such as `Material`, `Colour` or `Description`.
 
 4. CLEAN SOURCE RECORD:
    - In `source_record_clean`, provide the dictionary of fields to insert into the Source Workflow table, including all submitted header and slot fields.
