@@ -50,6 +50,8 @@ python -m app.evals.run                           # eval harness: calls REAL LLM
 ## Mobile — `mobile/`
 See `mobile/CLAUDE.md`: `npm install`, `npm run dev`, `npm run build`, `tests/e2e/run_all.sh`.
 
+The app calls `https://cloud.ezofis.com/api` unless `VITE_API_BASE` says otherwise. For local work, copy `mobile/.env.development.example` to `mobile/.env.development.local` (`VITE_API_BASE=/api`, `VITE_API_PROXY_TARGET=http://localhost:5000`). The Vite dev server (http://localhost:5173) then forwards `/api` to the local API, so sign-in works in the browser with no CORS problem. Vite reads that file only for `npm run dev`, so release builds and test APKs keep the production address.
+
 ## Run everything locally (auto-reload)
 Use the dev servers, not IIS, Caddy or production Docker images. They reload by themselves when files change, so `git pull` updates the running stack.
 
@@ -58,10 +60,12 @@ Use the dev servers, not IIS, Caddy or production Docker images. They reload by 
 | Web app | `npm run dev` (Vite, http://localhost:3000) | Browser page reloads |
 | API | `dotnet watch run` (http://localhost:5000) | Rebuilds and restarts |
 | Agents | `docker compose up` (uvicorn `--reload`, http://localhost:8010) | Restarts in the container |
+| Mobile (only with `-Only …,mobile`) | `npm run dev` (Vite, http://localhost:5173, `/api` → local API) | Browser page reloads |
 
 ```powershell
 ./scripts/dev-start.ps1            # checks settings, then opens one window per part
 ./scripts/dev-start.ps1 -Only app,api
+./scripts/dev-start.ps1 -Only api,mobile   # mobile app against the local API (not started by default)
 ./scripts/dev-start.ps1 -DryRun    # checks only
 ./scripts/dev-pull.ps1             # switch to testing, pull, and do only the extra steps needed
 ./scripts/release-pr.ps1 -Pr 184   # release ONE merged testing PR to main (opens the release PR)
@@ -79,10 +83,12 @@ Local settings (all git-ignored). `dev-start.ps1` refuses to start if any of the
 | same file | `EzofisBlobStorage:ConnectionString` | empty (file storage off) or a **test** storage account. Never a placeholder: that makes every request fail |
 | `agents/.env` | `EZOFIS_LOGIN_EMAIL`, `EZOFIS_LOGIN_PASSWORD` | the EZOFIS UAT test-tenant login |
 | `agents/.env` | `EZOFIS_ENV` | `trial` (never `live`) |
+| `mobile/.env.development.local` | `VITE_API_BASE` | `/api` (unset means production) |
+| same file | `VITE_API_PROXY_TARGET` | `http://localhost:5000` |
 
 `dev-start.ps1` also refuses while required values (database login, UAT login, `CATALOG_DATABASE_URL`) still contain `REPLACE_ME` / `YOUR_…` placeholders, and shows a note for optional ones (LLM keys, file storage).
 
-`dev-pull.ps1` runs `npm ci` when `app/package-lock.json` changed (or tells you to stop the web app first if it's running), rebuilds the agents container when `agents/requirements.txt` or `agents/Dockerfile` changed, and warns when database schema code changed, because the first request then changes tables in the shared database. Files the dev server regenerates (`app/src/routeTree.gen.ts`, `app/tsconfig.tsbuildinfo`, locale `messages.*`) don't count as your changes: `dev-pull.ps1` resets them and continues.
+`dev-pull.ps1` runs `npm ci` when `app/package-lock.json` (or, once you've installed it, `mobile/package-lock.json`) changed (or tells you to stop the web app first if it's running), rebuilds the agents container when `agents/requirements.txt` or `agents/Dockerfile` changed, and warns when database schema code changed, because the first request then changes tables in the shared database. Files the dev server regenerates (`app/src/routeTree.gen.ts`, `app/tsconfig.tsbuildinfo`, locale `messages.*`) don't count as your changes: `dev-pull.ps1` resets them and continues.
 
 ## Whole stack with Docker
 ```bash
@@ -94,6 +100,7 @@ docker compose -f docker-compose.azure.yml up    # needs .env.azure (copy .env.a
   - `api/`: `dotnet build` + `dotnet test`
   - `agents/`: `pytest`, skipping 4 tests that already fail on `main` (listed in the workflow)
   - `app/`: type-check, `vitest`, `npm run build`
+  - `mobile/`: `npm run build` and the single-file test-APK build (the mock e2e checks still run locally)
 - **`.github/workflows/docker-ghcr.yml`** runs on a push to `main` that touches `app/**`, `api/**` or `agents/**`, or by manual dispatch.
   - It builds only the services that changed, pushes `:latest` and `:sha-<short>` to GHCR, then **deploys straight to production** (Azure web app `ezofis-app-v6`) with `.github/scripts/deploy-azure-compose.sh`, and smoke-checks `https://cloud.ezofis.com`.
   - Its first job, `Approved PR check`, **blocks** the build and deploy unless the change came from a PR whose final commit was approved by `tech-ezofis-git`. Manual runs are allowed only for `tech-ezofis-git`.

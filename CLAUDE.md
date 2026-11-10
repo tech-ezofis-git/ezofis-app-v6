@@ -33,8 +33,9 @@ cd api/src/Api && dotnet run               # /swagger, /health
 cd agents && docker compose up -d          # :8010
 cd agents && pytest
 
-# Mobile
-cd mobile && npm install && npm run dev
+# Mobile (local API: copy mobile/.env.development.example to .env.development.local)
+cd mobile && npm install && npm run dev    # http://localhost:5173
+./scripts/dev-start.ps1 -Only api,mobile
 ```
 More details: @docs/ai/SETUP_AND_COMMANDS.md
 

@@ -1,13 +1,16 @@
 <#
 .SYNOPSIS
   Start the EZOFIS V6 stack locally with auto-reload: web app (Vite), API (dotnet watch)
-  and agents (Docker with uvicorn --reload). After `git pull`, each part reloads by itself.
+  and agents (Docker with uvicorn --reload). The mobile app (Vite) starts with -Only ...,mobile.
+  After `git pull`, each part reloads by itself.
 
 .DESCRIPTION
   Before starting anything, checks the local settings so a laptop never talks to production:
   - app/.env must point VITE_BASE_URL / VITE_V6_BASE_URL at the local API, not cloud.ezofis.com
   - api/src/Api/appsettings.Development.json must not use the production Hangfire schema
   - agents/.env must point EZOFIS_API_BASE at the local API, not cloud.ezofis.com
+  - mobile/.env.development.local (only with -Only ...,mobile) must point VITE_API_BASE and
+    VITE_API_PROXY_TARGET at the local API, not cloud.ezofis.com
   - required values (database login, UAT login) must not still be REPLACE_ME / YOUR_... placeholders;
     optional ones (LLM keys, file storage) only produce a warning
   Each part opens in its own PowerShell window. Close a window to stop that part.
@@ -15,11 +18,14 @@
 .EXAMPLE
   ./scripts/dev-start.ps1              # app + API + agents
   ./scripts/dev-start.ps1 -Only app,api
+  ./scripts/dev-start.ps1 -Only api,mobile   # mobile app against the local API
+  ./scripts/dev-start.ps1 -Only app,api,agents,mobile
   ./scripts/dev-start.ps1 -DryRun      # checks only, starts nothing
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('app', 'api', 'agents')]
+    # mobile is not in the default list, so web-only developers don't need mobile settings.
+    [ValidateSet('app', 'api', 'agents', 'mobile')]
     [string[]]$Only = @('app', 'api', 'agents'),
     [switch]$DryRun
 )
@@ -139,6 +145,49 @@ function Test-Agents {
     }
 }
 
+function Test-Mobile {
+    $envPath = Join-Path $Root 'mobile/.env.development.local'
+    $fix = "Copy mobile/.env.development.example to mobile/.env.development.local (VITE_API_BASE=/api, VITE_API_PROXY_TARGET=http://localhost:5000)."
+    if (-not (Test-Path -LiteralPath $envPath)) {
+        $Problems.Add("mobile/.env.development.local is missing, so the mobile app would call production. $fix")
+        return
+    }
+    $values = Read-EnvFile $envPath
+    # In dev mode Vite also reads these files (lower priority, highest first). A key the local file
+    # leaves out can still come from one of them, so check what Vite will really use.
+    foreach ($other in 'mobile/.env.development', 'mobile/.env.local', 'mobile/.env') {
+        $otherPath = Join-Path $Root $other
+        if (Test-Path -LiteralPath $otherPath) {
+            $otherValues = Read-EnvFile $otherPath
+            foreach ($key in $otherValues.Keys) {
+                if (-not $values.ContainsKey($key)) { $values[$key] = $otherValues[$key] }
+            }
+        }
+    }
+    $apiBase = $values['VITE_API_BASE']
+    if (-not $apiBase) {
+        $Problems.Add("mobile/.env.development.local: VITE_API_BASE is not set, so the mobile app defaults to production. Set it to /api.")
+    }
+    elseif ($apiBase -like "*$ProductionHost*") {
+        $Problems.Add("mobile/.env.development.local: VITE_API_BASE points at production ($apiBase). Set it to /api.")
+    }
+    $target = $values['VITE_API_PROXY_TARGET']
+    if ($apiBase -and $apiBase.StartsWith('/')) {
+        if (-not $target) {
+            $Problems.Add("mobile/.env.development.local: VITE_API_PROXY_TARGET is not set, so /api has nowhere to go. Set it to http://localhost:5000.")
+        }
+        elseif ($target -like "*$ProductionHost*") {
+            $Problems.Add("mobile/.env.development.local: VITE_API_PROXY_TARGET points at production ($target). Set it to http://localhost:5000.")
+        }
+    }
+    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+        $Problems.Add("npm is not installed. Install Node.js 20 or later.")
+    }
+    if ($Only -notcontains 'api') {
+        $Warnings.Add("The mobile app needs the local API on http://localhost:5000. Start it too (-Only api,mobile) unless it is already running.")
+    }
+}
+
 function Start-InWindow([string]$Title, [string]$Folder, [string]$Command) {
     $shell = 'powershell'
     if (Get-Command pwsh -ErrorAction SilentlyContinue) { $shell = 'pwsh' }
@@ -149,6 +198,7 @@ function Start-InWindow([string]$Title, [string]$Folder, [string]$Command) {
 if ($Only -contains 'app') { Test-App }
 if ($Only -contains 'api') { Test-Api }
 if ($Only -contains 'agents') { Test-Agents }
+if ($Only -contains 'mobile') { Test-Mobile }
 
 if ($Problems.Count -gt 0) {
     Write-Host "Not started. Fix these first:" -ForegroundColor Red
@@ -177,5 +227,12 @@ if ($Only -contains 'app') {
     if (-not (Test-Path -LiteralPath (Join-Path $appFolder 'node_modules'))) { $appCommand = 'npm ci; npm run dev' }
     Start-InWindow 'EZOFIS web app' $appFolder $appCommand
     Write-Host "Web app  -> http://localhost:3000"
+}
+if ($Only -contains 'mobile') {
+    $mobileFolder = Join-Path $Root 'mobile'
+    $mobileCommand = 'npm run dev'
+    if (-not (Test-Path -LiteralPath (Join-Path $mobileFolder 'node_modules'))) { $mobileCommand = 'npm ci; npm run dev' }
+    Start-InWindow 'EZOFIS mobile app' $mobileFolder $mobileCommand
+    Write-Host "Mobile   -> http://localhost:5173  (use a phone-sized window, for example DevTools device mode)"
 }
 Write-Host "Each part reloads by itself after a git pull. Run ./scripts/dev-pull.ps1 to update from testing."

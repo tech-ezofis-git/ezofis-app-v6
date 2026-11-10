@@ -3,6 +3,7 @@
 // The app sends the session ("session" event) and the requests it has already shown ("seen" event); this runner
 // notifies only requests that are new since then, so nothing is announced twice. Every run records its outcome under
 // "status" so Settings → Background check can show what happened ("status" event), and "testNotify" posts a test.
+// Default server; the app sends its own base with the session (apiBase), so non-production builds check their own server.
 var API = 'https://cloud.ezofis.com/api';
 
 function kvJson(key) {
@@ -56,7 +57,7 @@ addEventListener('checkInbox', async function (resolve, reject, args) {
     if (s.enabled === false) { record('notifications off'); resolve(); return; }
     if (s.expiresAt && s.expiresAt < Date.now()) { record('sign-in expired'); resolve(); return; }
     // the server's notifications (GET /api/notifications, the web's bell list): unread ones not seen before are announced
-    var res = await fetch(API + '/notifications', { method: 'GET', headers: { Authorization: 'Bearer ' + s.token, 'X-Tenant-Id': s.tenantId, Accept: 'application/json' } });
+    var res = await fetch((s.apiBase || API) + '/notifications', { method: 'GET', headers: { Authorization: 'Bearer ' + s.token, 'X-Tenant-Id': s.tenantId, Accept: 'application/json' } });
     // the runner's fetch may not expose res.ok, so the status code decides when there is one
     var code = res && typeof res.status === 'number' ? res.status : 0;
     if (code && (code < 200 || code >= 300)) { record('server answered ' + code); resolve(); return; }

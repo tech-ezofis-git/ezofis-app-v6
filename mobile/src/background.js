@@ -3,13 +3,14 @@
 // and the requests already shown; on the web or the SDK-free test APK (no plugin) these calls do nothing.
 import { Capacitor } from '@capacitor/core';
 import { BackgroundRunner } from '@capacitor/background-runner';
+import { API_BASE_ABSOLUTE } from './api.js';
 
 export const RUNNER = 'com.ezofis.mobile.inbox';
 export const bgAvailable = () => Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('BackgroundRunner');
 const send = (event, details = {}) => (bgAvailable() ? BackgroundRunner.dispatchEvent({ label: RUNNER, event, details }).catch(() => null) : Promise.resolve(null));
 
 // signed in → the runner may check; signed out (or notifications off) → it stops and forgets the token
-export const bgSession = (s, enabled = true) => send('session', s ? { token: s.accessToken, tenantId: s.tenantId, expiresAt: s.expiresAt, enabled } : {});
+export const bgSession = (s, enabled = true) => send('session', s ? { token: s.accessToken, tenantId: s.tenantId, expiresAt: s.expiresAt, enabled, apiBase: API_BASE_ABSOLUTE } : {});
 export const bgSeen = (keys) => send('seen', { keys });
 // Settings → Background check
 export const bgStatus = () => send('status');

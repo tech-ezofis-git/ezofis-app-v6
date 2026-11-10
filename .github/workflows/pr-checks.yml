@@ -27,6 +27,7 @@ jobs:
       api: ${{ steps.filter.outputs.api }}
       agents: ${{ steps.filter.outputs.agents }}
       app: ${{ steps.filter.outputs.app }}
+      mobile: ${{ steps.filter.outputs.mobile }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -41,6 +42,9 @@ jobs:
               - '.github/workflows/pr-checks.yml'
             app:
               - 'app/**'
+              - '.github/workflows/pr-checks.yml'
+            mobile:
+              - 'mobile/**'
               - '.github/workflows/pr-checks.yml'
 
   api:
@@ -122,3 +126,26 @@ jobs:
             --exclude 'src/pages/requests/components/workflow-request/components/TableFieldRenderer.runtime.test.tsx'
       - name: Build
         run: npm run build
+
+  mobile:
+    name: Mobile app (build)
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      # Release build (dist/) and the single-file build used for test APKs. The mock
+      # end-to-end checks (tests/e2e/run_all.sh) still run locally.
+      - run: npm run build
+      - run: npx vite build
+        env:
+          SINGLE: '1'

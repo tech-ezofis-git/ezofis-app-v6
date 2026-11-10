@@ -7,7 +7,9 @@ History, decisions and open items: `docs/HANDOFF.md`. API mapping: `docs/workflo
 ## Commands (run from `mobile/`)
 ```bash
 npm install
-npm run dev                       # browser; live API calls are blocked by CORS, so use "Explore with sample data"
+npm run dev                       # browser on :5173; with .env.development.local (copy .env.development.example)
+                                  # /api goes to the local API, else live calls are blocked by CORS: use sample data
+../scripts/dev-start.ps1 -Only api,mobile   # local API + mobile app; refuses while settings point at production
 npm run build                     # dist/ for Capacitor → npx cap sync android|ios
 SINGLE=1 npx vite build           # dist-single/index.html (one file) for the test APK and previews
 tests/e2e/run_all.sh              # mock end-to-end checks (Playwright + Python), no live server
@@ -17,7 +19,7 @@ python3 apk-shell/sign_v2.py /tmp/u.apk EZOFIS-Mobile-test.apk apk-shell     # S
 Before a test APK, bump `versionCode` / `versionName` in `apk-shell/build_apk.py` (`manifest_xml`). The current version is 38 / 6.0.0.
 
 ## Code map
-- `src/api.js`: sign-in (`loggedFrom: "MOBILE"`, 2FA, tenants), session storage, `authed()` (Bearer + `X-Tenant-Id`). A 401 dispatches `SESSION_EXPIRED`, which sends the user back to login.
+- `src/api.js`: `API_BASE` (production unless `VITE_API_BASE` is set; local dev uses `/api` through the Vite proxy), sign-in (`loggedFrom: "MOBILE"`, 2FA, tenants), session storage, `authed()` (Bearer + `X-Tenant-Id`). A 401 dispatches `SESSION_EXPIRED`, which sends the user back to login.
 - `src/wf.js`: Workflow API client `wfApi`. Also:
   - meta and form cache (`getMeta`, `getForm`);
   - `toCard`, `formView`, `actionsFor` (rules: `proceedAction`, `buttonColor`);

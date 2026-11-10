@@ -1,11 +1,16 @@
 // EZOFIS Signup & Login API (see "Signup & Login API", 26 Oct 2026).
-// Base path https://cloud.ezofis.com/api. Anonymous endpoints except /me/tenants.
+// Base path https://cloud.ezofis.com/api (production, the default for release builds). Anonymous endpoints except /me/tenants.
 
 // Login channel (LOGIN_CHANNEL_LOGGEDFROM_API, 26 Oct 2026): sent on POST /auth/ezofis/login only.
 // Not sent on /auth/2fa/complete (server remembers it) or /auth/social/login (not accepted yet).
 export const LOGGED_FROM = 'MOBILE';
 
-export const API_BASE = 'https://cloud.ezofis.com/api';
+// VITE_API_BASE overrides it. Local development (scripts/dev-start.ps1) sets it to /api in .env.development.local,
+// and the Vite dev server proxies /api to the local API (VITE_API_PROXY_TARGET, see vite.config.js).
+export const PRODUCTION_API_BASE = 'https://cloud.ezofis.com/api';
+export const API_BASE = String(import.meta.env.VITE_API_BASE || PRODUCTION_API_BASE).replace(/\/+$/, '');
+// Absolute base for code that runs outside the page (the background runner): a relative /api only works in the browser.
+export const API_BASE_ABSOLUTE = /^https?:\/\//i.test(API_BASE) ? API_BASE : PRODUCTION_API_BASE;
 const SESSION_KEY = 'ezofis.session';
 
 // The app reaches the API only from the Android/iOS app (native HTTP) or the test APK. In a normal browser page
@@ -16,6 +21,7 @@ export const IS_BROWSER_PREVIEW = (() => {
     const cap = window.Capacitor;
     if (cap && cap.isNativePlatform && cap.isNativePlatform()) return false;
     if (location.protocol === 'file:') return false; // test APK loads the app from file:///android_asset
+    if (API_BASE.startsWith('/')) return false; // local dev: same-origin /api, proxied by the Vite dev server
     return !/(^|\.)ezofis\.com$/.test(location.hostname);
   } catch (e) { return false; }
 })();

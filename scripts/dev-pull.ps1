@@ -11,6 +11,7 @@
   4. Looks at which files changed and:
      - app/package-lock.json: runs `npm ci` if the web app isn't running, otherwise tells you to
        stop it first (npm ci can't replace files a running dev server holds open on Windows)
+     - mobile/package-lock.json: same as the web app, for the mobile app (port 5173)
      - agents/requirements.txt or agents/Dockerfile: rebuilds the agents container
      - api/**/*.csproj: dotnet watch restarts by itself; tells you to restart it if it shows errors
      - api/scripts/postgres or schema-ensuring code: warns, because the first request
@@ -100,6 +101,23 @@ if ($changed -contains 'app/package-lock.json') {
     else {
         Write-Host "Web app packages changed: running npm ci..." -ForegroundColor Cyan
         Push-Location (Join-Path $Root 'app')
+        try {
+            & npm ci --no-audit --no-fund
+            if ($LASTEXITCODE -ne 0) { throw "npm ci failed" }
+        }
+        finally {
+            Pop-Location
+        }
+    }
+}
+
+if ($changed -contains 'mobile/package-lock.json' -and (Test-Path -LiteralPath (Join-Path $Root 'mobile/node_modules'))) {
+    if (Test-PortListening 5173) {
+        $todo.Add("Mobile app packages changed: close the 'EZOFIS mobile app' window, run 'npm ci' in mobile/, then run ./scripts/dev-start.ps1 -Only mobile.")
+    }
+    else {
+        Write-Host "Mobile app packages changed: running npm ci..." -ForegroundColor Cyan
+        Push-Location (Join-Path $Root 'mobile')
         try {
             & npm ci --no-audit --no-fund
             if ($LASTEXITCODE -ne 0) { throw "npm ci failed" }
