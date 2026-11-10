@@ -68,19 +68,34 @@ export const useSubProcessesForRows = (
 ) =>
   useQuery({
     enabled: Boolean(workflowId) && processIds.length > 0,
-    queryFn: () =>
-      subWorkflowApi.getSubProcessesForRows(workflowId!, processIds),
     queryKey: subWorkflowKeys.byRows(workflowId, processIds),
     staleTime: 15_000,
+    queryFn: () =>
+      subWorkflowApi.getSubProcessesForRows(workflowId!, processIds),
   })
 
 /** Connector steps for a request's history: each linked child's own steps. */
-export const useSubWorkflowHistory = (workflowId?: Id, processId?: Id) =>
-  useQuery({
-    enabled: Boolean(workflowId && processId),
+export const useSubWorkflowHistory = (
+  workflowId?: Id,
+  processId?: Id,
+  enabled = true,
+) => {
+  const queryClient = useQueryClient()
+  return useQuery({
+    enabled: enabled && Boolean(workflowId && processId),
     queryKey: subWorkflowKeys.history(workflowId, processId),
-    queryFn: () => subWorkflowApi.getHistory(workflowId!, processId!),
+    staleTime: 30_000,
+    // Reuse the children the header already loaded, so only the child
+    // histories (fetched in parallel) are left to wait for.
+    queryFn: async () => {
+      const children = await queryClient.ensureQueryData({
+        ...getSubProcessesQueryOptions(workflowId, processId),
+        staleTime: 30_000,
+      })
+      return subWorkflowApi.getHistory(workflowId!, processId!, children)
+    },
   })
+}
 
 export const useLinkSubProcess = () => {
   const queryClient = useQueryClient()

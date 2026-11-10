@@ -25,6 +25,7 @@ import {
   ensureNormalizedRuntimeFormJson,
   getEffectiveFieldLabel,
 } from '@/pages/form-builder/helpers/runtimeFieldAdapter'
+import { getTableFieldErrors } from '@/pages/form-builder/helpers/runtimeValidation'
 import {
   extractGenericRequestNumber,
   getFieldKeyByLabel,
@@ -76,7 +77,6 @@ import {
   type WorkflowStageStep,
 } from '../../utils/workflow.utils'
 import InitiateSubWorkflowButton from '../sub-workflow/InitiateSubWorkflowButton'
-import ReinitiateRequestButton from './components/ReinitiateRequestButton'
 import ParentRequestLink from '../sub-workflow/ParentRequestLink'
 import SubWorkflowRequest from '../sub-workflow/SubWorkflowRequest'
 import {
@@ -103,6 +103,7 @@ import { isDocumentGenerateBlock } from './components/generic-overview/documentG
 import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
 import { summarizeQuoteResult } from './components/generic-overview/quoteResultUtils'
 import Header from './components/Header'
+import ReinitiateRequestButton from './components/ReinitiateRequestButton'
 import Overview from './components/sections/overview/Overview'
 import ForwardPopover from './ForwardPopover'
 
@@ -2589,6 +2590,28 @@ const Request = ({
         })
         return false
       }
+
+      // Table columns carry their own rules (required column, content rules,
+      // ranges, conditional mandatory): they must stop the action too.
+      const tableErrors = getTableFieldErrors(
+        genericFormPanels.map((panel: any) => ({
+          ...panel,
+          fields: (panel.fields || []).filter(
+            (f: any) =>
+              !stageHidden?.has(String(f.id)) &&
+              !stageReadOnly?.has(String(f.id)),
+          ),
+        })),
+        genericFormModel,
+      )
+      if (tableErrors.length > 0) {
+        const tableMessage = tableErrors[0]
+        showToast({
+          message: t`Please correct ${tableMessage}`,
+          variant: 'info',
+        })
+        return false
+      }
     }
 
     const checklistItems: { id: string; label: string; required: boolean }[] =
@@ -3385,7 +3408,6 @@ const Request = ({
           budget={isAtEndBlock ? null : headerBudget}
           currency={currency}
           enableAIInsights={hasAgentData || hasWorkflowAiInsight}
-          workflowInsight={workflowAiInsight}
           hideActions={hideActions}
           isEditing={isEditing}
           isFourthItem={isFourthItem}
@@ -3401,7 +3423,9 @@ const Request = ({
           simple={isGenericWorkflow}
           stageTrail={stageTrail}
           status={statusBadge}
+          subProcesses={showSubProcessTab ? subProcesses : undefined}
           totalAmount={totalAmount}
+          workflowInsight={workflowAiInsight}
           actions={headerActions.map((a: any) => {
             // Quote edited after its PDF was generated: moving the request
             // on would send the stale PDF. Reject / Disqualify stay open.
@@ -3563,7 +3587,6 @@ const Request = ({
           subProcessCount={
             showSubProcessTab ? (subProcesses?.length ?? 0) : undefined
           }
-          subProcesses={showSubProcessTab ? subProcesses : undefined}
           ticketUserId={
             selectedItem?.userId ||
             request?.userId ||

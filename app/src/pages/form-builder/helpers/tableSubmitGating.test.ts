@@ -30,6 +30,19 @@ describe('getTableFieldErrors (what blocks a New Request submit)', () => {
     expect(errors).toEqual(['Items: Row 1: qty should not be more than 10'])
   })
 
+  it('blocks an untouched table whose columns are mandatory', () => {
+    const req = table([
+      col('name', 'SHORT_TEXT', {}, { fieldRule: 'REQUIRED' }),
+      col('note', 'SHORT_TEXT'),
+    ])
+    const expected = ['Items: Row 1: name is required and cannot be empty']
+    expect(getTableFieldErrors(panelsOf(req), {})).toEqual(expected)
+    expect(getTableFieldErrors(panelsOf(req), { f_tbl: [] })).toEqual(expected)
+    expect(
+      getTableFieldErrors(panelsOf(req), { f_tbl: [{ name: 'a' }] }),
+    ).toEqual([])
+  })
+
   it('is empty for a valid table and for a table with no rules', () => {
     expect(
       getTableFieldErrors(panelsOf(t), { f_tbl: [{ code: 'ab', qty: 5 }] }),
