@@ -16,7 +16,8 @@ const InputCheckbox = forwardRef<HTMLInputElement, Props>(
     const _classNames = {
       description: 'mt-1 pl-2 text-xs text-gray-10',
       icon: 'text-white w-[50%]',
-      inner: 'size-5 flex items-center justify-center',
+      // Same height as the box and the label's first line, so all three align.
+      inner: 'size-4 flex items-center justify-center',
       input: cn(
         'data-[indeterminate]:border-primary cursor-pointer rounded-[3px] border-gray-8 bg-transparent checked:border-primary-9 checked:bg-primary-9 focus-within:outline-primary-8 disabled:opacity-50 data-[indeterminate]:border-primary-9 data-[indeterminate]:bg-primary-9',
         Boolean(error) && 'border-red-9',

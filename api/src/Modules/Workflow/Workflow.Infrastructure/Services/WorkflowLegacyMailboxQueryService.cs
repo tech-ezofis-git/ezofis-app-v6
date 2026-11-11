@@ -472,7 +472,7 @@ EXISTS (
         ORDER BY tx.workflow_instance_id,
             CASE
                 WHEN tx.action_status = 0 AND UPPER(TRIM(COALESCE(tx.stage_type, ''))) <> 'END' THEN 0
-                WHEN UPPER(TRIM(COALESCE(tx.stage_type, ''))) = 'END' THEN 1
+                WHEN {WorkflowStepTransitionHelper.FinishedEndRowSql("tx")} THEN 1
                 ELSE 2
             END,
             tx.id DESC
@@ -1078,7 +1078,7 @@ NOT EXISTS (
     FROM {transactionTable} tx_end
     WHERE tx_end.is_deleted = false
       AND tx_end.workflow_instance_id = {TryCastInstanceId("m.workflow_instance_id")}
-      AND UPPER(TRIM(COALESCE(tx_end.stage_type, ''))) = 'END'
+      AND {WorkflowStepTransitionHelper.FinishedEndRowSql("tx_end")}
 )
 """;
 
@@ -1116,7 +1116,7 @@ EXISTS (
     SELECT 1
     FROM {transactionTable} tx
     WHERE tx.is_deleted = false
-      AND UPPER(TRIM(COALESCE(tx.stage_type, ''))) = 'END'
+      AND {WorkflowStepTransitionHelper.FinishedEndRowSql("tx")}
       AND {instanceJoin}
 )
 """;
@@ -1174,7 +1174,7 @@ LEFT JOIN LATERAL (
     ORDER BY
         CASE
             WHEN tx.action_status = 0 AND UPPER(TRIM(COALESCE(tx.stage_type, ''))) <> 'END' THEN 0
-            WHEN UPPER(TRIM(COALESCE(tx.stage_type, ''))) = 'END' THEN 1
+            WHEN {WorkflowStepTransitionHelper.FinishedEndRowSql("tx")} THEN 1
             ELSE 2
         END,
         tx.id DESC

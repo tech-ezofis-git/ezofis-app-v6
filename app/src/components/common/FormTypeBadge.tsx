@@ -19,6 +19,8 @@ const FormTypeBadge = ({ type }: Props) => {
         return 'indigo'
       case 'MASTER':
         return 'violet'
+      case 'SLA':
+        return 'orange'
       default:
         return 'gray'
     }

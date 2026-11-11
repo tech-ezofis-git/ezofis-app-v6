@@ -116,6 +116,7 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<ISmsSender, TwilioSmsSender>();
         services.AddScoped<WorkflowSlaNotifier>();
         services.AddScoped<WorkflowSlaTimerService>();
+        services.AddScoped<IWorkflowSlaInsightService, WorkflowSlaInsightService>();
         services.AddScoped<WorkflowSlaOutboxSender>();
         services.Configure<WorkflowSlaOptions>(configuration.GetSection(WorkflowSlaOptions.SectionName));
         if (configuration.GetValue($"{WorkflowSlaOptions.SectionName}:Enabled", false))

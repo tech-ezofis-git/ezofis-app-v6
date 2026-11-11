@@ -38,6 +38,7 @@ using SaaSApp.Workflow.Application.Workflows.Commands.AddAttachment;
 using SaaSApp.Workflow.Application.Workflows.Commands.ApproveStep;
 using SaaSApp.Workflow.Application.Workflows.Commands.RejectStep;
 using SaaSApp.Workflow.Application.Workflows.Commands.MoveToNextStep;
+using SaaSApp.Workflow.Application.Workflows.Commands.ReinitiateWorkflow;
 using SaaSApp.Workflow.Application.Workflows.Commands.PerformAction;
 using SaaSApp.Workflow.Application.Workflows.Queries.GetInstanceComments;
 using SaaSApp.Workflow.Application.Workflows.Queries.GetInstanceAttachments;
@@ -2447,6 +2448,31 @@ public sealed class WorkflowsController : ControllerBase
     }
 
     /// <summary>
+    /// Send a request that finished on an End block back through the workflow, from the stage in that
+    /// block's Reprocess Request setting (or the start). Refused unless the setting is on.
+    /// </summary>
+    [HttpPost("instances/{instanceId:guid}/reinitiate")]
+    [ProducesResponseType(typeof(MoveToNextStepCommandResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ReinitiateWorkflow(
+        Guid instanceId,
+        [FromBody] ReinitiateWorkflowRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _mediator.Send(
+                new ReinitiateWorkflowCommand(instanceId, request.ActivityId),
+                cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Bulk move-next: pass comma-separated instance ids, activityId and review. No formData — moves tickets only.
     /// </summary>
     [HttpPost("instances/bulk-move-next")]
@@ -2981,6 +3007,9 @@ public record ExtractEmlAttachmentsRequest(Guid? RepositoryId = null, Guid? Item
 /// <summary>Activity id of the step the ticket is currently on (same convention as move-next).</summary>
 public record FtlRegenerateRequest(string ActivityId);
 public record FtlClientFieldRequest(string FieldId, string? Value);
+
+/// <summary>Activity id of the End block the request finished on.</summary>
+public record ReinitiateWorkflowRequest(string ActivityId);
 
 /// <summary>Request to approve a workflow step.</summary>
 public record ApproveStepRequest(string? Comments = null, bool MoveToNextStep = true);

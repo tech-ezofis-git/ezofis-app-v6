@@ -18,7 +18,7 @@ import {
   fetchFtlCatalogCodes,
   fetchFtlCatalogProduct,
 } from '@/api/v6/ftlCatalog'
-import { getUsers } from '@/api/v6/user'
+import { getGroups, getUsers } from '@/api/v6/user'
 import folderApi from '@/pages/folders/api/folderApi'
 import {
   useWorkflowAttachments,
@@ -160,6 +160,8 @@ export interface TableColumn {
       }>
       allowMultipleFiles?: boolean
       allowToAddNewOptions?: boolean
+      /** The cell can stay empty: clearable, and a single option is not filled in for you. */
+      optionalChoice?: boolean
       currencyOptionsType?: 'ALL' | 'SPECIFIC'
       customDefaultValue?: string
       customOptions?: string
@@ -172,7 +174,7 @@ export interface TableColumn {
       masterFormId?: string
       parentFieldId?: string
       placeholder?: string
-      predefinedType?: 'FOLDER' | 'USER'
+      predefinedType?: 'FOLDER' | 'GROUP' | 'USER'
       prefixLabel?: string
       qrValue?: boolean
       separateOptionsUsing?: 'COMMA' | 'NEWLINE'
@@ -1281,8 +1283,9 @@ const TableCellSelect = ({
   val: any
   onCellChange: (newVal: any) => void
 }) => {
+  const optionalChoice = col.settings?.specific?.optionalChoice === true
   useEffect(() => {
-    if (options.length === 1) {
+    if (options.length === 1 && !optionalChoice) {
       const singleVal = options[0].id
       if (isMulti) {
         const selectedIds: string[] = Array.isArray(val) ? val : []
@@ -1295,7 +1298,7 @@ const TableCellSelect = ({
         }
       }
     }
-  }, [options, val, isMulti, onCellChange])
+  }, [options, val, isMulti, onCellChange, optionalChoice])
 
   // A saved selection stays visible even if the option list changed or has
   // not loaded yet (the stored value itself is never altered here).
@@ -1373,6 +1376,7 @@ const TableCellSelect = ({
   ) : isMulti ? (
     <InputSelectMultiple
       className='w-full'
+      clearable={optionalChoice}
       creatable={allowNew}
       loading={loading}
       options={displayOptions}
@@ -1390,6 +1394,7 @@ const TableCellSelect = ({
   ) : (
     <InputSelect
       className='w-full'
+      clearable={optionalChoice}
       creatable={allowNew}
       loading={loading}
       options={displayOptions}
@@ -2220,6 +2225,9 @@ const TableFieldRenderer = ({
   const hasPredefinedFolder = predefinedColumns.some(
     (col) => getColumnPredefinedType(col) === 'FOLDER',
   )
+  const hasPredefinedGroup = predefinedColumns.some(
+    (col) => getColumnPredefinedType(col) === 'GROUP',
+  )
 
   // Folders / repositories (names) for "predefined list: folders" columns
   const { data: folderOptions = [], isLoading: isFolderOptionsLoading } =
@@ -2234,6 +2242,19 @@ const TableFieldRenderer = ({
         return list
           .filter((r) => r?.name)
           .map((r) => ({ id: String(r.name), name: String(r.name) }))
+      },
+    })
+
+  // User groups (names) for "predefined list: user groups" columns
+  const { data: groupOptions = [], isLoading: isGroupOptionsLoading } =
+    useQuery({
+      enabled: hasPredefinedGroup,
+      queryKey: ['tableColumnPredefinedGroups'],
+      queryFn: async () => {
+        const res = await getGroups()
+        return (res.data ?? [])
+          .filter((g) => g?.name)
+          .map((g) => ({ id: String(g.name), name: String(g.name) }))
       },
     })
 
@@ -2423,7 +2444,9 @@ const TableFieldRenderer = ({
     }
     if (source === 'USER_LIST') return isUserListLoading
     if (source === 'PREDEFINED') {
-      return getColumnPredefinedType(col) === 'FOLDER'
+      const predefined = getColumnPredefinedType(col)
+      if (predefined === 'GROUP') return isGroupOptionsLoading
+      return predefined === 'FOLDER'
         ? isFolderOptionsLoading
         : isUserListLoading
     }
@@ -2478,9 +2501,11 @@ const TableFieldRenderer = ({
       predefinedByColumn: Object.fromEntries(
         predefinedColumns.map((c) => [
           c.id,
-          getColumnPredefinedType(c) === 'FOLDER'
-            ? folderOptions
-            : userListOptions,
+          getColumnPredefinedType(c) === 'GROUP'
+            ? groupOptions
+            : getColumnPredefinedType(c) === 'FOLDER'
+              ? folderOptions
+              : userListOptions,
         ]),
       ),
       repositoryByColumn: lookupOptionsByColumn,
@@ -3896,7 +3921,7 @@ const TableFieldRenderer = ({
               <div
                 key={rowId}
                 className={cn(
-                  'animate-in overflow-hidden rounded-xl border bg-surface shadow-2xs transition-all fade-in',
+                  'animate-in fade-in overflow-hidden rounded-xl border bg-surface shadow-2xs transition-all',
                   isExpanded
                     ? 'border-primary-5 shadow-xs'
                     : 'border-[var(--gray-3)] hover:border-gray-5 hover:shadow-xs',
@@ -4019,7 +4044,7 @@ const TableFieldRenderer = ({
                 {isExpanded && (
                   // Phones: a fixed height of about six fields that scrolls
                   // inside the card, so a wide row doesn't push the form down
-                  <div className='animate-in space-y-3 border-t border-[var(--gray-3)] px-3 py-3 fade-in slide-in-from-top-1 max-md:max-h-[26rem] max-md:overflow-y-auto max-md:overscroll-contain'>
+                  <div className='animate-in fade-in slide-in-from-top-1 space-y-3 border-t border-[var(--gray-3)] px-3 py-3 max-md:max-h-[26rem] max-md:overflow-y-auto max-md:overscroll-contain'>
                     {effectiveColumns.map((col) => (
                       <div key={col.id}>
                         <div className='mb-1 flex items-center gap-1.5'>

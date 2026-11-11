@@ -26,7 +26,13 @@ public record MoveToNextStepCommand(
     string? TargetActivityId = null,
     /// <summary>Internal: conditions already routed in this chain by <see cref="IWorkflowConditionRouter"/>.
     /// Not bound from the public API.</summary>
-    int ConditionDepth = 0
+    int ConditionDepth = 0,
+    /// <summary>Internal: a finished request going back through the workflow. Work already done on the
+    /// End block (PDF, data sync) is not repeated. Not bound from the public API.</summary>
+    bool IsReinitiate = false,
+    /// <summary>Internal: who gets the next step, instead of working it out from the step.
+    /// Not bound from the public API.</summary>
+    Guid? NextAssigneeUserId = null
 ) : IRequest<MoveToNextStepCommandResult>;
 
 public record MoveToNextStepCommandResult(

@@ -1,6 +1,7 @@
-import { useParams } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import formApi from '@/api/form/form'
+import { isSlaForm } from '@/pages/forms/utils/slaForm'
 import Build from './components/build/Build'
 import LivePreview from './components/build/components/preview/LivePreview'
 import FormBuilderSkeleton from './components/common/FormBuilderSkeleton'
@@ -9,6 +10,7 @@ import { useFormStore } from './store/formStore'
 
 const FormBuilderPage = () => {
   const { formId } = useParams({ strict: false }) as any
+  const navigate = useNavigate()
   const { loadForm, resetForm } = useFormStore()
   const [isLoading, setIsLoading] = useState(true)
 
@@ -16,6 +18,7 @@ const FormBuilderPage = () => {
     let cancelled = false
 
     const fetchForm = async () => {
+      let leaving = false
       if (!formId) {
         // No formId: the caller (e.g. FormsPage's "New Form"/AI builder flow)
         // is responsible for resetting or pre-loading the store before
@@ -28,12 +31,23 @@ const FormBuilderPage = () => {
       try {
         const { data, error } = await formApi.getFormDataById(formId)
         if (!cancelled && data && !error) {
+          // SLA forms have fixed fields and are not editable: even a direct
+          // link goes to their entries.
+          if (isSlaForm(data)) {
+            leaving = true
+            void navigate({
+              params: { formId },
+              replace: true,
+              to: '/forms/$formId/entries',
+            })
+            return
+          }
           loadForm(data)
         }
       } catch (err) {
         console.error('Failed to fetch form:', err)
       } finally {
-        if (!cancelled) setIsLoading(false)
+        if (!cancelled && !leaving) setIsLoading(false)
       }
     }
 
@@ -42,7 +56,7 @@ const FormBuilderPage = () => {
     return () => {
       cancelled = true
     }
-  }, [formId, loadForm, resetForm])
+  }, [formId, loadForm, navigate, resetForm])
 
   if (isLoading) {
     return <FormBuilderSkeleton />

@@ -92,7 +92,8 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
         MailboxFormSnapshot? mailboxForm = null,
         CancellationToken cancellationToken = default,
         bool endWorkflow = false,
-        WorkflowStep? overrideNextStep = null)
+        WorkflowStep? overrideNextStep = null,
+        Guid? overrideNextAssigneeUserId = null)
     {
         var connectionString = _tenantContext.ConnectionString;
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -323,16 +324,20 @@ public sealed class WorkflowLegacyTransactionSyncService : IWorkflowLegacyTransa
                 var nextExists = await FindTransactionRowForStepAsync(
                     connection, transactionTable, workflowInstanceId, nextStep, nextTxActivityId, cancellationToken);
 
-                if (nextExists == null)
+                // A closed row is an earlier pass through this step (the request was sent back):
+                // the step runs again on a new row. An open row is a retry of this same move.
+                if (nextExists == null || !string.IsNullOrWhiteSpace(nextExists.Review))
                 {
-                    var (nextActivityUserId, nextCreatedByUserId) = await ResolveNextStepAssigneeAsync(
-                        connection,
-                        workflowInstanceId,
-                        nextStep,
-                        resolvedActivityUserId,
-                        userId,
-                        mailboxForm,
-                        cancellationToken);
+                    var (nextActivityUserId, nextCreatedByUserId) = overrideNextAssigneeUserId is Guid chosenAssignee
+                        ? (chosenAssignee, userId)
+                        : await ResolveNextStepAssigneeAsync(
+                            connection,
+                            workflowInstanceId,
+                            nextStep,
+                            resolvedActivityUserId,
+                            userId,
+                            mailboxForm,
+                            cancellationToken);
 
                     // The next step's own assignee may be away: route it to their active delegate.
                     // (The check above only covers the current step's assignee.)
