@@ -70,6 +70,35 @@ export const previewWorkflowSla = async (
   }
 }
 
+/** One place a workflow uses an SLA form: its whole-request SLA, or a stage's SLA. */
+export type SlaFormUsage = {
+  /** The request decides, so any entry of the form may be used. */
+  anyEntry: boolean
+  /** Entries this SLA names. */
+  entryIds: string[]
+  formId: string
+  published: boolean
+  scope: 'stage' | 'workflow'
+  stageId: null | string
+  stageName: null | string
+  workflowId: string
+  workflowName: string
+}
+
+export const getSlaFormUsage = async (): Promise<SlaFormUsage[]> => {
+  const { data } = await axiosV6.get(`${BASE_URL}/form-usage`, {
+    headers: tenantHeaders(),
+    skipCancellation: true,
+  })
+  return (data ?? []) as SlaFormUsage[]
+}
+
+export const slaFormUsageQueryOptions = () => ({
+  queryFn: getSlaFormUsage,
+  queryKey: ['workflow-sla', 'form-usage'] as const,
+  staleTime: 60_000,
+})
+
 export type SlaHistory = {
   evaluatedAtUtc: null | string
   evaluationJson: null | string

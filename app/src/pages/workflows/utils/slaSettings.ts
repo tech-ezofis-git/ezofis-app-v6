@@ -1,6 +1,17 @@
 import { generateId } from './generateId'
 import { getNodeToolType, NODE_TOOL_TYPE } from './nodeToolTypes'
 
+/** Custom Setup: what happens if the request is still not done after the last level. */
+export type SlaAfterLast = {
+  groupId: null | string
+  type: SlaAfterLastType
+  userId: null | string
+  /** How long to wait after the last level. */
+  wait: null | number
+  waitUnit: SlaDurationUnit
+}
+export type SlaAfterLastType = 'group' | 'manager' | 'none' | 'remind' | 'user'
+
 export type SlaAdvancedRule = {
   breachAction: SlaBreachAction
   conditions: SlaCondition[]
@@ -67,6 +78,25 @@ export type SlaMasterRow = {
 
 export type SlaMode = 'advanced' | 'standard'
 
+/** Custom Setup: a value in each request picks the SLA form entry. */
+export type SlaSelection = {
+  /** Entry used when no rule is found; null = no time limit then. */
+  defaultEntryId: null | string
+  /** The request form's field (jsonId) whose value decides. */
+  fieldId: null | string
+  method: SlaSelectionMethod
+  /** Method column: the form the field gets its options from. */
+  recordFormId: null | string
+  /** Method column: that form's column the field shows. */
+  recordValueColumn: null | string
+  /** Method column: that form's field (jsonId) naming the rule. */
+  ruleColumn: null | string
+  /** Method map: the rule for each option. */
+  valueRules: SlaValueRule[]
+}
+export type SlaSelectionMethod = 'column' | 'map' | 'sameName'
+export type SlaValueRule = { entryId: null | string; value: string }
+
 export type SlaRule = {
   /** How this rule notifies when it fires (rule 1 → email, rule 2 → SMS…). */
   channels: SlaChannels
@@ -90,6 +120,8 @@ export type SlaScope = 'block' | 'workflow'
 export type SlaSettings = {
   /** Advanced (workflow settings): rules picking SLA Master entries. */
   advancedRules?: SlaAdvancedRule[]
+  /** Custom Setup: what happens after the last level. */
+  afterLastLevel?: null | SlaAfterLast
   /** Advanced: entry used when no rule matches; null = no SLA then. */
   fallbackEntryId?: null | string
   /** Advanced: SLA Master fields the SLA values are read from. */
@@ -104,6 +136,8 @@ export type SlaSettings = {
   /** Advanced: stage whose first action meets the response SLA; null = no response SLA. */
   responseStageId?: null | string
   rules: SlaRule[]
+  /** Custom Setup: set when it depends on the request; unset = same for every request. */
+  selection?: null | SlaSelection
   slaMasterId: null | string
 }
 
@@ -178,6 +212,32 @@ export const createAdvancedRule = (priority: number): SlaAdvancedRule => ({
   reminderMinutes: null,
   stopAfterMatch: true,
 })
+
+export const createSlaSelection = (): SlaSelection => ({
+  defaultEntryId: null,
+  fieldId: null,
+  method: 'map',
+  recordFormId: null,
+  recordValueColumn: null,
+  ruleColumn: null,
+  valueRules: [],
+})
+
+export const createAfterLast = (type: SlaAfterLastType): SlaAfterLast => ({
+  groupId: null,
+  type,
+  userId: null,
+  wait: 1,
+  waitUnit: 'days',
+})
+
+const AFTER_LAST_TYPES = new Set<string>([
+  'group',
+  'manager',
+  'none',
+  'remind',
+  'user',
+])
 
 export const createSlaMasterRow = (): SlaMasterRow => ({
   entryId: null,
@@ -309,6 +369,11 @@ export const normalizeSlaSettings = (
     settings.masterFieldId = toId(source.masterFieldId)
     settings.masterEntries = masterRows
   }
+  // Custom Setup keys only when saved, so older settings keep their shape.
+  if (mode === 'advanced' && source.selection)
+    settings.selection = normalizeSelection(source.selection)
+  if (mode === 'advanced' && source.afterLastLevel)
+    settings.afterLastLevel = normalizeAfterLast(source.afterLastLevel)
   // Advanced keys only when saved, so Standard / older settings keep their shape.
   const hasAdvanced = [
     'advancedRules',
@@ -327,6 +392,37 @@ export const normalizeSlaSettings = (
     settings.fallbackEntryId = toId(source.fallbackEntryId)
   }
   return settings
+}
+
+const normalizeSelection = (raw: Record<string, any>): SlaSelection => ({
+  defaultEntryId: toId(raw.defaultEntryId),
+  fieldId: toId(raw.fieldId),
+  method:
+    raw.method === 'column' || raw.method === 'sameName' ? raw.method : 'map',
+  recordFormId: toId(raw.recordFormId),
+  recordValueColumn: toId(raw.recordValueColumn),
+  ruleColumn: toId(raw.ruleColumn),
+  valueRules: Array.isArray(raw.valueRules)
+    ? raw.valueRules
+        .filter((r: any) => r && r.value)
+        .map((r: any) => ({
+          entryId: toId(r.entryId),
+          value: String(r.value),
+        }))
+    : [],
+})
+
+const normalizeAfterLast = (raw: Record<string, any>): SlaAfterLast => {
+  const type = String(raw.type ?? '').toLowerCase()
+  const unit = String(raw.waitUnit ?? '').toLowerCase()
+  const wait = Number(raw.wait)
+  return {
+    groupId: toId(raw.groupId),
+    type: AFTER_LAST_TYPES.has(type) ? (type as SlaAfterLastType) : 'none',
+    userId: toId(raw.userId),
+    wait: Number.isFinite(wait) && wait > 0 ? wait : null,
+    waitUnit: DURATION_UNIT_IDS.has(unit) ? (unit as SlaDurationUnit) : 'days',
+  }
 }
 
 const normalizeFieldMapping = (raw: unknown): SlaFieldMapping => {
@@ -469,7 +565,20 @@ export const serializeSlaSettings = (
           return base
         }),
   slaMasterId: settings.mode === 'advanced' ? settings.slaMasterId : null,
-  ...(settings.mode === 'advanced' && hasMasterEntry(settings)
+  ...(settings.mode === 'advanced' && settings.selection
+    ? {
+        masterFieldId: settings.masterFieldId ?? null,
+        selection: serializeSelection(settings.selection),
+      }
+    : {}),
+  ...(settings.mode === 'advanced' &&
+  settings.afterLastLevel &&
+  settings.afterLastLevel.type !== 'none'
+    ? { afterLastLevel: serializeAfterLast(settings.afterLastLevel) }
+    : {}),
+  ...(settings.mode === 'advanced' &&
+  !settings.selection &&
+  hasMasterEntry(settings)
     ? {
         masterEntries: (settings.masterEntries ?? []).map((row) => ({
           entryId: row.entryId,
@@ -483,10 +592,35 @@ export const serializeSlaSettings = (
   // Rule-based Advanced settings saved earlier keep working until an entry is chosen.
   ...(scope === 'workflow' &&
   settings.mode === 'advanced' &&
+  !settings.selection &&
   !hasMasterEntry(settings) &&
   hasLegacyAdvanced(settings)
     ? serializeAdvanced(settings)
     : {}),
+})
+
+const serializeSelection = (selection: SlaSelection): SlaSelection => {
+  const column = selection.method === 'column'
+  return {
+    defaultEntryId: selection.defaultEntryId,
+    fieldId: selection.fieldId,
+    method: selection.method,
+    recordFormId: column ? selection.recordFormId : null,
+    recordValueColumn: column ? selection.recordValueColumn : null,
+    ruleColumn: column ? selection.ruleColumn : null,
+    valueRules:
+      selection.method === 'map'
+        ? selection.valueRules.filter((r) => r.entryId)
+        : [],
+  }
+}
+
+const serializeAfterLast = (after: SlaAfterLast): SlaAfterLast => ({
+  groupId: after.type === 'group' ? after.groupId : null,
+  type: after.type,
+  userId: after.type === 'user' ? after.userId : null,
+  wait: after.wait,
+  waitUnit: after.waitUnit,
 })
 
 const hasMasterEntry = (settings: SlaSettings) =>
@@ -539,7 +673,8 @@ export const validateSlaSettings = (
 
   if (settings.mode === 'advanced') {
     if (!settings.slaMasterId)
-      add('_config', 'slaMasterId', 'Select an SLA Master')
+      add('_config', 'slaMasterId', 'Select an SLA form')
+    else if (settings.selection) validateSelection(settings.selection, add)
     else if (!hasMasterEntry(settings) && hasLegacyAdvanced(settings)) {
       if (scope === 'workflow') validateAdvanced(settings, add, validStageIds)
     } else if (!settings.masterEntries?.length)
@@ -550,6 +685,7 @@ export const validateSlaSettings = (
         if (!row.notify && !row.escalate)
           add(row.id, 'action', 'Tick Notify, Escalate or both')
       })
+    validateAfterLast(settings.afterLastLevel, scope, add)
     return errors
   }
 
@@ -592,6 +728,43 @@ export const validateSlaSettings = (
     }
   })
   return errors
+}
+
+/** Matches WorkflowSlaSettingsValidator.ValidateSelection. */
+const validateSelection = (
+  selection: SlaSelection,
+  add: (key: string, field: string, message: string) => void,
+) => {
+  if (!selection.fieldId)
+    add('_config', 'fieldId', 'Select the field that decides the time limit')
+  if (
+    selection.method === 'column' &&
+    (!selection.recordFormId || !selection.ruleColumn)
+  )
+    add('_config', 'ruleColumn', 'Select the column that names the rule')
+  if (
+    selection.method === 'map' &&
+    !selection.defaultEntryId &&
+    !selection.valueRules.some((r) => r.entryId)
+  )
+    add('_config', 'valueRules', 'Choose a rule for at least one option')
+}
+
+/** Matches WorkflowSlaSettingsValidator.ValidateAfterLast. */
+const validateAfterLast = (
+  after: null | SlaAfterLast | undefined,
+  scope: SlaScope,
+  add: (key: string, field: string, message: string) => void,
+) => {
+  if (!after || after.type === 'none') return
+  if (scope !== 'block' && after.type !== 'remind')
+    add('_after', 'type', 'A workflow SLA can only send a reminder')
+  if (after.wait === null || !(after.wait > 0))
+    add('_after', 'wait', 'Enter how long to wait')
+  if (after.type === 'group' && !after.groupId)
+    add('_after', 'groupId', 'Select a group')
+  if (after.type === 'user' && !after.userId)
+    add('_after', 'userId', 'Select a user')
 }
 
 /** Matches WorkflowSlaSettingsValidator.ValidateAdvanced. */

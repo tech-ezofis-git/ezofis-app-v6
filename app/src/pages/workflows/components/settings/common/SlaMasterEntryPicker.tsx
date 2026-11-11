@@ -8,13 +8,17 @@ import Icon from '@/components/base/icon/Icon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import {
+  entryKey,
+  entryList,
+  fieldValue,
+  normalizeLabel,
+} from '../../../utils/slaCustomSetup'
+import {
   createSlaMasterRow,
   type SlaMasterRow,
   type SlaSettings,
   type SlaValidationErrors,
 } from '../../../utils/slaSettings'
-
-type Row = Record<string, unknown>
 
 interface SlaMasterEntryPickerProps {
   /** Stage = response SLA (Response Time / Type); workflow = resolution SLA (Resolution Time / Type). */
@@ -23,41 +27,6 @@ interface SlaMasterEntryPickerProps {
   errors?: SlaValidationErrors
   onChange: (value: SlaSettings) => void
 }
-
-const asRow = (value: unknown): Row =>
-  value && typeof value === 'object' ? (value as Row) : {}
-
-/** "Response_Time", "response time" → "responsetime" (as the API matches labels). */
-const normalizeLabel = (label: unknown) =>
-  String(label ?? '')
-    .toLowerCase()
-    .replace(/[\s_-]+/g, '')
-
-/** GET /form/{id}/entry/all → { entries: [...] } (or a bare array). */
-const entryList = (data: unknown): Row[] => {
-  const list = Array.isArray(data)
-    ? data
-    : (asRow(data).entries ?? asRow(asRow(data).data).entries)
-  return Array.isArray(list) ? list.map(asRow) : []
-}
-
-const toText = (value: unknown) => {
-  if (value === null || value === undefined) return ''
-  if (Array.isArray(value)) return value.map(String).join(', ')
-  return String(value).trim()
-}
-
-/** An entry's value for a field: by jsonId, else a key matching its label. */
-const fieldValue = (entry: Row, field: { id: string; label: string }) => {
-  const direct = toText(entry[field.id] ?? asRow(entry.formData)[field.id])
-  if (direct) return direct
-  const target = normalizeLabel(field.label)
-  const key = Object.keys(entry).find((k) => normalizeLabel(k) === target)
-  return key ? toText(entry[key]) : ''
-}
-
-const entryKey = (entry: Row) =>
-  String(entry.item_id ?? entry.itemId ?? entry.id ?? '')
 
 /**
  * Advanced SLA: pick one or more entries of the SLA form. Older forms set each
@@ -158,17 +127,18 @@ export default function SlaMasterEntryPicker({
     <div className='flex flex-col gap-3'>
       {plainEntry && (
         <InputSelect
-          label='Select Master Form Entry'
+          description='This rule applies to every request.'
+          label='Which rule should every request use?'
           loading={isEntriesLoading}
           options={valueOptions}
-          placeholder='Select an entry...'
+          placeholder='Choose a time limit rule...'
           required
           searchable
           error={
             config.entryId ??
             (plainRow ? errors[plainRow.id]?.entryId : undefined) ??
             (plainMissing
-              ? 'This entry is no longer in the SLA form. Choose another one.'
+              ? 'This time limit rule is no longer in the form. Choose another one.'
               : undefined)
           }
           value={
@@ -176,7 +146,7 @@ export default function SlaMasterEntryPicker({
             (plainRow?.entryId
               ? {
                   id: plainRow.entryId,
-                  name: plainMissing ? 'Missing entry' : '…',
+                  name: plainMissing ? 'Missing rule' : '…',
                 }
               : null)
           }
@@ -236,16 +206,16 @@ export default function SlaMasterEntryPicker({
                 />
               </div>
               <InputSelect
-                label='Select Master Form Entry'
+                label='Which Time Limit Rule Do You Want to Use?'
                 loading={isEntriesLoading}
                 options={valueOptions}
-                placeholder='Select an entry...'
+                placeholder='Choose a time limit rule...'
                 required
                 searchable
                 error={
                   rowErrors.entryId ??
                   (missingEntry
-                    ? 'This entry is no longer in the SLA form. Choose another one.'
+                    ? 'This time limit rule is no longer in the form. Choose another one.'
                     : undefined)
                 }
                 value={
@@ -253,7 +223,7 @@ export default function SlaMasterEntryPicker({
                   (row.entryId
                     ? {
                         id: row.entryId,
-                        name: missingEntry ? 'Missing entry' : '…',
+                        name: missingEntry ? 'Missing rule' : '…',
                       }
                     : null)
                 }

@@ -26,6 +26,12 @@ internal static class WorkflowSlaStore
     public const short TimerFailed = 3;
     public const short TimerPendingAdvanced = 4;
 
+    /// <summary>
+    /// Pending timers of Custom Setup (a rule per request, after the last level). Older API builds sharing
+    /// the database claim only 0 and 4, so they leave these alone instead of cancelling or misreading them.
+    /// </summary>
+    public const short TimerPendingCustom = 5;
+
     public const short OutboxPending = 0;
     public const short OutboxSent = 1;
     public const short OutboxFailed = 2;
@@ -79,6 +85,8 @@ internal static class WorkflowSlaStore
             ALTER TABLE workflow.sla_timers ADD COLUMN IF NOT EXISTS snapshot_json text NULL;
             CREATE INDEX IF NOT EXISTS ix_sla_timers_due_pending_advanced
                 ON workflow.sla_timers (due_at_utc) WHERE status = 4;
+            CREATE INDEX IF NOT EXISTS ix_sla_timers_due_pending_custom
+                ON workflow.sla_timers (due_at_utc) WHERE status = 5;
             CREATE INDEX IF NOT EXISTS ix_sla_timers_instance
                 ON workflow.sla_timers (workflow_instance_id);
 

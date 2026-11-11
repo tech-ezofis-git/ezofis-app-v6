@@ -97,6 +97,21 @@ public static class WorkflowSlaMasterEntry
             errors);
     }
 
+    /// <summary>An entry's value for one field, given its jsonId: by that key, its column or its label.</summary>
+    public static string? ReadCell(
+        IReadOnlyDictionary<string, object?> entry,
+        IReadOnlyList<FormFieldLabel> fields,
+        string? fieldId)
+    {
+        if (string.IsNullOrWhiteSpace(fieldId))
+            return null;
+        var direct = WorkflowSlaAdvancedEvaluator.Text(entry, fieldId);
+        if (!string.IsNullOrWhiteSpace(direct))
+            return direct;
+        var field = fields.FirstOrDefault(f => string.Equals(f.JsonId, fieldId, StringComparison.Ordinal));
+        return field?.Label == null ? null : FindText(entry, fields, field.Label);
+    }
+
     private static bool HasStepsTable(IReadOnlyDictionary<string, object?> entry, IReadOnlyList<FormFieldLabel> fields) =>
         KeysFor(entry, fields, SlaSteps).Any()
         || fields.Any(f => NormalizeLabel(f.Label) == NormalizeLabel(SlaSteps));

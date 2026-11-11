@@ -43,6 +43,7 @@ import {
   validateWorkflowSettings,
 } from '../utils/validateWorkflowSettings'
 import { getDefaultShortName } from '../utils/workflowShortName'
+import PanelResizeHandle from './PanelResizeHandle'
 import BusinessHoursSettingsSection from './settings/BusinessHoursSettingsSection'
 import NumberPartsDnd, { NumberPartRow } from './settings/common/NumberPartsDnd'
 import SettingsSection from './settings/common/SettingsSection'
@@ -379,7 +380,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   if (!isSettingsOpen) return null
 
   return (
-    <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+    <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+      <PanelResizeHandle />
       {/* Header */}
       <div className='flex items-center justify-between border-b border-gray-2 px-4 py-3'>
         <h2 className='text-15/5 font-semibold text-gray-13'>Settings</h2>
