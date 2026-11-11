@@ -1,3 +1,4 @@
+using SaaSApp.Workflow.Application.Workflows;
 using SaaSApp.Workflow.Application.Workflows.Commands.CreateWorkflow;
 
 namespace SaaSApp.Workflow.Application.Contracts;
@@ -13,6 +14,9 @@ public interface IWorkflowSlaInsightService
 
     /// <summary>The ticket's SLA timers (pending, fired, cancelled, failed) and its Advanced evaluation, oldest first.</summary>
     Task<WorkflowSlaHistoryResult> GetHistoryAsync(Guid workflowId, Guid instanceId, CancellationToken cancellationToken = default);
+
+    /// <summary>Every place a workflow of this tenant uses an SLA form, for the Forms and Entries pages.</summary>
+    Task<IReadOnlyList<WorkflowSlaFormUsageRow>> GetFormUsageAsync(CancellationToken cancellationToken = default);
 }
 
 public sealed record WorkflowSlaPreviewRequest(

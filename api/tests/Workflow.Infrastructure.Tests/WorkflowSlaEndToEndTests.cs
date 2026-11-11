@@ -103,7 +103,7 @@ public class WorkflowSlaEndToEndTests
     };
 
     private static Task DueNowAsync(TestDatabase database) =>
-        database.ExecuteAsync("UPDATE workflow.sla_timers SET due_at_utc = now() - interval '1 minute' WHERE status = 4;");
+        database.ExecuteAsync("UPDATE workflow.sla_timers SET due_at_utc = now() - interval '1 minute' WHERE status IN (4, 5);");
 
     [Fact]
     public async Task EntryWithStepsTable_OnAStage_RunsEachRowWithItsOwnAction()
@@ -526,6 +526,197 @@ public class WorkflowSlaEndToEndTests
     }
 
     // The claim of the API version that does not know Advanced (git: before this change). Must find nothing.
+    // ---- Custom Setup: a value in the request picks the rule; after the last level -------------------
+
+    private static object PerRequestSla(object selection) => new
+    {
+        mode = "advanced",
+        slaMasterId = "master",
+        rules = Array.Empty<object>(),
+        notifications = new { email = true, sms = false },
+        masterFieldId = ColumnsForName,
+        selection,
+    };
+
+    private static object FixedEntrySla(object afterLast) => new
+    {
+        mode = "advanced",
+        slaMasterId = "master",
+        rules = Array.Empty<object>(),
+        notifications = new { email = true, sms = false },
+        masterFieldId = ColumnsForName,
+        masterEntries = new object[] { new { id = "row-1", entryId = "Support", notify = true, escalate = false } },
+        afterLastLevel = afterLast,
+    };
+
+    private static FakeMaster TwoRules() => new(
+        StepFields,
+        StepEntry("Support", Step(5, "Minutes", "Notify", "Users", ["raja@example.com"])),
+        StepEntry("AMC", Step(2, "Days", "Notify", "Users", ["lead@example.com"])));
+
+    private static Task SettledAsync(TestDatabase database) =>
+        database.ExecuteAsync("UPDATE workflow.transaction_72c7ac44 SET created_at = now() - interval '1 minute';");
+
+    private static Task<int> DueInMinutesAsync(TestDatabase database) =>
+        database.ScalarAsync<int>("SELECT round(extract(epoch FROM min(due_at_utc) - now()) / 60)::int FROM workflow.sla_timers;");
+
+    [Theory]
+    [InlineData("map", "Hardware", 4)]      // listed in the settings: Support (5 minutes, less the minute it waited)
+    [InlineData("map", "Other", 2879)]      // not listed: the default rule, AMC
+    [InlineData("sameName", "support", 4)]  // same name, whatever the case
+    [InlineData("sameName", "Other", 2879)]
+    public async Task ARequestValue_PicksTheRule(string method, string value, int minutes)
+    {
+        if (string.IsNullOrWhiteSpace(Server))
+            return;
+
+        await using var database = await TestDatabase.CreateAsync();
+        await SettledAsync(database);
+        var selection = new
+        {
+            fieldId = "req",
+            method,
+            valueRules = new[] { new { value = "hardware", entryId = "Support" } },
+            defaultEntryId = "AMC",
+        };
+        var service = NewService(
+            database, Json(PerRequestSla(selection)), new FakeMediator(), TwoRules(),
+            formValues: JsonSerializer.Serialize(new { req = value }));
+
+        await service.RunAsync();
+        // Keep the timer pending while the second pass runs: it must add nothing.
+        await database.ExecuteAsync("UPDATE workflow.sla_timers SET due_at_utc = due_at_utc + interval '1 hour' WHERE status = 5;");
+        await service.RunAsync();
+
+        // Status 5: older API builds on the same database do not claim these.
+        Assert.Equal(5, Assert.Single(await ReadTimersAsync(database)).Status);
+        Assert.Equal(minutes + 60, await DueInMinutesAsync(database));
+    }
+
+    [Fact]
+    public async Task ASelectedRecord_NamesTheRule_ByName()
+    {
+        if (string.IsNullOrWhiteSpace(Server))
+            return;
+
+        await using var database = await TestDatabase.CreateAsync();
+        await SettledAsync(database);
+        var master = TwoRules();
+        master.Replace(
+            StepEntry("Support", Step(5, "Minutes", "Notify", "Users", ["raja@example.com"])),
+            StepEntry("AMC", Step(2, "Days", "Notify", "Users", ["lead@example.com"])),
+            new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["item_id"] = "project-a", ["project"] = "Project A", ["rule"] = "amc",
+            });
+        var selection = new { fieldId = "req", method = "column", recordFormId = "projects", recordValueColumn = "project", ruleColumn = "rule" };
+        var service = NewService(
+            database, Json(PerRequestSla(selection)), new FakeMediator(), master,
+            formValues: JsonSerializer.Serialize(new { req = "Project A" }));
+
+        await service.RunAsync();
+
+        Assert.Single(await ReadTimersAsync(database));
+        Assert.Equal(2879, await DueInMinutesAsync(database));
+    }
+
+    [Fact]
+    public async Task NoRuleAndNoDefault_GivesNoTimer_AndAFormNotSavedYetWaits()
+    {
+        if (string.IsNullOrWhiteSpace(Server))
+            return;
+
+        await using var database = await TestDatabase.CreateAsync();
+        var selection = new { fieldId = "req", method = "sameName" };
+        var known = NewService(
+            database, Json(PerRequestSla(selection)), new FakeMediator(), TwoRules(),
+            formValues: JsonSerializer.Serialize(new { req = "Support" }));
+
+        // Just arrived: the form entry may not be saved, so nothing is decided yet.
+        await known.RunAsync();
+        Assert.Empty(await ReadTimersAsync(database));
+
+        await SettledAsync(database);
+        var unknown = NewService(
+            database, Json(PerRequestSla(new { fieldId = "req", method = "sameName", defaultEntryId = (string?)null })), new FakeMediator(), TwoRules(),
+            formValues: JsonSerializer.Serialize(new { req = "Other" }));
+        await unknown.RunAsync();
+        Assert.Empty(await ReadTimersAsync(database));
+    }
+
+    [Theory]
+    [InlineData("group", null)]
+    [InlineData("user", "10000000-0000-0000-0000-000000000003")]
+    [InlineData("manager", "10000000-0000-0000-0000-000000000004")]
+    public async Task AfterTheLastLevel_PassesTheRequestOn(string type, string? forwardTo)
+    {
+        if (string.IsNullOrWhiteSpace(Server))
+            return;
+
+        await using var database = await TestDatabase.CreateAsync();
+        var mediator = new FakeMediator();
+        var master = new FakeMaster(StepFields, StepEntry("Support", Step(1, "Hours", "Notify", "Users", ["lead@example.com"])));
+        var after = new
+        {
+            type,
+            wait = 30,
+            waitUnit = "minutes",
+            groupId = type == "group" ? GroupId.ToString() : null,
+            userId = type == "user" ? Raja.ToString() : null,
+        };
+        var service = NewService(database, Json(FixedEntrySla(after)), mediator, master);
+
+        await service.RunAsync();
+
+        Assert.Equal(2, (await ReadTimersAsync(database)).Count);
+        Assert.Equal(
+            [60, 90],
+            await database.ListAsync(
+                "SELECT round(extract(epoch FROM due_at_utc - now()) / 60)::int FROM workflow.sla_timers ORDER BY due_at_utc;",
+                r => r.GetInt32(0)));
+
+        await DueNowAsync(database);
+        await service.RunAsync();
+
+        var moved = Assert.Single(mediator.Sent);
+        Assert.Equal("Forward", moved.Review);
+        Assert.Equal(forwardTo != null ? Guid.Parse(forwardTo) : MemberA, moved.ActivityUserId);
+    }
+
+    [Fact]
+    public async Task AfterTheLastLevel_RemindsEveryDay_UntilActedOn()
+    {
+        if (string.IsNullOrWhiteSpace(Server))
+            return;
+
+        await using var database = await TestDatabase.CreateAsync();
+        var mediator = new FakeMediator();
+        var master = new FakeMaster(StepFields, StepEntry("Support", Step(1, "Hours", "Notify", "Users", ["lead@example.com"])));
+        var service = NewService(database, Json(FixedEntrySla(new { type = "remind", wait = 1, waitUnit = "days" })), mediator, master);
+
+        await service.RunAsync();
+        await DueNowAsync(database);
+        await service.RunAsync();
+
+        // The reminder goes to the people on the levels and whoever has the request now.
+        var sent = await ReadOutboxAsync(database);
+        Assert.Equal(
+            ["assignee@example.com", "lead@example.com"],
+            sent.Where(s => s.RuleId == "after-last|0").Select(s => s.Address).Order());
+        Assert.Empty(mediator.Sent);
+
+        // The next one is booked.
+        Assert.Equal(5, (await ReadTimersAsync(database)).Single(t => t.RuleId == "after-last|1").Status);
+
+        // Once acted on, it stops.
+        await database.ExecuteAsync("UPDATE workflow.transaction_72c7ac44 SET action_status = 1, review = 'Approve';");
+        await DueNowAsync(database);
+        await service.RunAsync();
+        var timers = await ReadTimersAsync(database);
+        Assert.Contains("already acted on", timers.Single(t => t.RuleId == "after-last|1").Outcome);
+        Assert.DoesNotContain(timers, t => t.RuleId == "after-last|2");
+    }
+
     private const string CommittedClaimSql = """
         SELECT count(*) FROM workflow.sla_timers
         WHERE status = 0 AND (locked_until IS NULL OR locked_until < now());
@@ -536,15 +727,16 @@ public class WorkflowSlaEndToEndTests
         string workflowJson,
         FakeMediator mediator,
         FakeMaster master,
-        FakeSecurity? security = null) =>
+        FakeSecurity? security = null,
+        string? formValues = null) =>
         new(
             new FakeTenant(database.ConnectionString),
             new FakeJson(workflowJson),
             mediator,
             Microsoft.Extensions.Options.Options.Create(new WorkflowSlaOptions()),
             NullLogger<WorkflowSlaTimerService>.Instance,
-            new FakeMailbox(),
-            null!,
+            new FakeMailbox(formValues != null),
+            new FakeFormData(formValues),
             master,
             security ?? new FakeSecurity());
 
@@ -607,11 +799,12 @@ public class WorkflowSlaEndToEndTests
                 INSERT INTO workflow.transaction_72c7ac44 (workflow_instance_id, activity_id, stage_type, stage_name, activity_user_id)
                 VALUES ('{InstanceId}', '{TargetActivity}', 'INTERNAL_ACTOR', 'Reviewer', '{Assignee}');
 
-                CREATE TABLE users."Users" ("Id" uuid PRIMARY KEY, "Email" text, "DisplayName" text, "PhoneNo" text, "CountryCode" text, "IsDeleted" boolean NOT NULL DEFAULT false);
+                CREATE TABLE users."Users" ("Id" uuid PRIMARY KEY, "Email" text, "DisplayName" text, "PhoneNo" text, "CountryCode" text, "IsDeleted" boolean NOT NULL DEFAULT false, "ManagerId" uuid);
                 INSERT INTO users."Users" ("Id", "Email", "DisplayName") VALUES
                     ('{Starter}', 'starter@example.com', 'Starter'), ('{Assignee}', 'assignee@example.com', 'Assignee'),
                     ('{Raja}', 'raja@example.com', 'Raja'), ('{Lead}', 'lead@example.com', 'Lead'),
                     ('{MemberA}', 'member.a@example.com', 'Member A'), ('{MemberB}', 'member.b@example.com', 'Member B');
+                UPDATE users."Users" SET "ManagerId" = '{Lead}' WHERE "Id" = '{Assignee}';
                 CREATE TABLE users."Groups" ("Id" uuid PRIMARY KEY, "Name" text NOT NULL, "CreatedAtUtc" timestamptz NOT NULL DEFAULT now(), "IsDeleted" boolean NOT NULL DEFAULT false);
                 INSERT INTO users."Groups" ("Id", "Name") VALUES ('{GroupId}', 'Sales Team');
                 CREATE TABLE users."UserGroups" ("GroupId" uuid NOT NULL, "UserId" uuid NOT NULL, "TenantId" uuid);
@@ -723,7 +916,15 @@ public class WorkflowSlaEndToEndTests
             throw new NotImplementedException();
     }
 
-    private sealed class FakeMailbox : IWorkflowLegacyMailboxSyncService
+    private sealed class FakeFormData(string? json) : IWorkflowEzfbFormDataLoader
+    {
+        public Task<string?> LoadFormDataJsonAsync(string formId, Guid formEntryId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(json);
+        public Task<string?> LoadDeletedFormDataJsonAsync(string formId, Guid formEntryId, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+    }
+
+    private sealed class FakeMailbox(bool hasForm = false) : IWorkflowLegacyMailboxSyncService
     {
         public Task SyncTransactionRowAsync(Guid workflowId, int transactionRowId, CancellationToken cancellationToken = default, int? inboxAction = null, MailboxOwnerCopyKind ownerMailboxCopy = MailboxOwnerCopyKind.Inbox) =>
             Task.CompletedTask;
@@ -731,7 +932,7 @@ public class WorkflowSlaEndToEndTests
         public Task SyncInstanceEndTransactionsAsync(Guid workflowId, Guid workflowInstanceId, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task PropagateInstanceFormDataAsync(Guid workflowId, Guid workflowInstanceId, MailboxFormSnapshot form, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<(string? FormId, Guid? FormEntryId)?> TryGetProcessFormIdentityAsync(Guid workflowId, Guid workflowInstanceId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<(string? FormId, Guid? FormEntryId)?>(null);
+            Task.FromResult<(string? FormId, Guid? FormEntryId)?>(hasForm ? ("request-form", Guid.NewGuid()) : null);
     }
 
     private sealed class FakeMaster : IFormEntryService
@@ -774,12 +975,14 @@ public class WorkflowSlaEndToEndTests
         public Task<FormEntryPermanentDeleteResult> PermanentlyDeleteEntryAsync(string formId, Guid entryId, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
         public Task<FormEntryAllResult> ListEntriesAsync(string formId, FormEntryAllRequest request, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
+            Task.FromResult(new FormEntryAllResult(FormEntryGetStatus.Found, formId, _rows, null));
         public Task<FormControlDistinctValuesResult> GetDistinctControlValuesAsync(string wFormId, string wFormControlName, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
         public Task<FormEntryByColumnResult> GetEntriesByColumnAsync(string formId, string? columnName, string? columnValue = null,
             IReadOnlyList<FormEntryColumnFilter>? filters = null, string? columnId = null, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
+            Task.FromResult(new FormEntryByColumnResult(
+                FormEntryByColumnStatus.Found, null, formId, columnName, columnName,
+                _rows.Where(r => columnName != null && r.TryGetValue(columnName, out var v) && v?.ToString() == columnValue).ToList()));
         public Task<FormEntryByColumnResult> UpsertEntryByColumnsAsync(string formId, FormEntryUpsertByColumnsRequest request, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
         public Task<FormEntryByColumnResult> UpdateEntriesByColumnAsync(string formId, string columnName, string columnValue,

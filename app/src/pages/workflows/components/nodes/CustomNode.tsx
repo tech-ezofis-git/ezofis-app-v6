@@ -86,6 +86,16 @@ const CustomNode = ({ data, id, selected }: NodeProps) => {
         </div>
       )}
 
+      {/* SLA badge: this block has an SLA configured */}
+      {Boolean(data.SlaSettings) && (
+        <div className='absolute -top-3 right-3 z-20'>
+          <div className='flex items-center gap-1 rounded-full border-2 border-primary-9 bg-surface-raised px-2 py-0.5 text-[11px] font-bold tracking-wider text-primary-9 uppercase shadow-xs'>
+            <Icon className='h-3.5 w-3.5' name='lucide:timer' />
+            SLA
+          </div>
+        </div>
+      )}
+
       <div
         className={cn(
           'group/node relative min-w-[280px] overflow-visible rounded-xl border-2 bg-surface-raised shadow-sm transition-all duration-300',
