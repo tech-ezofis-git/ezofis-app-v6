@@ -1,6 +1,12 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { getStageFilePreviewSource } from '@/api/v6/uploadAndIndex'
 import Skeleton from '@/components/base/Skeleton'
+import { isLargeUploadFile } from '@/lib/largeUpload/constants'
+import {
+  prepareLocalPdf,
+  prepareRemotePdf,
+  rangeDocumentParams,
+} from '@/lib/largeUpload/pdfSource'
 import cn from '@/utils/cn'
 import { getCachedThumbnail, setCachedThumbnail } from './thumbnailCache'
 import {
@@ -36,7 +42,11 @@ type PdfThumbnailProps = {
   cacheKey?: string
   className?: string
   fallback?: ReactNode
+  /** Local file behind `fileUrl`; large ones are read in pieces instead of loaded whole. */
+  file?: Blob | null
   fileName: string
+  /** Known size in bytes (0 = unknown, e.g. server files over 2 GB). */
+  fileSize?: number
   fileUrl?: string
   /** Render ahead of other cards (files from the current upload). */
   priority?: boolean
@@ -48,7 +58,9 @@ export default function PdfThumbnail({
   cacheKey,
   className,
   fallback = null,
+  file,
   fileName,
+  fileSize = 0,
   fileUrl,
   priority = false,
   stageFileId,
@@ -91,14 +103,36 @@ export default function PdfThumbnail({
           stageFileId && !isLocalFileUrl(fileUrl)
             ? getStageFilePreviewSource(stageFileId)
             : null
-        const task = pdfjs.getDocument({
-          disableAutoFetch: Boolean(remote),
-          disableRange: !remote,
-          disableStream: !remote,
-          httpHeaders: remote?.httpHeaders,
-          rangeChunkSize: 65536,
-          url: remote?.url || fileUrl || '',
-        })
+
+        // Large files (or server files of unknown size, i.e. over 2 GB) are read piece by piece and cut
+        // at the PDF's real end, so neither memory nor a full download is needed for page 1.
+        const largeLocal = !remote && file && isLargeUploadFile(file.size)
+        const largeRemote = remote && (!fileSize || isLargeUploadFile(fileSize))
+        const largeSource = largeLocal
+          ? await prepareLocalPdf(file)
+          : largeRemote
+            ? await prepareRemotePdf(
+                remote.url,
+                remote.httpHeaders,
+                fileSize || undefined,
+              )
+            : null
+        if (cancelled) return
+
+        const task = pdfjs.getDocument(
+          largeSource
+            ? (rangeDocumentParams(largeSource) as Parameters<
+                PdfJsModule['getDocument']
+              >[0])
+            : {
+                disableAutoFetch: Boolean(remote),
+                disableRange: !remote,
+                disableStream: !remote,
+                httpHeaders: remote?.httpHeaders,
+                rangeChunkSize: 65536,
+                url: remote?.url || fileUrl || '',
+              },
+        )
         pdf = await task.promise
         if (cancelled) return
 
@@ -110,12 +144,10 @@ export default function PdfThumbnail({
         const context = canvas.getContext('2d')
         if (!context) throw new Error('Canvas unavailable')
 
-        await page
-          .render({
-            canvasContext: context,
-            viewport,
-          })
-          .promise
+        await page.render({
+          canvasContext: context,
+          viewport,
+        }).promise
         if (cancelled) return
 
         const blob = await new Promise<Blob | null>((resolve) =>
@@ -139,7 +171,7 @@ export default function PdfThumbnail({
     return () => {
       cancelled = true
     }
-  }, [fileUrl, key, nearViewport, priority, stageFileId])
+  }, [file, fileSize, fileUrl, key, nearViewport, priority, stageFileId])
 
   if (failed) return <>{fallback}</>
   if (!thumbUrl) {

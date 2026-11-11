@@ -3,6 +3,7 @@ using System.Text.Json;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using SaaSApp.Api.Middleware;
 using SaaSApp.Api.Services;
@@ -1286,6 +1287,41 @@ public sealed class RepositoriesController : ControllerBase
             return shareError;
 
         var (repoId, resolvedItemId, tenantId) = ResolveItemAccess(id, itemId);
+        var inline = string.Equals(disposition, "inline", StringComparison.OrdinalIgnoreCase);
+        var cache = HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
+        var cacheKey = ItemFileCacheKey(repoId, resolvedItemId, tenantId);
+
+        // A large PDF is read page by page: many Range requests for the same file. The first
+        // one checks access in the database; the next ones, for a short while, go straight to storage.
+        if (cacheKey != null
+            && Request.Headers.ContainsKey("Range")
+            && cache.TryGetValue(cacheKey, out CachedItemFile? known)
+            && known != null)
+        {
+            var storage = HttpContext.RequestServices.GetRequiredService<IRepositoryFileStorage>();
+            if (known.Length is { } total
+                && TryParseSingleRange(Request.Headers.Range.ToString(), total, out var start, out var count))
+            {
+                // One storage request for exactly these bytes (no separate properties call).
+                var bytes = await storage.ReadRangeAsync(
+                    tenantId, known.FilePath, known.ProviderCode, start, count, cancellationToken);
+                Response.StatusCode = StatusCodes.Status206PartialContent;
+                Response.ContentType = known.ContentType;
+                Response.Headers.AcceptRanges = "bytes";
+                Response.Headers.ContentRange = $"bytes {start}-{start + bytes.Length - 1}/{total}";
+                Response.ContentLength = bytes.Length;
+                await Response.Body.WriteAsync(bytes, cancellationToken);
+                return new EmptyResult();
+            }
+
+            var cachedStream = await storage.OpenReadAsync(tenantId, known.FilePath, known.ProviderCode, cancellationToken);
+            return new FileStreamResult(cachedStream, known.ContentType)
+            {
+                FileDownloadName = inline ? null : known.FileName,
+                EnableRangeProcessing = true
+            };
+        }
+
         try
         {
             var item = await _items.GetItemAsync(repoId, tenantId, resolvedItemId, cancellationToken);
@@ -1308,7 +1344,19 @@ public sealed class RepositoriesController : ControllerBase
                 is { } redacted)
                 return redacted;
 
-            var inline = string.Equals(disposition, "inline", StringComparison.OrdinalIgnoreCase);
+            if (cacheKey != null && !string.IsNullOrWhiteSpace(item.FilePath))
+            {
+                cache.Set(
+                    cacheKey,
+                    new CachedItemFile(
+                        item.FilePath,
+                        string.IsNullOrWhiteSpace(item.StorageProviderCode) ? "EZOFIS" : item.StorageProviderCode,
+                        content.ContentType,
+                        content.FileName,
+                        content.Stream.CanSeek ? content.Stream.Length : null),
+                    ItemFileCacheTtl);
+            }
+
             return new FileStreamResult(content.Stream, content.ContentType)
             {
                 FileDownloadName = inline ? null : content.FileName,
@@ -1319,6 +1367,51 @@ public sealed class RepositoriesController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    private static readonly TimeSpan ItemFileCacheTtl = TimeSpan.FromMinutes(2);
+
+    /// <summary>Where an item's file is, once the caller was allowed to read it unredacted.</summary>
+    private sealed record CachedItemFile(
+        string FilePath, string ProviderCode, string ContentType, string FileName, long? Length);
+
+    /// <summary>Largest range answered with one direct storage read; bigger ones use the streamed path.</summary>
+    private const int MaxDirectRangeBytes = 8 * 1024 * 1024;
+
+    /// <summary>Parses one <c>bytes=a-b</c> (or <c>bytes=a-</c>) range inside the file.</summary>
+    private static bool TryParseSingleRange(string header, long total, out long start, out int count)
+    {
+        start = 0;
+        count = 0;
+        if (string.IsNullOrWhiteSpace(header) || !header.StartsWith("bytes=", StringComparison.OrdinalIgnoreCase)
+            || header.Contains(','))
+            return false;
+        var parts = header[6..].Split('-', 2);
+        if (parts.Length != 2 || !long.TryParse(parts[0], out start) || start < 0 || start >= total)
+            return false;
+        var end = total - 1;
+        if (parts[1].Length > 0 && (!long.TryParse(parts[1], out end) || end < start))
+            return false;
+        end = Math.Min(end, total - 1);
+        var length = end - start + 1;
+        if (length > MaxDirectRangeBytes)
+            return false;
+        count = (int)length;
+        return true;
+    }
+
+    /// <summary>
+    /// Per signed-in user and file version (the <c>v</c> query value). Share links are not cached:
+    /// their access is checked on every request.
+    /// </summary>
+    private string? ItemFileCacheKey(Guid repositoryId, Guid itemId, Guid tenantId)
+    {
+        if (RepositoryShareContext.TryGet(HttpContext, out var share) && share != null)
+            return null;
+        if (GetUserId() is not { } userId)
+            return null;
+        var version = Request.Query["v"].ToString();
+        return $"repo-item-file:{tenantId:N}:{repositoryId:N}:{itemId:N}:{userId:N}:{version}";
     }
 
     /// <summary>Same order as ListRepositoriesAsync: active first, then by name.</summary>
