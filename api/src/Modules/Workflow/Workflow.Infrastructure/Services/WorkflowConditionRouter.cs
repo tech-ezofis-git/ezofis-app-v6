@@ -150,6 +150,12 @@ public sealed class WorkflowConditionRouter : IWorkflowConditionRouter
                 await LeaveOnConditionAsync(instance, step, stepInstance, ex.Message, cancellationToken);
             return null;
         }
+        catch (WorkflowDynamicAssignmentException ex)
+        {
+            if (instance != null && step != null && stepInstance != null)
+                await LeaveOnConditionAsync(instance, step, stepInstance, ex.Message, cancellationToken);
+            return null;
+        }
         catch (Exception ex)
         {
             // The move that opened this condition already succeeded; never fail it from here.

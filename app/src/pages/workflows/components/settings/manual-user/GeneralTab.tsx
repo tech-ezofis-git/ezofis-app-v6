@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -8,9 +9,11 @@ import SettingsSection from '../common/SettingsSection'
 
 interface GeneralTabProps {
   actorNodeOptions: Option[]
+  emailFieldOptions: Option[]
   fieldOptions: Option[]
   groupOptions: Option[]
   nodeData: Record<string, any>
+  noEmailOptionFieldIds: string[]
   openSections: Record<string, boolean>
   userOptions: Option[]
   updateNodeData: (key: string, value: any) => void
@@ -29,14 +32,17 @@ interface RowProps {
 
 export default function GeneralTab({
   actorNodeOptions,
+  emailFieldOptions,
   fieldOptions,
   groupOptions,
   nodeData,
+  noEmailOptionFieldIds,
   openSections,
   updateNodeData,
   userOptions,
   onToggleSection,
 }: GeneralTabProps) {
+  const { t } = useLingui()
   const selectedUsers: Option[] = Array.isArray(nodeData.selectedUsers)
     ? nodeData.selectedUsers
     : []
@@ -67,11 +73,24 @@ export default function GeneralTab({
         nodeData.generateCSVFields.includes(String(o.id)),
       )
     : []
-  const dynamicUserField: Option | null = nodeData.dynamicUserField
-    ? fieldOptions.find(
-        (o) => String(o.id) === String(nodeData.dynamicUserField),
-      ) || null
-    : null
+  const dynamicUserFieldId = nodeData.dynamicUserField
+    ? String(nodeData.dynamicUserField)
+    : ''
+  const dynamicUserField: Option | null =
+    emailFieldOptions.find((o) => String(o.id) === dynamicUserFieldId) || null
+
+  const getDynamicUserFieldError = (): string | undefined => {
+    if (!dynamicUserFieldId) return t`Select a field to assign this stage.`
+    // Options are still loading, or no form is connected to check against.
+    if (fieldOptions.length === 0) return undefined
+    if (!fieldOptions.some((o) => String(o.id) === dynamicUserFieldId))
+      return t`The selected field is no longer available on the form.`
+    if (!dynamicUserField)
+      return t`The selected field type is not supported. Choose a select, choice or email field.`
+    if (noEmailOptionFieldIds.includes(dynamicUserFieldId))
+      return t`The selected field has no email addresses in its options.`
+    return undefined
+  }
 
   const forwardActionOptions: Option[] = [
     { id: 'APPROVE_REJECT', name: 'Approve / Reject' },
@@ -177,16 +196,36 @@ export default function GeneralTab({
               updateNodeData('isDynamicUserEnabled', checked)
             }
           >
-            <InputSelect
-              className='bg-surface'
-              options={fieldOptions}
-              placeholder='Select form field...'
-              value={dynamicUserField}
-              searchable
-              onChange={(val) =>
-                updateNodeData('dynamicUserField', val ? String(val.id) : null)
-              }
-            />
+            <div className='space-y-3'>
+              <div className='space-y-1'>
+                <div className='text-12 font-medium text-gray-12'>
+                  {t`Assign User Based on Form Field`}
+                </div>
+                <div className='text-11 leading-tight text-gray-9'>
+                  {t`The request will go to the email address selected in this field.`}
+                </div>
+              </div>
+              <div className='space-y-1.5'>
+                <InputSelect
+                  className='bg-surface'
+                  error={getDynamicUserFieldError()}
+                  label={t`Select Email Field`}
+                  options={emailFieldOptions}
+                  placeholder={t`Choose a field from the form...`}
+                  value={dynamicUserField}
+                  searchable
+                  onChange={(val) =>
+                    updateNodeData(
+                      'dynamicUserField',
+                      val ? String(val.id) : null,
+                    )
+                  }
+                />
+                <div className='text-11 leading-tight text-gray-9'>
+                  {t`The selected field can contain one or more email addresses.`}
+                </div>
+              </div>
+            </div>
           </AssigneeRow>
 
           <AssigneeRow

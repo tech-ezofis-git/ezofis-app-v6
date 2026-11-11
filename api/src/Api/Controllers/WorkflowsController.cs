@@ -1601,6 +1601,11 @@ public sealed class WorkflowsController : ControllerBase
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
         }
+        catch (WorkflowDynamicAssignmentException ex)
+        {
+            // Plain text: the start callers show the response body as the error.
+            return BadRequest(ex.Message);
+        }
     }
 
     /// <summary>List workflow instances for a workflow.</summary>
@@ -2440,6 +2445,11 @@ public sealed class WorkflowsController : ControllerBase
         {
             var result = await _mediator.Send(command, cancellationToken);
             return Ok(result);
+        }
+        catch (WorkflowDynamicAssignmentException ex)
+        {
+            // Plain text: the request screen shows the response body as the error.
+            return BadRequest(ex.Message);
         }
         catch (InvalidOperationException ex)
         {

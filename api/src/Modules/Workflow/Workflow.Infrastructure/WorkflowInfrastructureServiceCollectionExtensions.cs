@@ -121,6 +121,9 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.Configure<WorkflowSlaOptions>(configuration.GetSection(WorkflowSlaOptions.SectionName));
         if (configuration.GetValue($"{WorkflowSlaOptions.SectionName}:Enabled", false))
             services.AddHostedService<WorkflowSlaBackgroundService>();
+        services.Configure<WorkflowDynamicUserOptions>(configuration.GetSection(WorkflowDynamicUserOptions.SectionName));
+        services.AddScoped<WorkflowDynamicAssigneeService>();
+        services.AddScoped<IWorkflowDynamicAssigneeService>(sp => sp.GetRequiredService<WorkflowDynamicAssigneeService>());
         services.AddScoped<IWorkflowLegacyTransactionSyncService, WorkflowLegacyTransactionSyncService>();
         services.AddScoped<IWorkflowInboxShareAssignmentService, WorkflowInboxShareAssignmentService>();
         services.AddScoped<IApDashboardQueryService, ApDashboardQueryService>();

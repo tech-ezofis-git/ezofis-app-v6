@@ -27,6 +27,7 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
     private readonly IWorkflowInsightQueue _insightQueue;
     private readonly IWorkflowConditionRouter _conditionRouter;
     private readonly IWorkflowConnectorRunner _connectorRunner;
+    private readonly IWorkflowDynamicAssigneeService _dynamicAssignees;
     private readonly ILogger<StartWorkflowCommandHandler> _logger;
 
     public StartWorkflowCommandHandler(
@@ -47,8 +48,10 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
         IWorkflowInsightQueue insightQueue,
         IWorkflowConditionRouter conditionRouter,
         IWorkflowConnectorRunner connectorRunner,
+        IWorkflowDynamicAssigneeService dynamicAssignees,
         ILogger<StartWorkflowCommandHandler> logger)
     {
+        _dynamicAssignees = dynamicAssignees;
         _repository = repository;
         _unitOfWork = unitOfWork;
         _tenantContext = tenantContext;
@@ -106,6 +109,13 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
 
         await _tableCreator.EnsureWorkflowTablesForStartAsync(workflow.Id, connectionString, cancellationToken);
         await _apAgentJobProgress.EnsureProgressTableAsync(cancellationToken);
+
+        // Dynamic User as the first stage: refuse a bad value now, before a request number and request exist.
+        await _dynamicAssignees.ValidateStartAsync(
+            workflow.Id,
+            workflow.Steps.OrderBy(s => s.Order).ToList(),
+            request.FormDataFields,
+            cancellationToken);
 
         var ticketNumber = await _ticketNumbers.AllocateNextAsync(
             workflow.Id, request.FormDataFields, workflow.FormId, cancellationToken);
