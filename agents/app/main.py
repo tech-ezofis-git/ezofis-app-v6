@@ -1076,6 +1076,47 @@ async def api_form_sync(
     return await service.sync_forms(payload)
 
 
+@app.post("/api/agents/convert/tiff-to-pdf")
+async def api_convert_tiff_to_pdf(
+    file: UploadFile = File(...),
+    language: str = Form("eng"),
+    ocr: bool = Form(True),
+) -> Response:
+    """TIFF (single or multi-page) -> searchable PDF (page images + invisible OCR text layer).
+
+    Multipart: file (the TIFF), optional language (Tesseract, e.g. "eng" or "eng+ara"),
+    optional ocr=false for an image-only PDF. Returns the PDF bytes (application/pdf) with
+    X-Page-Count and X-Searchable-Pages headers. 400 when the file is not a readable TIFF.
+    """
+    import asyncio
+    import re as _re
+
+    from app.services.tiff_pdf import TiffConversionError, is_tiff, tiff_to_searchable_pdf
+
+    data = await file.read()
+    if len(data) > 200 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="The TIFF is larger than 200 MB.")
+    if not is_tiff(data, file.filename):
+        raise HTTPException(status_code=400, detail="The file is not a TIFF (.tif / .tiff).")
+    if not _re.fullmatch(r"[A-Za-z_]{3,8}(\+[A-Za-z_]{3,8})*", language or ""):
+        raise HTTPException(status_code=400, detail="language must look like 'eng' or 'eng+ara'.")
+    try:
+        result = await asyncio.to_thread(tiff_to_searchable_pdf, data, language=language, ocr=ocr)
+    except TiffConversionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    stem = (file.filename or "document").rsplit(".", 1)[0] or "document"
+    safe_stem = _re.sub(r"[^A-Za-z0-9._ -]+", "_", stem)[:150]
+    return Response(
+        content=result.pdf,
+        media_type="application/pdf",
+        headers={
+            "X-Page-Count": str(result.pages),
+            "X-Searchable-Pages": str(result.searchable_pages),
+            "Content-Disposition": f'attachment; filename="{safe_stem}.pdf"',
+        },
+    )
+
+
 @app.get("/api/agents/form-sync/inspect")
 async def api_inspect_forms(
     source_form_id: str = Query(..., description="Source form UUID or prefix"),
