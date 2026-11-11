@@ -107,7 +107,8 @@ public sealed class StartWorkflowCommandHandler : IRequestHandler<StartWorkflowC
         await _tableCreator.EnsureWorkflowTablesForStartAsync(workflow.Id, connectionString, cancellationToken);
         await _apAgentJobProgress.EnsureProgressTableAsync(cancellationToken);
 
-        var ticketNumber = await _ticketNumbers.AllocateNextAsync(workflow.Id, cancellationToken);
+        var ticketNumber = await _ticketNumbers.AllocateNextAsync(
+            workflow.Id, request.FormDataFields, workflow.FormId, cancellationToken);
 
         var instance = WorkflowInstance.Create(
             tenantId,

@@ -41,6 +41,7 @@ describe('live API mappers', () => {
       duration: 90,
       flowStatus: 1,
       lastAction: 'Force Close',
+      preview: [],
       processId: 'child-guid',
       raisedAt: '2026-10-31T10:00:00Z',
       raisedBy: undefined,
@@ -49,6 +50,24 @@ describe('live API mappers', () => {
       subWorkflowId: 'workflow-guid',
       subWorkflowName: 'Expense',
     })
+  })
+
+  it('maps the form preview values and drops blank ones', () => {
+    const row = toSubProcessRow({
+      preview: [
+        { label: 'Supplier Number', value: ' 1234 ' },
+        { label: 'Supplier Name', value: '   ' },
+        { label: 'Plant', value: 'BLR' },
+      ],
+      requestNo: 'EXP-2026-100',
+      subProcessId: 'child-guid',
+      subWorkflowId: 'workflow-guid',
+    })
+
+    expect(row.preview).toEqual([
+      { label: 'Supplier Number', value: '1234' },
+      { label: 'Plant', value: 'BLR' },
+    ])
   })
 
   it('maps a parent row', () => {

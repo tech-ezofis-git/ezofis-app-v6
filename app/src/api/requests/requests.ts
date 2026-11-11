@@ -527,6 +527,24 @@ const getSubWorkflow = async (
   }
 }
 
+/** Children of many requests of one workflow, keyed by parent process id (inbox list). */
+const getSubWorkflowBatch = async (
+  workflowId: number | string,
+  processIds: (number | string)[],
+) => {
+  try {
+    const { data, status } = await axiosV6.post(
+      `/workflow/subWorkflow/${workflowId}/batch`,
+      { processIds },
+    )
+    if (status === 200) return data
+    return null
+  } catch (e) {
+    console.error(e)
+    throw e
+  }
+}
+
 const addSubWorkflow = async (payload: any) => {
   try {
     const { data, status } = await axiosV6.post(
@@ -896,6 +914,7 @@ export const requestApi = {
   getSentListById,
   getSentListTest,
   getSubWorkflow,
+  getSubWorkflowBatch,
   getTaskEntries,
   getUserMyInbox,
   getUserWorkflowTest,

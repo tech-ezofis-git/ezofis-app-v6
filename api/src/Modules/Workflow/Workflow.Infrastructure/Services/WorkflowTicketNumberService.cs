@@ -17,21 +17,33 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
 {
     private readonly ITenantContext _tenantContext;
     private readonly IWorkflowJsonStorageService _workflowJsonStorage;
+    private readonly IFormJsonStorageService? _formJsonStorage;
 
     public WorkflowTicketNumberService(
         ITenantContext tenantContext,
-        IWorkflowJsonStorageService workflowJsonStorage)
+        IWorkflowJsonStorageService workflowJsonStorage,
+        IFormJsonStorageService? formJsonStorage = null)
     {
         _tenantContext = tenantContext;
         _workflowJsonStorage = workflowJsonStorage;
+        _formJsonStorage = formJsonStorage;
     }
 
-    public async Task<string> AllocateNextAsync(Guid workflowId, CancellationToken cancellationToken = default)
+    public async Task<string> AllocateNextAsync(
+        Guid workflowId,
+        IReadOnlyDictionary<string, string>? formValues = null,
+        string? formId = null,
+        CancellationToken cancellationToken = default)
     {
         if (workflowId == Guid.Empty)
             throw new ArgumentException("workflowId is required.", nameof(workflowId));
 
         var format = await ResolveFormatAsync(workflowId, cancellationToken);
+
+        // Form values are read before the counter transaction, which should stay short.
+        var formColumnValues = format.Template is null
+            ? new Dictionary<string, string>()
+            : await ResolveFormColumnValuesAsync(format.Template, formValues, formId, cancellationToken);
 
         var connectionString = _tenantContext.ConnectionString
             ?? throw new InvalidOperationException("Tenant connection string not resolved.");
@@ -49,12 +61,15 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
             var next = await IncrementCounterAsync(connection, transaction, workflowId, cancellationToken);
             if (next <= 0)
             {
-                var seeded = await SeedFromExistingInstancesAsync(
-                    connection,
-                    transaction,
-                    workflowId,
-                    format,
-                    cancellationToken);
+                // A templated number has no fixed prefix to read the last number back from.
+                var seeded = format.Template is null
+                    ? await SeedFromExistingInstancesAsync(
+                        connection,
+                        transaction,
+                        workflowId,
+                        format,
+                        cancellationToken)
+                    : format.StartAt;
                 if (seeded < format.StartAt)
                     seeded = format.StartAt;
 
@@ -62,13 +77,59 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
             }
 
             await transaction.CommitAsync(cancellationToken);
-            return format.Format(next);
+            return format.Template is null
+                ? format.Format(next)
+                : WorkflowRequestNumberTemplate.Render(format.Template, next, DateTime.UtcNow, formColumnValues);
         }
         catch
         {
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Field label → submitted value for the fields a Form Column token lists. The token stores the
+    /// field's label, so the form is read to find that field's jsonId in the submitted values.
+    /// </summary>
+    private async Task<Dictionary<string, string>> ResolveFormColumnValuesAsync(
+        IReadOnlyList<RequestNumberToken> template,
+        IReadOnlyDictionary<string, string>? formValues,
+        string? formId,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var labels = WorkflowRequestNumberTemplate.FormColumnLabels(template);
+        if (labels.Count == 0 || formValues is null || formValues.Count == 0)
+            return result;
+
+        IReadOnlyList<WorkflowConnectorPrefill.FormField> fields = [];
+        if (_formJsonStorage is not null && !string.IsNullOrWhiteSpace(formId))
+        {
+            try
+            {
+                fields = WorkflowConnectorPrefill.ReadFields(
+                    await _formJsonStorage.GetFormJsonAsync(formId, cancellationToken));
+            }
+            catch (Exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Without the form, a label can still be a jsonId itself (below).
+            }
+        }
+
+        foreach (var label in labels)
+        {
+            var field = fields.FirstOrDefault(f => !f.IsTable && f.Label.Trim().Equals(label, StringComparison.OrdinalIgnoreCase));
+            var jsonId = field?.Id ?? label;
+            if (formValues.TryGetValue(jsonId, out var raw))
+            {
+                var text = WorkflowFormFieldValues.FlattenText(raw);
+                if (!string.IsNullOrWhiteSpace(text))
+                    result[label] = text;
+            }
+        }
+
+        return result;
     }
 
     private async Task<ProcessNumberFormat> ResolveFormatAsync(
@@ -222,6 +283,13 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
         public int StartAt { get; }
 
         /// <summary>
+        /// The designer's tokens, in order, when the format uses Form Column, Month or Current Date.
+        /// Those formats are rendered by <see cref="WorkflowRequestNumberTemplate"/>; null keeps the
+        /// older prefix / year / number numbering.
+        /// </summary>
+        public IReadOnlyList<RequestNumberToken>? Template { get; private init; }
+
+        /// <summary>
         /// Everything before the numeric sequence (e.g. <c>EXP-2026-</c>), with the year segment
         /// (if any) rendered using the current year -- used only to seed the counter from existing
         /// instance rows when no persisted counter exists yet.
@@ -253,6 +321,10 @@ public sealed class WorkflowTicketNumberService : IWorkflowTicketNumberService
             var parts = ParseParts(processNumberPrefix.Trim());
             if (parts.Count == 0)
                 return Default;
+
+            var tokens = parts.Select(p => new RequestNumberToken(p.Key, p.Value)).ToList();
+            if (WorkflowRequestNumberTemplate.IsTemplate(tokens))
+                return new ProcessNumberFormat("REQ", "-", null, 1) { Template = tokens };
 
             // Semantic order for ticket: prefix + separator + year (if configured) + separator +
             // autoIncrement number -- designer JSON id/array order does not reliably reflect this

@@ -9,6 +9,13 @@ import { subWorkflowApi } from './subWorkflowApi'
 
 export const subWorkflowKeys = {
   all: ['sub-workflow'] as const,
+  byRows: (workflowId?: Id, processIds: Id[] = []) =>
+    [
+      ...subWorkflowKeys.all,
+      'by-rows',
+      String(workflowId),
+      processIds.map(String).sort().join(','),
+    ] as const,
   byWorkflow: (workflowId?: Id) =>
     [...subWorkflowKeys.all, 'by-workflow', String(workflowId)] as const,
   history: (workflowId?: Id, processId?: Id) =>
@@ -54,12 +61,17 @@ export const useSubProcesses = (workflowId?: Id, processId?: Id) =>
 export const useMainProcess = (workflowId?: Id, processId?: Id) =>
   useQuery(getMainProcessQueryOptions(workflowId, processId))
 
-/** Children of every request in a workflow (one query shared by all rows). */
-export const useSubProcessesForWorkflow = (workflowId?: Id) =>
+/** Children of the requests on one page of a list (one query shared by all rows). */
+export const useSubProcessesForRows = (
+  workflowId?: Id,
+  processIds: Id[] = [],
+) =>
   useQuery({
-    enabled: Boolean(workflowId),
-    queryKey: subWorkflowKeys.byWorkflow(workflowId),
-    queryFn: () => subWorkflowApi.getSubProcessesForWorkflow(workflowId!),
+    enabled: Boolean(workflowId) && processIds.length > 0,
+    queryFn: () =>
+      subWorkflowApi.getSubProcessesForRows(workflowId!, processIds),
+    queryKey: subWorkflowKeys.byRows(workflowId, processIds),
+    staleTime: 15_000,
   })
 
 /** Connector steps for a request's history: each linked child's own steps. */
@@ -89,7 +101,11 @@ export const useLinkSubProcess = () => {
         ),
       })
       queryClient.invalidateQueries({
-        queryKey: subWorkflowKeys.byWorkflow(link.mainWorkflowId),
+        queryKey: [
+          ...subWorkflowKeys.all,
+          'by-rows',
+          String(link.mainWorkflowId),
+        ],
       })
     },
   })
