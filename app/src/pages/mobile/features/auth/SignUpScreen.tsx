@@ -3,6 +3,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
+import { setSocialProof } from '@/api/v6/socialProof'
 import showToast from '@/components/base/toast/showToast'
 import authUserStore from '@/stores/authUserStore'
 import { AppButton } from '../../components/primitives/AppButton'
@@ -122,6 +123,11 @@ export function SignUpScreen({
           },
         )
         const profile = await res.json()
+        setSocialProof({
+          accessToken: tokenResponse.access_token,
+          email: String(profile.email || ''),
+          provider: 'google',
+        })
         const gEmail: string = profile.email
         const fullName: string = profile.name ?? ''
         const givenName: string = profile.given_name ?? ''
@@ -173,6 +179,12 @@ export function SignUpScreen({
       const loginResponse = await msalInstance.loginPopup({
         loginHint: email || undefined,
         scopes: ['user.read'],
+      })
+      setSocialProof({
+        accessToken: loginResponse.accessToken,
+        email: String(loginResponse.account?.username || ''),
+        idToken: loginResponse.idToken,
+        provider: 'microsoft',
       })
 
       const account = loginResponse.account

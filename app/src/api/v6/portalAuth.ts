@@ -71,6 +71,27 @@ export const portalMasterSendOtp = (ids: PortalLoginIds, username: string) =>
     'Failed to send OTP. Please try again.',
   )
 
+// Portal "Email with OTP": the code goes to the visitor's own address.
+export const portalEmailSendOtp = (ids: PortalLoginIds, email: string) =>
+  post<unknown>(
+    '/portal-auth/email-otp/send',
+    ids.tenantId,
+    { email, portalId: ids.portalId, portalOwnerId: ids.portalOwnerId },
+    'Failed to send OTP. Please try again.',
+  )
+
+export const portalEmailVerifyOtp = (
+  ids: PortalLoginIds,
+  email: string,
+  otp: string,
+) =>
+  post<PortalMasterLoginResponse>(
+    '/portal-auth/email-otp/verify',
+    ids.tenantId,
+    { email, otp, portalId: ids.portalId, portalOwnerId: ids.portalOwnerId },
+    'Invalid or expired code.',
+  )
+
 export const portalMasterVerifyOtp = (
   ids: PortalLoginIds,
   username: string,

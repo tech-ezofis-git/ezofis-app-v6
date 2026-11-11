@@ -408,6 +408,8 @@ public sealed class FormController : ControllerBase
         [FromBody] FormEntryAllRequest? request,
         CancellationToken cancellationToken)
     {
+        if (IsExternalUser())
+            return Forbid();
         if (string.IsNullOrWhiteSpace(id))
             return NotFound();
 
@@ -440,6 +442,8 @@ public sealed class FormController : ControllerBase
         [FromQuery] bool includeFormJson = true,
         CancellationToken cancellationToken = default)
     {
+        if (IsExternalUser())
+            return Forbid();
         if (string.IsNullOrWhiteSpace(id))
             return NotFound();
 
@@ -479,6 +483,8 @@ public sealed class FormController : ControllerBase
         [FromBody] FormEntryByColumnRequest request,
         CancellationToken cancellationToken)
     {
+        if (IsExternalUser())
+            return Forbid();
         if (string.IsNullOrWhiteSpace(id))
             return NotFound();
 
@@ -638,6 +644,12 @@ public sealed class FormController : ControllerBase
             ?? User.FindFirstValue("userId");
         return Guid.TryParse(sub, out var id) ? id : null;
     }
+
+    /// <summary>Portal/share guests (ExternalUser) must not bulk-read other people's form data (e.g. master-form passwords).</summary>
+    private bool IsExternalUser() =>
+        User.Claims.Any(c =>
+            (c.Type == ClaimTypes.Role || c.Type == "role") &&
+            string.Equals(c.Value, "ExternalUser", StringComparison.OrdinalIgnoreCase));
 
     private bool IsCurrentUserAdmin() =>
         User.Claims.Any(c =>

@@ -27,6 +27,7 @@ public sealed class EzofisAuthService : IEzofisAuthService
     private readonly IRepositorySignRequestService _signRequestService;
     private readonly ITwoFactorService _twoFactorService;
     private readonly ILoginEmailOtpService _loginEmailOtp;
+    private readonly ISocialTokenVerifier _socialTokenVerifier;
     private readonly IMemoryCache _cache;
     private readonly IConfiguration _configuration;
     private readonly LoginHistoryStore _loginHistory;
@@ -49,8 +50,10 @@ public sealed class EzofisAuthService : IEzofisAuthService
         ILoginEmailOtpService loginEmailOtp,
         IMemoryCache cache,
         IConfiguration configuration,
-        LoginHistoryStore loginHistory)
+        LoginHistoryStore loginHistory,
+        ISocialTokenVerifier socialTokenVerifier)
     {
+        _socialTokenVerifier = socialTokenVerifier;
         _userRepository = userRepository;
         _guestProvisioning = guestProvisioning;
         _shareService = shareService;
@@ -190,6 +193,7 @@ public sealed class EzofisAuthService : IEzofisAuthService
         string shareToken,
         string email,
         string provider,
+        SocialProof? proof,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(shareToken))
@@ -198,6 +202,9 @@ public sealed class EzofisAuthService : IEzofisAuthService
             throw new ArgumentException("Email is required.");
         if (string.IsNullOrWhiteSpace(provider))
             throw new ArgumentException("Provider is required (google or microsoft).");
+
+        // Prove the email belongs to the caller before anything about the account is changed.
+        await _socialTokenVerifier.VerifyAsync(provider, email, proof, cancellationToken);
 
         var preview = await _shareService.GetPreviewAsync(shareToken.Trim(), cancellationToken)
             ?? throw new UnauthorizedAccessException("Invalid or expired share link.");
@@ -232,7 +239,7 @@ public sealed class EzofisAuthService : IEzofisAuthService
         await _guestProvisioning.EnsureGuestUserAsync(tenantId, email.Trim(), externalOnly: true, cancellationToken);
         await _guestProvisioning.ConfirmGuestSocialLoginAsync(tenantId, email.Trim(), provider, cancellationToken);
 
-        return await SocialLoginAsync(email.Trim(), provider, tenantId, cancellationToken);
+        return await SocialLoginCoreAsync(email.Trim(), provider, tenantId, cancellationToken);
     }
 
     public async Task<LoginResult> CompleteShareInviteOtpAsync(
@@ -354,6 +361,7 @@ public sealed class EzofisAuthService : IEzofisAuthService
         string inviteToken,
         string email,
         string provider,
+        SocialProof? proof,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(inviteToken))
@@ -362,6 +370,9 @@ public sealed class EzofisAuthService : IEzofisAuthService
             throw new ArgumentException("Email is required.");
         if (string.IsNullOrWhiteSpace(provider))
             throw new ArgumentException("Provider is required (google or microsoft).");
+
+        // Prove the email belongs to the caller before anything about the account is changed.
+        await _socialTokenVerifier.VerifyAsync(provider, email, proof, cancellationToken);
 
         var preview = await _signRequestService.GetInvitePreviewAsync(inviteToken.Trim(), cancellationToken)
             ?? throw new UnauthorizedAccessException("Invalid or expired sign invite.");
@@ -392,7 +403,7 @@ public sealed class EzofisAuthService : IEzofisAuthService
 
         await _guestProvisioning.EnsureGuestUserAsync(tenantId, email.Trim(), externalOnly: true, cancellationToken);
         await _guestProvisioning.ConfirmGuestSocialLoginAsync(tenantId, email.Trim(), provider, cancellationToken);
-        return await SocialLoginAsync(email.Trim(), provider, tenantId, cancellationToken);
+        return await SocialLoginCoreAsync(email.Trim(), provider, tenantId, cancellationToken);
     }
 
     public async Task<LoginResult> CompleteTwoFactorAsync(string tempToken, string code, CancellationToken cancellationToken = default)
@@ -474,6 +485,7 @@ public sealed class EzofisAuthService : IEzofisAuthService
         string email,
         string provider,
         Guid tenantId,
+        SocialProof? proof,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(email))
@@ -481,6 +493,18 @@ public sealed class EzofisAuthService : IEzofisAuthService
 
         if (string.IsNullOrWhiteSpace(provider))
             throw new ArgumentException("Provider is required (google or microsoft).");
+
+        // The email must be proven by a Google / Microsoft token; an email alone never signs anyone in.
+        await _socialTokenVerifier.VerifyAsync(provider, email, proof, cancellationToken);
+        return await SocialLoginCoreAsync(email, provider, tenantId, cancellationToken);
+    }
+
+    private async Task<LoginResult> SocialLoginCoreAsync(
+        string email,
+        string provider,
+        Guid tenantId,
+        CancellationToken cancellationToken)
+    {
 
         var normalizedProvider = NormalizeSocialProvider(provider);
         if (normalizedProvider is null)
