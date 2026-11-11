@@ -29,6 +29,10 @@ import {
   submitInviteSignRequest,
   submitSignRequest,
 } from '@/api/v6/folder/signRequest'
+import {
+  getItemFilePreviewSource,
+  probeRemoteFile,
+} from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import Icon from '@/components/base/icon/Icon'
@@ -47,6 +51,11 @@ import {
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import useIsGuestShare from '@/hooks/useIsGuestShare'
 import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
+import {
+  formatBytes,
+  LARGE_UPLOAD_THRESHOLD_BYTES,
+  ONLINE_EDIT_MAX_BYTES,
+} from '@/lib/largeUpload/constants'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import RelatedDocumentsFinder from '@/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder'
 import Request from '@/pages/requests/components/request/Request'
@@ -589,7 +598,14 @@ export function DocumentDetailsView({
   const previewUrlRef = useRef<string | null>(null)
   const previewRequestIdRef = useRef(0)
   const previewBlobRef = useRef<Blob | null>(null)
+  /** Auth headers when a large PDF is streamed page by page instead of downloaded. */
+  const [previewHeaders, setPreviewHeaders] = useState<
+    Record<string, string> | undefined
+  >(undefined)
   const [isEditingDoc, setIsEditingDoc] = useState(false)
+  /** Size of a streamed large PDF: it has no full copy in the browser until Edit asks for one. */
+  const [streamedFileSize, setStreamedFileSize] = useState<null | number>(null)
+  const [isLoadingForEdit, setIsLoadingForEdit] = useState(false)
   /** Bump after a successful sign so the details viewer reloads the signed file. */
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0)
   /** Bump to reload document details and metadata from the backend. */
@@ -1499,7 +1515,10 @@ export function DocumentDetailsView({
     let cancelled = false
 
     const replacePreviewUrl = (nextUrl: string | null) => {
-      if (previewUrlRef.current && previewUrlRef.current !== nextUrl) {
+      if (
+        previewUrlRef.current?.startsWith('blob:') &&
+        previewUrlRef.current !== nextUrl
+      ) {
         URL.revokeObjectURL(previewUrlRef.current)
       }
       previewUrlRef.current = nextUrl
@@ -1530,8 +1549,35 @@ export function DocumentDetailsView({
 
       setIsPreviewLoading(true)
       setFileLoadFailed(false)
+      setPreviewHeaders(undefined)
+      setStreamedFileSize(null)
 
       try {
+        // Large PDFs: hand the viewer the file's address so it reads only the pages it shows
+        // (HTTP Range), instead of downloading the whole file first.
+        if (!inviteToken) {
+          const remote = getItemFilePreviewSource(
+            repositoryId,
+            id,
+            previewRefreshKey || undefined,
+          )
+          const probe = await probeRemoteFile(remote.url, remote.httpHeaders)
+          if (cancelled || requestId !== previewRequestIdRef.current) return
+          if (
+            probe &&
+            probe.size > LARGE_UPLOAD_THRESHOLD_BYTES &&
+            /pdf/i.test(probe.contentType)
+          ) {
+            previewBlobRef.current = null
+            replacePreviewUrl(remote.url)
+            setPreviewHeaders(remote.httpHeaders)
+            setStreamedFileSize(probe.size)
+            setPreviewMimeType('application/pdf')
+            setPreviewKind('pdf')
+            return
+          }
+        }
+
         if (inviteToken) {
           const inviteFile = await getSignRequestInviteFile({
             accessToken: authUserStore.getState().identity?.accessToken,
@@ -1687,6 +1733,48 @@ export function DocumentDetailsView({
 
   const handleCollaboraClose = () => {
     setIsEditingDoc(false)
+  }
+
+  const streamedSizeLabel =
+    streamedFileSize === null ? '' : formatBytes(streamedFileSize)
+
+  /** A streamed large PDF has no copy in the browser yet: fetch it once Edit is clicked. */
+  const handleEditClick = async () => {
+    if (previewBlobRef.current) {
+      setIsEditingDoc(true)
+      return
+    }
+    if (streamedFileSize === null || !repositoryId || !id) return
+    if (streamedFileSize > ONLINE_EDIT_MAX_BYTES) {
+      const fileSize = formatBytes(streamedFileSize)
+      const editLimit = formatBytes(ONLINE_EDIT_MAX_BYTES)
+      showToast({
+        message: t`This file is ${fileSize}. Files over ${editLimit} can't be edited online. Download it to edit.`,
+        variant: 'warning',
+      })
+      return
+    }
+    setIsLoadingForEdit(true)
+    try {
+      const response = await fileApi.viewBinaryV6(
+        repositoryId,
+        id,
+        'inline',
+        previewRefreshKey || undefined,
+      )
+      if (!(response?.data instanceof Blob)) throw new Error('No file')
+      previewBlobRef.current = new Blob([response.data], {
+        type: 'application/pdf',
+      })
+      setIsEditingDoc(true)
+    } catch {
+      showToast({
+        message: t`Couldn't load the file for editing. Try again.`,
+        variant: 'error',
+      })
+    } finally {
+      setIsLoadingForEdit(false)
+    }
   }
 
   const extractMetadataFromDetail = (
@@ -2565,17 +2653,37 @@ export function DocumentDetailsView({
               canEditDocument &&
               !isGuestShare &&
               !maskPiiMetadata ? (
-                <Tooltip content={t`Edit file`} position='bottom'>
+                <Tooltip
+                  position='bottom'
+                  content={
+                    isLoadingForEdit
+                      ? t`Loading the file for editing...`
+                      : streamedFileSize !== null &&
+                          streamedFileSize > ONLINE_EDIT_MAX_BYTES
+                        ? t`Too large to edit online (${streamedSizeLabel}). Download it to edit.`
+                        : t`Edit file`
+                  }
+                >
                   <button
                     aria-label={t`Edit file`}
                     className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
                     type='button'
                     disabled={
-                      !previewBlobRef.current || isPreviewLoading || isSigning
+                      (!previewBlobRef.current && streamedFileSize === null) ||
+                      isPreviewLoading ||
+                      isSigning ||
+                      isLoadingForEdit
                     }
-                    onClick={() => setIsEditingDoc(true)}
+                    onClick={() => void handleEditClick()}
                   >
-                    <DynamicIcon className='h-4 w-4' name='edit' />
+                    {isLoadingForEdit ? (
+                      <DynamicIcon
+                        className='h-4 w-4 animate-spin'
+                        name='lucide:loader-circle'
+                      />
+                    ) : (
+                      <DynamicIcon className='h-4 w-4' name='edit' />
+                    )}
                   </button>
                 </Tooltip>
               ) : null}
@@ -3019,6 +3127,7 @@ export function DocumentDetailsView({
                       focusRequestId={fieldFocusRequestId}
                       highlightColors={fieldHighlightColors}
                       highlightTerms={fieldHighlightTerms}
+                      httpHeaders={previewHeaders}
                       isImage={isImagePreview}
                       isLoading={isPreviewLoading}
                       isPdf={isPdfPreview}

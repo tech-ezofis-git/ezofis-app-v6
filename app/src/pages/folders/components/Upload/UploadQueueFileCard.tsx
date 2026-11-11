@@ -13,8 +13,9 @@ import {
   formatUtcToLocalDateTime,
   parseUtcDate,
 } from '@/utils/utcDate'
-import { StagedFileExportButton } from '../StagedFileDeleteButton'
 import type { QueuedUploadFile } from './uploadQueueTypes'
+import { StagedFileExportButton } from '../StagedFileDeleteButton'
+import LargeUploadProgressBar from './LargeUploadProgressBar'
 
 interface UploadQueueFileCardProps {
   entry: QueuedUploadFile
@@ -22,14 +23,46 @@ interface UploadQueueFileCardProps {
   className?: string
   disabled?: boolean
   missingMandatoryFields?: boolean
+  selected?: boolean
+  showCheckbox?: boolean
+  showExport?: boolean
   onExport?: (id: string) => Promise<void> | void
   onOpen: (id: string) => void
   onRemove: (id: string) => void
   onRetryOcr: (id: string) => void
   onToggleSelect?: (id: string, checked: boolean) => void
-  selected?: boolean
-  showCheckbox?: boolean
-  showExport?: boolean
+}
+
+export function formatCreatedAt(value?: string) {
+  if (!value) return ''
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+
+  const hasTime = /(?:T|\s)\d{1,2}:\d{2}/.test(trimmed)
+  if (parseUtcDate(trimmed)) {
+    return hasTime
+      ? formatUtcToLocalDateTime(trimmed, '')
+      : formatUtcToLocalDate(trimmed, '')
+  }
+
+  const dayMonthYear = trimmed.match(
+    /^(\d{2})-(\d{2})-(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/,
+  )
+  if (!dayMonthYear) return ''
+
+  const [, day, month, year, hour, minute, second] = dayMonthYear
+  if (!hour || !minute) return `${day}-${month}-${year}`
+
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second || 0),
+  )
+  if (Number.isNaN(date.getTime())) return `${day}-${month}-${year}`
+  return formatUtcToLocalDateTime(date, '')
 }
 
 export default function UploadQueueFileCard({
@@ -38,14 +71,14 @@ export default function UploadQueueFileCard({
   entry,
   isOpen,
   missingMandatoryFields = false,
+  selected = false,
+  showCheckbox = false,
+  showExport = false,
   onExport,
   onOpen,
   onRemove,
   onRetryOcr,
   onToggleSelect,
-  selected = false,
-  showCheckbox = false,
-  showExport = false,
 }: UploadQueueFileCardProps) {
   const { t } = useLingui()
 
@@ -150,7 +183,9 @@ export default function UploadQueueFileCard({
             <StagedFileExportButton
               disabled={!canRemove}
               fileName={entry.fileName || t`this file`}
-              onExport={async () => { await onExport(entry.id) }}
+              onExport={async () => {
+                await onExport(entry.id)
+              }}
             />
           ) : null}
 
@@ -172,11 +207,17 @@ export default function UploadQueueFileCard({
         </div>
       </div>
 
-      {entry.status === 'analyzing' && (
+      {entry.status === 'analyzing' && entry.uploadProgress ? (
+        <LargeUploadProgressBar
+          className='mt-2.5'
+          progress={entry.uploadProgress}
+          compact
+        />
+      ) : entry.status === 'analyzing' ? (
         <div className='mt-2.5 h-1 w-full overflow-hidden rounded-full bg-surface-secondary'>
           <div className='h-full w-2/5 animate-pulse rounded-full bg-accent-primary duration-700' />
         </div>
-      )}
+      ) : null}
 
       {entry.status === 'error' && (
         <AnimateFadeIn className='mt-2.5 flex flex-col gap-2'>
@@ -206,7 +247,9 @@ export default function UploadQueueFileCard({
         return (
           <span className='inline-flex shrink-0 items-center gap-1 text-11 font-medium whitespace-nowrap text-accent-primary'>
             <Icon className='size-3 animate-spin' name='tabler:loader-2' />
-            {t`Analyzing...`}
+            {entry.uploadProgress?.phase === 'uploading'
+              ? t`Uploading...`
+              : t`Analyzing...`}
           </span>
         )
       case 'ready':
@@ -238,38 +281,6 @@ export default function UploadQueueFileCard({
         return null
     }
   }
-}
-
-export function formatCreatedAt(value?: string) {
-  if (!value) return ''
-  const trimmed = value.trim()
-  if (!trimmed) return ''
-
-  const hasTime = /(?:T|\s)\d{1,2}:\d{2}/.test(trimmed)
-  if (parseUtcDate(trimmed)) {
-    return hasTime
-      ? formatUtcToLocalDateTime(trimmed, '')
-      : formatUtcToLocalDate(trimmed, '')
-  }
-
-  const dayMonthYear = trimmed.match(
-    /^(\d{2})-(\d{2})-(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/,
-  )
-  if (!dayMonthYear) return ''
-
-  const [, day, month, year, hour, minute, second] = dayMonthYear
-  if (!hour || !minute) return `${day}-${month}-${year}`
-
-  const date = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-    Number(second || 0),
-  )
-  if (Number.isNaN(date.getTime())) return `${day}-${month}-${year}`
-  return formatUtcToLocalDateTime(date, '')
 }
 
 function formatBytes(bytes: number, decimals = 1) {

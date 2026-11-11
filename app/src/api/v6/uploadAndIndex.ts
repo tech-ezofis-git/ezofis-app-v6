@@ -1,5 +1,6 @@
 import authUserStore from '../../stores/authUserStore'
 import { axiosV6, getV6ApiBaseUrl } from '../axios'
+import { rememberRemoteFileSize } from '@/lib/largeUpload/pdfSource'
 
 export interface DocumentIntelligentAgentResponse {
   document_intelligent_result: DocumentIntelligentResult
@@ -9,19 +10,19 @@ export interface DocumentIntelligentCandidate {
   repository_id: string
   repository_name: string
   score: number
-  rationale?: string
   keywords?: string[]
+  rationale?: string
 }
 
 export interface DocumentIntelligentResult {
   candidates: DocumentIntelligentCandidate[]
-  confidence_score?: number
-  rationale?: string
   repository_id: string | null
   repository_name: string | null
-  ocr_text?: string
-  source_reference?: string
+  confidence_score?: number
   keywords?: string[]
+  ocr_text?: string
+  rationale?: string
+  source_reference?: string
 }
 
 export interface OcrFieldResult {
@@ -130,7 +131,11 @@ const uploadWithOcr = async ({
     if (status !== 200 && status !== 201) throw new Error('invalid status code')
     response.data = data as UploadWithOcrResult
   } catch (e: unknown) {
-    const err = e as { message?: string; name?: string; response?: { data?: string } }
+    const err = e as {
+      message?: string
+      name?: string
+      response?: { data?: string }
+    }
     if (err?.name !== 'CanceledError' && !signal?.aborted) {
       console.error(e)
     }
@@ -578,6 +583,21 @@ const looksLikeErrorPayload = async (blob: Blob) => {
   }
 }
 
+/** URL and auth headers to read an exported document's file in place (the PDF viewer streams it). */
+export function getItemFilePreviewSource(
+  repositoryId: string,
+  itemId: string,
+  refreshKey?: number | string,
+) {
+  const { httpHeaders } = getStageFilePreviewSource('')
+  const base = getV6ApiBaseUrl().replace(/\/$/, '')
+  const bust = refreshKey ? `&v=${encodeURIComponent(String(refreshKey))}` : ''
+  return {
+    httpHeaders,
+    url: `${base}/repositories/${encodeURIComponent(repositoryId)}/items/${encodeURIComponent(itemId)}/file?disposition=inline${bust}`,
+  }
+}
+
 /** Authenticated file URL for a first-page preview. pdf.js streams only the bytes it needs. */
 export function getStageFilePreviewSource(fileId: string) {
   const base = getV6ApiBaseUrl().replace(/\/$/, '')
@@ -596,13 +616,73 @@ export function getStageFilePreviewSource(fileId: string) {
   }
 }
 
+/**
+ * Size and type of a remote file from a 1-byte Range request, without downloading it.
+ * Null when the server does not answer with a partial response (no Range support).
+ */
+export async function probeRemoteFile(
+  url: string,
+  httpHeaders: Record<string, string>,
+): Promise<null | { contentType: string; size: number }> {
+  const controller = new AbortController()
+  try {
+    const response = await fetch(url, {
+      headers: { ...httpHeaders, Range: 'bytes=0-0' },
+      signal: controller.signal,
+    })
+    const total = response.headers.get('Content-Range')?.split('/')[1]
+    if (response.status !== 206 || !total || !/^\d+$/.test(total)) return null
+    // The viewer opens the same URL next: it need not ask for the size again.
+    rememberRemoteFileSize(url, Number(total))
+    return {
+      contentType: response.headers.get('Content-Type') || '',
+      size: Number(total),
+    }
+  } catch {
+    return null
+  } finally {
+    // Never read the body: without Range support it would be the whole file.
+    controller.abort()
+  }
+}
+
+/**
+ * Real size of a staged file from a 1-byte Range request (`Content-Range: bytes 0-0/<size>`).
+ * The stage table stores sizes as 32-bit ints, so files over 2 GB come back without a size.
+ * Returns null when the size cannot be read.
+ */
+export async function probeStageFileSize(
+  fileId: string,
+): Promise<number | null> {
+  if (!fileId) return null
+  const { httpHeaders, url } = getStageFilePreviewSource(fileId)
+  const controller = new AbortController()
+  try {
+    const response = await fetch(url, {
+      headers: { ...httpHeaders, Range: 'bytes=0-0' },
+      signal: controller.signal,
+    })
+    const total = response.headers.get('Content-Range')?.split('/')[1]
+    if (response.status === 206 && total && /^\d+$/.test(total)) {
+      return Number(total)
+    }
+    const length = Number(response.headers.get('Content-Length'))
+    return response.ok && Number.isFinite(length) && length > 0 ? length : null
+  } catch {
+    return null
+  } finally {
+    // Never read the body: on a server without Range support this would be the whole file.
+    controller.abort()
+  }
+}
+
 const fetchStageFileBlob = async (fileId: string) => {
   if (!fileId) return null
   try {
     const { data, status } = await axiosV6({
       headers: {
         ...getTenantHeaders(),
-        Accept: '*/*',
+        'Accept': '*/*',
         // Instance default is application/json; omit it for binary GETs.
         'Content-Type': undefined,
       },
@@ -701,13 +781,13 @@ const uploadAndIndexApi = {
   classifyDocumentWithText,
   deleteStagedFiles,
   fetchStageFileBlob,
-  getBulkUploadJobStatus,
   indexStageFile,
   listStagedFiles,
   loadStageFile,
   updateStageFileFields,
   uploadAndClassifyDocument,
   uploadWithOcr,
+  getBulkUploadJobStatus,
 }
 
 export default uploadAndIndexApi

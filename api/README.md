@@ -76,6 +76,40 @@ Copy `src/Api/appsettings.example.json` to `appsettings.Development.json` and se
 6. Swagger (dev): `https://localhost:5001/swagger`
 7. Hangfire dashboard: `https://localhost:5001/hangfire` (add auth in production)
 
+## Large file uploads (up to 10 GB)
+
+Folder uploads above 20 MB use a chunked, resumable upload instead of one multipart request
+(`LargeUploadController`, `RepositoryLargeUploadService`, `LargeUploadStorage`; web side in
+`app/src/lib/largeUpload`).
+
+The browser only ever talks to the API; **only the API writes to Azure Storage** (no SAS links, no
+storage CORS rule needed).
+
+1. `POST /api/uploadAndIndex/large/init` creates the draft row (hidden from Draft Files while uploading)
+   and returns the chunk size (8 MiB) and how many chunks to send at once (3).
+2. The browser sends every chunk to `PUT .../large/{id}/chunks/{index}` (raw bytes, any order). The API
+   stages each one as a block of the target blob (or writes it into a local `.part` file when blob
+   storage is not configured). 8 MiB stays under nginx's 25 MB body limit. Chunk requests skip the
+   database and the activity/event logs.
+3. `GET .../large/{id}` lists stored chunks, so a refresh or a dropped connection resumes the upload.
+4. `POST .../large/{id}/complete` checks every chunk, commits the file, and saves the OCR metadata the
+   browser extracted from the first 5 pages. Missing chunks return `409` with `missingChunks`.
+
+No single request carries the whole file, so request timeouts and memory limits do not apply. Export
+copies the staged file inside storage (server-side copy), and file downloads support HTTP Range on a
+seekable blob stream, so the PDF viewer loads only the pages it shows. Blob transfers allow 10 minutes
+per attempt, so 8 MiB blocks also get through on slow uplinks.
+
+Settings (`Repository:LargeUpload`, all optional): `MaxFileSizeBytes` (10 GiB), `ChunkSizeBytes`
+(8 MiB), `MaxConcurrency` (3), `StaleUploadDays` (7).
+
+Recommended: a lifecycle rule that deletes blobs under `monitor/` older than your draft retention.
+Azure itself discards uncommitted blocks of abandoned uploads after 7 days.
+
+Known limit: the repository `file_size` column is a 32-bit `integer`, so files over 2 GB are stored
+with an empty size (the web app reads the real size with a 1-byte Range request). Widening it to
+`bigint` needs a migration of every tenant's tables.
+
 ## Azure API Management
 
 - Use correlation ID header `X-Correlation-ID` for tracing.
