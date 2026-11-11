@@ -371,7 +371,13 @@ export type StageRoute = {
   color?: string
   /** Outcome of a condition block right after the action, e.g. "Amount check: Satisfied". */
   condition?: string
-  next: { id: string; isEnd?: boolean; label: string }
+  next: {
+    id: string
+    isEnd?: boolean
+    /** The route starts a sub-workflow (Workflow Connector block). */
+    isSubWorkflow?: boolean
+    label: string
+  }
 }
 
 export type WorkflowStageStep = {
@@ -452,7 +458,13 @@ const nextStage = (
   if (!block) return null
   return String(block.type || '').toUpperCase() === 'END'
     ? { id, isEnd: true, label: t`Completed` }
-    : { id, label: stageLabel(block) }
+    : {
+        id,
+        ...(String(block.type || '').toUpperCase() === 'WORKFLOW_CONNECTOR'
+          ? { isSubWorkflow: true }
+          : {}),
+        label: stageLabel(block),
+      }
 }
 
 /**

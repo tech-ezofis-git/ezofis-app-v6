@@ -123,6 +123,7 @@ else
 builder.Services.AddScoped<ITwoFactorService, TwoFactorService>();
 builder.Services.AddScoped<ILoginEmailOtpService, LoginEmailOtpService>();
 builder.Services.AddScoped<IEzofisAuthService, EzofisAuthService>();
+builder.Services.AddScoped<IPortalMasterLoginService, PortalMasterLoginService>();
 builder.Services.AddScoped<SaaSApp.Users.Application.Contracts.IUserTenantRoleSync, UserTenantRoleSync>();
 
 // JWT Bearer: Microsoft Entra ID (Azure AD), Auth0, and Ezofis

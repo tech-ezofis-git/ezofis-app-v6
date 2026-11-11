@@ -2,6 +2,12 @@ import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
 import apiRouter from '@/api/apiRouter'
+import {
+  portalMasterLogin,
+  type PortalMasterLoginResponse,
+  portalMasterSendOtp,
+  portalMasterVerifyOtp,
+} from '@/api/v6/portalAuth'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -15,12 +21,13 @@ import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 import SignInForm from '@/pages/sign-in/components/SignInForm'
 import cn from '@/utils/cn'
 import type { PortalAuthUser } from '../stores/usePortalSessionStore'
-import { entryFieldValue, searchPortalEntries } from '../helpers/portalEntries'
 import { userIdFromIdentity } from '../helpers/portalWorkflowAccess'
 import PortalBrandMark from './PortalBrandMark'
 
 type PortalLoginProps = {
   portal: PortalConfig
+  /** The user id from the portal link; the server uses it to find the portal's saved settings. */
+  portalOwnerId?: string
   onAuthenticated: (user: PortalAuthUser) => void
 }
 
@@ -55,8 +62,22 @@ const displayNameFromIdentity = (
   )
 }
 
+const userFromMasterLogin = (
+  data: PortalMasterLoginResponse,
+  tenantId: string,
+): PortalAuthUser => ({
+  accessToken: data.accessToken,
+  displayName: data.displayName || data.username,
+  entry: data.entry,
+  itemId: Number(data.itemId || 0) || undefined,
+  tenantId,
+  userId: data.userId,
+  username: data.username,
+})
+
 export default function PortalLogin({
   portal,
+  portalOwnerId,
   onAuthenticated,
 }: PortalLoginProps) {
   const { t } = useLingui()
@@ -144,39 +165,16 @@ export default function PortalLogin({
     )
   }
 
-  const lookupMasterUser = async (username: string) => {
-    const formId = String(auth.formId || '')
-    const usernameField = auth.usernameField[0]
-    if (!formId || formId === '0' || !usernameField) {
-      throw new Error(
-        t`This portal is missing a master form or username field.`,
-      )
-    }
-
-    const result = await searchPortalEntries({
-      fieldId: String(usernameField),
-      formId,
-      tenantId: portal.tenantId,
-      value: username,
-    })
-
-    if (result.error) throw new Error(result.error)
-    if (!result.entries.length) {
-      throw new Error(t`No account found for this username.`)
-    }
-
-    const entry = result.entries[0]
-    const displayName =
-      entryFieldValue(entry, auth.firstnameField) ||
-      entryFieldValue(entry, usernameField) ||
-      username
-
-    return {
-      displayName,
-      entry,
-      itemId: Number(entry.itemId || 0) || undefined,
-      username,
-    } satisfies PortalAuthUser
+  // Master Login is checked on the server: the portal's master form, username
+  // field and password field come from its saved settings, never from here.
+  const urlParams =
+    typeof window === 'undefined'
+      ? new URLSearchParams()
+      : new URLSearchParams(window.location.search)
+  const masterIds = {
+    portalId: portal.id,
+    portalOwnerId: portalOwnerId || urlParams.get('userId') || '',
+    tenantId: portal.tenantId || urlParams.get('tenantId') || '',
   }
 
   const sendOtp = async (email: string) => {
@@ -205,12 +203,25 @@ export default function PortalLogin({
           setError(t`Please fill the required field: Password`)
           return
         }
-        const user = await lookupMasterUser(nextIdentifier)
-        const expected = entryFieldValue(user.entry, auth.passwordField)
-        if (!expected || expected !== password) {
-          throw new Error(t`Invalid username or password.`)
+        const result = await portalMasterLogin(
+          masterIds,
+          nextIdentifier,
+          password,
+        )
+        if (result.error || !result.data) {
+          throw new Error(result.error || t`Invalid username or password.`)
         }
-        finishLogin(user)
+        finishLogin(userFromMasterLogin(result.data, masterIds.tenantId))
+        return
+      }
+
+      if (isMaster) {
+        // The code goes to the email on the master record; the server finds it.
+        const sent = await portalMasterSendOtp(masterIds, nextIdentifier)
+        if (sent.error) throw new Error(sent.error)
+        setPendingUser({ displayName: nextIdentifier, username: nextIdentifier })
+        resetTimer()
+        setStep('otp')
         return
       }
 
@@ -219,15 +230,10 @@ export default function PortalLogin({
         return
       }
 
-      if (isMaster) {
-        const user = await lookupMasterUser(nextIdentifier)
-        setPendingUser(user)
-      } else {
-        setPendingUser({
-          displayName: nextIdentifier.split('@')[0],
-          username: nextIdentifier,
-        })
-      }
+      setPendingUser({
+        displayName: nextIdentifier.split('@')[0],
+        username: nextIdentifier,
+      })
 
       await sendOtp(nextIdentifier)
       setStep('otp')
@@ -247,6 +253,18 @@ export default function PortalLogin({
     }
     try {
       setLoading(true)
+      if (isMaster) {
+        const result = await portalMasterVerifyOtp(
+          masterIds,
+          identifier.trim(),
+          String(otp).trim(),
+        )
+        if (result.error || !result.data) {
+          throw new Error(result.error || t`Invalid OTP. Please try again.`)
+        }
+        finishLogin(userFromMasterLogin(result.data, masterIds.tenantId))
+        return
+      }
       const { data, error: otpError } = await apiRouter.verifyMailOTP({
         email: identifier.trim(),
         otp: String(otp).trim(),
@@ -271,6 +289,12 @@ export default function PortalLogin({
     if (elapsed > 0) return
     try {
       setError('')
+      if (isMaster) {
+        const sent = await portalMasterSendOtp(masterIds, identifier.trim())
+        if (sent.error) throw new Error(sent.error)
+        resetTimer()
+        return
+      }
       await sendOtp(identifier.trim())
     } catch (err) {
       setError(err instanceof Error ? err.message : t`Unable to resend OTP`)

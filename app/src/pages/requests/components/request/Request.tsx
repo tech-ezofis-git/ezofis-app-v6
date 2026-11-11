@@ -25,6 +25,7 @@ import {
   ensureNormalizedRuntimeFormJson,
   getEffectiveFieldLabel,
 } from '@/pages/form-builder/helpers/runtimeFieldAdapter'
+import { getTableFieldErrors } from '@/pages/form-builder/helpers/runtimeValidation'
 import {
   extractGenericRequestNumber,
   getFieldKeyByLabel,
@@ -2576,6 +2577,28 @@ const Request = ({
         })
         return false
       }
+
+      // Table columns carry their own rules (required column, content rules,
+      // ranges, conditional mandatory): they must stop the action too.
+      const tableErrors = getTableFieldErrors(
+        genericFormPanels.map((panel: any) => ({
+          ...panel,
+          fields: (panel.fields || []).filter(
+            (f: any) =>
+              !stageHidden?.has(String(f.id)) &&
+              !stageReadOnly?.has(String(f.id)),
+          ),
+        })),
+        genericFormModel,
+      )
+      if (tableErrors.length > 0) {
+        const tableMessage = tableErrors[0]
+        showToast({
+          message: t`Please correct ${tableMessage}`,
+          variant: 'info',
+        })
+        return false
+      }
     }
 
     const checklistItems: { id: string; label: string; required: boolean }[] =
@@ -3328,7 +3351,6 @@ const Request = ({
           budget={isAtEndBlock ? null : headerBudget}
           currency={currency}
           enableAIInsights={hasAgentData || hasWorkflowAiInsight}
-          workflowInsight={workflowAiInsight}
           hideActions={hideActions}
           isEditing={isEditing}
           isFourthItem={isFourthItem}
@@ -3344,7 +3366,9 @@ const Request = ({
           simple={isGenericWorkflow}
           stageTrail={stageTrail}
           status={statusBadge}
+          subProcesses={showSubProcessTab ? subProcesses : undefined}
           totalAmount={totalAmount}
+          workflowInsight={workflowAiInsight}
           actions={headerActions.map((a: any) => {
             // Quote edited after its PDF was generated: moving the request
             // on would send the stale PDF. Reject / Disqualify stay open.
@@ -3495,7 +3519,6 @@ const Request = ({
           subProcessCount={
             showSubProcessTab ? (subProcesses?.length ?? 0) : undefined
           }
-          subProcesses={showSubProcessTab ? subProcesses : undefined}
           ticketUserId={
             selectedItem?.userId ||
             request?.userId ||

@@ -340,12 +340,21 @@ const GenericGridCard = ({
             {isTitleLoading ? (
               <Skeleton className='h-4 w-28 shrink-0' />
             ) : (
-              <h3
-                className='shrink-0 text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
-                style={{ fontWeight: 500 }}
+              // Shrinks (ellipsis) so the stage pill and sub-process chip
+              // always stay visible; hover shows the full number.
+              <Tooltip
+                className='min-w-0 shrink'
+                color='white'
+                content={String(requestNo || '')}
+                position='bottom-start'
               >
-                {requestNo}
-              </h3>
+                <h3
+                  className='min-w-0 truncate text-[15px] font-medium tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
+                  style={{ fontWeight: 500 }}
+                >
+                  {requestNo}
+                </h3>
+              </Tooltip>
             )}
             <GenericStagePill
               color={color}
