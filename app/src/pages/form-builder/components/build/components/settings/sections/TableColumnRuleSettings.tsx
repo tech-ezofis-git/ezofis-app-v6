@@ -3,11 +3,12 @@ import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelectBase from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
-import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
+import SettingSwitchRow from '@/components/base/inputs/SettingSwitchRow'
 import { parseColumnOptions } from '@/pages/form-builder/helpers/tableColumnOptions'
 import { generateId } from '@/pages/form-builder/store/formStore'
 import type { TableColumn } from './TableColumnSettingsPanel'
+import { settingLabelClass } from './settingLabelClasses'
 
 type ColumnSettingsPatch = Partial<NonNullable<TableColumn['settings']>>
 
@@ -116,16 +117,15 @@ const RuleList = ({
             />
           )}
           {allowNotEqual && (
-            <InputSwitch
+            <SettingSwitchRow
               checked={rule.notEqual || false}
-              label='Lock when the value does NOT match'
+              help='Lock the other columns unless this column has the value you set.'
+              title='Lock when the value does not match'
               onChange={(checked) => patch(idx, { notEqual: checked })}
             />
           )}
           <div>
-            <label className='mb-1 block text-[11px] font-medium text-gray-11'>
-              {targetLabel}
-            </label>
+            <label className={settingLabelClass}>{targetLabel}</label>
             <InputSelectMultiple
               placeholder='Select columns in this table'
               options={siblingColumns.map((c) => ({

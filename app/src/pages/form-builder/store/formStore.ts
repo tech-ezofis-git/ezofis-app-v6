@@ -5,6 +5,10 @@ import { persist } from 'zustand/middleware'
 import formApi from '@/api/form/form'
 import { getField } from '@/helpers/new-field'
 import {
+  describeMissingSettings,
+  getMissingRequiredSettings,
+} from '../helpers/requiredSettings'
+import {
   cloneFieldWithNewIds,
   clonePanelWithNewIds,
   mapV5LayoutToV6,
@@ -1184,6 +1188,32 @@ export const useFormStore = create<FormStore>()(
         const state = get()
         const currentStatus = targetStatus || state.publishStatus
         const isPublished = String(currentStatus).toUpperCase() === 'PUBLISHED'
+
+        // Settings a field needs before it can work. A draft can still be saved
+        // (with a warning); publishing waits until they are filled in, and the
+        // first field that needs one is opened so it can be fixed.
+        const missing = getMissingRequiredSettings(state.panels)
+        if (missing.length > 0) {
+          const message = describeMissingSettings(missing)
+          if (isPublished) {
+            set({
+              activeQuestionId: missing[0].fieldId,
+              isSidebarOpen: true,
+              selectionType: 'question',
+            })
+            notifications.show({
+              color: 'red',
+              message: `Fill in the required settings first: ${message}.`,
+              title: "Can't publish yet",
+            })
+            return { success: false }
+          }
+          notifications.show({
+            color: 'orange',
+            message: `You can't publish until these are filled in: ${message}.`,
+            title: 'Some required settings are empty',
+          })
+        }
 
         set({ publishStatus: isPublished ? 'PUBLISHED' : 'DRAFT' })
 

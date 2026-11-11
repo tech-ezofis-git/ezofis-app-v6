@@ -6,6 +6,7 @@ import {
   getMasterFormInfo,
 } from '../utils/fieldRendering'
 import { buildMasterFillConditions } from '../utils/masterFillConditions'
+import { shiftDateValue } from '../utils/parentDate'
 
 interface Props {
   allFields: any[]
@@ -150,6 +151,51 @@ const MasterFillSync = ({
     if (!isParentCopy || readOnly || !copySource) return
     if (String(copyValue) !== String(value ?? '')) onChange(copyValue)
   }, [isParentCopy, copySource, copyValue, readOnly, value, onChange])
+
+  // "Copy the answer from another field" on a Date or Date & Time field: this
+  // field starts with that field's date, moved by the number of days set (a
+  // negative number goes back). A date already saved on the request is kept;
+  // after that the date follows the other field whenever that field changes.
+  const dateSourceId = String(
+    specific.parentDateFieldId || specific.parentDateField || '',
+  ).trim()
+  const isDateLink =
+    specific.dateDefaultValueType === 'PARENT_FIELD' && Boolean(dateSourceId)
+  const dateSource = isDateLink
+    ? allFields.find(
+        (f: any) => f.id === dateSourceId || f.jsonId === dateSourceId,
+      )
+    : undefined
+  const dateSourceValue = dateSource
+    ? (extractScalarStrings(formModel?.[dateSource.id])[0] ?? '')
+    : ''
+  const dateOffset =
+    Number(specific.parentDateOffset ?? specific.parentFieldsDays ?? 0) || 0
+  const linkedDate = dateSourceValue
+    ? shiftDateValue(dateSourceValue, dateOffset)
+    : null
+  const lastDateSourceRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!isDateLink || readOnly || !dateSource) return
+    if (!dateSourceValue) return
+    const first = lastDateSourceRef.current === null
+    const sourceChanged =
+      !first && lastDateSourceRef.current !== dateSourceValue
+    lastDateSourceRef.current = dateSourceValue
+    const hasOwnValue = value !== undefined && value !== null && value !== ''
+    if (((first && !hasOwnValue) || sourceChanged) && linkedDate !== null) {
+      if (linkedDate !== String(value ?? '')) onChange(linkedDate)
+    }
+  }, [
+    isDateLink,
+    readOnly,
+    dateSource,
+    dateSourceValue,
+    linkedDate,
+    value,
+    onChange,
+  ])
 
   return null
 }

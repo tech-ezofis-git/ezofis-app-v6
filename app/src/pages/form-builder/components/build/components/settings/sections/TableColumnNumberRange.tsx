@@ -103,7 +103,7 @@ const TableColumnNumberRange = ({
           {minimum}
           <InputSelect
             description='Checked against this column’s value in the same row; skipped while it is empty.'
-            label='Maximum from column'
+            label='Highest allowed: take it from a column'
             options={numericColumns}
             placeholder='Select a column'
             clearable
@@ -127,7 +127,7 @@ const TableColumnNumberRange = ({
           {maximum}
           <InputSelect
             description='Checked against this column’s value in the same row; skipped while it is empty.'
-            label='Minimum from column'
+            label='Lowest allowed: take it from a column'
             options={numericColumns}
             placeholder='Select a column'
             clearable
