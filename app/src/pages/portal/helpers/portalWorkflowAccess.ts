@@ -37,6 +37,9 @@ export const canCreateFromWorkflow = (
 
   if (!startBlock?.settings) return true
 
+  // Start block "Portal Users" switch: every signed-in portal visitor may start.
+  if (startBlock.settings.allowPortalUsers === true) return true
+
   const allowedUsers: string[] = Array.isArray(startBlock.settings.users)
     ? startBlock.settings.users.map(String)
     : []

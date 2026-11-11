@@ -108,7 +108,7 @@ public sealed class LoginController : ControllerBase
 
         try
         {
-            var result = await _authService.SocialLoginAsync(request.Email, request.Provider, tenantId.Value, cancellationToken);
+            var result = await _authService.SocialLoginAsync(request.Email, request.Provider, tenantId.Value, new SocialProof(request.IdToken, request.AccessToken), cancellationToken);
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -180,6 +180,7 @@ public sealed class LoginController : ControllerBase
                 request.ShareToken,
                 request.Email,
                 request.Provider,
+                new SocialProof(request.IdToken, request.AccessToken),
                 cancellationToken);
             return Ok(result);
         }
@@ -234,7 +235,7 @@ public sealed class LoginController : ControllerBase
         try
         {
             var result = await _authService.SetSignInviteSocialLoginAsync(
-                request.InviteToken, request.Email, request.Provider, cancellationToken);
+                request.InviteToken, request.Email, request.Provider, new SocialProof(request.IdToken, request.AccessToken), cancellationToken);
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -261,17 +262,17 @@ public record LoginRequest(string Email, string Password, string? LoggedFrom = n
 /// <summary>TempToken from login response when 2FA required; Code from email OTP or authenticator app. Requires X-Tenant-Id header.</summary>
 public record CompleteTwoFactorRequest(string TempToken, string Code);
 
-/// <summary>Social login: email + provider (google or microsoft). Requires X-Tenant-Id header. No password.</summary>
-public record SocialLoginRequest(string Email, string Provider);
+/// <summary>Social login: email + provider (google or microsoft) + the provider's idToken or accessToken that proves the email. Requires X-Tenant-Id header. No password.</summary>
+public record SocialLoginRequest(string Email, string Provider, string? IdToken = null, string? AccessToken = null);
 
 /// <summary>First-time password for guest share invite from workflow inbox (EZOFIS only).</summary>
 public record SetShareInvitePasswordRequest(string ShareToken, string Email, string Password);
 
 /// <summary>Social login for guest share invite after Google/Microsoft OAuth on the client.</summary>
-public record SetShareInviteSocialLoginRequest(string ShareToken, string Email, string Provider);
+public record SetShareInviteSocialLoginRequest(string ShareToken, string Email, string Provider, string? IdToken = null, string? AccessToken = null);
 
 /// <summary>First-time password for repository sign-request invite.</summary>
 public record SetSignInvitePasswordRequest(string InviteToken, string Email, string Password);
 
 /// <summary>Social login for repository sign-request invite.</summary>
-public record SetSignInviteSocialLoginRequest(string InviteToken, string Email, string Provider);
+public record SetSignInviteSocialLoginRequest(string InviteToken, string Email, string Provider, string? IdToken = null, string? AccessToken = null);

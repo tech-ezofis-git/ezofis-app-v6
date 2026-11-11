@@ -4,6 +4,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { login as ezofisLogin, getSession } from '@/api/v6/auth'
+import { setSocialProof } from '@/api/v6/socialProof'
 import {
   getSignRequestInvitePreview,
   setSignRequestPassword,
@@ -234,6 +235,11 @@ const SignRequestSignInForm = ({
           },
         )
         const profile = await res.json()
+        setSocialProof({
+          accessToken: tokenResponse.access_token,
+          email: String(profile.email || ''),
+          provider: 'google',
+        })
         await handleSocialSuccess('google', String(profile.email || ''))
       } catch (e: any) {
         setError(e?.message ?? 'Google sign-in failed')
@@ -249,6 +255,12 @@ const SignRequestSignInForm = ({
       const loginResponse = await msalInstance.loginPopup({
         loginHint: email || undefined,
         scopes: ['user.read'],
+      })
+      setSocialProof({
+        accessToken: loginResponse.accessToken,
+        email: String(loginResponse.account?.username || ''),
+        idToken: loginResponse.idToken,
+        provider: 'microsoft',
       })
       await handleSocialSuccess(
         'microsoft',

@@ -536,6 +536,8 @@ export const importWorkflow = (
         // End node - post-completion sync (SAP / QuickBooks / Master Form)
         endSync: block.settings?.endSync,
         fromDomainName,
+        // Start node - any signed-in portal visitor may start the workflow
+        allowPortalUsers: Boolean(block.settings?.allowPortalUsers),
         // End node - finished requests can be re-initiated
         reprocess: block.settings?.reprocess,
         fromDomainNameEnabled,

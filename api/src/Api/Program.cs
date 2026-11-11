@@ -122,6 +122,7 @@ else
 }
 builder.Services.AddScoped<ITwoFactorService, TwoFactorService>();
 builder.Services.AddScoped<ILoginEmailOtpService, LoginEmailOtpService>();
+builder.Services.AddHttpClient<ISocialTokenVerifier, SocialTokenVerifier>();
 builder.Services.AddScoped<IEzofisAuthService, EzofisAuthService>();
 builder.Services.AddScoped<IPortalMasterLoginService, PortalMasterLoginService>();
 builder.Services.AddScoped<SaaSApp.Users.Application.Contracts.IUserTenantRoleSync, UserTenantRoleSync>();

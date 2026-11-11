@@ -17,8 +17,8 @@ public interface IEzofisAuthService
     /// <summary>Complete login after 2FA. Verifies authenticator TOTP or email OTP and returns JWT.</summary>
     Task<LoginResult> CompleteTwoFactorAsync(string tempToken, string code, CancellationToken cancellationToken = default);
 
-    /// <summary>Social login (Google / Microsoft). Email + provider only; no password.</summary>
-    Task<LoginResult> SocialLoginAsync(string email, string provider, Guid tenantId, CancellationToken cancellationToken = default);
+    /// <summary>Social login (Google / Microsoft). The email must be proven by the provider's token in <paramref name="proof"/>.</summary>
+    Task<LoginResult> SocialLoginAsync(string email, string provider, Guid tenantId, SocialProof? proof, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// First-time password for a workflow/repository guest share invite (EZOFIS users only).
@@ -38,6 +38,7 @@ public interface IEzofisAuthService
         string shareToken,
         string email,
         string provider,
+        SocialProof? proof,
         CancellationToken cancellationToken = default);
 
     /// <summary>First-time password for a repository sign-request invite. Tenant resolved from invite token.</summary>
@@ -52,6 +53,7 @@ public interface IEzofisAuthService
         string inviteToken,
         string email,
         string provider,
+        SocialProof? proof,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -4,6 +4,7 @@ import {
   setToLocalStorage,
 } from '../../utils/local-storage'
 import { axiosV6 } from '../axios'
+import { getSocialProofFor } from './socialProof'
 
 export const getV6ApiErrorMessage = (
   data: unknown,
@@ -324,6 +325,7 @@ export const socialLogin = async (
       data: JSON.stringify({
         email: payload.email,
         provider: payload.provider,
+        ...getSocialProofFor(payload.email, payload.provider),
       }),
       headers: {
         'X-Tenant-Id': payload.tenantId,
@@ -435,6 +437,7 @@ export const shareSocialLogin = async (payload: {
         email: payload.email,
         provider: payload.provider,
         shareToken: payload.shareToken,
+        ...getSocialProofFor(payload.email, payload.provider),
       }),
       headers: payload.tenantId
         ? { 'X-Tenant-Id': payload.tenantId }

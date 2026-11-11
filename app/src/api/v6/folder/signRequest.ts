@@ -1,6 +1,7 @@
 import axios from 'axios'
 import authUserStore from '../../../stores/authUserStore'
 import { axiosV6 } from '../../axios'
+import { getSocialProofFor } from '../socialProof'
 
 const isRequestCanceled = (error: unknown) => {
   const err = error as { code?: string; message?: string; name?: string }
@@ -779,6 +780,7 @@ export const signRequestSocialLogin = async (payload: {
         email: payload.email,
         inviteToken: payload.inviteToken,
         provider: payload.provider,
+        ...getSocialProofFor(payload.email, payload.provider),
       },
       headers: getTenantHeaders(payload.tenantId),
       method: 'POST',
