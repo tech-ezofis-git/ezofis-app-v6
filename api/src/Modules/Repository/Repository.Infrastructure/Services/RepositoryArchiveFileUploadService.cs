@@ -155,15 +155,25 @@ public sealed class RepositoryArchiveFileUploadService : IRepositoryArchiveFileU
             archiveBaseFileName,
             fileVersion);
 
-        var relativePath = await _fileStorage.SaveAsync(
-            tenantId,
-            repositoryId,
-            itemId,
-            request.FileName,
-            request.FileStream,
-            providerCode,
-            storageRelativePath,
-            cancellationToken);
+        var copyInsideStorage = !string.IsNullOrWhiteSpace(request.SourceStoragePath)
+            && string.Equals(request.SourceStorageProviderCode, providerCode, StringComparison.OrdinalIgnoreCase);
+
+        var relativePath = copyInsideStorage
+            ? await _fileStorage.CopyAsync(
+                tenantId,
+                request.SourceStoragePath!,
+                storageRelativePath,
+                providerCode,
+                cancellationToken)
+            : await _fileStorage.SaveAsync(
+                tenantId,
+                repositoryId,
+                itemId,
+                request.FileName,
+                request.FileStream,
+                providerCode,
+                storageRelativePath,
+                cancellationToken);
 
         var fileSize = request.FileSize is > 0 and <= int.MaxValue
             ? (int?)request.FileSize

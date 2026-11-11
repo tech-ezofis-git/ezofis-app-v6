@@ -6,10 +6,24 @@ import {
   searchPlugin,
 } from '@react-pdf-viewer/search'
 import { FileText } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type ComponentProps,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import * as XLSX from 'xlsx'
 import Icon from '@/components/base/icon/Icon'
 import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
+import { LARGE_UPLOAD_THRESHOLD_BYTES } from '@/lib/largeUpload/constants'
+import {
+  type LargePdfSource,
+  prepareLocalPdf,
+  prepareRemotePdf,
+  rangeDocumentParams,
+} from '@/lib/largeUpload/pdfSource'
 import CollaboraPreviewViewer from '@/pages/folders/components/CollaboraPreviewViewer'
 import {
   getFileExtension,
@@ -142,6 +156,11 @@ type DocumentPreviewViewerProps = {
   /** Hex/CSS colors keyed by highlight term / search variant. */
   highlightColors?: Record<string, string>
   highlightTerms?: string[]
+  /**
+   * Auth headers for a remote PDF `fileUrl` (e.g. `/uploadAndIndex/files/{id}`). The PDF is then
+   * loaded page by page with HTTP Range requests instead of being downloaded first.
+   */
+  httpHeaders?: Record<string, string>
   isImage?: boolean
   isLoading?: boolean
   isPdf?: boolean
@@ -156,10 +175,10 @@ type DocumentPreviewViewerProps = {
   /** Keep this many trailing characters visible when masking (default 3). */
   piiMaskVisibleChars?: number
   probeTerms?: string[]
-  /** Known sensitive values (form fields) to redact in addition to auto-detect. */
-  redactValues?: string[]
   /** Extra sensitive labels (e.g. "Opening Balance"): mask the values next to / below them. */
   redactLabels?: string[]
+  /** Known sensitive values (form fields) to redact in addition to auto-detect. */
+  redactValues?: string[]
   restrictToFields?: boolean
   showScanOverlay?: boolean
   signatureFields?: any[]
@@ -175,16 +194,19 @@ type PdfViewerProps = {
   activeHighlightTerm?: string | null
   enablePiiNer?: boolean
   enablePiiRedaction?: boolean
+  /** Local file behind `fileUrl`; large ones are read in slices (see createFileRangeTransport). */
+  fileBlob?: Blob | null
   fileUrl: string
   focusRequestId?: number
   highlightColors?: Record<string, string>
   highlightTerms?: string[]
+  httpHeaders?: Record<string, string>
   piiBoostOrg?: boolean
   piiKnownOnly?: boolean
   piiMaskVisibleChars?: number
   probeTerms?: string[]
-  redactValues?: string[]
   redactLabels?: string[]
+  redactValues?: string[]
   onProbeComplete?: (matchedValues: string[]) => void
 }
 
@@ -412,7 +434,9 @@ const applyHighlightStyles = (
   isActive: boolean,
 ) => {
   element.style.backgroundColor = hexToRgba(color, isActive ? 0.35 : 0.2)
-  element.style.outline = isActive ? `2px solid ${color}` : `1.5px solid ${color}`
+  element.style.outline = isActive
+    ? `2px solid ${color}`
+    : `1.5px solid ${color}`
   element.style.border = 'none'
   element.style.borderRadius = '3px'
   element.style.mixBlendMode = 'multiply'
@@ -435,6 +459,7 @@ export default function DocumentPreviewViewer({
   focusRequestId = 0,
   highlightColors = {},
   highlightTerms = [],
+  httpHeaders,
   isImage = false,
   isLoading = false,
   isPdf = false,
@@ -445,8 +470,8 @@ export default function DocumentPreviewViewer({
   piiKnownOnly = false,
   piiMaskVisibleChars = 3,
   probeTerms = [],
-  redactValues = [],
   redactLabels = [],
+  redactValues = [],
   restrictToFields = false,
   showScanOverlay = false,
   signatureFields = [],
@@ -462,8 +487,7 @@ export default function DocumentPreviewViewer({
     isImage,
     isPdf,
   })
-  const piiRedactionOn =
-    FILE_VIEWER_PII_REDACTION_ENABLED && enablePiiRedaction
+  const piiRedactionOn = FILE_VIEWER_PII_REDACTION_ENABLED && enablePiiRedaction
   const piiNerOn = FILE_VIEWER_PII_REDACTION_ENABLED && enablePiiNer
 
   let content = null
@@ -506,10 +530,12 @@ export default function DocumentPreviewViewer({
           activeHighlightTerm={activeHighlightTerm}
           enablePiiNer={piiNerOn}
           enablePiiRedaction={piiRedactionOn}
+          fileBlob={fileBlob}
           fileUrl={fileUrl}
           focusRequestId={focusRequestId}
           highlightColors={enableHighlight ? highlightColors : {}}
           highlightTerms={enableHighlight ? highlightTerms : []}
+          httpHeaders={httpHeaders}
           key={fileUrl}
           piiBoostOrg={piiBoostOrg}
           piiKnownOnly={piiKnownOnly}
@@ -1523,18 +1549,70 @@ function PdfViewer({
   activeHighlightTerm,
   enablePiiNer = false,
   enablePiiRedaction = false,
+  fileBlob,
   fileUrl,
   focusRequestId = 0,
   highlightColors = {},
   highlightTerms = [],
+  httpHeaders,
   piiBoostOrg = false,
   piiKnownOnly = false,
   piiMaskVisibleChars = 3,
   probeTerms = [],
-  redactValues = [],
   redactLabels = [],
+  redactValues = [],
   onProbeComplete,
 }: PdfViewerProps) {
+  // Large PDFs load page by page: a big local file is read in slices, and a remote file with auth
+  // headers through HTTP Range requests. Both are cut at the PDF's real end first, so junk after
+  // %%EOF (e.g. padding) never makes pdf.js scan the whole file.
+  const largeSourceKind =
+    fileBlob && fileBlob.size > LARGE_UPLOAD_THRESHOLD_BYTES
+      ? 'local'
+      : httpHeaders && /^https?:/i.test(fileUrl)
+        ? 'remote'
+        : null
+  const [largeSource, setLargeSource] = useState<LargePdfSource | null>(null)
+  const [largeSourceError, setLargeSourceError] = useState(false)
+
+  useEffect(() => {
+    setLargeSource(null)
+    setLargeSourceError(false)
+    if (!largeSourceKind) return
+    let cancelled = false
+    const prepare =
+      largeSourceKind === 'local'
+        ? prepareLocalPdf(fileBlob!)
+        : prepareRemotePdf(fileUrl, httpHeaders)
+    prepare
+      .then((source) => {
+        if (!cancelled) setLargeSource(source)
+      })
+      .catch(() => {
+        if (!cancelled) setLargeSourceError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+    // httpHeaders is a new object on every render; the URL identifies the file.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileBlob, fileUrl, largeSourceKind])
+
+  const largeSourceReady = !largeSourceKind || Boolean(largeSource)
+
+  const transformGetDocumentParams = useCallback(
+    (options: Record<string, unknown>) => {
+      if (!largeSource) return options
+      const params: Record<string, unknown> = {
+        ...options,
+        ...rangeDocumentParams(largeSource),
+      }
+      delete params.url
+      return params
+    },
+    [largeSource],
+  )
+
   const colorsRef = useRef(highlightColors)
   colorsRef.current = highlightColors
   const activeTermRef = useRef(activeHighlightTerm)
@@ -2055,11 +2133,11 @@ function PdfViewer({
       className='relative h-full min-h-[320px] w-full bg-[var(--gray-1)]'
       ref={viewerContainerRef}
     >
-      {!documentReady && !loadError ? (
+      {!documentReady && !loadError && !largeSourceError ? (
         <SkeletonDocumentPreview className='absolute inset-0 z-10' flush />
       ) : null}
 
-      {loadError ? (
+      {loadError || largeSourceError ? (
         <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
           <FileText className='text-[var(--gray-4)]' size={40} />
           <p className='text-sm font-semibold text-[var(--gray-11)]'>
@@ -2071,47 +2149,54 @@ function PdfViewer({
       <div
         className={`h-full w-full ${documentReady ? 'opacity-100' : 'opacity-0'}`}
       >
-        <Worker
-          key={`${renderAttempt}-${pageScale ?? 'probe'}`}
-          workerUrl={PDF_WORKER_URL}
-        >
-          <Viewer
-            defaultScale={pageScale ?? PROBE_SCALE}
-            fileUrl={fileUrl}
-            plugins={[searchPluginInstance, zoomPluginInstance]}
-            renderError={() => (
-              <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] text-center'>
-                <FileText className='text-[var(--gray-4)]' size={40} />
-                <p className='text-sm font-semibold text-[var(--gray-11)]'>
-                  No document preview available
-                </p>
-              </div>
-            )}
-            renderPage={(props) => (
-              <>
-                {props.canvasLayer.children}
-                {props.textLayer.children}
-                {props.annotationLayer.children}
-                {enablePiiRedaction ? (
-                  <PiiDomPageOverlay
-                    boostOrg={piiBoostOrg}
-                    enableNer={enablePiiNer}
-                    fallbackAreas={piiAreas}
-                    isOcrScanning={isPiiScanning}
-                    knownOnly={piiKnownOnly}
-                    knownValues={redactValues}
-                    labels={redactLabels}
-                    pageIndex={props.pageIndex}
-                    scale={props.scale}
-                    textLayerRendered={props.textLayerRendered}
-                    visibleChars={piiMaskVisibleChars}
-                  />
-                ) : null}
-              </>
-            )}
-            onDocumentLoad={handleDocumentLoad}
-          />
-        </Worker>
+        {largeSourceReady ? (
+          <Worker
+            key={`${renderAttempt}-${pageScale ?? 'probe'}`}
+            workerUrl={PDF_WORKER_URL}
+          >
+            <Viewer
+              defaultScale={pageScale ?? PROBE_SCALE}
+              fileUrl={fileUrl}
+              plugins={[searchPluginInstance, zoomPluginInstance]}
+              renderError={() => (
+                <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] text-center'>
+                  <FileText className='text-[var(--gray-4)]' size={40} />
+                  <p className='text-sm font-semibold text-[var(--gray-11)]'>
+                    No document preview available
+                  </p>
+                </div>
+              )}
+              renderPage={(props) => (
+                <>
+                  {props.canvasLayer.children}
+                  {props.textLayer.children}
+                  {props.annotationLayer.children}
+                  {enablePiiRedaction ? (
+                    <PiiDomPageOverlay
+                      boostOrg={piiBoostOrg}
+                      enableNer={enablePiiNer}
+                      fallbackAreas={piiAreas}
+                      isOcrScanning={isPiiScanning}
+                      knownOnly={piiKnownOnly}
+                      knownValues={redactValues}
+                      labels={redactLabels}
+                      pageIndex={props.pageIndex}
+                      scale={props.scale}
+                      textLayerRendered={props.textLayerRendered}
+                      visibleChars={piiMaskVisibleChars}
+                    />
+                  ) : null}
+                </>
+              )}
+              transformGetDocumentParams={
+                transformGetDocumentParams as unknown as NonNullable<
+                  ComponentProps<typeof Viewer>['transformGetDocumentParams']
+                >
+              }
+              onDocumentLoad={handleDocumentLoad}
+            />
+          </Worker>
+        ) : null}
       </div>
 
       {documentReady && !loadError ? (

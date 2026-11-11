@@ -25,5 +25,42 @@ public interface IRepositoryFileStorage
         string storageProviderCode,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Copies a stored file to <paramref name="destinationRelativePath"/> inside the same storage,
+    /// without streaming the bytes through the API (server-side blob copy / local file copy).
+    /// Used when exporting large staged files. Returns the destination relative path.
+    /// </summary>
+    Task<string> CopyAsync(
+        Guid tenantId,
+        string sourceRelativePath,
+        string destinationRelativePath,
+        string storageProviderCode,
+        CancellationToken cancellationToken = default);
+
     bool CanRead(string storageProviderCode);
+
+    /// <summary>
+    /// Reads <paramref name="length"/> bytes from <paramref name="offset"/> (fewer at the end of the file).
+    /// Blob storage reads just that range in one request, for the page-by-page PDF viewer.
+    /// </summary>
+    async Task<byte[]> ReadRangeAsync(
+        Guid tenantId,
+        string relativePath,
+        string storageProviderCode,
+        long offset,
+        int length,
+        CancellationToken cancellationToken = default)
+    {
+        await using var stream = await OpenReadAsync(tenantId, relativePath, storageProviderCode, cancellationToken);
+        stream.Seek(offset, SeekOrigin.Begin);
+        var buffer = new byte[length];
+        var read = 0;
+        while (read < length)
+        {
+            var n = await stream.ReadAsync(buffer.AsMemory(read, length - read), cancellationToken);
+            if (n == 0) break;
+            read += n;
+        }
+        return read == length ? buffer : buffer[..read];
+    }
 }

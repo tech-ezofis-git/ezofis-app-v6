@@ -37,6 +37,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Unit tests cover internal storage helpers (e.g. LargeUploadStorage). -->
+    <InternalsVisibleTo Include="SaaSApp.Api.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Assets\ezofis-logo-mark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

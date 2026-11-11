@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Hangfire;
+using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
 using Microsoft.Extensions.Logging;
 using SaaSApp.MultiTenancy;
@@ -23,6 +24,7 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
     private readonly ITenantDisplayResolver _tenantDisplay;
     private readonly IActivityCreditCharger _credits;
     private readonly ITiffPdfConverter _tiffPdf;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<RepositoryUploadIndexService> _logger;
 
     public RepositoryUploadIndexService(
@@ -35,8 +37,10 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
         ITenantDisplayResolver tenantDisplay,
         IActivityCreditCharger credits,
         ITiffPdfConverter tiffPdf,
+        IMemoryCache cache,
         ILogger<RepositoryUploadIndexService> logger)
     {
+        _cache = cache;
         _tiffPdf = tiffPdf;
         _logger = logger;
         _connectionProvider = connectionProvider;
@@ -197,6 +201,32 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
         if (!Guid.TryParse(upload.FileId, out var stageId))
             throw new InvalidOperationException("Stage id was not returned from upload.");
 
+        return await ApplyStagedUploadMetadataAsync(
+            repositoryId,
+            tenantId,
+            stageId,
+            fileName,
+            contentType,
+            metadataJson,
+            ocrJson,
+            ocrText,
+            userId,
+            cancellationToken);
+    }
+
+    public async Task<UploadWithOcrResult> ApplyStagedUploadMetadataAsync(
+        Guid repositoryId,
+        Guid tenantId,
+        Guid stageId,
+        string fileName,
+        string? contentType,
+        string? metadataJson,
+        string? ocrJson,
+        string? ocrText,
+        Guid? userId,
+        CancellationToken cancellationToken = default)
+    {
+        ForgetStageFileLocation(tenantId, stageId);
         var parsed = ParseUploadWithOcrMetadata(metadataJson, ocrJson, ocrText);
         var repo = await _provisioner.GetRepositoryAsync(repositoryId, tenantId, cancellationToken)
             ?? throw new InvalidOperationException("Repository not found.");
@@ -353,6 +383,7 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
         bool allowIncompleteFolderMetadata = false,
         string? namingFieldFallback = null)
     {
+        ForgetStageFileLocation(tenantId, stageId);
         var connectionString = _connectionProvider.ConnectionString
             ?? throw new InvalidOperationException("Tenant connection string not resolved.");
 
@@ -419,9 +450,8 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
             providerCode,
             cancellationToken);
 
-        await using var promoteBuffer = new MemoryStream();
-        await source.CopyToAsync(promoteBuffer, cancellationToken);
-        promoteBuffer.Position = 0;
+        // No in-memory copy: the archive copies the staged file inside storage (SourceStoragePath),
+        // so multi-GB drafts export without loading them into the API.
 
         // Archive from stage row: field columns + OCR text become archive metadata.
         var fieldValues = new Dictionary<string, string>(row.FieldValues, StringComparer.OrdinalIgnoreCase);
@@ -448,13 +478,15 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
 
         var metadataJson = JsonSerializer.Serialize(fieldValues);
         var uploadRequest = new RepositoryUploadItemRequest(
-            promoteBuffer,
+            source,
             row.FileName,
             row.FileType,
             FileSize: row.FileSize,
             Metadata: metadataJson,
             AllowIncompleteFolderMetadata: allowIncompleteFolderMetadata,
-            NamingFieldFallback: namingFieldFallback);
+            NamingFieldFallback: namingFieldFallback,
+            SourceStoragePath: row.FilePath,
+            SourceStorageProviderCode: providerCode);
 
         var result = await _archiveUpload.UploadItemAsync(
             repositoryId,
@@ -674,6 +706,7 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
                 var providerCode = providers.First(p => p.Id == row.StorageProviderId).Code;
                 var monitorPath = row.FilePath;
 
+                ForgetStageFileLocation(tenantId, stageId);
                 var deleted = await RepositoryStageStore.SoftDeleteAsync(
                     connection,
                     repo!.StageTableName,
@@ -942,42 +975,80 @@ public sealed class RepositoryUploadIndexService : IRepositoryUploadIndexService
         Guid tenantId,
         CancellationToken cancellationToken = default)
     {
+        // The PDF viewer reads a draft in many small HTTP Range requests. Finding the draft walks every
+        // repository's stage table, so remember where the file is for a short while.
+        var cacheKey = StageFileLocationKey(tenantId, stageId);
+        if (!_cache.TryGetValue(cacheKey, out StageFileLocation? location) || location == null)
+        {
+            location = await FindStageFileLocationAsync(stageId, tenantId, cancellationToken);
+            if (location == null)
+                return null;
+            _cache.Set(cacheKey, location, StageFileLocationLifetime);
+        }
+
+        var stream = await _fileStorage.OpenReadAsync(
+            tenantId,
+            location.FilePath,
+            location.ProviderCode,
+            cancellationToken);
+
+        return new RepositoryItemFileContent(
+            stream,
+            location.FileName,
+            location.ContentType,
+            location.FileSize);
+    }
+
+    private static readonly TimeSpan StageFileLocationLifetime = TimeSpan.FromMinutes(2);
+
+    private static string StageFileLocationKey(Guid tenantId, Guid stageId) =>
+        $"stage-file:{tenantId:N}:{stageId:N}";
+
+    /// <summary>Forget a draft's cached location (deleted or exported).</summary>
+    private void ForgetStageFileLocation(Guid tenantId, Guid stageId) =>
+        _cache.Remove(StageFileLocationKey(tenantId, stageId));
+
+    private async Task<StageFileLocation?> FindStageFileLocationAsync(
+        Guid stageId,
+        Guid tenantId,
+        CancellationToken cancellationToken)
+    {
         var connectionString = _connectionProvider.ConnectionString
             ?? throw new InvalidOperationException("Tenant connection string not resolved.");
 
-        await using var connection = new NpgsqlConnection(connectionString);
-        await connection.OpenAsync(cancellationToken);
+        RepositoryStageRow? row;
+        await using (var connection = new NpgsqlConnection(connectionString))
+        {
+            await connection.OpenAsync(cancellationToken);
 
-        var repo = await ResolveRepositoryForStageAsync(connection, tenantId, stageId, cancellationToken);
-        if (repo == null)
-            return null;
+            var repo = await ResolveRepositoryForStageAsync(connection, tenantId, stageId, cancellationToken);
+            if (repo == null)
+                return null;
 
-        var row = await RepositoryStageStore.GetAsync(connection, repo, tenantId, stageId, cancellationToken);
+            row = await RepositoryStageStore.GetAsync(connection, repo, tenantId, stageId, cancellationToken);
+        }
+
         if (row == null || string.IsNullOrWhiteSpace(row.FilePath))
             return null;
 
         var providers = await _storageSeed.ListProvidersAsync(tenantId, cancellationToken);
-        var provider = providers.FirstOrDefault(p => p.Id == row.StorageProviderId);
-        if (provider == null)
-            throw new InvalidOperationException("Storage provider not found for staged file.");
-
-        var stream = await _fileStorage.OpenReadAsync(
-            tenantId,
-            row.FilePath,
-            provider.Code,
-            cancellationToken);
+        var provider = providers.FirstOrDefault(p => p.Id == row.StorageProviderId)
+            ?? throw new InvalidOperationException("Storage provider not found for staged file.");
 
         var fileName = string.IsNullOrWhiteSpace(row.FileName) ? $"{stageId:N}.bin" : row.FileName!;
         var contentType = string.IsNullOrWhiteSpace(row.FileType)
             ? RepositoryOcrFileSupport.ResolveContentType(fileName)
             : row.FileType!;
 
-        return new RepositoryItemFileContent(
-            stream,
-            fileName,
-            contentType,
-            row.FileSize);
+        return new StageFileLocation(row.FilePath, provider.Code, fileName, contentType, row.FileSize);
     }
+
+    private sealed record StageFileLocation(
+        string FilePath,
+        string ProviderCode,
+        string FileName,
+        string ContentType,
+        int? FileSize);
 
     public async Task<RepositoryItemFileContent?> OpenMonitorFileByPathAsync(
         string monitorPath,

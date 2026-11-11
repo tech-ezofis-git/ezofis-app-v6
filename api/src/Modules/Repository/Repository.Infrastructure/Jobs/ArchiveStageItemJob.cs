@@ -80,17 +80,16 @@ public sealed class ArchiveStageItemJob
                 providerCode,
                 default);
 
-            await using var buffer = new MemoryStream();
-            await source.CopyToAsync(buffer);
-            buffer.Position = 0;
-
+            // Copied inside storage (SourceStoragePath) — no in-memory buffer for large files.
             var metadataJson = System.Text.Json.JsonSerializer.Serialize(row.FieldValues);
             var uploadRequest = new RepositoryUploadItemRequest(
-                buffer,
+                source,
                 row.FileName,
                 row.FileType,
                 FileSize: row.FileSize,
-                Metadata: metadataJson);
+                Metadata: metadataJson,
+                SourceStoragePath: row.FilePath,
+                SourceStorageProviderCode: providerCode);
 
             var result = await archiveUpload.UploadItemAsync(
                 args.RepositoryId,

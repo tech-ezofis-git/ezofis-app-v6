@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using SaaSApp.MultiTenancy;
 using SaaSApp.Repository.Application.Contracts;
 using SaaSApp.Security;
@@ -19,11 +20,16 @@ public sealed class UploadAndIndexController : ControllerBase
 
     private readonly ITenantProvider _tenantProvider;
     private readonly IRepositoryUploadIndexService _uploadIndex;
+    private readonly ILogger<UploadAndIndexController> _logger;
 
-    public UploadAndIndexController(ITenantProvider tenantProvider, IRepositoryUploadIndexService uploadIndex)
+    public UploadAndIndexController(
+        ITenantProvider tenantProvider,
+        IRepositoryUploadIndexService uploadIndex,
+        ILogger<UploadAndIndexController> logger)
     {
         _tenantProvider = tenantProvider;
         _uploadIndex = uploadIndex;
+        _logger = logger;
     }
 
     /// <summary>v5: POST api/uploadAndIndex/upload — stage file to monitor + stage table.</summary>
@@ -120,6 +126,19 @@ public sealed class UploadAndIndexController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
+        }
+        catch (HttpRequestException ex)
+        {
+            // The OCR service (agents) is down or unreachable: not a bug in this request.
+            _logger.LogWarning(ex, "OCR service unreachable for uploadForOcr");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { error = "The OCR service is not available right now. Fill the fields manually or try again later." });
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex, "OCR service timed out for uploadForOcr");
+            return StatusCode(StatusCodes.Status504GatewayTimeout,
+                new { error = "The OCR service took too long to answer. Fill the fields manually or try again later." });
         }
     }
 

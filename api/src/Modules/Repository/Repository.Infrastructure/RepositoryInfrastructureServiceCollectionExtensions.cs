@@ -15,6 +15,7 @@ public static class RepositoryInfrastructureServiceCollectionExtensions
     {
         services.Configure<AgentsChatOptions>(configuration.GetSection(AgentsChatOptions.SectionName));
         services.Configure<RepositoryFileStorageOptions>(configuration.GetSection(RepositoryFileStorageOptions.SectionName));
+        services.Configure<RepositoryLargeUploadOptions>(configuration.GetSection(RepositoryLargeUploadOptions.SectionName));
         services.Configure<RepositoryShareOptions>(configuration.GetSection(RepositoryShareOptions.SectionName));
         services.Configure<RepositorySignRequestOptions>(configuration.GetSection(RepositorySignRequestOptions.SectionName));
         services.Configure<RepositoryPythonAssistantOptions>(configuration.GetSection(RepositoryPythonAssistantOptions.SectionName));
@@ -52,6 +53,8 @@ public static class RepositoryInfrastructureServiceCollectionExtensions
         services.AddScoped<IRepositoryFileUploadService, RepositoryFileUploadService>();
         services.AddScoped<IRepositoryArchiveFileUploadService, RepositoryArchiveFileUploadService>();
         services.AddScoped<IRepositoryUploadIndexService, RepositoryUploadIndexService>();
+        services.AddScoped<LargeUploadStorage>();
+        services.AddScoped<IRepositoryLargeUploadService, RepositoryLargeUploadService>();
         services.AddScoped<IRepositoryItemShareService, RepositoryItemShareService>();
         services.AddScoped<IShareGuestUserProvisioningService, ShareGuestUserProvisioningService>();
         services.AddScoped<IRepositorySecurityService, RepositorySecurityService>();
