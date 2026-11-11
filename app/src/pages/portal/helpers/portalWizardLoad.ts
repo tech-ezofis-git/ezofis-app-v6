@@ -34,13 +34,27 @@ type WorkflowDetail = V6WorkflowDetail & {
   repositoryId?: number | string
 }
 
+// The API can answer with a JSON body (for example a 403 or 404 problem object)
+// instead of text; new Error(object) would show "[object Object]".
+const readLoadError = (error: unknown): string => {
+  if (typeof error === 'string' && error.trim()) return error
+  if (error && typeof error === 'object') {
+    const body = error as Record<string, unknown>
+    const text = [body.error, body.message, body.detail, body.title].find(
+      (value) => typeof value === 'string' && value.trim(),
+    )
+    if (typeof text === 'string') return text
+  }
+  return 'You do not have access to start this request. Please contact the portal owner.'
+}
+
 export const loadPortalWizard = async (
   workflowId: string,
   workflowName?: string,
 ): Promise<PortalWizardSource> => {
   const detailRes = await workflowsApiV6.getWorkflowById(workflowId)
   if (detailRes.error || !detailRes.data) {
-    throw new Error(detailRes.error || 'Unable to load this workflow.')
+    throw new Error(readLoadError(detailRes.error))
   }
 
   const workflow = detailRes.data as WorkflowDetail

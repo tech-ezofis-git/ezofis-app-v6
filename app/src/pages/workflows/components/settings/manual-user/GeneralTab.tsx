@@ -115,6 +115,19 @@ export default function GeneralTab({
             />
           </AssigneeRow>
 
+          {['START', 'TRIGGER'].includes(
+            String(nodeData.type || '').toUpperCase(),
+          ) && (
+            <AssigneeRow
+              checked={!!nodeData.allowPortalUsers}
+              description='Any signed-in portal user can start this workflow'
+              icon='lucide:globe'
+              iconClassName='text-teal-10 h-4 w-4 stroke-[2]'
+              title='Portal Users'
+              onChange={(checked) => updateNodeData('allowPortalUsers', checked)}
+            />
+          )}
+
           <AssigneeRow
             checked={!!nodeData.isGroupEnabled}
             description='Assign specific user groups'

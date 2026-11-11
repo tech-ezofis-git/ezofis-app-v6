@@ -151,6 +151,10 @@ public sealed class UsersController : ControllerBase
     [ProducesResponseType(typeof(ListUsersQueryResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
+        // Portal/share guests must not enumerate the tenant's users.
+        if (User.IsInRole(SaaSApp.Users.Domain.Entities.User.RoleExternalUser))
+            return Forbid();
+
         var result = await _mediator.Send(new ListUsersQuery(), cancellationToken);
         var pilotEmail = _pilotUserOptions.Email?.Trim();
         if (string.IsNullOrWhiteSpace(pilotEmail))

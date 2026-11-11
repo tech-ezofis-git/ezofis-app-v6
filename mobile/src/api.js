@@ -3,6 +3,7 @@
 
 // Login channel (LOGIN_CHANNEL_LOGGEDFROM_API, 26 Oct 2026): sent on POST /auth/ezofis/login only.
 // Not sent on /auth/2fa/complete (server remembers it) or /auth/social/login (not accepted yet).
+// /auth/social/login needs the provider's idToken: the server verifies it, an email alone is refused.
 export const LOGGED_FROM = 'MOBILE';
 
 export const API_BASE = 'https://cloud.ezofis.com/api';
@@ -140,9 +141,10 @@ export const authApi = {
     if (!d || !d.accessToken) throw new ApiError(500, 'Unexpected verification response.', d);
     return d;
   },
-  async social(email, provider, tenantId) {
-    // The web client sends GOOGLE / MICROSOFT in upper case.
-    const d = flatten(await request('/auth/social/login', { method: 'POST', body: { email: email.trim(), provider: String(provider).toUpperCase() }, tenantId }));
+  async social(email, provider, tenantId, idToken) {
+    // The web client sends GOOGLE / MICROSOFT in upper case. The server checks the provider's ID token, so the
+    // email alone no longer signs anyone in.
+    const d = flatten(await request('/auth/social/login', { method: 'POST', body: { email: email.trim(), provider: String(provider).toUpperCase(), idToken: idToken || '' }, tenantId }));
     if (!d || !d.accessToken) throw new ApiError(500, 'Unexpected sign-in response.', d);
     return d;
   },

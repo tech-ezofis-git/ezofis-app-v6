@@ -28,6 +28,16 @@ public interface IPortalMasterLoginService
     Task<PortalMasterLoginResult> VerifyOtpAsync(
         Guid tenantId, Guid portalOwnerId, int portalId, string username, string otp,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Portal "Email with OTP": email a one-time code to the visitor's own address.</summary>
+    Task SendEmailOtpAsync(
+        Guid tenantId, Guid portalOwnerId, int portalId, string email,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Portal "Email with OTP": check the emailed code and sign the visitor in as an ExternalUser.</summary>
+    Task<PortalMasterLoginResult> VerifyEmailOtpAsync(
+        Guid tenantId, Guid portalOwnerId, int portalId, string email, string otp,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record PortalMasterLoginResult(
@@ -164,6 +174,93 @@ public sealed class PortalMasterLoginService : IPortalMasterLoginService
 
         _cache.Remove(throttleKey);
         return await IssueAsync(tenantId, config, username, entry, cancellationToken);
+    }
+
+    public async Task SendEmailOtpAsync(
+        Guid tenantId, Guid portalOwnerId, int portalId, string email,
+        CancellationToken cancellationToken = default)
+    {
+        if (!LooksLikeEmail(email ?? string.Empty))
+            throw new ArgumentException("Enter a valid email address.");
+
+        await EnsureEmailOtpPortalAsync(tenantId, portalOwnerId, portalId, cancellationToken);
+        var address = email.Trim().ToLowerInvariant();
+        var sendKey = ThrottleKey(tenantId, portalId, address) + ":send";
+        EnsureNotLocked(sendKey);
+        RegisterFailure(sendKey);
+
+        await _loginEmailOtp.SendLoginOtpAsync(
+            address, null, cancellationToken, "Here is your Ezofis portal sign-in code:");
+    }
+
+    public async Task<PortalMasterLoginResult> VerifyEmailOtpAsync(
+        Guid tenantId, Guid portalOwnerId, int portalId, string email, string otp,
+        CancellationToken cancellationToken = default)
+    {
+        if (!LooksLikeEmail(email ?? string.Empty))
+            throw new ArgumentException("Enter a valid email address.");
+        if (string.IsNullOrWhiteSpace(otp))
+            throw new ArgumentException("OTP is required.");
+
+        await EnsureEmailOtpPortalAsync(tenantId, portalOwnerId, portalId, cancellationToken);
+        var address = email.Trim().ToLowerInvariant();
+        var throttleKey = ThrottleKey(tenantId, portalId, address);
+        EnsureNotLocked(throttleKey);
+
+        if (!await ConsumeOtpAsync(address, otp.Trim(), cancellationToken))
+        {
+            RegisterFailure(throttleKey);
+            throw new UnauthorizedAccessException("Invalid or expired code.");
+        }
+
+        _cache.Remove(throttleKey);
+        var issued = await _authService.IssuePortalAccessTokenAsync(tenantId, address, cancellationToken);
+        if (issued is not LoginSuccess success)
+            throw new UnauthorizedAccessException("Invalid or expired code.");
+
+        var local = address.Split('@')[0];
+        return new PortalMasterLoginResult(
+            success.UserId, success.AccessToken, success.TokenType, success.ExpiresIn,
+            local, address, address, null, new Dictionary<string, object?>());
+    }
+
+    /// <summary>The portal must exist and be set to "Email with OTP", so this cannot be used on other portals.</summary>
+    private async Task EnsureEmailOtpPortalAsync(
+        Guid tenantId, Guid portalOwnerId, int portalId, CancellationToken cancellationToken)
+    {
+        if (tenantId == Guid.Empty || portalOwnerId == Guid.Empty)
+            throw new ArgumentException("Tenant and portal owner are required.");
+
+        var snapshot = await _portalJson.GetForUserAsync(tenantId, portalOwnerId, cancellationToken)
+            ?? throw new ArgumentException("Portal not found.");
+        try
+        {
+            using var doc = JsonDocument.Parse(snapshot.PortalJson);
+            foreach (var record in EnumerateRecords(doc.RootElement))
+            {
+                if (!TryGetInt(record, "id", out var id) || id != portalId)
+                    continue;
+                if (record.TryGetProperty("isDeleted", out var deleted) && deleted.ValueKind == JsonValueKind.True)
+                    break;
+
+                var settings = ParseEmbeddedJson(record, "settingsJson");
+                var auth = settings.ValueKind == JsonValueKind.Object
+                           && settings.TryGetProperty("authentication", out var a) ? a : default;
+                var loginType = ReadString(auth, "loginType");
+                var settingsLoginType = ReadString(settings, "loginType");
+                var isEmailOtp = settingsLoginType.Equals("emailOtp", StringComparison.OrdinalIgnoreCase)
+                                 || loginType.Equals("EMAIL_LOGIN", StringComparison.OrdinalIgnoreCase)
+                                 || loginType.Equals("EMAIL_OTP", StringComparison.OrdinalIgnoreCase);
+                if (!isEmailOtp)
+                    throw new ArgumentException("This portal does not use Email with OTP.");
+                return;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        throw new ArgumentException("Portal not found.");
     }
 
     // ---------------------------------------------------------------- portal configuration

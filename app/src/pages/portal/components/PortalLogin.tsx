@@ -1,8 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
-import apiRouter from '@/api/apiRouter'
 import {
+  portalEmailSendOtp,
+  portalEmailVerifyOtp,
   portalMasterLogin,
   type PortalMasterLoginResponse,
   portalMasterSendOtp,
@@ -91,7 +92,6 @@ export default function PortalLogin({
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [pendingUser, setPendingUser] = useState<PortalAuthUser | null>(null)
   const { elapsed, resendLabel, resetTimer } = useResendTimer(t`Resend OTP`)
 
   const brandName = portal.branding?.brandName?.trim() || 'EZOFIS'
@@ -177,12 +177,11 @@ export default function PortalLogin({
     tenantId: portal.tenantId || urlParams.get('tenantId') || '',
   }
 
+  // Email with OTP: the code is emailed to the visitor's own address and
+  // checked on the server, which then issues the portal access token.
   const sendOtp = async (email: string) => {
-    const { error: otpError } = await apiRouter.sendMailOTP({
-      email,
-      requiredOTP: true,
-    })
-    if (otpError) throw new Error(t`Failed to send OTP. Please try again.`)
+    const sent = await portalEmailSendOtp(masterIds, email)
+    if (sent.error) throw new Error(sent.error)
     resetTimer()
   }
 
@@ -219,7 +218,6 @@ export default function PortalLogin({
         // The code goes to the email on the master record; the server finds it.
         const sent = await portalMasterSendOtp(masterIds, nextIdentifier)
         if (sent.error) throw new Error(sent.error)
-        setPendingUser({ displayName: nextIdentifier, username: nextIdentifier })
         resetTimer()
         setStep('otp')
         return
@@ -229,11 +227,6 @@ export default function PortalLogin({
         setError(t`Enter a valid email address.`)
         return
       }
-
-      setPendingUser({
-        displayName: nextIdentifier.split('@')[0],
-        username: nextIdentifier,
-      })
 
       await sendOtp(nextIdentifier)
       setStep('otp')
@@ -265,19 +258,15 @@ export default function PortalLogin({
         finishLogin(userFromMasterLogin(result.data, masterIds.tenantId))
         return
       }
-      const { data, error: otpError } = await apiRouter.verifyMailOTP({
-        email: identifier.trim(),
-        otp: String(otp).trim(),
-      })
-      if (otpError || (data && data !== 'Success')) {
-        throw new Error(t`Invalid OTP. Please try again.`)
-      }
-      finishLogin(
-        pendingUser || {
-          displayName: identifier.split('@')[0],
-          username: identifier.trim(),
-        },
+      const result = await portalEmailVerifyOtp(
+        masterIds,
+        identifier.trim(),
+        String(otp).trim(),
       )
+      if (result.error || !result.data) {
+        throw new Error(result.error || t`Invalid OTP. Please try again.`)
+      }
+      finishLogin(userFromMasterLogin(result.data, masterIds.tenantId))
     } catch (err) {
       setError(err instanceof Error ? err.message : t`Unable to verify OTP`)
     } finally {
@@ -425,7 +414,6 @@ export default function PortalLogin({
                 onClick={() => {
                   setStep('credentials')
                   setOtp('')
-                  setPendingUser(null)
                   setError('')
                 }}
               >

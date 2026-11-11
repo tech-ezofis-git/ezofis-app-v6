@@ -11,7 +11,7 @@ namespace SaaSApp.Api.Services;
 public interface ILoginEmailOtpService
 {
     /// <summary>Generate an 8-digit OTP, email it, and persist for audit. Returns the OTP for cache verification.</summary>
-    Task<string> SendLoginOtpAsync(string email, string? displayName, CancellationToken cancellationToken = default);
+    Task<string> SendLoginOtpAsync(string email, string? displayName, CancellationToken cancellationToken = default, string? message = null);
 }
 
 public sealed class LoginEmailOtpService : ILoginEmailOtpService
@@ -27,7 +27,7 @@ public sealed class LoginEmailOtpService : ILoginEmailOtpService
         _logger = logger;
     }
 
-    public async Task<string> SendLoginOtpAsync(string email, string? displayName, CancellationToken cancellationToken = default)
+    public async Task<string> SendLoginOtpAsync(string email, string? displayName, CancellationToken cancellationToken = default, string? message = null)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("Email is required.");
@@ -65,7 +65,7 @@ public sealed class LoginEmailOtpService : ILoginEmailOtpService
             mail,
             firstName,
             otp,
-            "Here is your Ezofis sudo authentication code:",
+            message ?? "Here is your Ezofis sudo authentication code:",
             "5 minutes");
 
         using var smtp = new SmtpClient(settings.OutgoingServer, settings.OutgoingPort)

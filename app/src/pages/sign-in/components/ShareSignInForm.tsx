@@ -4,6 +4,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import authApiV6 from '@/api/v6/auth'
+import { setSocialProof } from '@/api/v6/socialProof'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
@@ -171,6 +172,11 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
           },
         )
         const profile = await res.json()
+        setSocialProof({
+          accessToken: tokenResponse.access_token,
+          email: String(profile.email || ''),
+          provider: 'google',
+        })
         const gEmail: string = profile.email
 
         if (!gEmail || gEmail.toLowerCase() !== email.toLowerCase()) {
@@ -210,6 +216,12 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
       const loginResponse = await msalInstance.loginPopup({
         loginHint: email || undefined,
         scopes: ['user.read'],
+      })
+      setSocialProof({
+        accessToken: loginResponse.accessToken,
+        email: String(loginResponse.account?.username || ''),
+        idToken: loginResponse.idToken,
+        provider: 'microsoft',
       })
       const msEmail = loginResponse.account?.username || ''
 
