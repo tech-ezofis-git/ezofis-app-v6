@@ -14,6 +14,17 @@ import type { SlaSettings } from '../../../utils/slaSettings'
 import { createSlaRule } from '../../../utils/slaSettings'
 import SLAConfiguration from './SLAConfiguration'
 
+// Icons are fetched over the network in the app. In tests Iconify keeps load /
+// retry timers that can fire after the jsdom environment is torn down and set
+// state ("window is not defined", an unhandled error that fails CI). A plain
+// <span> never loads anything; an empty API provider alone was not enough.
+vi.mock('@iconify/react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@iconify/react')>()),
+  Icon: ({ icon }: { icon?: unknown }) => (
+    <span data-icon={typeof icon === 'string' ? icon : undefined} />
+  ),
+}))
+
 vi.mock('@/api/v6/user', () => ({
   getGroups: async () => ({
     data: [{ groupId: 'g1', name: 'Sales Team' }],
