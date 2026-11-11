@@ -504,6 +504,8 @@ export function DocumentDetailsView({
   )
   const [data, setData] = useState<WorkspaceDocumentDetail | null>(null)
   const [ticketData, setTicketData] = useState<any>(null)
+  // Open ticket rows when the file is in several workflows; null = the default (first row open).
+  const [openTicketIds, setOpenTicketIds] = useState<null | string[]>(null)
   // Every workflow this file is in (the ticket API's `tickets`); ticketData is the one shown.
   const [ticketList, setTicketList] = useState<
     {
@@ -2319,6 +2321,147 @@ export function DocumentDetailsView({
   }
 
   if (!data) return null
+  // Ticket Information details for one ticket (shown under its row when the file is
+  // in several workflows, or on its own when it is in one).
+  const renderTicketDetails = (
+    ticketData: (typeof ticketList)[number] & {
+      history?: {
+        description?: string
+        milestone?: string
+        occurredAtUtc?: string
+        title?: string
+      }[]
+    },
+  ) => (
+    <>
+      {ticketData.referenceNumber && (
+        <div className='flex items-center justify-between gap-4'>
+          <span className='text-[13px] text-gray-10'>Reference No</span>
+          <span className='truncate text-[13px] font-semibold text-gray-13'>
+            {ticketData.referenceNumber}
+          </span>
+        </div>
+      )}
+      {ticketData.ticketStatus && (
+        <div className='flex items-center justify-between gap-4'>
+          <span className='text-[13px] text-gray-10'>Status</span>
+          <StatusPill status={ticketData.ticketStatus} />
+        </div>
+      )}
+      {ticketData.assigneeEmail && (
+        <div className='flex items-center justify-between gap-4'>
+          <span className='text-[13px] text-gray-10'>Assignee</span>
+          <span
+            className='truncate text-[13px] font-semibold text-gray-13'
+            title={ticketData.assigneeEmail}
+          >
+            {ticketData.assigneeEmail}
+          </span>
+        </div>
+      )}
+      {ticketData.createdBy && (
+        <div className='flex items-center justify-between gap-4'>
+          <span className='text-[13px] text-gray-10'>{t`Created by`}</span>
+          <span
+            className='truncate text-[13px] font-semibold text-gray-13'
+            title={ticketData.createdBy}
+          >
+            {ticketData.createdBy}
+          </span>
+        </div>
+      )}
+
+      {Boolean(ticketData.history?.length) && (
+        <div className='mt-2 space-y-3 border-t border-gray-3 pt-3'>
+          <h4 className='text-[12px] font-semibold text-gray-11'>
+            Workflow History
+          </h4>
+          <div className='flex flex-col gap-3'>
+            {ticketData.history?.map((hist, index) => {
+              // Last step is pending unless the workflow has
+              // already completed (milestone "completed").
+              const isPending =
+                index === (ticketData.history?.length ?? 0) - 1 &&
+                String(hist.milestone || '')
+                  .trim()
+                  .toLowerCase() !== 'completed'
+              return (
+                <div
+                  key={index}
+                  className={cn(
+                    'relative z-10 flex gap-3',
+                    index < (ticketData.history?.length ?? 0) - 1 &&
+                      'before:absolute before:top-6 before:-bottom-3 before:left-[11px] before:w-0.5 before:bg-green-6',
+                  )}
+                >
+                  <div className='relative h-6 w-6 shrink-0'>
+                    {isPending ? (
+                      <span className='absolute inset-0 animate-ping rounded-full bg-orange-6' />
+                    ) : null}
+                    <div
+                      className={cn(
+                        'relative flex h-6 w-6 items-center justify-center rounded-full border-2',
+                        isPending
+                          ? 'border-orange-6 bg-orange-3 text-orange-11'
+                          : 'border-green-6 bg-green-3 text-green-11',
+                      )}
+                    >
+                      <DynamicIcon
+                        className='h-3 w-3'
+                        name={getMilestoneIcon(hist.milestone)}
+                      />
+                    </div>
+                  </div>
+                  <div className='min-w-0 flex-1 pb-1'>
+                    <p className='text-[13px] leading-tight font-medium text-gray-13'>
+                      {hist.title}
+                    </p>
+                    {hist.description && (
+                      <p className='mt-0.5 text-[12px] leading-tight text-gray-9'>
+                        {hist.description}
+                      </p>
+                    )}
+                    {hist.occurredAtUtc && (
+                      <p className='mt-1 text-[11px] text-gray-8'>
+                        {formatDateTime(hist.occurredAtUtc)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+      {ticketList.length > 1 && ticketData.workflowId && !insideOpenRequest ? (
+        <div className='flex justify-end pt-1'>
+          <button
+            className='group/link inline-flex items-center gap-1.5 rounded text-[12.5px] font-medium text-primary-11 transition-colors outline-none hover:text-primary-12 focus-visible:ring-2 focus-visible:ring-primary-6 active:opacity-80 disabled:cursor-wait disabled:opacity-60'
+            disabled={Boolean(ticketRequest.loadingInstanceId)}
+            type='button'
+            onClick={() => openTicketRequest(ticketData)}
+          >
+            <Icon
+              className={cn(
+                'size-3.5 transition-transform duration-200 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5',
+                ticketRequest.loadingInstanceId ===
+                  String(ticketData.workflowInstanceId) && 'animate-spin',
+              )}
+              name={
+                ticketRequest.loadingInstanceId ===
+                String(ticketData.workflowInstanceId)
+                  ? 'lucide:loader-2'
+                  : 'lucide:external-link'
+              }
+            />
+            <span className='underline-offset-2 group-hover/link:underline'>
+              {t`Open request`}
+            </span>
+          </button>
+        </div>
+      ) : null}
+    </>
+  )
 
   return (
     <div className='animate-in fade-in relative flex h-full min-h-0 flex-1 flex-col bg-surface-secondary text-[13px] text-gray-11 duration-300'>
@@ -3918,60 +4061,63 @@ export function DocumentDetailsView({
                   </h3>
                   <div className='space-y-3 p-4'>
                     {ticketList.length > 1 ? (
-                      // The file is in more than one workflow: one card per workflow in
-                      // a scrolling row; the selected one is shown below.
-                      <div className='-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pt-1 pb-2 [scrollbar-width:thin]'>
-                        {ticketList.map((ticket) => {
+                      // The file is in more than one workflow: one row per workflow;
+                      // the open row shows that ticket's details below its name.
+                      <div className='space-y-2'>
+                        {ticketList.map((ticket, index) => {
                           const selected =
                             ticket.workflowInstanceId ===
                             ticketData.workflowInstanceId
+                          const expanded = openTicketIds
+                            ? openTicketIds.includes(ticket.workflowInstanceId)
+                            : index === 0
+                          // The full ticket (with history) for the selected one.
+                          const details = selected
+                            ? { ...ticket, ...ticketData }
+                            : ticket
                           const pending = String(ticket.ticketStatus || '')
                             .toLowerCase()
                             .includes('pending')
                           return (
                             <div
-                              className='relative flex w-[264px] shrink-0 snap-start'
                               key={ticket.workflowInstanceId}
-                            >
-                            <button
-                              aria-pressed={selected}
-                              type='button'
                               className={cn(
-                                'flex w-full flex-col rounded-lg border p-2.5 text-left shadow-xs transition-all outline-none hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary-6 active:scale-[0.98]',
-                                selected
-                                  ? 'border-primary-6 bg-primary-2'
+                                'overflow-hidden rounded-lg border transition-colors',
+                                expanded
+                                  ? 'border-primary-6 bg-surface'
                                   : 'border-gray-3 bg-surface hover:border-gray-5',
                               )}
-                              onClick={() => setTicketData(ticket)}
                             >
-                              <div className='mb-2 flex items-start justify-between gap-2'>
-                                <div className='min-w-0'>
-                                  <p
-                                    className='truncate text-[12px] leading-4 font-semibold text-gray-13'
-                                    title={ticket.workflowName || undefined}
-                                  >
-                                    {ticket.workflowName || t`Workflow`}
-                                  </p>
-                                  <div className='mt-1 flex items-center gap-2'>
-                                    <span className='rounded bg-primary-3 px-1.5 py-px text-[10px] font-semibold tracking-wide text-primary-11'>
-                                      {ticket.referenceNumber || '—'}
-                                    </span>
-                                    {ticket.createdAtUtc ? (
-                                      <span className='flex items-center gap-1 text-[10.5px] text-gray-9'>
-                                        <Icon
-                                          className='size-3'
-                                          name='lucide:calendar'
-                                        />
-                                        {formatDateOnly(ticket.createdAtUtc)}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </div>
+                              <button
+                                aria-expanded={expanded}
+                                type='button'
+                                className={cn(
+                                  'group flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary-6 focus-visible:ring-inset active:bg-gray-3',
+                                  expanded ? 'bg-primary-2' : 'hover:bg-gray-2',
+                                )}
+                                onClick={() => {
+                                  const current =
+                                    openTicketIds ??
+                                    ticketList
+                                      .slice(0, 1)
+                                      .map((item) => item.workflowInstanceId)
+                                  setOpenTicketIds(
+                                    expanded
+                                      ? current.filter(
+                                          (item) =>
+                                            item !== ticket.workflowInstanceId,
+                                        )
+                                      : [...current, ticket.workflowInstanceId],
+                                  )
+                                  // The form card follows the last opened ticket.
+                                  if (!expanded) setTicketData(ticket)
+                                }}
+                              >
                                 <Tooltip
                                   content={ticket.ticketStatus || t`Completed`}
                                   position='top'
                                 >
-                                  <span className='relative mt-1 flex size-2 shrink-0'>
+                                  <span className='relative flex size-2 shrink-0'>
                                     {pending ? (
                                       <span className='absolute inset-0 animate-ping rounded-full bg-orange-6' />
                                     ) : null}
@@ -3983,294 +4129,181 @@ export function DocumentDetailsView({
                                     />
                                   </span>
                                 </Tooltip>
-                              </div>
-                              {/* Pushed to the bottom: cards in the row share the tallest
-                                  height, so the last line always sits beside the open icon. */}
-                              <div className='mt-auto space-y-1 border-t border-gray-3 pt-2 pr-6 text-[11px] text-gray-11'>
-                                {ticket.assigneeEmail ? (
-                                  <div
-                                    className='flex min-w-0 items-center gap-1.5'
-                                    title={`${t`Assignee`}: ${ticket.assigneeEmail}`}
-                                  >
-                                    <Icon
-                                      className='size-3 shrink-0 text-gray-9'
-                                      name='lucide:user-round-check'
-                                    />
-                                    <span className='truncate'>
-                                      {ticket.assigneeEmail}
-                                    </span>
-                                  </div>
+                                <span
+                                  className='min-w-0 flex-1 truncate text-[13px] font-semibold text-gray-13'
+                                  title={ticket.workflowName || undefined}
+                                >
+                                  {ticket.workflowName || t`Workflow`}
+                                </span>
+                                {ticket.referenceNumber ? (
+                                  <span className='shrink-0 rounded bg-primary-3 px-1.5 py-px text-[10px] font-semibold tracking-wide text-primary-11'>
+                                    {ticket.referenceNumber}
+                                  </span>
                                 ) : null}
-                                {ticket.createdBy ? (
-                                  <div
-                                    className='flex min-w-0 items-center gap-1.5'
-                                    title={`${t`Created by`}: ${ticket.createdBy}`}
-                                  >
-                                    <Icon
-                                      className='size-3 shrink-0 text-gray-9'
-                                      name='lucide:user-pen'
-                                    />
-                                    <span className='truncate'>
-                                      {ticket.createdBy}
-                                    </span>
-                                  </div>
-                                ) : null}
-                              </div>
-                            </button>
-                            {/* Lines up with the card's last line (bottom padding +
-                                half the icon), whatever lines the card has. The
-                                wrapper is flex so it is exactly the card's height. */}
-                            {ticket.workflowId && !insideOpenRequest ? (
-                              <div className='absolute right-1.5 bottom-1.5'>
-                                <Tooltip content={t`Open request`} position='top'>
-                                  <button
-                                    aria-label={t`Open request`}
-                                    className='inline-flex size-6 items-center justify-center rounded-md text-gray-10 transition-all hover:bg-gray-3 hover:text-primary-11 active:scale-95 disabled:cursor-wait'
-                                    type='button'
-                                    disabled={Boolean(
-                                      ticketRequest.loadingInstanceId,
+                                <span
+                                  className={cn(
+                                    'flex size-6 shrink-0 items-center justify-center rounded-md text-gray-10 transition-all duration-200 group-hover:bg-gray-4 group-hover:text-gray-12 group-active:scale-90',
+                                    expanded && 'text-primary-11',
+                                  )}
+                                >
+                                  <Icon
+                                    name='lucide:chevron-down'
+                                    className={cn(
+                                      'size-4 transition-transform duration-300 ease-out',
+                                      expanded
+                                        ? 'rotate-180 group-hover:-translate-y-0.5'
+                                        : 'group-hover:translate-y-0.5',
                                     )}
-                                    onClick={() => openTicketRequest(ticket)}
-                                  >
-                                    <Icon
-                                      className={cn(
-                                        'size-3.5',
-                                        ticketRequest.loadingInstanceId ===
-                                          String(ticket.workflowInstanceId) &&
-                                          'animate-spin',
-                                      )}
-                                      name={
-                                        ticketRequest.loadingInstanceId ===
-                                        String(ticket.workflowInstanceId)
-                                          ? 'lucide:loader-2'
-                                          : 'lucide:external-link'
-                                      }
-                                    />
-                                  </button>
-                                </Tooltip>
+                                  />
+                                </span>
+                              </button>
+                              {/* Grid rows 0fr -> 1fr animates the panel's height open and closed. */}
+                              <div
+                                aria-hidden={!expanded}
+                                inert={!expanded}
+                                className={cn(
+                                  'grid transition-[grid-template-rows,opacity] duration-300 ease-out',
+                                  expanded
+                                    ? 'grid-rows-[1fr] opacity-100'
+                                    : 'grid-rows-[0fr] opacity-0',
+                                )}
+                              >
+                                <div className='min-h-0 overflow-hidden'>
+                                  <div className='space-y-3 border-t border-gray-3 px-3 py-3'>
+                                    {renderTicketDetails(details)}
+                                  </div>
+                                </div>
                               </div>
-                            ) : null}
                             </div>
                           )
                         })}
                       </div>
-                    ) : null}
-                    {ticketData.referenceNumber && (
-                      <div className='flex items-center justify-between gap-4'>
-                        <span className='text-[13px] text-gray-10'>
-                          Reference No
-                        </span>
-                        <span className='truncate text-[13px] font-semibold text-gray-13'>
-                          {ticketData.referenceNumber}
-                        </span>
-                      </div>
-                    )}
-                    {ticketData.ticketStatus && (
-                      <div className='flex items-center justify-between gap-4'>
-                        <span className='text-[13px] text-gray-10'>Status</span>
-                        <StatusPill status={ticketData.ticketStatus} />
-                      </div>
-                    )}
-                    {ticketData.assigneeEmail && (
-                      <div className='flex items-center justify-between gap-4'>
-                        <span className='text-[13px] text-gray-10'>
-                          Assignee
-                        </span>
-                        <span
-                          className='truncate text-[13px] font-semibold text-gray-13'
-                          title={ticketData.assigneeEmail}
-                        >
-                          {ticketData.assigneeEmail}
-                        </span>
-                      </div>
-                    )}
-
-                    {ticketData.history?.length > 0 && (
-                      <div className='mt-2 space-y-3 border-t border-gray-3 pt-3'>
-                        <h4 className='text-[12px] font-semibold text-gray-11'>
-                          Workflow History
-                        </h4>
-                        <div className='flex flex-col gap-3'>
-                          {ticketData.history.map(
-                            (hist: any, index: number) => {
-                              // Last step is pending unless the workflow has
-                              // already completed (milestone "completed").
-                              const isPending =
-                                index === ticketData.history.length - 1 &&
-                                String(hist.milestone || '')
-                                  .trim()
-                                  .toLowerCase() !== 'completed'
-                              return (
-                                <div
-                                  key={index}
-                                  className={cn(
-                                    'relative z-10 flex gap-3',
-                                    index < ticketData.history.length - 1 &&
-                                      'before:absolute before:top-6 before:-bottom-3 before:left-[11px] before:w-0.5 before:bg-green-6',
-                                  )}
-                                >
-                                  <div className='relative h-6 w-6 shrink-0'>
-                                    {isPending ? (
-                                      <span className='absolute inset-0 animate-ping rounded-full bg-orange-6' />
-                                    ) : null}
-                                    <div
-                                      className={cn(
-                                        'relative flex h-6 w-6 items-center justify-center rounded-full border-2',
-                                        isPending
-                                          ? 'border-orange-6 bg-orange-3 text-orange-11'
-                                          : 'border-green-6 bg-green-3 text-green-11',
-                                      )}
-                                    >
-                                      <DynamicIcon
-                                        className='h-3 w-3'
-                                        name={getMilestoneIcon(hist.milestone)}
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className='min-w-0 flex-1 pb-1'>
-                                    <p className='text-[13px] leading-tight font-medium text-gray-13'>
-                                      {hist.title}
-                                    </p>
-                                    {hist.description && (
-                                      <p className='mt-0.5 text-[12px] leading-tight text-gray-9'>
-                                        {hist.description}
-                                      </p>
-                                    )}
-                                    {hist.occurredAtUtc && (
-                                      <p className='mt-1 text-[11px] text-gray-8'>
-                                        {formatDateTime(hist.occurredAtUtc)}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            },
-                          )}
-                        </div>
-                      </div>
+                    ) : (
+                      renderTicketDetails(ticketData)
                     )}
                   </div>
                 </Card>
               ) : null}
               {(isEditingMetadata ? [] : withFormCard(infoCards, formCard)).map(
                 (card) => (
-                <Card className='overflow-hidden p-0' key={card.id}>
-                  <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
-                    <DynamicIcon
-                      className='h-4 w-4 text-blue-11'
-                      name={card.iconKey}
-                    />
-                    {card.title}
-                  </h3>
-                  <div>
-                    {card.rows.map((row) => {
-                      const rowKey = `${card.id}:${row.id ?? row.label}`
-                      const fieldValue = getFieldDisplayValue(row.value)
-                      const maskField = isSelectedPiiLabel(row.label)
-                      const hasPdfMatch =
-                        !maskField &&
-                        Boolean(
-                          fieldValue && matchedFieldValues.has(fieldValue),
-                        )
-                      const isActive = activeFieldKey === rowKey
-                      const plainVal = toDisplayValue(row.value)
-                      const maskedTail =
-                        plainVal.length <= 3 ? plainVal : plainVal.slice(-3)
-                      const canFocusField = Boolean(fieldValue) && !maskField
-                      const focusField = () => {
-                        if (!canFocusField) return
-                        setActiveFieldKey(rowKey)
-                        setFieldFocusRequestId((previous) => previous + 1)
-                      }
-                      return (
-                        // A div (not a button) so the label / value text can
-                        // be selected and copied like normal text.
-                        <div
-                          key={rowKey}
-                          role={canFocusField ? 'button' : undefined}
-                          tabIndex={canFocusField ? 0 : undefined}
-                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all outline-none select-text last:border-0 focus-visible:ring-2 focus-visible:ring-primary-6 ${
-                            isActive
-                              ? 'z-10 bg-gray-2 ring-1 ring-primary-5/30'
-                              : 'hover:bg-gray-1'
-                          } ${canFocusField ? 'cursor-pointer' : 'cursor-default'}`}
-                          onClick={() => {
-                            // Selecting text to copy shouldn't jump the preview.
-                            const selection = window.getSelection()
-                            if (selection && !selection.isCollapsed) return
-                            focusField()
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key !== 'Enter' && event.key !== ' ') {
-                              return
-                            }
-                            event.preventDefault()
-                            focusField()
-                          }}
-                        >
-                          {/* 1. OCR Icon Only with Tooltip (when the value is found in the PDF) */}
-                          <span className='flex h-5 w-5 shrink-0 items-center justify-center pt-0.5'>
-                            {hasPdfMatch ? (
-                              <Tooltip
-                                content={t`Source: OCR Document`}
-                                position='top'
-                              >
-                                <span className='inline-flex h-5 w-5 items-center justify-center rounded border border-[var(--teal-3)] bg-[var(--teal-1)] text-[var(--teal-9)] shadow-2xs transition-all hover:scale-105'>
-                                  <ScanText className='h-3 w-3' />
-                                </span>
-                              </Tooltip>
-                            ) : null}
-                          </span>
-
-                          {/* 2. Label */}
-                          <div className='min-w-0 flex-1 overflow-hidden pt-0.5 text-[13px] text-gray-10'>
-                            <span
-                              className='block truncate text-left hover:overflow-hidden hover:break-words hover:whitespace-normal'
-                              title={row.label}
-                            >
-                              {row.label}
+                  <Card className='overflow-hidden p-0' key={card.id}>
+                    <h3 className='flex items-center gap-2 border-b border-gray-3 px-4 py-3 text-[15px] font-semibold text-gray-13'>
+                      <DynamicIcon
+                        className='h-4 w-4 text-blue-11'
+                        name={card.iconKey}
+                      />
+                      {card.title}
+                    </h3>
+                    <div>
+                      {card.rows.map((row) => {
+                        const rowKey = `${card.id}:${row.id ?? row.label}`
+                        const fieldValue = getFieldDisplayValue(row.value)
+                        const maskField = isSelectedPiiLabel(row.label)
+                        const hasPdfMatch =
+                          !maskField &&
+                          Boolean(
+                            fieldValue && matchedFieldValues.has(fieldValue),
+                          )
+                        const isActive = activeFieldKey === rowKey
+                        const plainVal = toDisplayValue(row.value)
+                        const maskedTail =
+                          plainVal.length <= 3 ? plainVal : plainVal.slice(-3)
+                        const canFocusField = Boolean(fieldValue) && !maskField
+                        const focusField = () => {
+                          if (!canFocusField) return
+                          setActiveFieldKey(rowKey)
+                          setFieldFocusRequestId((previous) => previous + 1)
+                        }
+                        return (
+                          // A div (not a button) so the label / value text can
+                          // be selected and copied like normal text.
+                          <div
+                            key={rowKey}
+                            role={canFocusField ? 'button' : undefined}
+                            tabIndex={canFocusField ? 0 : undefined}
+                            className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all outline-none select-text last:border-0 focus-visible:ring-2 focus-visible:ring-primary-6 ${
+                              isActive
+                                ? 'z-10 bg-gray-2 ring-1 ring-primary-5/30'
+                                : 'hover:bg-gray-1'
+                            } ${canFocusField ? 'cursor-pointer' : 'cursor-default'}`}
+                            onClick={() => {
+                              // Selecting text to copy shouldn't jump the preview.
+                              const selection = window.getSelection()
+                              if (selection && !selection.isCollapsed) return
+                              focusField()
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter' && event.key !== ' ') {
+                                return
+                              }
+                              event.preventDefault()
+                              focusField()
+                            }}
+                          >
+                            {/* 1. OCR Icon Only with Tooltip (when the value is found in the PDF) */}
+                            <span className='flex h-5 w-5 shrink-0 items-center justify-center pt-0.5'>
+                              {hasPdfMatch ? (
+                                <Tooltip
+                                  content={t`Source: OCR Document`}
+                                  position='top'
+                                >
+                                  <span className='inline-flex h-5 w-5 items-center justify-center rounded border border-[var(--teal-3)] bg-[var(--teal-1)] text-[var(--teal-9)] shadow-2xs transition-all hover:scale-105'>
+                                    <ScanText className='h-3 w-3' />
+                                  </span>
+                                </Tooltip>
+                              ) : null}
                             </span>
-                          </div>
 
-                          {/* 3. Value — truncated on one line; hover wraps in this column only */}
-                          <div className='ml-auto max-w-[50%] min-w-0 shrink-0 overflow-hidden pt-0.5 text-right'>
-                            {maskField ? (
-                              <b
-                                aria-label={t`Redacted`}
-                                className='block font-mono text-[13px] font-semibold whitespace-nowrap text-gray-13'
+                            {/* 2. Label */}
+                            <div className='min-w-0 flex-1 overflow-hidden pt-0.5 text-[13px] text-gray-10'>
+                              <span
+                                className='block truncate text-left hover:overflow-hidden hover:break-words hover:whitespace-normal'
+                                title={row.label}
                               >
-                                {`*****${maskedTail}`}
-                              </b>
-                            ) : row.table ? (
-                              <span className='flex justify-end'>
-                                {row.table.length ? (
-                                  <DynamicTableColumnCell
-                                    rawVal={row.table}
-                                    title={row.label}
-                                  />
-                                ) : (
-                                  <b className='text-[13px] font-semibold text-gray-13'>
-                                    -
-                                  </b>
-                                )}
+                                {row.label}
                               </span>
-                            ) : row.label.toLowerCase() === 'status' ? (
-                              <StatusPill status={plainVal} />
-                            ) : (
-                              <b
-                                className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:break-words hover:whitespace-normal'
-                                title={plainVal}
-                              >
-                                {plainVal}
-                              </b>
-                            )}
+                            </div>
+
+                            {/* 3. Value — truncated on one line; hover wraps in this column only */}
+                            <div className='ml-auto max-w-[50%] min-w-0 shrink-0 overflow-hidden pt-0.5 text-right'>
+                              {maskField ? (
+                                <b
+                                  aria-label={t`Redacted`}
+                                  className='block font-mono text-[13px] font-semibold whitespace-nowrap text-gray-13'
+                                >
+                                  {`*****${maskedTail}`}
+                                </b>
+                              ) : row.table ? (
+                                <span className='flex justify-end'>
+                                  {row.table.length ? (
+                                    <DynamicTableColumnCell
+                                      rawVal={row.table}
+                                      title={row.label}
+                                    />
+                                  ) : (
+                                    <b className='text-[13px] font-semibold text-gray-13'>
+                                      -
+                                    </b>
+                                  )}
+                                </span>
+                              ) : row.label.toLowerCase() === 'status' ? (
+                                <StatusPill status={plainVal} />
+                              ) : (
+                                <b
+                                  className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:break-words hover:whitespace-normal'
+                                  title={plainVal}
+                                >
+                                  {plainVal}
+                                </b>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </Card>
-              ))}
+                        )
+                      })}
+                    </div>
+                  </Card>
+                ),
+              )}
               {!isEditingMetadata &&
               hasTicketForm &&
               (ticketForm.isLoading || ticketForm.isError) ? (
