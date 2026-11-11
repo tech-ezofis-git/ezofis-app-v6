@@ -68,9 +68,12 @@ public static class WorkflowSlaSettingsValidator
                 errors.Add($"{scopeLabel}: Advanced mode must not contain Standard rules.");
             if (!string.IsNullOrWhiteSpace(sla.MasterFieldId)
                 && string.IsNullOrWhiteSpace(sla.EntryId)
-                && sla.MasterEntries is not { Count: > 0 })
+                && sla.MasterEntries is not { Count: > 0 }
+                && sla.Selection == null)
                 errors.Add($"{scopeLabel}: choose the SLA Master value (entry) for the selected field.");
             ValidateMasterEntries(sla, scopeLabel, errors);
+            ValidateSelection(sla, scopeLabel, errors);
+            ValidateAfterLast(sla.AfterLastLevel, scopeLabel, isBlockScope, errors);
             if (sla.AdvancedRules?.Count > 0 || sla.FieldMapping != null)
             {
                 if (isBlockScope)
@@ -89,6 +92,8 @@ public static class WorkflowSlaSettingsValidator
 
         if (!string.IsNullOrWhiteSpace(sla.SlaMasterId))
             errors.Add($"{scopeLabel}: Standard mode must not reference an SLA Master.");
+        if (sla.Selection != null || sla.AfterLastLevel != null)
+            errors.Add($"{scopeLabel}: Standard mode must not choose a rule per request or an action after the last level.");
 
         var seenIds = new HashSet<string>(StringComparer.Ordinal);
         for (var i = 0; i < rules.Count; i++)
@@ -162,6 +167,63 @@ public static class WorkflowSlaSettingsValidator
         "IS_GREATER_THAN", "IS_GREATER_THAN_OR_EQUALS_TO", "IS_LESSER_THAN", "IS_LESSER_THAN_OR_EQUALS_TO",
         "IS_EMPTY", "IS_NOT_EMPTY", "STARTS_WITH", "ENDS_WITH"
     };
+
+    public const string AfterLastNone = "none";
+
+    private static readonly HashSet<string> AfterLastTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        AfterLastNone, "remind", "group", "user", "manager"
+    };
+
+    /// <summary>"It depends on the request": which field, how the rule is found.</summary>
+    private static void ValidateSelection(WorkflowSlaConfigurationDto sla, string scopeLabel, List<string> errors)
+    {
+        if (sla.Selection is not { } selection)
+            return;
+
+        if (string.IsNullOrWhiteSpace(selection.FieldId))
+            errors.Add($"{scopeLabel}: select the request field that decides the time limit.");
+        if (!WorkflowSlaRuleSelector.IsKnownMethod(selection.Method))
+        {
+            errors.Add($"{scopeLabel}: choose how to find the rule.");
+            return;
+        }
+
+        if (selection.Method == WorkflowSlaRuleSelector.MethodColumn
+            && (string.IsNullOrWhiteSpace(selection.RecordFormId) || string.IsNullOrWhiteSpace(selection.RuleColumn)))
+            errors.Add($"{scopeLabel}: select the column that names the rule.");
+        if (selection.Method == WorkflowSlaRuleSelector.MethodMap
+            && selection.ValueRules?.Any(r => string.IsNullOrWhiteSpace(r.Value)) == true)
+            errors.Add($"{scopeLabel}: a rule is set for an empty option.");
+        if (sla.MasterEntries is { Count: > 0 })
+            errors.Add($"{scopeLabel}: a rule per request must not also list fixed entries.");
+    }
+
+    private static void ValidateAfterLast(WorkflowSlaAfterLastDto? after, string scopeLabel, bool isBlockScope, List<string> errors)
+    {
+        if (after == null)
+            return;
+
+        var type = after.Type?.Trim().ToLowerInvariant() ?? "";
+        if (!AfterLastTypes.Contains(type))
+        {
+            errors.Add($"{scopeLabel}: choose what happens after the last level.");
+            return;
+        }
+
+        if (type == AfterLastNone)
+            return;
+        if (!isBlockScope && type != "remind")
+            errors.Add($"{scopeLabel}: the workflow SLA can only send a reminder after the last level.");
+        if (after.Wait is not > 0)
+            errors.Add($"{scopeLabel}: enter how long to wait after the last level.");
+        if (string.IsNullOrWhiteSpace(after.WaitUnit) || !DurationUnits.Contains(after.WaitUnit))
+            errors.Add($"{scopeLabel}: the wait after the last level must be in minutes, hours or days.");
+        if (type == "group" && !Guid.TryParse(after.GroupId, out _))
+            errors.Add($"{scopeLabel}: select the group for after the last level.");
+        if (type == "user" && string.IsNullOrWhiteSpace(after.UserId))
+            errors.Add($"{scopeLabel}: select the user for after the last level.");
+    }
 
     /// <summary>Each SLA Master row needs an entry and something to do at its time.</summary>
     private static void ValidateMasterEntries(WorkflowSlaConfigurationDto sla, string scopeLabel, List<string> errors)

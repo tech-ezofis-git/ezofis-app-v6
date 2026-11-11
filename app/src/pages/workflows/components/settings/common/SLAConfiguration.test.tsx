@@ -11,6 +11,7 @@ import {
 import { useState } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { SlaSettings } from '../../../utils/slaSettings'
+import useWorkflowStore from '../../../stores/useWorkflowStore'
 import { createSlaRule } from '../../../utils/slaSettings'
 import SLAConfiguration from './SLAConfiguration'
 
@@ -35,12 +36,28 @@ vi.mock('@/api/v6/user', () => ({
 vi.mock('@/api/form/queries', () => ({
   getFormFieldsQueryOptions: (formId: string) => ({
     queryKey: ['fields', formId],
-    queryFn: async () => [
-      { id: 'f1', label: 'Name', type: 'SHORT_TEXT' },
-      formId === 'm-steps'
-        ? { id: 't1', label: 'SLA Steps', type: 'TABLE' }
-        : { id: 'f3', label: 'Response Time', type: 'NUMBER' },
-    ],
+    queryFn: async () =>
+      formId === '42'
+        ? [
+            {
+              id: 'req',
+              label: 'Request Type',
+              settings: {
+                specific: {
+                  customOptions: 'Support,Other',
+                  optionsType: 'CUSTOM',
+                  separateOptionsUsing: 'COMMA',
+                },
+              },
+              type: 'SINGLE_SELECT',
+            },
+          ]
+        : [
+            { id: 'f1', label: 'Name', type: 'SHORT_TEXT' },
+            formId === 'm-steps'
+              ? { id: 't1', label: 'SLA Steps', type: 'TABLE' }
+              : { id: 'f3', label: 'Response Time', type: 'NUMBER' },
+          ],
   }),
   getSlaFormsQueryOptions: () => ({
     queryKey: ['sla-forms'],
@@ -50,7 +67,17 @@ vi.mock('@/api/form/queries', () => ({
 vi.mock('@/api/form/form', () => ({
   default: {
     getFormEntries: async () => ({
-      data: { entries: [{ f1: 'Support', item_id: 'e1' }] },
+      data: {
+        entries: [
+          {
+            f1: 'Support',
+            item_id: 'e1',
+            t1: [
+              { 'After': '1', 'Notify users': ['u1'], 'Time unit': 'Hours' },
+            ],
+          },
+        ],
+      },
     }),
   },
 }))
@@ -161,11 +188,15 @@ describe('Advanced SLA entries', () => {
 
   it('adds and removes entries, each with its own Notify and Escalate', async () => {
     render(<Harness initial={advanced()} />)
-    expect(await screen.findByText('SLA Configuration Form')).toBeTruthy()
+    expect(
+      await screen.findByText('Which form has your time limit rules?'),
+    ).toBeTruthy()
     expect(screen.queryByText('Entry Display Field')).toBeNull()
     expect(screen.getByText('SLA Rules & Entries')).toBeTruthy()
     expect(screen.getByText('SLA Rule 1')).toBeTruthy()
-    expect(screen.getByText('Select Master Form Entry')).toBeTruthy()
+    expect(
+      screen.getByText('Which Time Limit Rule Do You Want to Use?'),
+    ).toBeTruthy()
     expect(screen.queryByText('Value')).toBeNull()
     expect(screen.queryByText('When the SLA is crossed')).toBeNull()
 
@@ -192,7 +223,9 @@ describe('Advanced SLA entries', () => {
 
     render(<Harness initial={{ ...advanced(), slaMasterId: 'm-steps' }} />)
     // With a steps table the rule area is just the entry dropdown.
-    expect(await screen.findByText('Select Master Form Entry')).toBeTruthy()
+    expect(
+      await screen.findByText('Which rule should every request use?'),
+    ).toBeTruthy()
     await waitFor(() => expect(screen.queryByLabelText('Notify')).toBeNull())
     expect(screen.queryByText('SLA Rule 1')).toBeNull()
     expect(screen.queryByText('SLA Rules & Entries')).toBeNull()
@@ -204,6 +237,88 @@ describe('Advanced SLA entries', () => {
     render(<Harness initial={{ ...advanced(), masterFieldId: null }} />)
     expect((await screen.findAllByText('Support')).length).toBeGreaterThan(0)
     expect(screen.queryByText('Entry Display Field')).toBeNull()
+  }, 20000)
+
+  it('explains the flow, and starts with one rule for every request', async () => {
+    render(<Harness initial={advanced()} />)
+    expect(await screen.findByText('How This Works')).toBeTruthy()
+    expect(screen.getByText('All requests')).toBeTruthy()
+    expect(
+      screen.getByText('Every request uses the rule you choose.'),
+    ).toBeTruthy()
+  })
+
+  it('switches to a rule per request and back, without old entries', async () => {
+    render(<Harness initial={advanced()} />)
+    fireEvent.click(await screen.findByText('No, It Depends on the Request'))
+    expect(latest?.selection?.method).toBe('map')
+    expect(latest?.masterEntries).toEqual([])
+    expect(
+      await screen.findByText('Which request field decides the time limit?'),
+    ).toBeTruthy()
+
+    fireEvent.click(screen.getByText('Yes, Same for Every Request'))
+    expect(latest?.selection).toBeNull()
+    expect(latest?.masterEntries).toHaveLength(1)
+  }, 20000)
+
+  it('shows the count, the levels and the example for the chosen field', async () => {
+    useWorkflowStore.setState({ form: 42 })
+    render(
+      <Harness
+        initial={{
+          ...advanced(),
+          masterEntries: [],
+          selection: {
+            defaultEntryId: null,
+            fieldId: 'req',
+            method: 'sameName',
+            recordFormId: null,
+            recordValueColumn: null,
+            ruleColumn: null,
+            valueRules: [],
+          },
+          slaMasterId: 'm-steps',
+        }}
+      />,
+    )
+    expect(
+      await screen.findByText(
+        '1 out of 2 options has a time limit rule. The remaining option will have no time limit.',
+      ),
+    ).toBeTruthy()
+    expect(await screen.findByText('Notify Raja')).toBeTruthy()
+    expect(screen.getByText('After 1 hour')).toBeTruthy()
+    expect(screen.getByText('Nothing else happens')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Support → Support rule → Notify Raja after 1 hour → Nothing else happens',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByText('This rule has the same name.')).toBeTruthy()
+    useWorkflowStore.setState({ form: null })
+  }, 20000)
+
+  it('asks for a wait and a target only after choosing an action', async () => {
+    render(
+      <Harness
+        initial={{
+          ...advanced(),
+          afterLastLevel: {
+            groupId: null,
+            type: 'group',
+            userId: null,
+            wait: null,
+            waitUnit: 'days',
+          },
+          slaMasterId: 'm-steps',
+        }}
+      />,
+    )
+    expect(await screen.findByText('Which group?')).toBeTruthy()
+    expect(screen.getByText('Enter how long to wait')).toBeTruthy()
+    expect(screen.getByText('Select a group')).toBeTruthy()
+    expect(await screen.findByText('Move to the chosen group')).toBeTruthy()
   }, 20000)
 
   it('says when the master form has no time field for this SLA', async () => {

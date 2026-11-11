@@ -29,7 +29,7 @@ import {
   type SlaSettings,
   validateSlaSettings,
 } from '../../../utils/slaSettings'
-import SlaMasterEntryPicker from './SlaMasterEntryPicker'
+import SlaCustomSetup from './SlaCustomSetup'
 
 interface SLAConfigurationProps {
   scope: SlaScope
@@ -155,8 +155,8 @@ export default function SLAConfiguration({
             </span>
             <span className='text-11 leading-tight text-gray-9'>
               {isBlock
-                ? 'Time this stage has to act'
-                : 'Time to reach the workflow end'}
+                ? 'Time allowed, and who to tell if late.'
+                : 'Time allowed, and who to tell if late.'}
             </span>
           </div>
         </div>
@@ -207,8 +207,8 @@ export default function SLAConfiguration({
             </span>
             <span className='text-11 leading-tight text-gray-9'>
               {isBlock
-                ? 'Time this stage has to act'
-                : 'Time to reach the workflow end'}
+                ? 'Time allowed, and who to tell if late.'
+                : 'Time allowed, and who to tell if late.'}
             </span>
           </div>
         </div>
@@ -221,15 +221,15 @@ export default function SLAConfiguration({
       <Segmented<SlaMode>
         value={value.mode}
         options={[
-          { id: 'standard', label: 'Standard' },
-          { id: 'advanced', label: 'Advanced' },
+          { id: 'standard', label: 'Basic Setup' },
+          { id: 'advanced', label: 'Custom Setup' },
         ]}
         onChange={setMode}
       />
       <span className='-mt-1 px-1 text-11 leading-tight text-gray-9'>
         {value.mode === 'standard'
-          ? 'Set the times and people here'
-          : 'Times and people come from a form'}
+          ? 'Set one fixed time limit for completing this task.'
+          : 'Set different time limits based on the request details.'}
       </span>
 
       {value.mode === 'standard' ? (
@@ -579,40 +579,16 @@ export default function SLAConfiguration({
           </button>
         </div>
       ) : (
-        <div className='animate-in fade-in flex flex-col gap-3 rounded-xl bg-surface p-4 shadow-sm duration-200'>
-          <InputSelect
-            description='The form that holds your SLA rules'
-            error={errors._config?.slaMasterId}
-            label='SLA Configuration Form'
-            loading={isMasterLoading}
-            options={masterOptions}
-            placeholder='Select an SLA form...'
-            clearable
-            required
-            searchable
-            value={
-              masterOptions.find((o) => o.id === value.slaMasterId) ??
-              (value.slaMasterId
-                ? { id: value.slaMasterId, name: `Master ${value.slaMasterId}` }
-                : null)
-            }
-            onChange={(opt) =>
-              update({
-                masterEntries: opt ? [createSlaMasterRow()] : [],
-                masterFieldId: null,
-                slaMasterId: opt ? String(opt.id) : null,
-              })
-            }
-          />
-          {value.slaMasterId && (
-            <SlaMasterEntryPicker
-              errors={errors}
-              isBlock={isBlock}
-              value={value}
-              onChange={onChange}
-            />
-          )}
-        </div>
+        <SlaCustomSetup
+          errors={errors}
+          groupOptions={groupOptions}
+          isBlock={isBlock}
+          isMasterLoading={isMasterLoading}
+          masterOptions={masterOptions}
+          userOptions={userOptions}
+          value={value}
+          onChange={onChange}
+        />
       )}
 
       {/* Standard rules and SLA Steps rows carry their own channels. */}
