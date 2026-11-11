@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { type FormEvent, useEffect, useState } from 'react'
 import apiRouter from '@/api/apiRouter'
 import authApiV6 from '@/api/v6/auth'
+import { setSocialProof } from '@/api/v6/socialProof'
 import showToast from '@/components/base/toast/showToast'
 import { redirectAfterLogin } from '@/pages/sign-in/utils/redirectAfterLogin'
 import cn from '@/utils/cn'
@@ -216,6 +217,11 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
           },
         )
         const profile = await res.json()
+        setSocialProof({
+          accessToken: tokenResponse.access_token,
+          email: String(profile.email || ''),
+          provider: 'google',
+        })
         const gEmail: string = profile.email
         if (!gEmail) throw new Error('No email returned from Google')
 
@@ -244,6 +250,12 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
       const loginResponse = await msalInstance.loginPopup({
         loginHint: email || undefined,
         scopes: ['user.read'],
+      })
+      setSocialProof({
+        accessToken: loginResponse.accessToken,
+        email: String(loginResponse.account?.username || ''),
+        idToken: loginResponse.idToken,
+        provider: 'microsoft',
       })
 
       const msEmail = loginResponse.account?.username || ''

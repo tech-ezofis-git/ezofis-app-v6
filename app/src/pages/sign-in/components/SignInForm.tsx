@@ -13,6 +13,7 @@ import {
   lookupSocialDirectories,
 } from '@/api/v5/loginDirectories'
 import authApiV6 from '@/api/v6/auth'
+import { setSocialProof } from '@/api/v6/socialProof'
 import Alert from '@/components/base/Alert'
 import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
@@ -587,6 +588,11 @@ const SignInForm = ({
           },
         )
         const profile = await res.json()
+        setSocialProof({
+          accessToken: tokenResponse.access_token,
+          email: String(profile.email || ''),
+          provider: 'google',
+        })
 
         const gEmail: string = profile.email
         if (!gEmail) {
@@ -623,6 +629,12 @@ const SignInForm = ({
       const loginResponse = await msalInstance.loginPopup({
         loginHint: email || undefined,
         scopes: ['user.read'],
+      })
+      setSocialProof({
+        accessToken: loginResponse.accessToken,
+        email: String(loginResponse.account?.username || ''),
+        idToken: loginResponse.idToken,
+        provider: 'microsoft',
       })
 
       const account = loginResponse.account

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon, Sheet, Sparkle, TopBar } from '../ui.jsx';
 import { authApi, loginErrorMessage, saveSession, loadSession, clearSession, lastLogin, IS_BROWSER_PREVIEW } from '../api.js';
@@ -168,6 +168,7 @@ export function Login() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [socialInfo, setSocialInfo] = useState(null);
+  const socialIdToken = useRef('');
 
   useEffect(() => {
     if (step !== 'otp' || left <= 0) return undefined;
@@ -189,7 +190,7 @@ export function Login() {
     setTenant(t);
     if (mode === 'password') { setStep('password'); return; }
     try {
-      const login = await authApi.social(verifiedEmail, mode, t.tenantId);
+      const login = await authApi.social(verifiedEmail, mode, t.tenantId, socialIdToken.current);
       done(login, t);
     } catch (e) { setErr(loginErrorMessage(e, 'social')); setStep('email'); }
   };
@@ -231,6 +232,7 @@ export function Login() {
       try { id = await getProviderEmail(provider); }
       catch (x) { if (x instanceof SocialCancelled) return; if (x instanceof SocialUnavailable) setSocialInfo(provider); else setErr(x.message); return; }
       setEmail(id.email);
+      socialIdToken.current = id.idToken || '';
       try { await afterTenants(await authApi.tenants(id.email), provider, id.email); } catch (x) { setErr(loginErrorMessage(x, 'social')); }
     });
   };

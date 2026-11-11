@@ -4,6 +4,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
+import { setSocialProof } from '@/api/v6/socialProof'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
@@ -134,6 +135,11 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
           },
         )
         const profile = await res.json()
+        setSocialProof({
+          accessToken: tokenResponse.access_token,
+          email: String(profile.email || ''),
+          provider: 'google',
+        })
 
         const gEmail: string = profile.email
         const fullName: string = profile.name ?? ''
@@ -197,6 +203,12 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       const loginResponse = await msalInstance.loginPopup({
         loginHint: email || undefined,
         scopes: ['user.read'],
+      })
+      setSocialProof({
+        accessToken: loginResponse.accessToken,
+        email: String(loginResponse.account?.username || ''),
+        idToken: loginResponse.idToken,
+        provider: 'microsoft',
       })
 
       const account = loginResponse.account
