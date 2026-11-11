@@ -6,6 +6,10 @@ import type { Column } from '@/components/base/data-table/types'
 import type { Form } from '@/types/form'
 import formApi from '@/api/form/form'
 import { getFormsListQueryOptions } from '@/api/form/queries'
+import {
+  type SlaFormUsage,
+  slaFormUsageQueryOptions,
+} from '@/api/v6/workflowSla'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
@@ -31,6 +35,7 @@ import {
   parseFilterValues,
 } from '@/utils/filterUtils'
 import AiFormBuilder from './components/AiFormBuilder'
+import SlaUsageDialog from './components/SlaUsageDialog'
 import Table from './components/Table'
 import { isSlaForm } from './utils/slaForm'
 
@@ -180,6 +185,19 @@ const FormsPage = () => {
     getFormsListQueryOptions(page, pageSize, groupBy, filterBy),
   )
 
+  const { data: slaUsage = [] } = useQuery(slaFormUsageQueryOptions())
+  const slaUsageByForm = useMemo(() => {
+    const byForm = new Map<string, SlaFormUsage[]>()
+    slaUsage.forEach((usage) => {
+      byForm.set(usage.formId, [...(byForm.get(usage.formId) ?? []), usage])
+    })
+    return byForm
+  }, [slaUsage])
+  const [usageForm, setUsageForm] = useState<null | {
+    id: string
+    name: string
+  }>(null)
+
   const columns: Column[] = useMemo(
     () => [
       {
@@ -243,7 +261,35 @@ const FormsPage = () => {
           if (!typeVal || String(typeVal).trim().toUpperCase() === 'ITEM') {
             return null
           }
-          return <FormTypeBadge type={typeVal as Form['type']} />
+          const formKey = String(row.uid || row.id)
+          const connected = isSlaForm(row)
+            ? (slaUsageByForm.get(formKey)?.length ?? 0)
+            : 0
+          return (
+            <div className='flex items-center gap-1.5'>
+              <FormTypeBadge type={typeVal as Form['type']} />
+              {connected > 0 && (
+                <IconButton
+                  ariaLabel={t`Connected workflows`}
+                  color='primary'
+                  icon='lucide:workflow'
+                  size='xs'
+                  tooltip={t`Connected workflows (${connected})`}
+                  type='button'
+                  variant='ghost'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setUsageForm({
+                      id: formKey,
+                      name: String(
+                        row._json?.settings?.general?.name || row.name || '',
+                      ),
+                    })
+                  }}
+                />
+              )}
+            </div>
+          )
         },
       },
       {
@@ -350,7 +396,7 @@ const FormsPage = () => {
         },
       },
     ],
-    [navigate, queryClient, setDeletingForm, t],
+    [navigate, queryClient, setDeletingForm, slaUsageByForm, t],
   )
 
   const forms = useMemo(() => {
@@ -683,6 +729,13 @@ const FormsPage = () => {
           />
         </div>
       </div>
+
+      <SlaUsageDialog
+        name={usageForm?.name ?? ''}
+        opened={Boolean(usageForm)}
+        usages={usageForm ? (slaUsageByForm.get(usageForm.id) ?? []) : []}
+        onClose={() => setUsageForm(null)}
+      />
     </div>
   )
 }

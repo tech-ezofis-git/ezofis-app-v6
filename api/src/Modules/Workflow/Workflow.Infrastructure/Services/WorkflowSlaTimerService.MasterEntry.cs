@@ -64,7 +64,8 @@ public sealed partial class WorkflowSlaTimerService
         int transactionId,
         string? activityId,
         DateTime startedAtUtc,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        short timerStatus = WorkflowSlaStore.TimerPendingAdvanced)
     {
         await using (var exists = new NpgsqlCommand(
             """
@@ -95,7 +96,7 @@ public sealed partial class WorkflowSlaTimerService
             await InsertMasterTimerAsync(
                 connection, workflow.Id, instanceId, scope, transactionId, activityId,
                 $"{MasterStepRuleId}|{row.RowId}|{step.Index}|{KindDue}", deadline,
-                StepSnapshot(sla, entry, step, isStage, deadline, workflow.Calendar), cancellationToken);
+                StepSnapshot(sla, entry, step, isStage, deadline, workflow.Calendar), cancellationToken, timerStatus);
         }
     }
 
@@ -288,6 +289,10 @@ public sealed partial class WorkflowSlaTimerService
                     connection, workflow.Id, row.InstanceId, ScopeAdvancedResponse, row.TransactionId, row.ActivityId,
                     $"{MasterRuleId}|{masterRow.RowId}|{KindDue}", deadline, snapshot, cancellationToken);
             }
+
+            await InsertAfterLastAsync(
+                connection, workflow, blocks[row.ActivityId], values[row.ActivityId].Select(v => v.Entry).ToList(),
+                row.InstanceId, ScopeAdvancedResponse, row.TransactionId, row.ActivityId, row.Arrived, cancellationToken);
         }
 
         return rows.Count == MaterializeLimit ? rows[^1].TransactionId : Math.Max(lastTransactionId, maxId);
@@ -342,9 +347,12 @@ public sealed partial class WorkflowSlaTimerService
         if (pending.Count == 0)
             return newest;
 
+        var usedEntries = new List<WorkflowSlaMasterValues>();
         foreach (var masterRow in WorkflowSlaSchedule.MasterRows(sla))
         {
             var master = await LoadMasterSlaAsync(sla, cancellationToken, masterRow.EntryId);
+            if (master.Values is { } read)
+                usedEntries.Add(read);
             if (master.Values is { Steps: { Count: > 0 } } withSteps)
             {
                 foreach (var (instanceId, created) in pending)
@@ -379,6 +387,12 @@ public sealed partial class WorkflowSlaTimerService
             }
         }
 
+        foreach (var (instanceId, created) in pending)
+        {
+            await InsertAfterLastAsync(
+                connection, workflow, sla, usedEntries, instanceId, ScopeAdvancedResolution, 0, null, created, cancellationToken);
+        }
+
         return newest;
     }
 
@@ -392,13 +406,14 @@ public sealed partial class WorkflowSlaTimerService
         string ruleKey,
         DateTime due,
         AdvancedSnapshot snapshot,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        short timerStatus = WorkflowSlaStore.TimerPendingAdvanced)
     {
         await using var insert = new NpgsqlCommand(
             """
             INSERT INTO workflow.sla_timers
                 (workflow_id, workflow_instance_id, scope, transaction_id, activity_id, rule_id, due_at_utc, snapshot_json, status)
-            VALUES (@WorkflowId, @InstanceId, @Scope, @TransactionId, @ActivityId, @RuleId, @Due, @Snapshot, 4)
+            VALUES (@WorkflowId, @InstanceId, @Scope, @TransactionId, @ActivityId, @RuleId, @Due, @Snapshot, @Status)
             ON CONFLICT (workflow_id, workflow_instance_id, scope, transaction_id, rule_id) DO NOTHING;
             """,
             connection);
@@ -410,6 +425,7 @@ public sealed partial class WorkflowSlaTimerService
         insert.Parameters.AddWithValue("@RuleId", ruleKey);
         insert.Parameters.AddWithValue("@Due", DateTime.SpecifyKind(due, DateTimeKind.Utc));
         insert.Parameters.AddWithValue("@Snapshot", JsonSerializer.Serialize(snapshot, SnapshotJson));
+        insert.Parameters.AddWithValue("@Status", timerStatus);
         await insert.ExecuteNonQueryAsync(cancellationToken);
     }
 

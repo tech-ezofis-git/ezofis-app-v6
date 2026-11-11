@@ -90,6 +90,13 @@ public sealed class WorkflowSlaOutboxSender
         {
             if (!_sms.IsConfigured)
             {
+                // A local run limited to test tenants leaves SMS to the server that has Twilio.
+                if (_options.TenantIds.Count > 0)
+                {
+                    await ReleaseAsync(connection, row.Id, cancellationToken);
+                    continue;
+                }
+
                 await FailAsync(connection, row.Id, "SMS is not configured (Sms:Twilio)", cancellationToken);
                 continue;
             }
@@ -138,6 +145,15 @@ public sealed class WorkflowSlaOutboxSender
     {
         await using var cmd = new NpgsqlCommand(
             "UPDATE workflow.sla_notification_outbox SET status = 1, sent_at_utc = now(), locked_until = NULL, last_error = NULL WHERE id = @Id;",
+            connection);
+        cmd.Parameters.AddWithValue("@Id", id);
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task ReleaseAsync(NpgsqlConnection connection, long id, CancellationToken cancellationToken)
+    {
+        await using var cmd = new NpgsqlCommand(
+            "UPDATE workflow.sla_notification_outbox SET locked_until = NULL WHERE id = @Id;",
             connection);
         cmd.Parameters.AddWithValue("@Id", id);
         await cmd.ExecuteNonQueryAsync(cancellationToken);

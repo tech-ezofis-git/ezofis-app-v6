@@ -140,7 +140,10 @@ public sealed partial class WorkflowSlaTimerService
             .Where(b => WorkflowSlaSchedule.IsActiveStandard(b.Settings?.SlaSettings))
             .ToDictionary(b => b.Id, b => b.Settings.SlaSettings!, StringComparer.Ordinal);
         var masterBlocks = (workflow.Json.Blocks ?? [])
-            .Where(b => WorkflowSlaSchedule.IsMasterEntry(b.Settings?.SlaSettings))
+            .Where(b => WorkflowSlaSchedule.IsMasterEntry(b.Settings?.SlaSettings) && !WorkflowSlaSchedule.IsDynamic(b.Settings?.SlaSettings))
+            .ToDictionary(b => b.Id, b => b.Settings.SlaSettings!, StringComparer.Ordinal);
+        var dynamicBlocks = (workflow.Json.Blocks ?? [])
+            .Where(b => WorkflowSlaSchedule.IsDynamic(b.Settings?.SlaSettings))
             .ToDictionary(b => b.Id, b => b.Settings.SlaSettings!, StringComparer.Ordinal);
         var fromTransactionId = lastTransactionId;
         if (blocks.Count > 0)
@@ -154,9 +157,19 @@ public sealed partial class WorkflowSlaTimerService
             lastTransactionId = blocks.Count > 0 ? Math.Min(lastTransactionId, masterLast) : masterLast;
         }
 
+        if (dynamicBlocks.Count > 0)
+        {
+            var dynamicLast = await MaterializeDynamicResponseAsync(
+                connection, workflow, suffix, dynamicBlocks, fromTransactionId, slaSince, cancellationToken);
+            lastTransactionId = blocks.Count > 0 || masterBlocks.Count > 0 ? Math.Min(lastTransactionId, dynamicLast) : dynamicLast;
+        }
+
         var resolution = workflow.Json.Settings?.SlaSettings;
         if (WorkflowSlaSchedule.IsActiveAdvanced(resolution))
             await MaterializeAdvancedAsync(connection, workflow, suffix, resolution!, slaSince, cancellationToken);
+        else if (WorkflowSlaSchedule.IsDynamic(resolution))
+            lastInstanceCreatedAt = await MaterializeDynamicResolutionAsync(
+                connection, workflow, suffix, resolution!, lastInstanceCreatedAt, slaSince, cancellationToken);
         else if (WorkflowSlaSchedule.IsMasterEntry(resolution))
             lastInstanceCreatedAt = await MaterializeMasterResolutionAsync(
                 connection, workflow, suffix, resolution!, lastInstanceCreatedAt, slaSince, cancellationToken);
@@ -442,7 +455,7 @@ public sealed partial class WorkflowSlaTimerService
             UPDATE workflow.sla_timers SET locked_until = now() + interval '5 minutes'
             WHERE id IN (
                 SELECT id FROM workflow.sla_timers
-                WHERE status IN (0, 4) AND due_at_utc <= now() AND (locked_until IS NULL OR locked_until < now())
+                WHERE status IN (0, 4, 5) AND due_at_utc <= now() AND (locked_until IS NULL OR locked_until < now())
                 ORDER BY due_at_utc
                 LIMIT @Batch
                 FOR UPDATE SKIP LOCKED)
@@ -843,7 +856,7 @@ public sealed partial class WorkflowSlaTimerService
         || (json.Blocks ?? []).Any(b => WorkflowSlaSchedule.IsMasterEntry(b.Settings?.SlaSettings))
         || (json.Blocks ?? []).Any(b => WorkflowSlaSchedule.IsActiveStandard(b.Settings?.SlaSettings));
 
-    private async Task<WorkflowJsonDto?> LoadDefinitionAsync(Guid workflowId, DateTime? modifiedAtUtc, CancellationToken cancellationToken)
+    internal async Task<WorkflowJsonDto?> LoadDefinitionAsync(Guid workflowId, DateTime? modifiedAtUtc, CancellationToken cancellationToken)
     {
         if (Definitions.TryGetValue(workflowId, out var cached) && cached.ModifiedAtUtc == modifiedAtUtc)
             return cached.Json;

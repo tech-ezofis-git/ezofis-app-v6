@@ -62,7 +62,10 @@ public sealed partial class WorkflowSlaTimerService
         bool NotifyEnabled = true,
         string? StepGroup = null,
         string? StepStage = null,
-        string? StepNotifyGroup = null);
+        string? StepNotifyGroup = null,
+        /// <summary>Set on the "after the last level" timer: remind, group, user or manager.</summary>
+        string? AfterLast = null,
+        int AfterLastCount = 0);
 
     private static bool IsAdvancedScope(string scope) =>
         scope is ScopeAdvancedResponse or ScopeAdvancedResolution;
@@ -303,8 +306,17 @@ public sealed partial class WorkflowSlaTimerService
         if (isResponse && await ResponseGivenAsync(connection, suffix, timer.InstanceId, snapshot.ResponseStageId, cancellationToken))
             return (WorkflowSlaStore.TimerCancelled, "response already given");
         // Stage SLA Master timer: met once the ticket is acted on at that stage.
-        if (timer.TransactionId > 0 && await LoadWaitingStepAsync(connection, suffix, timer, cancellationToken) == null)
+        var waiting = timer.TransactionId > 0 ? await LoadWaitingStepAsync(connection, suffix, timer, cancellationToken) : null;
+        if (timer.TransactionId > 0 && waiting == null)
             return (WorkflowSlaStore.TimerCancelled, "ticket was already acted on");
+        if (snapshot.AfterLast == AfterLastManager)
+        {
+            var manager = await FindManagerAsync(connection, waiting?.AssigneeUserId, cancellationToken);
+            if (manager == null)
+                return (WorkflowSlaStore.TimerFired, "after the last level: the assignee has no reporting manager; left as it is");
+            snapshot = snapshot with { EscalationUsers = [manager.Value.ToString("D")] };
+        }
+
         var isStep = snapshot.RuleId == MasterStepRuleId;
         if (snapshot.RuleId == MasterRuleId)
         {
@@ -355,6 +367,8 @@ public sealed partial class WorkflowSlaTimerService
         if (snapshot.Initiator)
             recipientIds.Add(ticket.StartedBy);
         recipientIds.UnionWith(stepGroupMembers);
+        if (snapshot.AfterLast == AfterLastRemind && waiting?.AssigneeUserId is { } assignee)
+            recipientIds.Add(assignee);
 
         var reference = string.IsNullOrWhiteSpace(ticket.Reference) ? timer.InstanceId.ToString("D")[..8] : ticket.Reference;
         var what = isResponse ? "Response" : "Resolution";
@@ -362,7 +376,9 @@ public sealed partial class WorkflowSlaTimerService
         var deadline = FormatDeadline(snapshot.DeadlineUtc, snapshot.TimeZone);
         var source = $"SLA rule <strong>{WorkflowSlaNotifier.Encode(snapshot.RuleName)}</strong>, "
             + $"entry <strong>{WorkflowSlaNotifier.Encode(snapshot.EntryName)}</strong>";
-        var message = isStep
+        var message = snapshot.AfterLast != null
+            ? AfterLastMessage(snapshot, breachType, reference, workflow.Name)
+            : isStep
             ? StepMessage(snapshot, breachType, reference, workflow.Name, isResponse, limit, deadline)
             : isDue
             ? new WorkflowSlaNotifier.Message(
@@ -396,6 +412,8 @@ public sealed partial class WorkflowSlaTimerService
         if (breachType is WorkflowSlaSettingsValidator.BreachReassign or WorkflowSlaSettingsValidator.BreachStage
             or WorkflowSlaSettingsValidator.EscalateToGroup)
             outcome.Add(await RunBreachActionAsync(connection, suffix, timer, snapshot, breachType, cancellationToken));
+        if (snapshot.AfterLast == AfterLastRemind)
+            outcome.Add(await ScheduleNextReminderAsync(connection, timer, snapshot, workflow.Calendar, cancellationToken));
 
         return (WorkflowSlaStore.TimerFired, string.Join("; ", outcome.Where(o => o.Length > 0)));
     }

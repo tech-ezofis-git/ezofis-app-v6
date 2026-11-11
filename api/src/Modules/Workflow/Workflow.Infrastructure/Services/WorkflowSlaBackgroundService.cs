@@ -71,6 +71,7 @@ public sealed class WorkflowSlaBackgroundService : BackgroundService
                     .Select(t => new { t.Id, t.Name })
                     .ToListAsync(cancellationToken))
                 .Select(t => (t.Id, t.Name ?? t.Id.ToString("D")))
+                .Where(t => _options.TenantIds.Count == 0 || _options.TenantIds.Contains(t.Id))
                 .ToList();
         }
 
