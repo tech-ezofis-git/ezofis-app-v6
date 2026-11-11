@@ -41,6 +41,12 @@ public sealed class WorkflowSlaController : ControllerBase
         }
     }
 
+    /// <summary>Where this tenant's workflows use SLA forms: the workflow, the stage, and which entries.</summary>
+    [HttpGet("form-usage")]
+    [ProducesResponseType(typeof(IReadOnlyList<SaaSApp.Workflow.Application.Workflows.WorkflowSlaFormUsageRow>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> FormUsage(CancellationToken cancellationToken) =>
+        Ok(await _insight.GetFormUsageAsync(cancellationToken));
+
     /// <summary>A ticket's SLA timers (with what each did) and its Advanced SLA evaluation.</summary>
     [HttpGet("{workflowId:guid}/instances/{instanceId:guid}/history")]
     [ProducesResponseType(typeof(WorkflowSlaHistoryResult), StatusCodes.Status200OK)]

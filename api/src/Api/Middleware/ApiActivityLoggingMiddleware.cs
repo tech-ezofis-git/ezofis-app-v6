@@ -87,6 +87,12 @@ public sealed class ApiActivityLoggingMiddleware
         if (TenantSignupOtpPathHelper.MatchesPath(value))
             return false;
 
+        // One large upload sends hundreds of chunk requests; logging each would flood the log and
+        // the tenant's connection pool. The upload's init and complete calls are still logged.
+        if (value.StartsWith("/api/uploadAndIndex/large/", StringComparison.OrdinalIgnoreCase)
+            && value.Contains("/chunks/", StringComparison.OrdinalIgnoreCase))
+            return false;
+
         foreach (var prefix in _options.ExcludedPathPrefixes)
         {
             if (!string.IsNullOrWhiteSpace(prefix)

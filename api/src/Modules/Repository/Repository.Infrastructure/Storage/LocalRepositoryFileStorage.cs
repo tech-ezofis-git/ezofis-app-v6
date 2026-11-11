@@ -69,6 +69,10 @@ internal sealed class LocalRepositoryFileStorage : IRepositoryFileStorage
         if (File.Exists(fullPath))
             File.Delete(fullPath);
 
+        // Unfinished large upload (chunks written into "<file>.part"; see LargeUploadStorage).
+        if (File.Exists(fullPath + ".part"))
+            File.Delete(fullPath + ".part");
+
         // Best-effort: remove empty monitor timestamp folder.
         try
         {
@@ -84,9 +88,37 @@ internal sealed class LocalRepositoryFileStorage : IRepositoryFileStorage
         return Task.CompletedTask;
     }
 
+    public async Task<string> CopyAsync(
+        Guid tenantId,
+        string sourceRelativePath,
+        string destinationRelativePath,
+        string storageProviderCode,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsLocalProvider(storageProviderCode))
+            throw new NotSupportedException($"Storage provider '{storageProviderCode}' file copy is not implemented.");
+
+        var sourcePath = GetFullPath(tenantId, sourceRelativePath);
+        if (!File.Exists(sourcePath))
+            throw new FileNotFoundException("Repository file not found on disk.", sourcePath);
+
+        var destinationPath = GetFullPath(tenantId, destinationRelativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+
+        // Stream copy with a large buffer: never loads the whole file into memory.
+        await using (var source = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, useAsync: true))
+        await using (var destination = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, useAsync: true))
+        {
+            await source.CopyToAsync(destination, 1024 * 1024, cancellationToken);
+        }
+
+        return NormalizeRelativePath(destinationRelativePath);
+    }
+
     public bool CanRead(string storageProviderCode) => IsLocalProvider(storageProviderCode);
 
-    private string GetFullPath(Guid tenantId, string relativePath)
+    /// <summary>Absolute disk path for a tenant-relative path (guards against escaping the root).</summary>
+    internal string GetFullPath(Guid tenantId, string relativePath)
     {
         var root = Path.GetFullPath(_options.LocalRootPath);
         var combined = Path.GetFullPath(Path.Combine(

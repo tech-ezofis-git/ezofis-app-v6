@@ -72,6 +72,44 @@ public sealed class WorkflowSlaInsightService : IWorkflowSlaInsightService
         return new WorkflowSlaPreviewResult(created, calendar?.TimeZone.Id, calendar != null, targets, result.Log, result.Errors);
     }
 
+    public async Task<IReadOnlyList<WorkflowSlaFormUsageRow>> GetFormUsageAsync(CancellationToken cancellationToken = default)
+    {
+        var connectionString = _tenantContext.ConnectionString;
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return [];
+
+        var workflows = new List<(Guid Id, string Name, DateTime? Modified, bool Published)>();
+        await using (var connection = new NpgsqlConnection(connectionString))
+        {
+            await connection.OpenAsync(cancellationToken);
+            await using var cmd = new NpgsqlCommand(
+                """
+                SELECT "Id", "Name", "ModifiedAtUtc", "Status"
+                FROM workflow."Workflows"
+                WHERE "IsDeleted" = false
+                ORDER BY "Name";
+                """,
+                connection);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                workflows.Add((reader.GetGuid(0), reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetDateTime(2), reader.GetInt32(3) == 1));
+            }
+        }
+
+        var rows = new List<WorkflowSlaFormUsageRow>();
+        foreach (var (id, name, modified, published) in workflows)
+        {
+            // Read through the timers' cache, so only changed workflows go back to storage.
+            var json = await _timers.LoadDefinitionAsync(id, modified, cancellationToken);
+            if (json != null)
+                rows.AddRange(WorkflowSlaFormUsage.Find(id, name, published, json));
+        }
+
+        return rows;
+    }
+
     private static WorkflowSlaAdvancedRuleDto StripStage(WorkflowSlaAdvancedRuleDto rule) =>
         rule.BreachAction?.Type?.Trim().ToLowerInvariant() == WorkflowSlaSettingsValidator.BreachStage
             ? rule with { BreachAction = rule.BreachAction with { Type = WorkflowSlaSettingsValidator.BreachNotify } }

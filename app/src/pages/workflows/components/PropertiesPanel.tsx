@@ -64,6 +64,7 @@ import {
   type SlaSettings,
   validateSlaSettings,
 } from '../utils/slaSettings'
+import PanelResizeHandle from './PanelResizeHandle'
 import ConnectionsRouting from './settings/common/ConnectionsRouting'
 
 interface PropertiesPanelProps {
@@ -229,7 +230,8 @@ function PropertiesPanel({
     }
 
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {/* Header */}
         <div className='flex items-center justify-between border-b border-gray-2 px-4 py-3'>
           <div className='flex items-center gap-2'>
@@ -445,7 +447,8 @@ function PropertiesPanel({
   // Render AP Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.AP_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -465,7 +468,8 @@ function PropertiesPanel({
   // Render FTP Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.FTP_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -485,7 +489,8 @@ function PropertiesPanel({
   // Render Google Drive settings panel
   if (toolType === NODE_TOOL_TYPE.GOOGLE_DRIVE) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -505,7 +510,8 @@ function PropertiesPanel({
   // Render OneDrive settings panel
   if (toolType === NODE_TOOL_TYPE.ONEDRIVE) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -525,7 +531,8 @@ function PropertiesPanel({
   // Render OCR Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.OCR_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -545,7 +552,8 @@ function PropertiesPanel({
   // Render KYC Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.KYC_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -565,7 +573,8 @@ function PropertiesPanel({
   // Render Procurement Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.PROCUREMENT_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -585,7 +594,8 @@ function PropertiesPanel({
   // Render Document Generate Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -605,7 +615,8 @@ function PropertiesPanel({
   // Render Qualify Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.QUALIFY_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -625,7 +636,8 @@ function PropertiesPanel({
   // Render Quote Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.QUOTE_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -645,7 +657,8 @@ function PropertiesPanel({
   // Render Classification Agent node settings panel
   if (toolType === NODE_TOOL_TYPE.CLASSIFICATION_AGENT) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -665,7 +678,8 @@ function PropertiesPanel({
   // Render Condition node settings panel
   if (toolType === NODE_TOOL_TYPE.CONDITION) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -685,7 +699,8 @@ function PropertiesPanel({
   // Render Workflow Connector node settings panel
   if (toolType === NODE_TOOL_TYPE.WORKFLOW_CONNECTOR) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -708,7 +723,8 @@ function PropertiesPanel({
     toolType === NODE_TOOL_TYPE.FORM_SUBMISSION
   ) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -728,7 +744,8 @@ function PropertiesPanel({
   // Render End node settings panel (post-completion sync)
   if (toolType === NODE_TOOL_TYPE.END) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -750,7 +767,8 @@ function PropertiesPanel({
     toolType === NODE_TOOL_TYPE.OUTLOOK
   ) {
     return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+      <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+        <PanelResizeHandle />
         {NodeHeader}
         <div className='flex-1 overflow-hidden'>
           <Suspense
@@ -768,7 +786,8 @@ function PropertiesPanel({
   }
 
   return (
-    <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-surface shadow-xl transition-all'>
+    <div className='animate-slide-in-right relative flex h-full w-[var(--workflow-panel-width,560px)] max-w-[85vw] shrink-0 flex-col border-l border-gray-3 bg-surface shadow-xl'>
+      <PanelResizeHandle />
       {NodeHeader}
 
       {/* Content */}

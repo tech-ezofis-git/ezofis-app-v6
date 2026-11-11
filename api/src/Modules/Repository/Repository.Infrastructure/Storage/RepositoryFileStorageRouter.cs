@@ -54,6 +54,24 @@ internal sealed class RepositoryFileStorageRouter : IRepositoryFileStorage
         throw new NotSupportedException($"Storage provider '{storageProviderCode}' is not implemented.");
     }
 
+    public Task<byte[]> ReadRangeAsync(
+        Guid tenantId,
+        string relativePath,
+        string storageProviderCode,
+        long offset,
+        int length,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsEzofis(storageProviderCode) && _blobStorage.IsConfigured)
+            return _blobFiles.ReadRangeAsync(tenantId, relativePath, storageProviderCode, offset, length, cancellationToken);
+
+        IRepositoryFileStorage local = _localFiles;
+        if (IsEzofis(storageProviderCode))
+            return local.ReadRangeAsync(tenantId, relativePath, storageProviderCode, offset, length, cancellationToken);
+
+        throw new NotSupportedException($"Storage provider '{storageProviderCode}' is not implemented.");
+    }
+
     public Task DeleteAsync(
         Guid tenantId,
         string relativePath,
@@ -65,6 +83,22 @@ internal sealed class RepositoryFileStorageRouter : IRepositoryFileStorage
 
         if (IsEzofis(storageProviderCode))
             return _localFiles.DeleteAsync(tenantId, relativePath, storageProviderCode, cancellationToken);
+
+        throw new NotSupportedException($"Storage provider '{storageProviderCode}' is not implemented.");
+    }
+
+    public Task<string> CopyAsync(
+        Guid tenantId,
+        string sourceRelativePath,
+        string destinationRelativePath,
+        string storageProviderCode,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsEzofis(storageProviderCode) && _blobStorage.IsConfigured)
+            return _blobFiles.CopyAsync(tenantId, sourceRelativePath, destinationRelativePath, storageProviderCode, cancellationToken);
+
+        if (IsEzofis(storageProviderCode))
+            return _localFiles.CopyAsync(tenantId, sourceRelativePath, destinationRelativePath, storageProviderCode, cancellationToken);
 
         throw new NotSupportedException($"Storage provider '{storageProviderCode}' is not implemented.");
     }

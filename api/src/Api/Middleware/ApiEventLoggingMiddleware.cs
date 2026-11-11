@@ -293,6 +293,11 @@ public sealed class ApiEventLoggingMiddleware
         if (TenantSignupOtpPathHelper.MatchesPath(value))
             return false;
 
+        // Large-upload chunks are plumbing, not user events (init/complete are logged).
+        if (value.StartsWith("/api/uploadAndIndex/large/", StringComparison.OrdinalIgnoreCase)
+            && value.Contains("/chunks/", StringComparison.OrdinalIgnoreCase))
+            return false;
+
         foreach (var prefix in _options.ExcludedPathPrefixes)
         {
             if (!string.IsNullOrWhiteSpace(prefix)

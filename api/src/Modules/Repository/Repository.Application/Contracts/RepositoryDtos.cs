@@ -357,7 +357,13 @@ public sealed record RepositoryUploadItemRequest(
     /// <summary>Used only when the resolved naming field still has no value after metadata/filename
     /// injection -- e.g. a workflow ticket's reference number for a repository whose naming field
     /// is a per-ticket request number. Never overrides a value already present.</summary>
-    string? NamingFieldFallback = null);
+    string? NamingFieldFallback = null,
+    /// <summary>When the file is already in storage (a staged upload), its relative path there.
+    /// The archive then copies it inside storage instead of re-uploading <see cref="FileStream"/>,
+    /// which keeps multi-GB exports fast and inside request timeouts.</summary>
+    string? SourceStoragePath = null,
+    /// <summary>Storage provider code of <see cref="SourceStoragePath"/>.</summary>
+    string? SourceStorageProviderCode = null);
 
 public sealed record RepositoryUploadItemResult(
     Guid ItemId,

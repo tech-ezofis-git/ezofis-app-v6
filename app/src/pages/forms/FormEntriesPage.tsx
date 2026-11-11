@@ -97,7 +97,12 @@ import {
 import { validateFormModel } from '@/pages/form-builder/helpers/runtimeValidation'
 import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
+import {
+  type SlaFormUsage,
+  slaFormUsageQueryOptions,
+} from '@/api/v6/workflowSla'
 import cn from '@/utils/cn'
+import { formatDatetime } from '@/utils/dayjs'
 import { isAdminRole } from '@/utils/sessionPermissions'
 import { formatTableCellValue } from '@/utils/formatTableCellValue'
 import {
@@ -116,6 +121,8 @@ import {
   resolveEntryColumn,
 } from './utils/entrySearchFilter'
 import { runEntryBatch } from './utils/runEntryBatch'
+import SlaUsageDialog from './components/SlaUsageDialog'
+import { isSlaForm } from './utils/slaForm'
 
 const FormEntriesChoiceInput = ({
   field,
@@ -1445,9 +1452,19 @@ const parseFetchedEntry = (e: any) => {
       ? rawCreatedBy
       : loggedInUserEmail || 'unknown@ezofis.com'
 
+  // Older rows were never edited: their modified user is empty or 0.
+  const rawModifiedBy = e.modifiedBy ?? e.ModifiedBy ?? e.modified_by
+  const createdAt =
+    e.createdAt || e.created_at || e.CreatedDate || new Date().toISOString()
+
   return {
-    createdAt: e.createdAt || e.CreatedDate || new Date().toISOString(),
+    createdAt,
     createdBy,
+    modifiedAt: e.modifiedAt || e.modified_at || createdAt,
+    modifiedBy:
+      rawModifiedBy && String(rawModifiedBy) !== '0'
+        ? rawModifiedBy
+        : createdBy,
     entryId: rawEntryId,
     id: rawEntryId
       ? `Entry #${rawEntryId}`
@@ -1577,6 +1594,26 @@ const FormEntriesPage = () => {
       return data
     },
   })
+
+  // SLA forms: which workflows use the form and each rule.
+  const isSlaFormPage = isSlaForm(formData)
+  const { data: slaUsage = [] } = useQuery({
+    ...slaFormUsageQueryOptions(),
+    enabled: isSlaFormPage,
+  })
+  const [usageEntry, setUsageEntry] = useState<null | {
+    name: string
+    usages: SlaFormUsage[]
+  }>(null)
+  const usagesForEntry = (entryId: unknown) => {
+    const target = String(entryId ?? '').toLowerCase()
+    return slaUsage.filter(
+      (usage) =>
+        usage.formId === String(formId) &&
+        (usage.anyEntry ||
+          usage.entryIds.some((id) => id.toLowerCase() === target)),
+    )
+  }
 
   const isDraftForm = useMemo(() => {
     if (!formData) return false
@@ -2245,9 +2282,14 @@ const FormEntriesPage = () => {
         if (id === 'id') {
           valA = a.id
           valB = b.id
-        } else if (id === 'createdBy') {
-          valA = a.createdBy
-          valB = b.createdBy
+        } else if (
+          id === 'createdBy' ||
+          id === 'createdAt' ||
+          id === 'modifiedBy' ||
+          id === 'modifiedAt'
+        ) {
+          valA = a[id]
+          valB = b[id]
         } else {
           valA = a.values?.[id] ?? ''
           valB = b.values?.[id] ?? ''
@@ -2416,17 +2458,83 @@ const FormEntriesPage = () => {
       )
     }
 
+    // The rule's name: an SLA form's first field is Policy Name.
+    const slaEntryName = (row: any) =>
+      fields[0]
+        ? formatRuntimeFieldDisplayValue(row.values?.[fields[0].id], fields[0])
+        : ''
+
+    if (isSlaFormPage) {
+      colList.push({
+        enableSorting: false,
+        id: 'slaWorkflows',
+        isDisplayColumn: true,
+        label: t`Workflows`,
+        size: 140,
+        renderCell: (row: any) => {
+          const usages = usagesForEntry(row.entryId)
+          if (usages.length === 0) {
+            return <span className='text-[var(--gray-8)]'>-</span>
+          }
+          return (
+            <div
+              className='flex items-center gap-1'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IconButton
+                ariaLabel={t`Connected workflows`}
+                color='primary'
+                icon='lucide:workflow'
+                size='xs'
+                tooltip={t`Connected workflows`}
+                type='button'
+                variant='ghost'
+                onClick={() =>
+                  setUsageEntry({
+                    name: slaEntryName(row),
+                    usages,
+                  })
+                }
+              />
+              <span className='text-[10px] font-semibold text-gray-7'>
+                ({usages.length})
+              </span>
+            </div>
+          )
+        },
+      })
+    }
+
+    const userCell = (userId: string) => (
+      <span className='font-medium text-[var(--gray-12)]'>
+        {resolveUserName(userId)}
+      </span>
+    )
     colList.push(
       {
         id: 'createdBy',
         label: t`Created By`,
         exportValue: (row: any) => resolveUserName(row.createdBy),
         size: 180,
-        renderCell: (row: any) => (
-          <span className='font-medium text-[var(--gray-12)]'>
-            {resolveUserName(row.createdBy)}
-          </span>
-        ),
+        renderCell: (row: any) => userCell(row.createdBy),
+      },
+      {
+        id: 'createdAt',
+        label: t`Created At`,
+        size: 190,
+        renderCell: (row: any) => formatDatetime(row.createdAt, 'datetime'),
+      },
+      {
+        id: 'modifiedBy',
+        label: t`Modified By`,
+        size: 180,
+        renderCell: (row: any) => userCell(row.modifiedBy),
+      },
+      {
+        id: 'modifiedAt',
+        label: t`Modified At`,
+        size: 190,
+        renderCell: (row: any) => formatDatetime(row.modifiedAt, 'datetime'),
       },
       {
         className: 'p-1',
@@ -2500,6 +2608,8 @@ const FormEntriesPage = () => {
     usersData,
     paginatedEntries,
     t,
+    isSlaFormPage,
+    slaUsage,
   ])
 
   // Initialize selected columns (all columns visible by default)
@@ -2510,6 +2620,8 @@ const FormEntriesPage = () => {
       columns.forEach((col: Column) => {
         visibility[col.id] = true
       })
+      // The table's built-in group column: entries are never grouped here.
+      visibility.group = false
       setVisibilityState(visibility)
       setInitialVisibilitySet(true)
     }
@@ -3547,6 +3659,14 @@ const FormEntriesPage = () => {
           if (!isDeletingEntry) setPermanentlyDeletingEntries(null)
         }}
         onConfirm={handlePermanentDelete}
+      />
+
+      <SlaUsageDialog
+        name={usageEntry?.name ?? ''}
+        opened={Boolean(usageEntry)}
+        usages={usageEntry?.usages ?? []}
+        forEntry
+        onClose={() => setUsageEntry(null)}
       />
 
       <RestoreEntriesDialog

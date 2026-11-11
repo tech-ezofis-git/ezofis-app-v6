@@ -3,11 +3,11 @@ import { useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateStagger } from '@/components/common/animations'
+import { LARGE_UPLOAD_MAX_BYTES } from '@/lib/largeUpload/constants'
 import {
   IMAGE_ACCEPT,
   isImage,
   isPdf,
-  MAX_SIZE,
   PDF_ACCEPT,
 } from '@/pages/requests/components/request/components/newrequest/utils'
 
@@ -43,15 +43,19 @@ export function EmptyFolderUploadDropzone({
       return
     }
 
+    // Large files go up in chunks on the upload page (up to 10 GB).
     const validFiles = files.filter(
-      (file) => (isPdf(file) || isImage(file)) && file.size <= MAX_SIZE,
+      (file) =>
+        (isPdf(file) || isImage(file)) &&
+        file.size > 0 &&
+        file.size <= LARGE_UPLOAD_MAX_BYTES,
     )
 
     if (!validFiles.length) {
-      const tooLarge = files.some((file) => file.size > MAX_SIZE)
+      const tooLarge = files.some((file) => file.size > LARGE_UPLOAD_MAX_BYTES)
       showToast({
         message: tooLarge
-          ? t`File is too large. Max size is 50MB.`
+          ? t`File is too large. Max size is 10 GB.`
           : t`Invalid file type. Please upload a PDF or Image.`,
         variant: 'info',
       })
@@ -115,7 +119,7 @@ export function EmptyFolderUploadDropzone({
               <span className='text-[var(--primary-9)]'>{t`browse`}</span>
             </h2>
             <p className='text-xs font-medium text-[var(--gray-9)]'>
-              {t`Supports PDF and Images · Max 50 MB`}
+              {t`Supports PDF and Images · Max 10 GB`}
             </p>
           </div>
         </AnimateStagger>

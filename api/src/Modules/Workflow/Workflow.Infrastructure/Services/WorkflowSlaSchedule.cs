@@ -34,8 +34,12 @@ internal static class WorkflowSlaSchedule
         sla != null
         && string.Equals(sla.Mode?.Trim(), WorkflowSlaSettingsValidator.ModeAdvanced, StringComparison.OrdinalIgnoreCase)
         && !string.IsNullOrWhiteSpace(sla.SlaMasterId)
-        && MasterRows(sla).Count > 0
+        && (MasterRows(sla).Count > 0 || sla.Selection != null)
         && !IsActiveAdvanced(sla);
+
+    /// <summary>Custom Setup where a value in each request picks the SLA form entry.</summary>
+    internal static bool IsDynamic(WorkflowSlaConfigurationDto? sla) =>
+        sla?.Selection != null && IsMasterEntry(sla);
 
     internal sealed record MasterRow(string RowId, string EntryId, bool Notify, bool Escalate);
 

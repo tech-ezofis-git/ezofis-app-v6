@@ -27,4 +27,10 @@ public sealed class WorkflowSlaOptions
     /// SLA on, or a long outage, does not notify about old tickets. 0 sends them however late.
     /// </summary>
     public int MaxLateMinutes { get; set; } = 60;
+
+    /// <summary>
+    /// When set, only these tenants are processed (for a local run against the shared database). Empty = all
+    /// active tenants. With a list and no SMS configured, queued SMS are left for the server to send.
+    /// </summary>
+    public List<Guid> TenantIds { get; set; } = new();
 }

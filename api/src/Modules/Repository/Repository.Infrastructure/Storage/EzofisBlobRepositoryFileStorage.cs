@@ -1,3 +1,6 @@
+using Azure;
+using Azure.Storage.Blobs.Models;
+using Azure.Storage.Sas;
 using SaaSApp.BlobStorage;
 using SaaSApp.Repository.Application.Contracts;
 
@@ -6,6 +9,10 @@ namespace SaaSApp.Repository.Infrastructure.Storage;
 /// <summary>Repository files on Azure Blob (EZOFIS provider) — one container per tenant (ezts + tenantId).</summary>
 internal sealed class EzofisBlobRepositoryFileStorage : IRepositoryFileStorage
 {
+    /// <summary>Read-ahead buffer for the seekable blob stream. The PDF viewer asks for 512 KB ranges;
+    /// a bigger buffer would pull several unused MB from Azure per request (slow on poor links).</summary>
+    private const int ReadBufferSize = 1024 * 1024;
+
     private readonly IEzofisBlobStorageService _blobStorage;
 
     public EzofisBlobRepositoryFileStorage(IEzofisBlobStorageService blobStorage) =>
@@ -43,11 +50,77 @@ internal sealed class EzofisBlobRepositoryFileStorage : IRepositoryFileStorage
             throw new InvalidOperationException("EzofisBlobStorage is not configured.");
 
         var client = _blobStorage.GetBlobClient(tenantId, relativePath, createContainerIfNotExists: false);
-        if (!await client.ExistsAsync(cancellationToken))
-            throw new FileNotFoundException("Repository file not found in blob storage.", relativePath);
 
-        var response = await client.DownloadStreamingAsync(cancellationToken: cancellationToken);
-        return response.Value.Content;
+        // Seekable stream with a known Length: FileStreamResult(EnableRangeProcessing) can then answer
+        // HTTP Range requests by seeking, so the PDF viewer loads only the pages it shows instead of
+        // the whole file. (DownloadStreamingAsync returned a forward-only stream, which made every
+        // range request download the full blob.) OpenReadAsync reads the blob's properties itself, so
+        // no separate ExistsAsync round trip: the viewer makes many small requests.
+        try
+        {
+            return await client.OpenReadAsync(
+                new BlobOpenReadOptions(allowModifications: false) { BufferSize = ReadBufferSize },
+                cancellationToken);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            throw new FileNotFoundException("Repository file not found in blob storage.", relativePath);
+        }
+    }
+
+    /// <summary>One ranged download: no properties call, only the bytes asked for.</summary>
+    public async Task<byte[]> ReadRangeAsync(
+        Guid tenantId,
+        string relativePath,
+        string storageProviderCode,
+        long offset,
+        int length,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureEzofis(storageProviderCode);
+        if (!_blobStorage.IsConfigured)
+            throw new InvalidOperationException("EzofisBlobStorage is not configured.");
+
+        var client = _blobStorage.GetBlobClient(tenantId, relativePath, createContainerIfNotExists: false);
+        try
+        {
+            var result = await client.DownloadContentAsync(
+                new BlobDownloadOptions { Range = new HttpRange(offset, length) },
+                cancellationToken);
+            return result.Value.Content.ToArray();
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            throw new FileNotFoundException("Repository file not found in blob storage.", relativePath);
+        }
+    }
+
+    public async Task<string> CopyAsync(
+        Guid tenantId,
+        string sourceRelativePath,
+        string destinationRelativePath,
+        string storageProviderCode,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureEzofis(storageProviderCode);
+        if (!_blobStorage.IsConfigured)
+            throw new InvalidOperationException("EzofisBlobStorage is not configured.");
+
+        var source = _blobStorage.GetBlobClient(tenantId, sourceRelativePath, createContainerIfNotExists: false);
+        if (!await source.ExistsAsync(cancellationToken))
+            throw new FileNotFoundException("Repository file not found in blob storage.", sourceRelativePath);
+
+        var destination = _blobStorage.GetBlobClient(tenantId, destinationRelativePath);
+
+        // Server-side copy inside the storage account: no bytes pass through the API, so a 10 GB
+        // export does not hit request timeouts. A short read SAS authorises the source explicitly.
+        var sourceUri = source.CanGenerateSasUri
+            ? source.GenerateSasUri(BlobSasPermissions.Read, DateTimeOffset.UtcNow.AddHours(2))
+            : source.Uri;
+
+        var operation = await destination.StartCopyFromUriAsync(sourceUri, cancellationToken: cancellationToken);
+        await operation.WaitForCompletionAsync(cancellationToken);
+        return destinationRelativePath.Replace('\\', '/').TrimStart('/');
     }
 
     public async Task DeleteAsync(

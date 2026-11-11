@@ -57,7 +57,66 @@ public record WorkflowSlaConfigurationDto(
     /// (notify, escalate, or both). Settings saved with only <see cref="EntryId"/> mean one row doing both.
     /// </summary>
     [property: JsonPropertyName("masterEntries")]
-    List<WorkflowSlaMasterEntryDto>? MasterEntries = null
+    List<WorkflowSlaMasterEntryDto>? MasterEntries = null,
+    /// <summary>
+    /// Custom Setup, "It depends on the request": a value in each request picks the entry. Left out of the
+    /// JSON when null, so the SLA fingerprint of existing workflows stays the same.
+    /// </summary>
+    [property: JsonPropertyName("selection")]
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    WorkflowSlaSelectionDto? Selection = null,
+    /// <summary>Custom Setup: what happens if the ticket is still not done after the last level.</summary>
+    [property: JsonPropertyName("afterLastLevel")]
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    WorkflowSlaAfterLastDto? AfterLastLevel = null
+);
+
+/// <summary>How a value in the request picks the SLA form entry (see <c>WorkflowSlaRuleSelector</c>).</summary>
+public record WorkflowSlaSelectionDto(
+    /// <summary>The request form's field (jsonId) whose value decides.</summary>
+    [property: JsonPropertyName("fieldId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? FieldId = null,
+    /// <summary>column | map | sameName.</summary>
+    [property: JsonPropertyName("method")] string? Method = null,
+    /// <summary>Method column: the form the dropdown gets its options from.</summary>
+    [property: JsonPropertyName("recordFormId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? RecordFormId = null,
+    /// <summary>Method column: that form's column the dropdown shows.</summary>
+    [property: JsonPropertyName("recordValueColumn")] string? RecordValueColumn = null,
+    /// <summary>Method column: that form's field (jsonId) naming the rule.</summary>
+    [property: JsonPropertyName("ruleColumn")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? RuleColumn = null,
+    /// <summary>Method map: the rule for each option. Options left out use the default.</summary>
+    [property: JsonPropertyName("valueRules")] List<WorkflowSlaValueRuleDto>? ValueRules = null,
+    /// <summary>Entry used when no rule is found. None = no SLA for that request.</summary>
+    [property: JsonPropertyName("defaultEntryId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? DefaultEntryId = null
+);
+
+public record WorkflowSlaValueRuleDto(
+    [property: JsonPropertyName("value")] string? Value = null,
+    [property: JsonPropertyName("entryId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? EntryId = null
+);
+
+/// <summary>After the last level and a wait: none | remind (daily) | group | user | manager.</summary>
+public record WorkflowSlaAfterLastDto(
+    [property: JsonPropertyName("type")] string? Type = null,
+    [property: JsonPropertyName("wait")]
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+    decimal? Wait = null,
+    [property: JsonPropertyName("waitUnit")] string? WaitUnit = null,
+    [property: JsonPropertyName("groupId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? GroupId = null,
+    [property: JsonPropertyName("userId")]
+    [property: JsonConverter(typeof(FlexibleStringJsonConverter))]
+    string? UserId = null
 );
 
 /// <summary>One SLA Master entry on an SLA: its time comes live from the entry.</summary>

@@ -12,7 +12,7 @@ public sealed class EzofisBlobStorageService : IEzofisBlobStorageService
     {
         _options = options.Value;
         if (_options.IsConfigured)
-            _serviceClient = new BlobServiceClient(_options.ConnectionString!);
+            _serviceClient = new BlobServiceClient(_options.ConnectionString!, CreateClientOptions());
     }
 
     public bool IsConfigured => _options.IsConfigured && _serviceClient != null;
@@ -39,6 +39,18 @@ public sealed class EzofisBlobStorageService : IEzofisBlobStorageService
 
         var containerName = EzofisBlobStorageOptions.BuildContainerName(_options.ContainerPrefix, tenantId);
         return _serviceClient.GetBlobContainerClient(containerName);
+    }
+
+    /// <summary>
+    /// The SDK's default 100 s network timeout aborts and restarts any single transfer that takes
+    /// longer, e.g. a 16 MB block on a 4 Mbit/s uplink shared by parallel uploads, which then never
+    /// finishes. Allow 10 minutes per attempt; fast transfers are unaffected.
+    /// </summary>
+    private static BlobClientOptions CreateClientOptions()
+    {
+        var options = new BlobClientOptions();
+        options.Retry.NetworkTimeout = TimeSpan.FromMinutes(10);
+        return options;
     }
 
     private static string NormalizeBlobPath(string blobPath) =>
